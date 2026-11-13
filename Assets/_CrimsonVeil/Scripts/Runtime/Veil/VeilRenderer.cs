@@ -237,6 +237,9 @@ namespace CrimsonVeil.Veil
 
                 float fray = 1f - Mathf.SmoothStep(0f, 1f, (t - Mathf.Lerp(0.3f, 1.05f, vit)) / 0.25f);
                 alphaAt[i] = Mathf.Lerp(fray, 1f, hard) * Mathf.Lerp(0.6f, 1f, vit) * Mathf.SmoothStep(0f, 1f, t * 12f + 0.3f);
+                // A weapon is the whole veil transformed: the band from the neck to the hand melts away as it
+                // sets (and comes back as the weapon softens), so the weapon isn't tied to the neck.
+                alphaAt[i] *= 1f - NeckBandFade(t, hf, hard);
             }
 
             int per = perStrand * 2;
@@ -292,7 +295,7 @@ namespace CrimsonVeil.Veil
 
                     // Tendrils emerge from the ribbon: thin where they split, then full.
                     float sw = w * Mathf.Lerp(st.width, main ? 1f : 0.3f, hard);
-                    if (branch) sw *= Mathf.Lerp(0.25f, 1f, Mathf.SmoothStep(0f, 0.35f, u));
+                    if (branch) sw *= Mathf.Lerp(0.25f, 0.51f, Mathf.SmoothStep(0f, 1f, u));
                     float alpha = a * Mathf.Lerp(st.alpha, main ? 1f : 0.7f, hard);
                     if (branch) alpha *= Mathf.SmoothStep(0f, 1f, u * 5f);
 
@@ -328,11 +331,45 @@ namespace CrimsonVeil.Veil
                 }
             }
 
+            // Loose cloth stays behind the hero: when he stops, the swinging band and its layers must not sweep
+            // out in front of the body. Anything past the chest line is softly folded back (not cut).
+            // Only once the hero faces one way — while turning round the scarf swings freely across.
+            float settle = Mathf.InverseLerp(0.85f, 1f, Mathf.Abs(veil.FacingBlend));
+            if (settle > 0f)
+            {
+                float ax = p[0].x;
+                for (int v = 0; v < vertices.Length; v++)
+                {
+                    float looseV = 1f - Mathf.Clamp01(uv2[v].x / 0.6f);
+                    if (looseV <= 0f) continue;
+                    float ahead = (vertices[v].x - ax) * facing;
+                    if (ahead <= FrontLimit) continue;
+                    float folded = FrontLimit + FoldBack(ahead - FrontLimit);
+                    vertices[v].x = ax + facing * Mathf.Lerp(ahead, folded, looseV * settle);
+                }
+            }
+
             mesh.vertices = vertices;
             mesh.colors = colors;
             mesh.SetUVs(1, uv2);
             mesh.RecalculateBounds();
         }
+
+        /// <summary>
+        /// How much of the neck → hand band is hidden (0..1) at veil fraction <paramref name="t"/>: nothing on loose
+        /// cloth, all of it once that part has set into the weapon form; the weapon itself (past the hand) stays.
+        /// </summary>
+        public static float NeckBandFade(float t, float handFraction, float hard)
+        {
+            float beforeHand = Mathf.SmoothStep(0f, 1f, (handFraction - t) / 0.05f);
+            return beforeHand * Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.45f, 0.95f, hard));
+        }
+
+        /// <summary>How far (m) in front of the neck the loose scarf may reach (about the chest line).</summary>
+        public const float FrontLimit = 0.15f;
+
+        /// <summary>Soft fold for cloth past the front limit: grows at first, then saturates at 0.1 m.</summary>
+        public static float FoldBack(float over) => over <= 0f ? over : 0.1f * (1f - Mathf.Exp(-over / 0.1f));
 
         /// <summary>Sideways offset of a strand braided around a weapon: a travelling helix, zero for loose cloth.</summary>
         public static float WeaponBraid(float f, float time, float phase, float width, float hard)

@@ -5,6 +5,22 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.7.4] – 2026-11-13
+Zbraně bez vazby ke krku a šála, která nepředbíhá.
+
+### Změněno
+- **Zbraň už není přivázaná ke krku.** Při proměně se pruh šály mezi krkem a rukou plynule rozplyne. Zbraň v ruce pak vypadá jako celá šála proměněná ve zbraň. Při návratu do šály se pruh zase objeví.
+- **Kopí přečuhuje víc dozadu:** patka je 1,05 m za rukou, hrot 2,1 m před ní.
+
+### Opraveno
+- **Šála po zastavení nepředběhne postavu.** Když se hrdina zastaví z běhu a šála se zhoupne, volná látka se k hrudi jen přiblíží a co by přečuhovalo dopředu, se měkce přehne zpátky. Při otáčení postavy šála dál volně přelétne na druhou stranu.
+- Opravené dvě chybné interpolace ve vykreslení šály. Vzhled pramenů zůstal stejný.
+
+### Testy
+- Pruh u krku zmizí, jen když zbraň ztuhne. Volná šála ani samotná zbraň se neskrývají.
+- Šála se před postavou přehne nejvýš o kousek a plynule.
+- Patka kopí je dál než 0,95 m za rukou.
+
 ## [0.7.3] – 2026-11-13
 Luk se stejnými rameny a kopí držené za ratiště.
 

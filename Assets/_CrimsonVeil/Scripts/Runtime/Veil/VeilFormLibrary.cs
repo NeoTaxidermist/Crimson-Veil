@@ -124,7 +124,7 @@ namespace CrimsonVeil.Veil
         }
 
         /// <summary>Spear shaft behind the hand (the butt) and ahead of it (to the point), in metres.</summary>
-        public const float SpearButt = 0.75f, SpearReach = 2.2f;
+        public const float SpearButt = 1.05f, SpearReach = 2.1f;
 
         /// <summary>
         /// The whip at rest: coiled in the hand. Same ribbon and same length as the extended whip (so the hand

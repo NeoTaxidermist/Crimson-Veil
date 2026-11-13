@@ -112,6 +112,8 @@ namespace CrimsonVeil.Veil
         /// <summary>Hero's life force (0..1). The veil thins and dims as it drops — no HUD needed.</summary>
         public float Vitality { get; set; } = 1f;
         public int Facing => player != null && player.Motor != null ? player.Motor.Facing : 1;
+        /// <summary>Smoothed facing (-1..1): passes through 0 while the hero turns round.</summary>
+        public float FacingBlend => facingScale;
         public VeilSettings Settings => settings;
 
         /// <summary>Where the veil is tied (the neck). Setting it re-seats the cloth.</summary>

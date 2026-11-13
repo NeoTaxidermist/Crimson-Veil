@@ -52,6 +52,25 @@ namespace CrimsonVeil.Tests
         }
 
         [Test]
+        public void Weapon_IsNotTiedToTheNeck()
+        {
+            const float hand = 0.3f;
+            Assert.AreEqual(0f, VeilRenderer.NeckBandFade(0.1f, hand, 0f), 1e-4f, "loose scarf: all visible");
+            Assert.AreEqual(1f, VeilRenderer.NeckBandFade(0.1f, hand, 1f), 1e-4f, "set: the neck → hand band is gone");
+            Assert.AreEqual(0f, VeilRenderer.NeckBandFade(0.6f, hand, 1f), 1e-4f, "the weapon itself stays");
+            Assert.That(VeilRenderer.NeckBandFade(0.1f, hand, 0.7f), Is.InRange(0.05f, 0.95f), "melts gradually as it sets");
+        }
+
+        [Test]
+        public void StoppingHero_ScarfIsFoldedBackNotSweptInFront()
+        {
+            Assert.AreEqual(0f, VeilRenderer.FoldBack(0f), 1e-5f, "continuous at the chest line");
+            Assert.Less(VeilRenderer.FoldBack(2f), 0.11f, "however far it swings, it stays within a hand's breadth");
+            Assert.Greater(VeilRenderer.FoldBack(0.2f), VeilRenderer.FoldBack(0.05f), "folds smoothly, no hard cut");
+            Assert.Less(VeilRenderer.FrontLimit, 0.25f);
+        }
+
+        [Test]
         public void Curl_IsContinuousAndWindsIntoASpiral()
         {
             const int count = 24;

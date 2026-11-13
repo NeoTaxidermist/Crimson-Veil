@@ -66,7 +66,7 @@ namespace CrimsonVeil.Tests
         {
             var pts = VeilFormLibrary.ControlPoints(VeilForm.Spear, out int start);
             Vector2 butt = pts[start], tip = pts[pts.Count - 1], hand = VeilFormLibrary.Hand;
-            Assert.Greater(hand.x - butt.x, 0.5f, "the butt sticks out behind the hand");
+            Assert.Greater(hand.x - butt.x, 0.95f, "the butt sticks out well behind the hand");
             Assert.Greater(tip.x - hand.x, 1.8f, "most of the shaft is in front");
             Assert.IsTrue(pts.Contains(hand), "the shaft passes through the fist");
             Assert.Less(butt.x, 0f, "the butt reaches back past the hero's neck line");

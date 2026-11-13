@@ -12,7 +12,7 @@ namespace CrimsonVeil.Veil
         public float length = 3.3f;
         [Range(1, 20)] public int constraintIterations = 14;
         [Range(0.9f, 1f)] public float damping = 0.985f;
-        public float airDrag = 7f;
+        public float airDrag = 4.5f;
         public float gravityScale = 0.08f;
         public float depthOffset = 0.12f;
         public float depthWobble = 0.08f;
@@ -20,9 +20,9 @@ namespace CrimsonVeil.Veil
         [Header("Vortex shedding (Karman street)")]
         public float strouhal = 0.21f;
         public float bodyDiameter = 0.45f;
-        public float idleShedFrequency = 1.8f;
-        public float circulationGain = 2.3f;
-        public float idleCirculation = 1.6f;
+        public float idleShedFrequency = 0.8f;
+        public float circulationGain = 1.6f;
+        public float idleCirculation = 0.9f;
         public float coreRadius = 0.2f;
         public float viscosity = 0.03f;
         public float vortexLifetime = 1.8f;
@@ -31,13 +31,13 @@ namespace CrimsonVeil.Veil
 
         [Header("Life (a scarf with a will of its own, not a cape)")]
         [Tooltip("The run wind is felt at most this strongly (m/s), so the scarf trails without stretching into a sheet.")]
-        public float maxRelativeWind = 1.7f;
+        public float maxRelativeWind = 1.2f;
         [Tooltip("Serpentine undulation travelling from the neck to the tip (acceleration, m/s²).")]
-        public float undulation = 14f;
+        public float undulation = 7f;
         public float undulationWaves = 1.6f;
-        public float undulationSpeed = 6.5f;
+        public float undulationSpeed = 3.2f;
         [Tooltip("Extra undulation per m/s of the hero's speed.")]
-        public float undulationPerSpeed = 1.6f;
+        public float undulationPerSpeed = 2.2f;
         [Tooltip("Upward drift of the tail, like smoke rising.")]
         public float buoyancy = 2.6f;
         [Tooltip("The tip slowly curls into a loop.")]

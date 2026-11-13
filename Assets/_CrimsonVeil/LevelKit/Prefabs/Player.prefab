@@ -180,25 +180,25 @@ MonoBehaviour:
     length: 3.3
     constraintIterations: 14
     damping: 0.985
-    airDrag: 7
+    airDrag: 4.5
     gravityScale: 0.08
     depthOffset: 0.12
     depthWobble: 0.08
     strouhal: 0.21
     bodyDiameter: 0.45
-    idleShedFrequency: 1.8
-    circulationGain: 2.3
-    idleCirculation: 1.6
+    idleShedFrequency: 0.8
+    circulationGain: 1.6
+    idleCirculation: 0.9
     coreRadius: 0.2
     viscosity: 0.03
     vortexLifetime: 1.8
     maxVortices: 40
     lateralShedOffset: 0.3
-    maxRelativeWind: 1.7
-    undulation: 14
+    maxRelativeWind: 1.2
+    undulation: 7
     undulationWaves: 1.6
-    undulationSpeed: 6.5
-    undulationPerSpeed: 1.6
+    undulationSpeed: 3.2
+    undulationPerSpeed: 2.2
     buoyancy: 2.6
     tipCurl: 5
     drift: 1.4

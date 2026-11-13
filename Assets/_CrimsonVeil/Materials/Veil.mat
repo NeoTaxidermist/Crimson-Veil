@@ -74,7 +74,7 @@ Material:
     - _Erosion: 0.75
     - _FlipbookBlending: 0
     - _FlipbookMode: 0
-    - _FlowSpeed: 1.4
+    - _FlowSpeed: 0.6
     - _Mode: 0
     - _QueueOffset: 0
     - _SoftParticlesEnabled: 0

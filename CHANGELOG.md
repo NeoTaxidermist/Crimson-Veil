@@ -5,6 +5,19 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.6.2] – 2026-11-13
+Klidnější šála a tráva, která neutíká.
+
+### Změněno
+- **Šála se hýbe ladněji a pomaleji.** Ve stoje se vlní zhruba poloviční rychlostí a víry jsou slabší, takže už nepoletuje nervózně. Pomaleji běží i vlnky, kroucení, pramínky, „dýchání“ spirál a proudění barvy v shaderu. V běhu se šála dál vlní a nenapne se do pláště.
+
+### Opraveno
+- **Tráva v popředí už neutíká.** Dřív stála v celém levelu ve stejné výšce, takže nad propastmi a pod vyššími plošinami visela ve vzduchu a při pohybu kamery ujížděla. Teď roste na zemi pod sebou, u hrany se trs zúží a nad propastí se nevysází.
+
+### Testy
+- Tráva sedí na zemi, nad propastí se nevysází, u hrany nepřečuhuje.
+- Šála se ve stoje hýbe klidně (průměrné zrychlení výrazně pod dřívějším „nervózním“ laděním).
+
 ## [0.6.1] – 2026-11-13
 Šála podle key artu a zbraň v běhu vepředu.
 

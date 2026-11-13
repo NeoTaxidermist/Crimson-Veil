@@ -89,6 +89,31 @@ namespace CrimsonVeil.Tests
         }
 
         [Test]
+        public void StandingStill_ScarfMovesCalmly()
+        {
+            var sim = new VeilSimulation(new VeilSettings(), Vector3.zero) { DriftDirection = -1f };
+            int n = sim.Count;
+            var p1 = new Vector3[n];
+            var p2 = new Vector3[n];
+            float acc = 0f;
+            int c = 0;
+            for (int i = 1; i <= 360; i++)
+            {
+                for (int k = 0; k < n; k++) { p2[k] = p1[k]; p1[k] = sim.Positions[k]; }
+                sim.Step(Dt, Vector3.zero);
+                if (i < 120) continue;
+                for (int k = 1; k < n; k++)
+                {
+                    Vector3 v = (sim.Positions[k] - p1[k]) / Dt, vp = (p1[k] - p2[k]) / Dt;
+                    acc += (v - vp).magnitude / Dt;
+                    c++;
+                }
+            }
+            // The previous, too agitated tuning averaged ~2.3 m/s²; graceful motion stays well below.
+            Assert.Less(acc / c, 1.6f, "slow, graceful drifting — no nervous flapping");
+        }
+
+        [Test]
         public void Vortices_AlternateSign()
         {
             var sim = new VeilSimulation(new VeilSettings(), Vector3.zero);

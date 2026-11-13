@@ -220,8 +220,8 @@ namespace CrimsonVeil.Veil
 
                 // A scarf: snug at the neck, a band that slowly tapers; it ripples and twists as it flies.
                 float flowProfile = Mathf.Lerp(0.75f, 1f, Mathf.SmoothStep(0f, 1f, t * 5f)) * Mathf.Lerp(1f, 0.55f, Mathf.Pow(t, 1.6f))
-                                    * (1f + 0.18f * Mathf.Sin(t * 9f - time * 6f));
-                float twist = Mathf.Abs(Mathf.Cos(time * 2.7f + t * 6f));
+                                    * (1f + 0.18f * Mathf.Sin(t * 7f - time * 2.4f));
+                float twist = Mathf.Abs(Mathf.Cos(time * 1.1f + t * 5f));
                 flowProfile *= Mathf.Lerp(1f, twist * 0.65f + 0.35f, flutterTwist * t);
 
                 float weaponProfile = t < hf ? 0.4f : 1f - Mathf.SmoothStep(0f, 1f, (t - 0.86f) / 0.14f) * 0.85f;
@@ -258,7 +258,7 @@ namespace CrimsonVeil.Veil
                     float loose = 1f - hard;
 
                     // Strands drift apart towards the tail and fold back into one when hardened.
-                    float wave = Mathf.Sin(f * Mathf.PI * 2.4f - time * 2.1f + st.phase);
+                    float wave = Mathf.Sin(f * Mathf.PI * 2f - time * 0.9f + st.phase);
                     float off;
                     if (branch)
                         off = (BranchOffset(u, st.side, tendrilSpread * Mathf.Lerp(0.5f, 1f, vit)) + wave * 0.14f * st.spread * u) * loose;
@@ -279,7 +279,7 @@ namespace CrimsonVeil.Veil
 
                 // 2) End curl: the stroke keeps going and winds into a spiral. A hardened tip doesn't curl.
                 float looseEnd = 1f - lastHard;
-                float breathe = 1f + 0.18f * Mathf.Sin(time * (1.3f + st.seed) + st.phase);
+                float breathe = 1f + 0.18f * Mathf.Sin(time * (0.5f + 0.4f * st.seed) + st.phase);
                 float turns = st.curlTurns * breathe * unroll * looseEnd;
                 float length = st.curlLength * curlScale * Mathf.Lerp(0.5f, 1f, vit) * Mathf.Lerp(0.15f, 1f, looseEnd);
                 lastTan.z = 0f;

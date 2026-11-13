@@ -81,10 +81,16 @@ namespace CrimsonVeil.EditorTools
                 F.Column(new Vector3(x, x > 30f && x < 43f ? 7f : 0f, 1.7f), LevelLayer.Playfield, 5f, true, (int)x).transform.SetParent(deco, true);
 
             // ---------------------------------------------------------------- decoration: foreground
+            // Foreground grass grows on the ground under it (never hanging in the air over a pit),
+            // sunk a little so its foot hides the floor edge when the camera moves.
+            Physics.SyncTransforms();
             for (int i = 0; i < 46; i++)
             {
-                F.Grass(new Vector3(-16f + i * 2.9f, -2.6f + (i % 3) * 0.3f, 0f), LevelLayer.Foreground, 100 + i, 3.4f, new Vector2(0.6f, 2.1f), 40, null, 0.07f).transform.SetParent(deco, true);
-                if (i % 4 == 1) F.Fern(new Vector3(-15f + i * 2.9f, -2.4f, 0f), LevelLayer.Foreground, 400 + i, 2.2f, 11).transform.SetParent(deco, true);
+                float gx = -16f + i * 2.9f;
+                if (!GroundSpan(gx, 1.5f, out float gy, out float span)) continue;
+                F.Grass(new Vector3(gx, gy - 0.35f - (i % 3) * 0.15f, 0f), LevelLayer.Foreground, 100 + i, span, new Vector2(0.6f, 2.1f), Mathf.RoundToInt(40 * span / 3.4f), null, 0.07f).transform.SetParent(deco, true);
+                if (i % 4 == 1 && GroundSpan(gx + 1f, 1f, out float fy, out _))
+                    F.Fern(new Vector3(gx + 1f, fy - 0.2f, 0f), LevelLayer.Foreground, 400 + i, 2.2f, 11).transform.SetParent(deco, true);
             }
             // Ferns behind the play plane, at the foot of walls and ledges.
             foreach (var (x, y) in new[] { (-12f, 0f), (11f, 0f), (17.5f, 0.6f), (30f, -1.2f), (57f, 0f), (79f, 0f), (91.5f, 0f), (114f, 0f) })
@@ -156,6 +162,35 @@ namespace CrimsonVeil.EditorTools
             var t = new GameObject(name).transform;
             t.SetParent(parent, false);
             return t;
+        }
+
+        /// <summary>Top of the terrain under x (topmost TerrainBlock surface), or NaN when there is none.</summary>
+        public static float GroundTop(float x)
+        {
+            float best = float.NaN;
+            foreach (var hit in Physics.RaycastAll(new Vector3(x, 60f, 0f), Vector3.down, 120f, ~0, QueryTriggerInteraction.Ignore))
+                if (hit.collider.GetComponentInParent<TerrainBlock>() != null && (float.IsNaN(best) || hit.point.y > best))
+                    best = hit.point.y;
+            return best;
+        }
+
+        /// <summary>
+        /// Finds level ground around x for a clump of half-width <paramref name="halfWidth"/> (shrinking it near
+        /// edges). False when x is over a pit or a step, so decoration never hangs in the air.
+        /// </summary>
+        public static bool GroundSpan(float x, float halfWidth, out float y, out float width)
+        {
+            for (float hw = halfWidth; hw >= 0.5f; hw *= 0.5f)
+            {
+                float a = GroundTop(x - hw), b = GroundTop(x), c = GroundTop(x + hw);
+                if (float.IsNaN(a) || float.IsNaN(b) || float.IsNaN(c)) continue;
+                if (Mathf.Max(a, Mathf.Max(b, c)) - Mathf.Min(a, Mathf.Min(b, c)) > 0.3f) continue;
+                y = Mathf.Min(a, Mathf.Min(b, c));
+                width = hw * 2.2f;
+                return true;
+            }
+            y = 0f; width = 0f;
+            return false;
         }
 
         static GameObject T(Transform parent, float centerX, float topY, float width, float height, TerrainStyle style, int seed, bool grass = true)

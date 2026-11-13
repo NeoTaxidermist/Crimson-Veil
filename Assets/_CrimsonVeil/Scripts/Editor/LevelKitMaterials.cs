@@ -73,8 +73,8 @@ namespace CrimsonVeil.EditorTools
                 shaft = MistMat("LightShaft", mist, "_MODE_SHAFT", 1, Color.white, 0.16f, new Vector2(2f, 4f), new Vector2(0.01f, -0.02f), new Vector2(0.35f, 0.3f)),
                 moon = Mat("Moon", unlit, new Color(3.4f, 3.4f, 3.3f)),
 
-                veil = VeilMat("Veil", 0.45f, 0.75f, 1.4f),
-                wisp = VeilMat("VeilSmoke", 0.9f, 0.95f, 0.9f),
+                veil = VeilMat("Veil", 0.45f, 0.75f, 0.6f),
+                wisp = VeilMat("VeilSmoke", 0.9f, 0.95f, 0.5f),
                 burst = Transparent(Mat("InkBurst", particles, new Color(1.1f, 0.05f, 0.06f, 1f))),
                 rope = Transparent(Mat("Rope", particles, new Color(1.1f, 0.04f, 0.05f, 1f))),
                 leafParticle = Transparent(Mat("Leaf", particles, new Color(0.9f, 0.03f, 0.05f, 1f))),

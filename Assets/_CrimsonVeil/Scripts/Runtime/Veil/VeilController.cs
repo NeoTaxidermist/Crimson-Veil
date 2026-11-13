@@ -36,6 +36,13 @@ namespace CrimsonVeil.Veil
         float forearmTurn;
         float carry;
         bool morphFromCloth;
+        bool lunged;
+
+        [Header("Bow string")]
+        [Tooltip("The hand that draws the bow string (the other hand).")]
+        [SerializeField] Transform drawHand;
+        [SerializeField] Material stringMaterial;
+        LineRenderer bowString;
 
         public VeilSimulation Simulation { get; private set; }
         /// <summary>Current swing of the weapon in degrees (+ = up) — the arm animation follows it.</summary>
@@ -123,6 +130,7 @@ namespace CrimsonVeil.Veil
             if (Form == VeilForm.Flow || Hardness < 0.5f * VeilFormLibrary.Hardness(Form)) return false;
             attackTime = 0f;
             arrowFired = false;
+            lunged = false;
             aimUp = input != null && input.AimY > 0.5f;
             Attacked?.Invoke(Form);
             return true;
@@ -161,7 +169,44 @@ namespace CrimsonVeil.Veil
 
             Simulation.Hardness = Hardness;
             Simulation.Step(dt, a);
+            UpdateBowString();
         }
+
+        /// <summary>A thin crimson string between the bow tips, pulled back by the drawing hand.</summary>
+        void UpdateBowString()
+        {
+            bool show = ShapeForm == VeilForm.Bow && Hardness > 0.5f * VeilFormLibrary.Hardness(VeilForm.Bow);
+            if (!show)
+            {
+                if (bowString != null) bowString.enabled = false;
+                return;
+            }
+            if (bowString == null)
+            {
+                var go = new GameObject("BowString");
+                go.transform.SetParent(transform, false);
+                bowString = go.AddComponent<LineRenderer>();
+                bowString.positionCount = 3;
+                bowString.widthMultiplier = 0.018f;
+                bowString.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                bowString.sharedMaterial = stringMaterial;
+                bowString.startColor = bowString.endColor = new Color(1f, 0.1f, 0.1f, 0.9f);
+            }
+            bowString.enabled = true;
+            var p = Simulation.Positions;
+            int n = Simulation.Count;
+            int top = Mathf.Clamp(Mathf.CeilToInt(HandFraction * (n - 1)) + 1, 0, n - 1);
+            Vector3 a = p[top], b = p[n - 1];
+            Vector3 mid = (a + b) * 0.5f;
+            float t = AttackProgress;
+            if (drawHand != null && t >= 0.08f && t < 0.3f)
+                mid = Vector3.Lerp(mid, drawHand.position, Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.08f, 0.2f, t)));
+            bowString.SetPosition(0, a);
+            bowString.SetPosition(1, mid);
+            bowString.SetPosition(2, b);
+        }
+
+        public Transform DrawHand { get => drawHand; set => drawHand = value; }
 
         void UpdateNodeHardness()
         {
@@ -186,6 +231,13 @@ namespace CrimsonVeil.Veil
                 {
                     arrowFired = true;
                     FireArrow(a, Facing);
+                }
+                // Step into the blow.
+                if (!lunged && player != null && player.Motor != null
+                    && HeroAttackChoreography.Lunge(ShapeForm, out float lungeSpeed, out float lungeAt) && t >= lungeAt)
+                {
+                    lunged = true;
+                    player.Motor.Lunge(lungeSpeed);
                 }
                 if (t >= 1f)
                 {

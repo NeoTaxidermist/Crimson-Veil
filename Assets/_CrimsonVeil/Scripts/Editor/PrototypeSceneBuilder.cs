@@ -64,7 +64,7 @@ namespace CrimsonVeil.EditorTools
             Place("Checkpoint", new Vector3(93f, 0f, 0f), LevelLayer.Playfield, play);
             Place("RopeBridge", new Vector3(80.2f, 0f, 0f), LevelLayer.Playfield, play);
             var shaftZone = Place("CameraZone", new Vector3(28f, 0f, 0f), LevelLayer.Playfield, play).GetComponent<CrimsonVeil.CameraSystem.CameraZone>();
-            shaftZone.minX = 23f; shaftZone.maxX = 33f; shaftZone.offset = new Vector3(0f, 4.5f, -17f);
+            shaftZone.minX = -5f; shaftZone.maxX = 5f; shaftZone.offset = new Vector3(0f, 4.5f, -17f);
 
             // ---------------------------------------------------------------- decoration: playfield
             Deco("Gallows", new Vector3(-10f, 0f, 0f), LevelLayer.Playfield, deco);

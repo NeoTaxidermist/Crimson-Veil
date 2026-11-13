@@ -5,6 +5,27 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.6.0] – 2026-11-13
+Skutečné útoky zbraněmi, kamera, která ukazuje, kam skáčeš, a víc kouře.
+
+### Přidáno
+- **Choreografie útoků pro každou zbraň** (klíčové pózy celého těla, ne jen otočení čepele):
+  - **Meč**: nápřah nad rameno, diagonální sek dolů s výpadem vpřed, dokončení švihu nízko u boku.
+  - **Kopí**: stažení k boku, bodnutí s napnutou paží a dlouhým výpadem, návrat.
+  - **Bič**: nápřah nad hlavu, prásknutí vpřed, švihnutí ocasem.
+  - **Štít**: přikrčení za štít, úder ramenem vpřed s krátkým výpadem.
+  - **Luk**: zvednutí luku, natažení tětivy k lícu (viditelná tětiva), výstřel a doznění.
+- Útok s mečem, kopím a štítem posune hrdinu výpadem dopředu. V běhu útočí hlavně horní polovina těla.
+- **Kamera se dívá před sebe a dolů**: před srázem nebo při pádu se sama podívá dolů, takže vidíš, kam dopadneš. Podržením W/S se rozhlédneš nahoru a dolů.
+- Testy: kamera (posun dolů, zóny), choreografie útoků (meč, kopí, luk, začátek a konec v bojovém postoji), zbraň nezaostává za běžícím hrdinou.
+
+### Opraveno
+- **Lano k přestřelení je zase v záběru.** Kamerové zóny mají rozsah relativně ke svému objektu, takže zóna mostu jde s mostem, ať ho položíš kamkoliv.
+- **Zbraň v běhu už nezaostává**: ztvrdlá čepel se nese pevně s rukou a hrdina ji nepředběhne.
+
+### Změněno
+- Víc kouřových kudrlinek: až 230 najednou, delší stopy a k tomu jemná vlákna, která žijí déle a stáčí se do těsnějších spirál.
+
 ## [0.5.2] – 2026-11-13
 
 ### Změněno

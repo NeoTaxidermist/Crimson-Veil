@@ -41,15 +41,16 @@ namespace CrimsonVeil.Player
         public float verticalVelocity;
         public bool grounded;
         public bool dashing;
+        /// <summary>Which weapon is attacking and how far into the attack (0..1), when <see cref="attacking"/>.</summary>
         public bool attacking;
+        public CrimsonVeil.Veil.VeilForm attackForm;
+        public float attackT;
         public bool wallSliding;
         public bool hanging;
         public bool climbing;
         public float climbProgress;
         /// <summary>0..1 how much a veil weapon is formed — the arm rises to hold it.</summary>
         public float weaponHeld;
-        /// <summary>Weapon swing in degrees (+ = up) — the sword arm follows the blade.</summary>
-        public float swingAngle;
     }
 
     /// <summary>
@@ -122,17 +123,9 @@ namespace CrimsonVeil.Player
                 target.elbowR = Mathf.Lerp(target.elbowR, Mathf.Lerp(18f, 30f, run), w);
             }
 
-            if (s.attacking)
-            {
-                // The arm drives the blade: raised on the wind-up, cutting down through the swing,
-                // the body turning into it and the free arm counter-balancing.
-                target.armR = HoldArm + s.swingAngle * 0.95f;
-                target.elbowR = Mathf.Lerp(28f, 4f, Mathf.Abs(s.swingAngle) / 100f);
-                target.chest += s.swingAngle * -0.1f + 4f;
-                target.spine += Mathf.Max(0f, -s.swingAngle) * 0.12f;
-                target.head += s.swingAngle * -0.05f;
-                target.armL = Mathf.Lerp(target.armL, -25f - s.swingAngle * 0.3f, 0.7f);
-            }
+            bool attacking = s.attacking && s.attackT >= 0f && !s.hanging && !s.climbing;
+            if (attacking)
+                target = HeroAttackChoreography.Apply(target, s.attackForm, s.attackT, run);
 
             if (!initialised)
             {
@@ -141,8 +134,9 @@ namespace CrimsonVeil.Player
             }
             else
             {
-                float t = MovementMath.Damp(s.grounded ? sharpness : sharpness * 0.6f, dt);
-                Current = HeroPose.Lerp(Current, target, t);
+                // Attacks need snap: follow the choreography much more tightly than locomotion.
+                float sharp = attacking ? sharpness * 2.6f : (s.grounded ? sharpness : sharpness * 0.6f);
+                Current = HeroPose.Lerp(Current, target, MovementMath.Damp(sharp, dt));
             }
             return Current;
         }

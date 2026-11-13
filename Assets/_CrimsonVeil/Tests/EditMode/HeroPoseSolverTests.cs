@@ -98,16 +98,47 @@ namespace CrimsonVeil.Tests
         }
 
         [Test]
-        public void Attack_RaisesFrontArm()
+        public void SwordAttack_WindsUpCutsAndFollowsThrough()
         {
             var s = Ground(0f);
             s.attacking = true;
-            s.swingAngle = 50f;
+            s.attackForm = CrimsonVeil.Veil.VeilForm.Sword;
+            s.attackT = 0.28f;
             var up = Run(new HeroPoseSolver(), 0.3f, s);
-            Assert.Greater(up.armR, 70f, "wind-up raises the sword arm");
-            s.swingAngle = -100f;
+            Assert.Greater(up.armR, 120f, "blade raised back over the shoulder");
+            s.attackT = 0.52f;
             var down = Run(new HeroPoseSolver(), 0.3f, s);
-            Assert.Less(down.armR, 10f, "the arm cuts down with the blade");
+            Assert.Less(down.armR, -30f, "follow-through below");
+            Assert.Greater(down.thighL, 30f, "front leg lunges");
+            Assert.Greater(down.spine, 15f, "body commits to the cut");
+        }
+
+        [Test]
+        public void SpearAttack_DrawsBackThenThrustsStraight()
+        {
+            var back = HeroAttackChoreography.Sample(CrimsonVeil.Veil.VeilForm.Spear, 0.3f);
+            Assert.Greater(back.elbowR, 90f, "drawn back to the chest");
+            var thrust = HeroAttackChoreography.Sample(CrimsonVeil.Veil.VeilForm.Spear, 0.45f);
+            Assert.Greater(thrust.armR, 75f);
+            Assert.Less(thrust.elbowR, 10f, "arm fully extended");
+        }
+
+        [Test]
+        public void BowAttack_DrawsTheStringWithTheOtherHand()
+        {
+            var draw = HeroAttackChoreography.Sample(CrimsonVeil.Veil.VeilForm.Bow, 0.3f);
+            Assert.Greater(draw.armR, 80f, "bow arm extended");
+            Assert.Greater(draw.elbowL, 120f, "string hand pulled to the chest");
+        }
+
+        [Test]
+        public void EveryAttack_StartsAndEndsInTheReadyStance()
+        {
+            foreach (var f in new[] { CrimsonVeil.Veil.VeilForm.Sword, CrimsonVeil.Veil.VeilForm.Spear, CrimsonVeil.Veil.VeilForm.Whip, CrimsonVeil.Veil.VeilForm.Shield, CrimsonVeil.Veil.VeilForm.Bow })
+            {
+                Assert.AreEqual(HeroPoseSolver.HoldArm, HeroAttackChoreography.Sample(f, 0f).armR, 1e-3f, f.ToString());
+                Assert.AreEqual(HeroPoseSolver.HoldArm, HeroAttackChoreography.Sample(f, 1f).armR, 1e-3f, f.ToString());
+            }
         }
 
         [Test]

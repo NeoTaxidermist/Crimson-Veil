@@ -44,7 +44,7 @@ namespace CrimsonVeil.Veil
         public float tipCurl = 9f;
 
         [Header("Hardening (weapon forms)")]
-        public float hardenRate = 28f;
+        public float hardenRate = 45f;
 
         [Header("Simulation")]
         public float maxSubstep = 1f / 120f;
@@ -190,6 +190,16 @@ namespace CrimsonVeil.Veil
             {
                 shedPhase -= 1f;
                 Shed(a, rel, speed);
+            }
+
+            // 2b) Hardened parts are carried rigidly by the body, so a running hero never outruns the weapon.
+            Vector3 carry = anchorVel * h;
+            for (int i = 1; i < Count; i++)
+            {
+                float hi = H(i);
+                if (hi <= 0.001f) continue;
+                Positions[i] += carry * hi;
+                previous[i] += carry * hi;
             }
 
             // 3) Verlet integration with drag towards the local air velocity.

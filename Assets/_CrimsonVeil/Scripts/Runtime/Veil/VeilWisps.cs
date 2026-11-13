@@ -12,10 +12,10 @@ namespace CrimsonVeil.Veil
     public sealed class VeilWisps : MonoBehaviour
     {
         [SerializeField] Material material;
-        [SerializeField] int maxWisps = 150;
-        [SerializeField] int trailPoints = 22;
+        [SerializeField] int maxWisps = 230;
+        [SerializeField] int trailPoints = 24;
         [SerializeField] float sampleInterval = 0.025f;
-        [SerializeField] float baseRate = 18f;
+        [SerializeField] float baseRate = 28f;
         [SerializeField] float speedRate = 5f;
         [SerializeField] float weaponRate = 30f;
         [SerializeField] float swingRate = 70f;
@@ -202,10 +202,12 @@ namespace CrimsonVeil.Veil
             w.head.z = p.z + Random.Range(-0.05f, 0.05f);
             w.velocity = normal * speed * Random.Range(0.5f, 1.2f);
             w.age = 0f;
-            w.life = lifetime * Random.Range(0.6f, 1.2f);
-            w.width = Random.Range(widthRange.x, widthRange.y);
+            // Two kinds of smoke: thick curls, and fine filaments that live longer and wind tighter.
+            bool filament = Random.value < 0.45f;
+            w.life = lifetime * Random.Range(0.6f, 1.2f) * (filament ? 1.35f : 1f);
+            w.width = filament ? Random.Range(0.015f, 0.04f) : Random.Range(widthRange.x, widthRange.y);
             w.seed = Random.value;
-            w.spin = (Random.value < 0.5f ? -1f : 1f) * Random.Range(0.6f, 1.4f);
+            w.spin = (Random.value < 0.5f ? -1f : 1f) * Random.Range(0.6f, 1.4f) * (filament ? 1.5f : 1f);
             w.sampleTimer = sampleInterval;
             w.count = 1;
             for (int k = 0; k < trailPoints; k++) trails[baseIdx + k] = w.head;

@@ -138,6 +138,13 @@ namespace CrimsonVeil.Player
             if (velocity.y > 0f) IsGrounded = false;
         }
 
+        /// <summary>A short step forward into an attack (only on the ground).</summary>
+        public void Lunge(float speed)
+        {
+            if (!IsGrounded || State != MotorState.Normal) return;
+            Velocity.x = Facing * Mathf.Max(Facing * Velocity.x, speed);
+        }
+
         public Vector2 Tick(float dt, MotorInput input, MotorContacts contacts)
         {
             var s = Settings;

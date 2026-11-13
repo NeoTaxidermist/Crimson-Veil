@@ -201,7 +201,7 @@ MonoBehaviour:
     undulationPerSpeed: 1.6
     buoyancy: 1.4
     tipCurl: 9
-    hardenRate: 28
+    hardenRate: 45
     maxSubstep: 0.008333334
     teleportDistance: 5
   anchor: {fileID: 2336203059466012997}
@@ -217,6 +217,8 @@ MonoBehaviour:
   handFollowSharpness: 30
   canonicalForearmAngle: -15
   carryAngle: -128
+  drawHand: {fileID: 2001109480714135967}
+  stringMaterial: {fileID: 2100000, guid: d5091d161340156418c7df6be668e41a, type: 2}
 --- !u!114 &4684705822456326274
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -245,10 +247,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: CrimsonVeil.Runtime::CrimsonVeil.Veil.VeilWisps
   material: {fileID: 2100000, guid: e31e8f4ee10ad1848910c961d170348a, type: 2}
-  maxWisps: 150
-  trailPoints: 22
+  maxWisps: 230
+  trailPoints: 24
   sampleInterval: 0.025
-  baseRate: 18
+  baseRate: 28
   speedRate: 5
   weaponRate: 30
   swingRate: 70
@@ -429,6 +431,11 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 9e1b4aec7f13a0846b4f0cff868ddf28, type: 3}
+--- !u!4 &2001109480714135967 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -8980989118742830223, guid: 9e1b4aec7f13a0846b4f0cff868ddf28, type: 3}
+  m_PrefabInstance: {fileID: 1772240682200500974}
+  m_PrefabAsset: {fileID: 0}
 --- !u!4 &2239127941129956613 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 9e1b4aec7f13a0846b4f0cff868ddf28, type: 3}

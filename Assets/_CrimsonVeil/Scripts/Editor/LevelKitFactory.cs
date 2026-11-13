@@ -137,6 +137,9 @@ namespace CrimsonVeil.EditorTools
                 SetRef(player.AddComponent<SpringBones>(), "root", hero.transform);
                 var handBone = CrimsonVeil.Core.RigJoint.FindDeep(hero.transform, "Hand.R");
                 if (handBone != null) SetRef(veil, "hand", handBone);
+                var drawBone = CrimsonVeil.Core.RigJoint.FindDeep(hero.transform, "Hand.L");
+                if (drawBone != null) SetRef(veil, "drawHand", drawBone);
+                SetRef(veil, "stringMaterial", M.rope);
             }
             return player;
         }
@@ -219,8 +222,8 @@ namespace CrimsonVeil.EditorTools
             var go = new GameObject("CameraZone");
             go.transform.position = pos;
             var z = go.AddComponent<CameraZone>();
-            z.minX = pos.x - width * 0.5f;
-            z.maxX = pos.x + width * 0.5f;
+            z.minX = -width * 0.5f;
+            z.maxX = width * 0.5f;
             z.offset = new Vector3(0f, 4f, -16.5f);
             return go;
         }
@@ -259,8 +262,8 @@ namespace CrimsonVeil.EditorTools
 
             var zone = new GameObject("CameraZone").AddComponent<CameraZone>();
             zone.transform.SetParent(root.transform, false);
-            zone.minX = hinge.x - 16f;
-            zone.maxX = hinge.x + 4f;
+            zone.minX = -16f;
+            zone.maxX = 4f;
             zone.offset = new Vector3(0f, 4f, -16.5f);
             return root;
         }

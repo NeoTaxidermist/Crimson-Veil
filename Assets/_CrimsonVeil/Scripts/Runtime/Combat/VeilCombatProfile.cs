@@ -57,11 +57,11 @@ namespace CrimsonVeil.Combat
         {
             switch (form)
             {
-                case VeilForm.Whip: return new Vector2(0.35f, 0.7f);
-                case VeilForm.Spear: return new Vector2(0.25f, 0.6f);
-                case VeilForm.Shield: return new Vector2(0.15f, 0.6f);
+                case VeilForm.Whip: return new Vector2(0.42f, 0.66f);
+                case VeilForm.Spear: return new Vector2(0.34f, 0.62f);
+                case VeilForm.Shield: return new Vector2(0.24f, 0.55f);
                 case VeilForm.Bow: return new Vector2(2f, 2f); // arrows deal the damage
-                default: return new Vector2(0.2f, 0.62f);
+                default: return new Vector2(0.3f, 0.56f);
             }
         }
 

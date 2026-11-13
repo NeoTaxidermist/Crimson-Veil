@@ -115,6 +115,30 @@ namespace CrimsonVeil.Tests
         }
 
         [Test]
+        public void HardenedWeapon_DoesNotLagBehindARunningHero()
+        {
+            var sim = new VeilSimulation(new VeilSettings(), Vector3.zero);
+            sim.Hardness = 1f;
+            Vector3 anchor = Vector3.zero;
+            for (int f = 0; f < 90; f++)
+            {
+                anchor += new Vector3(9f * Dt, 0f, 0f);
+                // A straight blade pointing forward from the anchor, moving with it.
+                for (int i = 0; i < sim.Count; i++) sim.Targets[i] = anchor + new Vector3(i * 0.06f, 0f, 0f);
+                sim.RecomputeTargetRest();
+                sim.Step(Dt, anchor);
+            }
+            float worst = 0f;
+            for (int i = 0; i < sim.Count; i++)
+            {
+                var d = sim.Positions[i] - sim.Targets[i];
+                d.z = 0f;
+                worst = Mathf.Max(worst, d.magnitude);
+            }
+            Assert.Less(worst, 0.1f, "the blade stays in the hand at full run speed");
+        }
+
+        [Test]
         public void FullHardness_ConvergesToTargetShape()
         {
             var sim = new VeilSimulation(new VeilSettings(), Vector3.zero);

@@ -92,14 +92,14 @@ namespace CrimsonVeil.Player
                 verticalVelocity = player.Velocity.y,
                 grounded = player.IsGrounded,
                 dashing = player.Motor.IsDashing,
-                attacking = veil != null && veil.IsAttacking,
+                attacking = veil != null && veil.IsAttacking && veil.AttackProgress >= 0f,
+                attackForm = veil != null ? veil.ShapeForm : VeilForm.Flow,
+                attackT = veil != null ? veil.AttackProgress : -1f,
                 wallSliding = player.Motor.State == MotorState.WallSlide,
                 hanging = player.Motor.State == MotorState.LedgeHang,
                 climbing = player.Motor.State == MotorState.Climbing,
                 climbProgress = player.Motor.ClimbProgress,
-                weaponHeld = veil != null && veil.Form != VeilForm.Flow ? veil.TransformProgress : 0f,
-                swingAngle = veil != null ? veil.CurrentSwing : 0f,
-            };
+                weaponHeld = veil != null && veil.Form != VeilForm.Flow ? veil.TransformProgress : 0f,            };
             var p = Solver.Step(Time.deltaTime, s);
             Apply(p);
 

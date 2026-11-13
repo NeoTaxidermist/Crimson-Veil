@@ -42,6 +42,10 @@ namespace CrimsonVeil.Player
         public bool grounded;
         public bool dashing;
         public bool attacking;
+        public bool wallSliding;
+        public bool hanging;
+        public bool climbing;
+        public float climbProgress;
     }
 
     /// <summary>
@@ -78,7 +82,10 @@ namespace CrimsonVeil.Player
             landTimer = Mathf.Max(0f, landTimer - dt);
 
             HeroPose target;
-            if (s.dashing) target = DashPose();
+            if (s.climbing) target = ClimbPose(s.climbProgress);
+            else if (s.hanging) target = HangPose(time);
+            else if (s.wallSliding) target = WallSlidePose(time);
+            else if (s.dashing) target = DashPose();
             else if (!s.grounded) target = AirPose(s.verticalVelocity);
             else target = GroundPose(run);
 
@@ -166,6 +173,49 @@ namespace CrimsonVeil.Player
             };
             float f = Mathf.Clamp01((2f - vy) / 10f);
             return HeroPose.Lerp(rise, fall, f);
+        }
+
+        /// <summary>Both hands on the lip above, body hanging, legs gently swinging.</summary>
+        public static HeroPose HangPose(float time)
+        {
+            float swing = Mathf.Sin(time * 2.2f) * 6f;
+            return new HeroPose
+            {
+                spine = -6f, chest = -8f, head = 10f, bob = 0f,
+                thighL = 8f + swing, kneeL = 18f, footL = -15f,
+                thighR = -4f + swing, kneeR = 28f, footR = -20f,
+                armL = 172f, elbowL = 8f, armR = 168f, elbowR = 12f,
+            };
+        }
+
+        /// <summary>Mantle: pull up (arms push down), knee comes over the lip, then stand.</summary>
+        public static HeroPose ClimbPose(float t)
+        {
+            float pull = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(t / 0.5f));
+            float stand = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((t - 0.55f) / 0.45f));
+            var hang = HangPose(0f);
+            var mid = new HeroPose
+            {
+                spine = 35f, chest = 15f, head = -10f, bob = -0.1f,
+                thighL = 95f, kneeL = 120f, footL = -10f,
+                thighR = 10f, kneeR = 40f, footR = -20f,
+                armL = 40f, elbowL = 70f, armR = 30f, elbowR = 80f,
+            };
+            var up = new HeroPose { spine = 6f, chest = 2f, thighL = 10f, kneeL = 15f, thighR = -5f, kneeR = 10f, armL = 10f, elbowL = 20f, armR = 5f, elbowR = 25f };
+            return HeroPose.Lerp(HeroPose.Lerp(hang, mid, pull), up, stand);
+        }
+
+        /// <summary>Facing the wall: one hand braced high, a foot against the stone.</summary>
+        public static HeroPose WallSlidePose(float time)
+        {
+            float jitter = Mathf.Sin(time * 30f) * 1.5f; // scraping down
+            return new HeroPose
+            {
+                spine = -4f, chest = -6f, head = 12f, bob = 0f,
+                thighL = 55f + jitter, kneeL = 85f, footL = 20f,
+                thighR = 12f, kneeR = 30f, footR = 0f,
+                armL = 130f, elbowL = 25f, armR = 45f + jitter, elbowR = 40f,
+            };
         }
 
         static HeroPose DashPose()

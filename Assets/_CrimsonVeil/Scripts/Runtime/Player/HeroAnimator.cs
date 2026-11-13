@@ -93,6 +93,10 @@ namespace CrimsonVeil.Player
                 grounded = player.IsGrounded,
                 dashing = player.Motor.IsDashing,
                 attacking = veil != null && veil.IsAttacking,
+                wallSliding = player.Motor.State == MotorState.WallSlide,
+                hanging = player.Motor.State == MotorState.LedgeHang,
+                climbing = player.Motor.State == MotorState.Climbing,
+                climbProgress = player.Motor.ClimbProgress,
             };
             var p = Solver.Step(Time.deltaTime, s);
             Apply(p);

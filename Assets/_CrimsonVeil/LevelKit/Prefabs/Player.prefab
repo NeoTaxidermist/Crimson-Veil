@@ -178,7 +178,7 @@ MonoBehaviour:
   settings:
     nodeCount: 32
     length: 3.3
-    constraintIterations: 8
+    constraintIterations: 14
     damping: 0.985
     airDrag: 7
     gravityScale: 0.08
@@ -194,6 +194,13 @@ MonoBehaviour:
     vortexLifetime: 1.8
     maxVortices: 40
     lateralShedOffset: 0.3
+    maxRelativeWind: 1.7
+    undulation: 14
+    undulationWaves: 1.6
+    undulationSpeed: 6.5
+    undulationPerSpeed: 1.6
+    buoyancy: 1.4
+    tipCurl: 9
     hardenRate: 28
     maxSubstep: 0.008333334
     teleportDistance: 5

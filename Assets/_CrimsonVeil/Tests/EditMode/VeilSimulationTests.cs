@@ -47,6 +47,29 @@ namespace CrimsonVeil.Tests
         }
 
         [Test]
+        public void Running_ScarfUndulatesInsteadOfStretchingIntoASheet()
+        {
+            var sim = new VeilSimulation(new VeilSettings(), Vector3.zero);
+            float sum = 0f, tipDistance = 0f;
+            int frames = 0;
+            for (int i = 1; i <= 150; i++)
+            {
+                sim.Step(Dt, new Vector3(8f * i * Dt, 0f, 0f));
+                if (i < 60) continue;
+                // Largest distance of any node from the straight neck → tip line.
+                Vector3 a = sim.Positions[0], b = sim.Positions[sim.Count - 1];
+                float maxDev = 0f;
+                for (int k = 1; k < sim.Count - 1; k++)
+                    maxDev = Mathf.Max(maxDev, CrimsonVeil.Combat.VeilCombatProfile.SegmentDistance(a, b, sim.Positions[k]));
+                sum += maxDev;
+                tipDistance += Vector3.Distance(a, b);
+                frames++;
+            }
+            Assert.Greater(sum / frames, 0.2f, "a living scarf curves; a cape is a straight line");
+            Assert.Less(tipDistance / frames, sim.Settings.length * 0.97f, "not pulled taut to full length");
+        }
+
+        [Test]
         public void Vortices_AlternateSign()
         {
             var sim = new VeilSimulation(new VeilSettings(), Vector3.zero);

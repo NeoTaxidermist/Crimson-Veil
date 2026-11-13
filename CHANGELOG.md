@@ -5,6 +5,17 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.5.2] – 2026-11-13
+
+### Změněno
+- **Šála místo pláště superhrdiny**: v běhu se už nenatáhne do napjaté plachty. Vítr z běhu cítí jen do 1,7 m/s, takže za hrdinou volně vlaje, a má vlastní život:
+  - hadovitá vlna běží od krku ke špičce (v pohybu silnější),
+  - ocas stoupá jako kouř,
+  - špička se stáčí do háčku.
+- Šála je užší a rovnoměrná (bez „pláštěného“ rozšíření uprostřed), vrstvy jsou tenké stuhy, které se k ocasu rozplétají.
+- Délky segmentů šály se hlídají v rovině obrazu (2.5D), u krku se už látka nemačká.
+- Test: běžící šála je zakřivená a není napnutá na plnou délku.
+
 ## [0.5.1] – 2026-11-13
 
 ### Změněno

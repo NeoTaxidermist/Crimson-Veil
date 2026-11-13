@@ -1,6 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!1 &492473537102064941
+--- !u!1 &810296526225066656
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -8,11 +8,11 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 398786767322950378}
-  - component: {fileID: 2118406082684360543}
-  - component: {fileID: 222200854576705165}
-  - component: {fileID: 5811368532740248263}
-  - component: {fileID: 6067291739755295996}
+  - component: {fileID: 7234736990095230074}
+  - component: {fileID: 8016851228731531573}
+  - component: {fileID: 8831778459721825803}
+  - component: {fileID: 78115637818619676}
+  - component: {fileID: 5171577847603414643}
   m_Layer: 0
   m_Name: Grass
   m_TagString: Untagged
@@ -20,28 +20,28 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &398786767322950378
+--- !u!4 &7234736990095230074
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 492473537102064941}
+  m_GameObject: {fileID: 810296526225066656}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 4, y: 0, z: -0.19999981}
+  m_LocalPosition: {x: -0.79999995, y: 0, z: -1.1999998}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 7508015897455626792}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!23 &2118406082684360543
+--- !u!23 &8016851228731531573
 MeshRenderer:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 492473537102064941}
+  m_GameObject: {fileID: 810296526225066656}
   m_Enabled: 1
   m_CastShadows: 0
   m_ReceiveShadows: 1
@@ -84,39 +84,39 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!33 &222200854576705165
+--- !u!33 &8831778459721825803
 MeshFilter:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 492473537102064941}
+  m_GameObject: {fileID: 810296526225066656}
   m_Mesh: {fileID: 0}
---- !u!114 &5811368532740248263
+--- !u!114 &78115637818619676
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 492473537102064941}
+  m_GameObject: {fileID: 810296526225066656}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 636859bf52a146d41b66465f5798b7ea, type: 3}
   m_Name: 
   m_EditorClassIdentifier: CrimsonVeil.Runtime::CrimsonVeil.World.GrassProp
-  seed: 326
+  seed: 323
   addCollider: 0
   blades: 30
   width: 2
   heightRange: {x: 0.04, y: 0.16}
   bladeWidth: 0.12
---- !u!114 &6067291739755295996
+--- !u!114 &5171577847603414643
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 492473537102064941}
+  m_GameObject: {fileID: 810296526225066656}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7a12cff825e20f340a84bf0b1093c1a6, type: 3}
@@ -246,7 +246,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: CrimsonVeil.Runtime::CrimsonVeil.World.DepthLayer
   layer: 2
---- !u!1 &2740573926100016572
+--- !u!1 &2896117007278561203
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -254,11 +254,11 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 5034858206725695329}
-  - component: {fileID: 2305414872694594210}
-  - component: {fileID: 899063707519156268}
-  - component: {fileID: 6442019448016912138}
-  - component: {fileID: 6917332989939226375}
+  - component: {fileID: 4564222669632446572}
+  - component: {fileID: 5995158183970382464}
+  - component: {fileID: 4865338849319863995}
+  - component: {fileID: 3081035911016771244}
+  - component: {fileID: 2463682682363110203}
   m_Layer: 0
   m_Name: Grass
   m_TagString: Untagged
@@ -266,28 +266,28 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &5034858206725695329
+--- !u!4 &4564222669632446572
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2740573926100016572}
+  m_GameObject: {fileID: 2896117007278561203}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 2.4, y: 0, z: -1.1999998}
+  m_LocalPosition: {x: -2.4, y: 0, z: -0.19999981}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 7508015897455626792}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!23 &2305414872694594210
+--- !u!23 &5995158183970382464
 MeshRenderer:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2740573926100016572}
+  m_GameObject: {fileID: 2896117007278561203}
   m_Enabled: 1
   m_CastShadows: 0
   m_ReceiveShadows: 1
@@ -330,162 +330,39 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!33 &899063707519156268
+--- !u!33 &4865338849319863995
 MeshFilter:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2740573926100016572}
+  m_GameObject: {fileID: 2896117007278561203}
   m_Mesh: {fileID: 0}
---- !u!114 &6442019448016912138
+--- !u!114 &3081035911016771244
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2740573926100016572}
+  m_GameObject: {fileID: 2896117007278561203}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 636859bf52a146d41b66465f5798b7ea, type: 3}
   m_Name: 
   m_EditorClassIdentifier: CrimsonVeil.Runtime::CrimsonVeil.World.GrassProp
-  seed: 325
+  seed: 322
   addCollider: 0
   blades: 30
   width: 2
   heightRange: {x: 0.04, y: 0.16}
   bladeWidth: 0.12
---- !u!114 &6917332989939226375
+--- !u!114 &2463682682363110203
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2740573926100016572}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7a12cff825e20f340a84bf0b1093c1a6, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: CrimsonVeil.Runtime::CrimsonVeil.World.DepthLayer
-  layer: 2
---- !u!1 &3349447320798763124
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 5637167686003702811}
-  - component: {fileID: 4937015452654024249}
-  - component: {fileID: 383773825515813783}
-  - component: {fileID: 1568501620820192278}
-  - component: {fileID: 7841615117375891369}
-  m_Layer: 0
-  m_Name: Grass
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &5637167686003702811
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3349447320798763124}
-  serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0.8000001, y: 0, z: -0.19999981}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 7508015897455626792}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!23 &4937015452654024249
-MeshRenderer:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3349447320798763124}
-  m_Enabled: 1
-  m_CastShadows: 0
-  m_ReceiveShadows: 1
-  m_DynamicOccludee: 1
-  m_StaticShadowCaster: 0
-  m_MotionVectors: 1
-  m_LightProbeUsage: 1
-  m_ReflectionProbeUsage: 1
-  m_RayTracingMode: 2
-  m_RayTraceProcedural: 0
-  m_RayTracingAccelStructBuildFlagsOverride: 0
-  m_RayTracingAccelStructBuildFlags: 1
-  m_SmallMeshCulling: 1
-  m_ForceMeshLod: -1
-  m_MeshLodSelectionBias: 0
-  m_RenderingLayerMask: 1
-  m_RendererPriority: 0
-  m_Materials:
-  - {fileID: 2100000, guid: 26f8ee91440a34047960e30cab3a46f4, type: 2}
-  m_StaticBatchInfo:
-    firstSubMesh: 0
-    subMeshCount: 0
-  m_StaticBatchRoot: {fileID: 0}
-  m_ProbeAnchor: {fileID: 0}
-  m_LightProbeVolumeOverride: {fileID: 0}
-  m_ScaleInLightmap: 1
-  m_ReceiveGI: 1
-  m_PreserveUVs: 0
-  m_IgnoreNormalsForChartDetection: 0
-  m_ImportantGI: 0
-  m_StitchLightmapSeams: 1
-  m_SelectedEditorRenderState: 3
-  m_MinimumChartSize: 4
-  m_AutoUVMaxDistance: 0.5
-  m_AutoUVMaxAngle: 89
-  m_LightmapParameters: {fileID: 0}
-  m_GlobalIlluminationMeshLod: 0
-  m_SortingLayerID: 0
-  m_SortingLayer: 0
-  m_SortingOrder: 0
-  m_MaskInteraction: 0
-  m_AdditionalVertexStreams: {fileID: 0}
---- !u!33 &383773825515813783
-MeshFilter:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3349447320798763124}
-  m_Mesh: {fileID: 0}
---- !u!114 &1568501620820192278
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3349447320798763124}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 636859bf52a146d41b66465f5798b7ea, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: CrimsonVeil.Runtime::CrimsonVeil.World.GrassProp
-  seed: 324
-  addCollider: 0
-  blades: 30
-  width: 2
-  heightRange: {x: 0.04, y: 0.16}
-  bladeWidth: 0.12
---- !u!114 &7841615117375891369
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3349447320798763124}
+  m_GameObject: {fileID: 2896117007278561203}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7a12cff825e20f340a84bf0b1093c1a6, type: 3}
@@ -526,11 +403,11 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1289635793779536928}
-  - {fileID: 416444753465154745}
-  - {fileID: 6213340330641421423}
-  - {fileID: 5637167686003702811}
-  - {fileID: 5034858206725695329}
-  - {fileID: 398786767322950378}
+  - {fileID: 4564222669632446572}
+  - {fileID: 7234736990095230074}
+  - {fileID: 3005621518268848707}
+  - {fileID: 569889120818970858}
+  - {fileID: 535223801085459595}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!23 &5794817552759441668
@@ -623,7 +500,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: CrimsonVeil.Runtime::CrimsonVeil.World.DepthLayer
   layer: 2
---- !u!1 &3891801512850829389
+--- !u!1 &5505987924974269159
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -631,11 +508,11 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 6213340330641421423}
-  - component: {fileID: 5331260952621838269}
-  - component: {fileID: 1302190948000440293}
-  - component: {fileID: 4580499549292668634}
-  - component: {fileID: 5873027461670516286}
+  - component: {fileID: 535223801085459595}
+  - component: {fileID: 2193942139199361699}
+  - component: {fileID: 343756047765314682}
+  - component: {fileID: 5879468307239676380}
+  - component: {fileID: 9185628670364690754}
   m_Layer: 0
   m_Name: Grass
   m_TagString: Untagged
@@ -643,28 +520,28 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &6213340330641421423
+--- !u!4 &535223801085459595
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3891801512850829389}
+  m_GameObject: {fileID: 5505987924974269159}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -0.79999995, y: 0, z: -1.1999998}
+  m_LocalPosition: {x: 4, y: 0, z: -0.19999981}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 7508015897455626792}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!23 &5331260952621838269
+--- !u!23 &2193942139199361699
 MeshRenderer:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3891801512850829389}
+  m_GameObject: {fileID: 5505987924974269159}
   m_Enabled: 1
   m_CastShadows: 0
   m_ReceiveShadows: 1
@@ -707,46 +584,46 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!33 &1302190948000440293
+--- !u!33 &343756047765314682
 MeshFilter:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3891801512850829389}
+  m_GameObject: {fileID: 5505987924974269159}
   m_Mesh: {fileID: 0}
---- !u!114 &4580499549292668634
+--- !u!114 &5879468307239676380
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3891801512850829389}
+  m_GameObject: {fileID: 5505987924974269159}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 636859bf52a146d41b66465f5798b7ea, type: 3}
   m_Name: 
   m_EditorClassIdentifier: CrimsonVeil.Runtime::CrimsonVeil.World.GrassProp
-  seed: 323
+  seed: 326
   addCollider: 0
   blades: 30
   width: 2
   heightRange: {x: 0.04, y: 0.16}
   bladeWidth: 0.12
---- !u!114 &5873027461670516286
+--- !u!114 &9185628670364690754
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3891801512850829389}
+  m_GameObject: {fileID: 5505987924974269159}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7a12cff825e20f340a84bf0b1093c1a6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: CrimsonVeil.Runtime::CrimsonVeil.World.DepthLayer
   layer: 2
---- !u!1 &7589515606793444254
+--- !u!1 &6573275174442419869
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -754,11 +631,11 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 416444753465154745}
-  - component: {fileID: 936020716584942539}
-  - component: {fileID: 6025720733059374986}
-  - component: {fileID: 2765232422654725848}
-  - component: {fileID: 9170326040665740063}
+  - component: {fileID: 3005621518268848707}
+  - component: {fileID: 3583948833341647613}
+  - component: {fileID: 2974822072928340673}
+  - component: {fileID: 3060666617552092514}
+  - component: {fileID: 9202428612751110564}
   m_Layer: 0
   m_Name: Grass
   m_TagString: Untagged
@@ -766,28 +643,28 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &416444753465154745
+--- !u!4 &3005621518268848707
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7589515606793444254}
+  m_GameObject: {fileID: 6573275174442419869}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -2.4, y: 0, z: -0.19999981}
+  m_LocalPosition: {x: 0.8000001, y: 0, z: -0.19999981}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 7508015897455626792}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!23 &936020716584942539
+--- !u!23 &3583948833341647613
 MeshRenderer:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7589515606793444254}
+  m_GameObject: {fileID: 6573275174442419869}
   m_Enabled: 1
   m_CastShadows: 0
   m_ReceiveShadows: 1
@@ -830,39 +707,162 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!33 &6025720733059374986
+--- !u!33 &2974822072928340673
 MeshFilter:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7589515606793444254}
+  m_GameObject: {fileID: 6573275174442419869}
   m_Mesh: {fileID: 0}
---- !u!114 &2765232422654725848
+--- !u!114 &3060666617552092514
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7589515606793444254}
+  m_GameObject: {fileID: 6573275174442419869}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 636859bf52a146d41b66465f5798b7ea, type: 3}
   m_Name: 
   m_EditorClassIdentifier: CrimsonVeil.Runtime::CrimsonVeil.World.GrassProp
-  seed: 322
+  seed: 324
   addCollider: 0
   blades: 30
   width: 2
   heightRange: {x: 0.04, y: 0.16}
   bladeWidth: 0.12
---- !u!114 &9170326040665740063
+--- !u!114 &9202428612751110564
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7589515606793444254}
+  m_GameObject: {fileID: 6573275174442419869}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7a12cff825e20f340a84bf0b1093c1a6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CrimsonVeil.Runtime::CrimsonVeil.World.DepthLayer
+  layer: 2
+--- !u!1 &8220641861372401850
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 569889120818970858}
+  - component: {fileID: 1242099642310967966}
+  - component: {fileID: 8180404413953371571}
+  - component: {fileID: 8892713314739945317}
+  - component: {fileID: 2460122877298227898}
+  m_Layer: 0
+  m_Name: Grass
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &569889120818970858
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8220641861372401850}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 2.4, y: 0, z: -1.1999998}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 7508015897455626792}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!23 &1242099642310967966
+MeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8220641861372401850}
+  m_Enabled: 1
+  m_CastShadows: 0
+  m_ReceiveShadows: 1
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: 26f8ee91440a34047960e30cab3a46f4, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_MaskInteraction: 0
+  m_AdditionalVertexStreams: {fileID: 0}
+--- !u!33 &8180404413953371571
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8220641861372401850}
+  m_Mesh: {fileID: 0}
+--- !u!114 &8892713314739945317
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8220641861372401850}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 636859bf52a146d41b66465f5798b7ea, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CrimsonVeil.Runtime::CrimsonVeil.World.GrassProp
+  seed: 325
+  addCollider: 0
+  blades: 30
+  width: 2
+  heightRange: {x: 0.04, y: 0.16}
+  bladeWidth: 0.12
+--- !u!114 &2460122877298227898
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8220641861372401850}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7a12cff825e20f340a84bf0b1093c1a6, type: 3}

@@ -25,12 +25,14 @@ namespace CrimsonVeil.Veil
 
         static readonly Strand[] Strands =
         {
-            // Back layer: wide, darker, fans out the most.
-            new Strand { width = 0.85f, offset = 0.35f, phase = 1.7f, alpha = 0.55f, seed = 0.31f, spread = 0.9f, tint = new Color(0.7f, 0.7f, 0.7f) },
-            // Main cloth.
-            new Strand { width = 1f, offset = 0f, phase = 0f, alpha = 1f, seed = 0.0f, spread = 0.25f, tint = Color.white },
-            // Thin bright ribbon on top.
-            new Strand { width = 0.35f, offset = -0.3f, phase = 3.9f, alpha = 0.8f, seed = 0.67f, spread = 1.1f, tint = new Color(1.25f, 1.1f, 1.1f) },
+            // A scarf, not a cape: strands are narrow ribbons that twist around each other,
+            // separating into tendrils towards the tail.
+            // Back ribbon: darker, drifts apart the most.
+            new Strand { width = 0.6f, offset = 0.45f, phase = 1.7f, alpha = 0.55f, seed = 0.31f, spread = 1.3f, tint = new Color(0.7f, 0.7f, 0.7f) },
+            // Main ribbon.
+            new Strand { width = 1f, offset = 0f, phase = 0f, alpha = 1f, seed = 0.0f, spread = 0.35f, tint = Color.white },
+            // Thin bright tendril.
+            new Strand { width = 0.28f, offset = -0.4f, phase = 3.9f, alpha = 0.85f, seed = 0.67f, spread = 1.6f, tint = new Color(1.25f, 1.1f, 1.1f) },
         };
 
         VeilController veil;
@@ -146,7 +148,8 @@ namespace CrimsonVeil.Veil
                 float hard = Mathf.SmoothStep(0f, 1f, hardAt[i]);
 
                 // Cloth: widest in the middle, narrowing to a wisp; ripples and twists as it flies.
-                float flowProfile = (0.55f + 0.8f * Mathf.Sin(Mathf.PI * Mathf.Pow(t, 0.75f))) * (1f - 0.8f * t * t * t)
+                // A scarf: snug at the neck, an even band that slowly tapers into a wisp (no cape-like bulge).
+                float flowProfile = Mathf.Lerp(0.75f, 1f, Mathf.SmoothStep(0f, 1f, t * 5f)) * Mathf.Lerp(1f, 0.2f, Mathf.Pow(t, 1.6f))
                                     * (1f + 0.22f * Mathf.Sin(t * 9f - time * 6f));
                 float twist = Mathf.Abs(Mathf.Cos(time * 2.7f + t * 6f));
                 flowProfile *= Mathf.Lerp(1f, twist * 0.65f + 0.35f, flutterTwist * t);

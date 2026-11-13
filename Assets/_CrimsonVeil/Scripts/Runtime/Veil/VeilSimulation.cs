@@ -10,7 +10,7 @@ namespace CrimsonVeil.Veil
         [Header("Cloth")]
         [Min(3)] public int nodeCount = 32;
         public float length = 3.3f;
-        [Range(1, 20)] public int constraintIterations = 8;
+        [Range(1, 20)] public int constraintIterations = 14;
         [Range(0.9f, 1f)] public float damping = 0.985f;
         public float airDrag = 7f;
         public float gravityScale = 0.08f;
@@ -28,6 +28,20 @@ namespace CrimsonVeil.Veil
         public float vortexLifetime = 1.8f;
         [Min(1)] public int maxVortices = 40;
         public float lateralShedOffset = 0.3f;
+
+        [Header("Life (a scarf with a will of its own, not a cape)")]
+        [Tooltip("The run wind is felt at most this strongly (m/s), so the scarf trails without stretching into a sheet.")]
+        public float maxRelativeWind = 1.7f;
+        [Tooltip("Serpentine undulation travelling from the neck to the tip (acceleration, m/s²).")]
+        public float undulation = 14f;
+        public float undulationWaves = 1.6f;
+        public float undulationSpeed = 6.5f;
+        [Tooltip("Extra undulation per m/s of the hero's speed.")]
+        public float undulationPerSpeed = 1.6f;
+        [Tooltip("Upward drift of the tail, like smoke rising.")]
+        public float buoyancy = 1.4f;
+        [Tooltip("The tip slowly curls into a loop.")]
+        public float tipCurl = 9f;
 
         [Header("Hardening (weapon forms)")]
         public float hardenRate = 28f;
@@ -180,12 +194,39 @@ namespace CrimsonVeil.Veil
 
             // 3) Verlet integration with drag towards the local air velocity.
             Vector3 g = Gravity * s.gravityScale;
+            var bodyVel = new Vector2(anchorVel.x, anchorVel.y);
+            float bodySpeed = bodyVel.magnitude;
+            float wavePhase = s.undulationSpeed * time;
             for (int i = 1; i < Count; i++)
             {
                 Vector3 p = Positions[i];
                 Vector3 vel = (p - previous[i]) / h;
+                float f = (float)i / (Count - 1);
+                float loose = 1f - H(i);
+
+                // Feel the run wind only up to a point: the scarf trails, it doesn't become a taut sheet.
                 Vector2 airV = SampleAirVelocity(p);
+                Vector2 relAir = airV - bodyVel;
+                if (relAir.sqrMagnitude > s.maxRelativeWind * s.maxRelativeWind) relAir = relAir.normalized * s.maxRelativeWind;
+                airV = Vector2.Lerp(airV, bodyVel + relAir, loose);
                 Vector3 acc = new Vector3((airV.x - vel.x) * s.airDrag, (airV.y - vel.y) * s.airDrag, 0f) + g;
+
+                if (loose > 0.001f)
+                {
+                    // Its own life: a serpentine wave running down the scarf (stronger when moving),
+                    // a tail that rises like smoke and a tip that curls over.
+                    Vector3 tan = Positions[Mathf.Min(i + 1, Count - 1)] - Positions[i - 1];
+                    tan.z = 0f;
+                    if (tan.sqrMagnitude > 1e-8f)
+                    {
+                        tan.Normalize();
+                        var normal = new Vector3(-tan.y, tan.x, 0f);
+                        float amp = (s.undulation + s.undulationPerSpeed * bodySpeed) * f;
+                        float wave = Mathf.Sin(s.undulationWaves * Mathf.PI * 2f * f - wavePhase);
+                        acc += normal * (amp * wave + s.tipCurl * Mathf.SmoothStep(0f, 1f, (f - 0.7f) / 0.3f)) * loose;
+                    }
+                    acc.y += s.buoyancy * f * f * loose;
+                }
                 Vector3 next = p + (p - previous[i]) * s.damping + acc * (h * h);
                 previous[i] = p;
                 Positions[i] = next;
@@ -212,6 +253,7 @@ namespace CrimsonVeil.Veil
                 {
                     float rest = Mathf.Lerp(FlowRestLength, TargetRest[i], 0.5f * (H(i) + H(i + 1)));
                     Vector3 d = Positions[i + 1] - Positions[i];
+                    d.z = 0f; // 2.5D: lengths live in the picture plane; depth is only a cosmetic wobble
                     float len = d.magnitude;
                     if (len < 1e-6f) continue;
                     Vector3 corr = d * ((len - rest) / len);

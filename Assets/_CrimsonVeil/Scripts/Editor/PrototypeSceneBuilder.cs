@@ -125,11 +125,11 @@ namespace CrimsonVeil.EditorTools
             Banner(gallows, new Vector3(-7.9f, 5.25f, 1.0f), 0.7f, 2.0f, 4, m.banner);
 
             // The crimson tree on the far ledge.
-            var tree = Prop<TreeProp>(level, "CrimsonTree", new Vector3(52f, 0f, 1.8f), 21, new[] { m.inkPlay, m.leaf });
+            var tree = Prop<TreeProp>(level, "CrimsonTree", new Vector3(38.5f, 0f, 1.8f), 21, new[] { m.inkPlay, m.leaf });
             tree.height = 11f; tree.trunkRadius = 0.55f; tree.depth = 5; tree.leavesPerTip = 18; tree.leafSize = 0.26f;
             tree.Rebuild();
             for (int i = 0; i < 6; i++)
-                Grass(level, new Vector3(46f + i * 1.8f, 0f, 0.6f + (i % 2)), 300 + i, 2f, new Vector2(0.04f, 0.16f), 30, m.leaf, 0.12f);
+                Grass(level, new Vector3(36.5f + i * 1.6f, 0f, 0.6f + (i % 2)), 300 + i, 2f, new Vector2(0.04f, 0.16f), 30, m.leaf, 0.12f);
 
             // --- Foreground silhouettes --------------------------------------
             var fg = Group("Foreground");
@@ -655,12 +655,20 @@ namespace CrimsonVeil.EditorTools
 
             var top = new GameObject("RopeTop").transform;
             top.SetParent(pivot, false);
-            top.localPosition = new Vector3(-0.2f, 10.6f, 0f);
+            top.localPosition = new Vector3(-0.2f, 7.2f, 0f);
 
-            Block(root, "RopePost", new Vector3(53.8f, 4.2f, 0.7f), new Vector3(0.4f, 8.4f, 0.4f), m.inkPlay, collider: false);
+            // ~7 m up: out of reach of a jumping sword strike (~5.4 m), but on screen thanks to the camera zone.
+            Block(root, "RopePost", new Vector3(53.8f, 3.5f, 0.7f), new Vector3(0.4f, 7f, 0.4f), m.inkPlay, collider: false);
             var post = new GameObject("RopePostTop").transform;
             post.SetParent(root, false);
-            post.position = new Vector3(54f, 8.2f, 0f);
+            post.position = new Vector3(54f, 6.8f, 0f);
+
+            // Pull the camera back and up while the hero is near the chasm so the rope is in frame.
+            var zone = new GameObject("CameraZone_RopePuzzle").AddComponent<CameraZone>();
+            zone.transform.SetParent(root, false);
+            zone.minX = 42f;
+            zone.maxX = 62f;
+            zone.offset = new Vector3(0f, 4f, -16.5f);
 
             var rope = new GameObject("CrimsonRope").AddComponent<CuttableRope>();
             rope.transform.SetParent(root, false);

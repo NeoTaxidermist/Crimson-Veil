@@ -49,8 +49,21 @@ namespace CrimsonVeil.CameraSystem
         void Start()
         {
             if (target == null) target = FindFirstObjectByType<PlayerController>();
+            zones = FindObjectsByType<CameraZone>(FindObjectsSortMode.None);
+            currentOffset = offset;
             basePosition = target != null ? target.transform.position + offset : transform.position;
             transform.position = basePosition;
+        }
+
+        [SerializeField] float zoneBlendSharpness = 2.5f;
+        CameraZone[] zones = new CameraZone[0];
+        Vector3 currentOffset;
+
+        Vector3 DesiredOffset(float x)
+        {
+            foreach (var z in zones)
+                if (z != null && z.Contains(x)) return z.offset;
+            return offset;
         }
 
         void LateUpdate()
@@ -63,11 +76,13 @@ namespace CrimsonVeil.CameraSystem
             float desiredLook = target.Motor.Facing * lookAhead * moving;
             lookAheadCurrent = Mathf.SmoothDamp(lookAheadCurrent, desiredLook, ref lookAheadVel, lookAheadSmooth, Mathf.Infinity, dt);
 
+            currentOffset = Vector3.Lerp(currentOffset, DesiredOffset(tp.x), 1f - Mathf.Exp(-zoneBlendSharpness * dt));
+
             Vector3 p = basePosition;
             float smoothY = target.IsGrounded || target.Velocity.y < -8f ? smoothYGrounded : smoothYAir;
-            p.x = Mathf.SmoothDamp(p.x, tp.x + offset.x + lookAheadCurrent, ref velX, smoothX, Mathf.Infinity, dt);
-            p.y = Mathf.SmoothDamp(p.y, tp.y + offset.y, ref velY, smoothY, Mathf.Infinity, dt);
-            p.z = tp.z + offset.z;
+            p.x = Mathf.SmoothDamp(p.x, tp.x + currentOffset.x + lookAheadCurrent, ref velX, smoothX, Mathf.Infinity, dt);
+            p.y = Mathf.SmoothDamp(p.y, tp.y + currentOffset.y, ref velY, smoothY, Mathf.Infinity, dt);
+            p.z = tp.z + currentOffset.z;
             basePosition = p;
 
             // Shake uses unscaled time so it keeps rumbling through hit-stop.

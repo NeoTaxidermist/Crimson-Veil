@@ -5,6 +5,15 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.3.1] – 2026-11-13
+
+### Opraveno
+- Rudý provaz hádanky visel 8–10 m vysoko, mimo záběr kamery, takže nebyl vidět. Teď visí v ~7 m (pořád mimo dosah meče ve výskoku) a u propasti se kamera plynule oddálí a zvedne (`CameraZone`).
+- Rudý strom stál přímo pod provazem a jeho koruna provaz maskovala. Strom je přesunutý doleva (x ≈ 38), provaz je teď čitelný proti šedému pozadí.
+
+### Přidáno
+- `CameraZone`: oblast úrovně, ve které kamera plynule přejde na jiný offset (oddálení, zvednutí pohledu).
+
 ## [0.3.0] – 2026-11-13
 Boj, první nepřítel, první hádanka a doladěný hrdina a svět.
 

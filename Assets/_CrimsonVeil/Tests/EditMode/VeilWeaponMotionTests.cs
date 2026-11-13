@@ -131,8 +131,24 @@ namespace CrimsonVeil.Tests
             Assert.AreEqual(hfExt, hfCoil, 0.01f, "same ribbon, same length: the hand sits at the same place");
             int hand = Mathf.CeilToInt(hfExt * 31);
             for (int i = hand; i < 32; i++)
-                Assert.Less(Vector2.Distance(coil[i], VeilFormLibrary.Hand), 0.65f, $"node {i} stays in the coil by the hand");
+                Assert.Less(Vector2.Distance(coil[i], VeilFormLibrary.Hand), 1.1f, $"node {i} hangs in the coil from the hand");
             Assert.Greater(Vector2.Distance(extended[31], VeilFormLibrary.Hand), 2.5f, "while the paid-out lash is long");
+
+            // A few clean loops that come back up to the fist — not a tight ball of yarn.
+            var pts = new System.Collections.Generic.List<Vector2>();
+            var fine = new Vector2[200];
+            VeilFormLibrary.BuildWhipCoil(fine);
+            int returns = 0;
+            bool away = false;
+            int start = Mathf.CeilToInt(hfExt * 199) + 2;
+            for (int i = start; i < fine.Length; i++)
+            {
+                float d = Vector2.Distance(fine[i], VeilFormLibrary.Hand);
+                if (d > 0.3f) away = true;
+                else if (away && d < 0.06f) { returns++; away = false; }
+            }
+            Assert.AreEqual(VeilFormLibrary.WhipCoilLoops, returns, "each loop hangs from the hand and comes back to it");
+            Assert.LessOrEqual(VeilFormLibrary.WhipCoilLoops, 3);
         }
 
         [Test]

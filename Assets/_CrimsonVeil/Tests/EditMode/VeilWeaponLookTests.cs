@@ -87,6 +87,25 @@ namespace CrimsonVeil.Tests
         }
 
         [Test]
+        public void Sword_EndsInASharpPoint()
+        {
+            Assert.AreEqual(1f, VeilRenderer.TipProfile(VeilForm.Sword, 0.6f), 1e-4f, "full blade");
+            Assert.AreEqual(0f, VeilRenderer.TipProfile(VeilForm.Sword, 1f), 1e-4f, "comes to a point");
+            Assert.IsTrue(VeilRenderer.Pointed(VeilForm.Sword), "no flame curl over the point");
+        }
+
+        [Test]
+        public void Spear_HasALeafShapedHead()
+        {
+            float max = 0f;
+            for (float t = 0.86f; t <= 1f; t += 0.005f) max = Mathf.Max(max, VeilRenderer.TipProfile(VeilForm.Spear, t));
+            Assert.Greater(max, 2.5f, "the head is much wider than the slim shaft");
+            Assert.AreEqual(1f, VeilRenderer.TipProfile(VeilForm.Spear, 0.7f), 1e-4f, "plain shaft");
+            Assert.AreEqual(0f, VeilRenderer.TipProfile(VeilForm.Spear, 1f), 1e-4f, "sharp point");
+            Assert.IsTrue(VeilRenderer.Pointed(VeilForm.Spear));
+        }
+
+        [Test]
         public void Weapons_AreVisibleBands_ButSlim()
         {
             foreach (var form in new[] { VeilForm.Whip, VeilForm.Sword, VeilForm.Spear, VeilForm.Shield, VeilForm.Bow })

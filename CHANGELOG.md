@@ -5,6 +5,20 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.7.7] – 2026-11-13
+Hroty zbraní a bič svinutý jako lano.
+
+### Změněno
+- **Kopí má hrot:** listovitou čepel, která se za objímkou rozšíří zhruba na trojnásobek ratiště a zúží do ostré špičky.
+- **Meč končí špičkou:** ostří se v poslední šestině sbíhají do hrotu.
+- Konec meče a kopí je pevný. Nekroutí se z něj plamenný jazyk a jazyky pramínků šlehají už před hrotem.
+- **Smotaný bič už nevypadá jako klubko vlny.** Je svinutý do dvou volných smyček, které visí z pěsti, a konec šňůry visí dolů jako u svinutého lana. Na smotaném biči se nekreslí ovíjené prameny ani plamenné jazyky. Objeví se, až se bič rozvine.
+
+### Testy
+- Meč končí ostrou špičkou.
+- Kopí má listovitý hrot širší než ratiště.
+- Smotaný bič má právě tolik smyček, kolik má mít, a každá se vrací k pěsti.
+
 ## [0.7.6] – 2026-11-13
 
 ### Změněno

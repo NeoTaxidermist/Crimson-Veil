@@ -286,7 +286,7 @@ namespace CrimsonVeil.Veil
             for (int i = 0; i < n; i++)
             {
                 float f = (float)i / (n - 1);
-                nh[i] = h * VeilTransform.Wave(TransformProgress, f) * (ShapeForm == VeilForm.Bow ? 1f : VeilTransform.TipSoftness(f)); // a bow has no loose tip: it ends in its lower limb
+                nh[i] = h * VeilTransform.Wave(TransformProgress, f) * (ShapeForm == VeilForm.Bow || ShapeForm == VeilForm.Sword || ShapeForm == VeilForm.Spear ? 1f : VeilTransform.TipSoftness(f)); // bows end in a limb, blades and spears in a firm point
             }
         }
 

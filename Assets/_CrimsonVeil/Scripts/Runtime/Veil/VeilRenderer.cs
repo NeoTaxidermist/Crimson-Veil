@@ -229,7 +229,7 @@ namespace CrimsonVeil.Veil
                 float twist = Mathf.Abs(Mathf.Cos(time * 1.1f + t * 5f));
                 flowProfile *= Mathf.Lerp(1f, twist * 0.65f + 0.35f, flutterTwist * t);
 
-                float weaponProfile = t < hf ? 0.4f : bow ? 1f : 1f - Mathf.SmoothStep(0f, 1f, (t - 0.86f) / 0.14f) * 0.85f;
+                float weaponProfile = t < hf ? 0.4f : TipProfile(veil.ShapeForm, t);
                 weaponProfile *= 1f + 0.08f * Mathf.Sin(t * 14f - time * 5f);
                 // The bow's string is part of the same ribbon: a thin glowing thread between the limb tips.
                 if (bow) weaponProfile *= Mathf.Lerp(1f, 0.32f, VeilFormLibrary.BowStringWeight(t));
@@ -246,6 +246,8 @@ namespace CrimsonVeil.Veil
             int per = perStrand * 2;
             // How far the veil is into its weapon form (0 cloth .. 1 weapon).
             float weaponness = Mathf.Clamp01(veil.Hardness / formHardness);
+            // A coiled whip is just its loops: no braids or flame tongues tangling it into a ball of wool.
+            float coiled = veil.ShapeForm == VeilForm.Whip ? (1f - veil.WhipOpen) * weaponness : 0f;
             Vector3 up = Vector3.up, back = new Vector3(-facing, 0f, 0f);
             for (int s = 0; s < Strands.Length; s++)
             {
@@ -258,6 +260,8 @@ namespace CrimsonVeil.Veil
                 // As a weapon, each strand ends somewhere along the blade, where its flame tongue peels off.
                 // (On a bow every strand runs the whole way round, so both limbs are equally full.)
                 float end = StrandEnd(st, main, bow, weaponness, gripFraction);
+                // Keep a pointed weapon's tip clean: the braided strands' tongues flare before the point.
+                if (!main && Pointed(veil.ShapeForm)) end = Mathf.Min(end, Mathf.Lerp(1f, 0.82f, weaponness));
                 // On a weapon the braided strands start at the hand, so the part behind it (a spear's butt) is
                 // just the slim shaft, not every layer of the scarf bundled together.
                 float start = branch && !bow ? Mathf.Lerp(st.start, Mathf.Max(st.start, gripFraction), weaponness) : st.start;
@@ -291,7 +295,7 @@ namespace CrimsonVeil.Veil
                     // As a weapon the strands don't vanish into the blade: they braid around it like
                     // twisting flames (a helix running up the blade), wilder while it ignites.
                     if (!main)
-                        off += WeaponBraid(f, time, st.phase, w, hard) * (1f + 1.5f * front);
+                        off += WeaponBraid(f, time, st.phase, w, hard) * (1f + 1.5f * front) * (1f - coiled);
 
                     Vector3 ov = nrm * off;
                     if (ov.y > 0f) ov.y *= 0.5f;
@@ -301,7 +305,7 @@ namespace CrimsonVeil.Veil
                     float sw = w * Mathf.Lerp(st.width, main ? 1f : 0.3f, hard);
                     if (branch) sw *= Mathf.Lerp(0.25f, 0.51f, Mathf.SmoothStep(0f, 1f, u));
                     float alpha = a * Mathf.Lerp(st.alpha, main ? 1f : 0.7f, hard);
-                    if (branch) alpha *= Mathf.SmoothStep(0f, 1f, u * 5f);
+                    if (branch) alpha *= Mathf.SmoothStep(0f, 1f, u * 5f) * Mathf.Lerp(1f, 0.12f, coiled);
 
                     WriteVertex(baseV + i * 2, c, nrm, sw, alpha, st, hard, vit, front);
                     if (i > 0) lastTan = c - lastC;
@@ -314,7 +318,9 @@ namespace CrimsonVeil.Veil
                 float breathe = 1f + 0.18f * Mathf.Sin(time * (0.5f + 0.4f * st.seed) + st.phase);
                 float flicker = 1f + 0.25f * Mathf.Sin(time * (3.1f + 2f * st.seed) + st.phase * 2f);
                 float turns = Mathf.Lerp(0.2f * flicker, st.curlTurns * breathe * unroll, looseEnd);
-                float length = Mathf.Lerp(FlameTongueLength(main) * flicker, st.curlLength * curlScale, looseEnd) * Mathf.Lerp(0.5f, 1f, vit);
+                // A pointed weapon ends in its point: the core gets no flame tongue curling off the tip.
+                float tongue = main && Pointed(veil.ShapeForm) ? 0f : FlameTongueLength(main) * (1f - coiled);
+                float length = Mathf.Lerp(tongue * flicker, st.curlLength * curlScale, looseEnd) * Mathf.Lerp(0.5f, 1f, vit);
                 lastTan.z = 0f;
                 Vector3 dir = lastTan.sqrMagnitude > 1e-10f ? lastTan.normalized : Vector3.down;
                 // Flames rise: a weapon's tongues bend up and back, away from the direction of the blow.
@@ -383,6 +389,42 @@ namespace CrimsonVeil.Veil
         /// tongues peel off all along it rather than only at the tip.</summary>
         public static float WeaponStrandEnd(Strand st, float handFraction)
             => Mathf.Lerp(Mathf.Min(handFraction + 0.12f, 0.95f), 0.99f, 0.15f + 0.85f * Mathf.Repeat(st.seed * 1.7f + st.phase * 0.13f, 1f));
+
+        /// <summary>Weapons that end in a point (no flame curl at the tip).</summary>
+        public static bool Pointed(VeilForm form) => form == VeilForm.Sword || form == VeilForm.Spear;
+
+        /// <summary>
+        /// Width multiplier of the weapon part at veil fraction <paramref name="t"/> (1 = the weapon's width):
+        /// a sword's blade narrows to a sharp point, a spear's slim shaft ends in a leaf-shaped head,
+        /// a bow keeps its width; the others thin out towards a smouldering tip.
+        /// </summary>
+        public static float TipProfile(VeilForm form, float t)
+        {
+            switch (form)
+            {
+                case VeilForm.Bow:
+                    return 1f;
+                case VeilForm.Sword:
+                {
+                    // Last 16% of the veil: the edges sweep into a point.
+                    float x = Mathf.Clamp01((t - 0.84f) / 0.16f);
+                    return Mathf.Pow(1f - x, 0.7f) * (1f + 0.15f * Mathf.Sin(x * Mathf.PI));
+                }
+                case VeilForm.Spear:
+                {
+                    // Last 14%: a leaf blade — widens past the socket, then tapers to the point.
+                    float x = Mathf.Clamp01((t - 0.86f) / 0.14f);
+                    if (x <= 0f) return 1f;
+                    if (x < 0.35f) return Mathf.Lerp(0.8f, SpearHeadWidth, Mathf.SmoothStep(0f, 1f, x / 0.35f));
+                    return SpearHeadWidth * Mathf.Pow(1f - (x - 0.35f) / 0.65f, 1.1f);
+                }
+                default:
+                    return 1f - Mathf.SmoothStep(0f, 1f, (t - 0.86f) / 0.14f) * 0.85f;
+            }
+        }
+
+        /// <summary>The spearhead's widest point, in shaft widths.</summary>
+        public const float SpearHeadWidth = 3.2f;
 
         /// <summary>
         /// Where a strand ends (veil fraction) for weapon-ness 0..1. The core ribbon always runs the whole weapon to

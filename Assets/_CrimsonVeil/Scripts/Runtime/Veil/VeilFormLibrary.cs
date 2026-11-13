@@ -161,34 +161,41 @@ namespace CrimsonVeil.Veil
             float lash = 0f;
             for (int i = handIndex + 1; i < extended.Count; i++) lash += Vector2.Distance(extended[i - 1], extended[i]);
 
+            // Held like a coiled rope: a couple of long loops hanging from the fist, fanned out a little so each
+            // reads on its own, and the last stretch of the lash dangling below.
             var pts = new List<Vector2> { Vector2.zero, Shoulder, Hand };
-            Vector2 center = Hand + WhipCoilOffset;
-            float drop = Vector2.Distance(Hand, center) - WhipCoilRadius;
-            Vector2 entry = Hand + (center - Hand).normalized * drop;
-            pts.Add(entry);
-            float left = lash - drop;
-            float a0 = Mathf.Atan2(entry.y - center.y, entry.x - center.x);
-            const float step = 0.04f;
-            float angle = a0;
-            Vector2 prev = entry;
-            while (left > 1e-4f)
+            float left = lash;
+            Vector2 prev = Hand;
+            for (int loop = 0; loop < WhipCoilLoops && left > 1e-4f; loop++)
             {
-                // Loops of rope: the radius breathes a little from loop to loop.
-                float r = WhipCoilRadius * (1f + 0.12f * Mathf.Sin((angle - a0) * 0.5f));
-                angle -= step / r;
-                Vector2 next = center + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * r;
-                float d = Vector2.Distance(prev, next);
-                if (d >= left) { next = prev + (next - prev) * (left / d); d = left; }
-                pts.Add(next);
-                left -= d;
-                prev = next;
+                float rx = 0.12f + 0.025f * loop, ry = 0.28f + 0.03f * loop;
+                float tilt = (-14f + 16f * loop) * Mathf.Deg2Rad;
+                Vector2 down = new Vector2(Mathf.Sin(tilt), -Mathf.Cos(tilt)), side = new Vector2(-down.y, down.x);
+                Vector2 centre = Hand + down * ry;
+                const int steps = 40;
+                for (int k = 1; k <= steps && left > 1e-4f; k++)
+                {
+                    float th = Mathf.PI * 2f * k / steps;
+                    Vector2 next = centre - down * (ry * Mathf.Cos(th)) + side * (rx * Mathf.Sin(th));
+                    left -= Append(pts, ref prev, next, left);
+                }
             }
+            // The tail hangs out of the coil.
+            if (left > 1e-4f) Append(pts, ref prev, prev + new Vector2(0.05f, -1f).normalized * left, left);
             return Resample(pts, 2, output);
         }
 
-        /// <summary>Coil of the resting whip: centre relative to the hand, and loop radius (m).</summary>
-        public static readonly Vector2 WhipCoilOffset = new Vector2(0.06f, -0.3f);
-        public const float WhipCoilRadius = 0.16f;
+        static float Append(List<Vector2> pts, ref Vector2 prev, Vector2 next, float left)
+        {
+            float d = Vector2.Distance(prev, next);
+            if (d > left) { next = prev + (next - prev) * (left / d); d = left; }
+            pts.Add(next);
+            prev = next;
+            return d;
+        }
+
+        /// <summary>Number of loops the resting whip is coiled into.</summary>
+        public const int WhipCoilLoops = 2;
 
         /// <summary>
         /// Upper limb of a recurve bow, relative to the grip (x = towards the target, the archer is at -x):

@@ -24,14 +24,20 @@
 Assets/_CrimsonVeil/
   Scripts/Runtime/
     Core/      MovementMath – ladění skoku přes výšku a čas
-    Player/    MotorLogic (čistá logika pohybu), PlayerController (CharacterController 2.5D), vstupy
+    Player/    MotorLogic (logika pohybu), PlayerController (2.5D), HeroPoseSolver + HeroAnimator (procedurální animace), vstupy
     Veil/      VeilSimulation (Verlet + Lamb-Oseen víry), formy zbraní, renderer stuhy, chomáčky, šíp
     Camera/    CameraFollow25D – look-ahead, měkčí sledování ve vzduchu
-    World/     LeafFall – padající rudé listí
+    World/     ProceduralMeshes (oblouky, tráva, prapory, strom), AtmosphereController, LeafFall
+  Shaders/     Silhouette (inkoust + mlha + vítr), Mist (mlha, paprsky, vodopády), InkGrade (šeď + ruda)
+  Art/Hero/    Hero.fbx (export z ArtSource/Hero.blend)
   Scripts/Editor/  PrototypeSceneBuilder – menu "Crimson Veil > Build Prototype Scene"
-  Tests/EditMode   unit testy pohybu a simulace šály
-  Tests/PlayMode   integrační testy hráče a proměny šály
+  Tests/EditMode   unit testy pohybu, šály, animace a geometrie
+  Tests/PlayMode   integrační testy hráče, autopilota a proměny šály
+ArtSource/     zdrojové .blend soubory (mimo Assets, Unity je neimportuje)
 ```
+
+### Vizuální styl
+Svět je jen v šedi, jedinou barvou je ruda. Vrstvy hloubky (popředí, hrací plocha, blízké a vzdálené ruiny, nebe) se se vzdáleností noří do přízemní mlhy. Finální průchod `InkGrade` hlídá paletu: cokoli, co není výrazně rudé, převede na šeď.
 
 ### Pohyb (`MotorLogic`)
 Coyote time, jump buffer, variabilní výška skoku (pustit = rychlejší dopad), „apex hang“ v nejvyšším bodě, rychlejší pád, dash (i ve vzduchu, 1× za skok), dash-jump zachovává hybnost. Vše laditelné v Inspectoru na `PlayerController`.
@@ -42,7 +48,7 @@ Coyote time, jump buffer, variabilní výška skoku (pustit = rychlejší dopad)
 - Každý vír je Lamb-Oseenův (konečná rychlost v jádru, jádro roste difuzí); víry unáší vzduch a postupně slábnou.
 - Formy zbraní nastaví cílový tvar a „tvrdost“: body se přitahují k tvaru, délky segmentů se plynule mění, ale víry dál působí – zbraň pořád žije.
 
-![Meč](Docs/prototype-sword.png)
+![Běh](Docs/prototype-run.png)
 
 ## Testy
-Unity → Window → General → Test Runner → EditMode / PlayMode (48 EditMode + 4 PlayMode).
+Unity → Window → General → Test Runner → EditMode / PlayMode (62 EditMode + 5 PlayMode).

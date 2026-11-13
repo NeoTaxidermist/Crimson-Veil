@@ -8,7 +8,7 @@ namespace CrimsonVeil.CameraSystem
     public sealed class CameraFollow25D : MonoBehaviour
     {
         [SerializeField] PlayerController target;
-        [SerializeField] Vector3 offset = new Vector3(0f, 1.4f, -13f);
+        [SerializeField] Vector3 offset = new Vector3(0f, 2.4f, -13f);
         [SerializeField] float lookAhead = 2.2f;
         [SerializeField] float lookAheadSmooth = 0.5f;
         [SerializeField] float smoothX = 0.12f;

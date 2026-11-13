@@ -93,6 +93,23 @@ namespace CrimsonVeil.Tests
         }
 
         [UnityTest]
+        public IEnumerator Autopilot_RunsAndJumps()
+        {
+            var auto = player.AddComponent<AutopilotInput>();
+            auto.jumpInterval = 0.5f;
+            controller.InputSource = auto;
+            float maxY = 0f;
+            float end = Time.time + 1.6f;
+            while (Time.time < end)
+            {
+                maxY = Mathf.Max(maxY, player.transform.position.y);
+                yield return null;
+            }
+            Assert.Greater(player.transform.position.x, 6f);
+            Assert.Greater(maxY, 1.5f, "autopilot should have jumped");
+        }
+
+        [UnityTest]
         public IEnumerator Veil_HardensIntoSwordAndAttacks()
         {
             var veil = player.GetComponent<VeilController>();

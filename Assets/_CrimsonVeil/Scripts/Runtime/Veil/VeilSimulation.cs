@@ -8,8 +8,8 @@ namespace CrimsonVeil.Veil
     public class VeilSettings
     {
         [Header("Cloth")]
-        [Min(3)] public int nodeCount = 20;
-        public float length = 2.6f;
+        [Min(3)] public int nodeCount = 24;
+        public float length = 3.3f;
         [Range(1, 20)] public int constraintIterations = 8;
         [Range(0.9f, 1f)] public float damping = 0.985f;
         public float airDrag = 7f;
@@ -21,13 +21,13 @@ namespace CrimsonVeil.Veil
         public float strouhal = 0.21f;
         public float bodyDiameter = 0.45f;
         public float idleShedFrequency = 1.8f;
-        public float circulationGain = 1.1f;
+        public float circulationGain = 2.3f;
         public float idleCirculation = 1.6f;
         public float coreRadius = 0.2f;
         public float viscosity = 0.03f;
         public float vortexLifetime = 1.8f;
         [Min(1)] public int maxVortices = 40;
-        public float lateralShedOffset = 0.22f;
+        public float lateralShedOffset = 0.3f;
 
         [Header("Hardening (weapon forms)")]
         public float hardenRate = 28f;

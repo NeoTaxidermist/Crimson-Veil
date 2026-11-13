@@ -84,7 +84,7 @@ namespace CrimsonVeil.Veil
                 tan.Normalize();
                 var normal = new Vector3(-tan.y, tan.x, 0f);
 
-                float flowProfile = Mathf.Lerp(1f, 0.12f, Mathf.Pow(t, 0.7f)) * (1f + 0.25f * Mathf.Sin(t * 9f - time * 6f));
+                float flowProfile = (0.7f + 0.65f * Mathf.Sin(Mathf.PI * Mathf.Pow(t, 0.8f))) * (1f - 0.85f * t * t * t * t) * (1f + 0.25f * Mathf.Sin(t * 9f - time * 6f));
                 float twist = Mathf.Abs(Mathf.Cos(time * 3.1f + t * 7f));
                 flowProfile *= Mathf.Lerp(1f, twist * 0.7f + 0.3f, flutterTwist * t);
 

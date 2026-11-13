@@ -7,13 +7,15 @@ namespace CrimsonVeil.World
     /// Code-generated meshes for the grey-box-to-art pass: round arches, grass clumps,
     /// tattered banners and branching trees. Deterministic per seed.
     /// </summary>
-    public static class ProceduralMeshes
+    public static partial class ProceduralMeshes
     {
         sealed class Builder
         {
             public readonly List<Vector3> v = new List<Vector3>();
             public readonly List<Vector3> n = new List<Vector3>();
             public readonly List<Vector2> uv = new List<Vector2>();
+            /// <summary>uv2.y is the wind weight read by the Silhouette shader (defaults to uv).</summary>
+            public readonly List<Vector2> uv2 = new List<Vector2>();
             public readonly List<int>[] tris;
 
             public Builder(int submeshes)
@@ -22,9 +24,11 @@ namespace CrimsonVeil.World
                 for (int i = 0; i < submeshes; i++) tris[i] = new List<int>();
             }
 
-            public int Vert(Vector3 p, Vector3 normal, Vector2 texcoord)
+            public int Vert(Vector3 p, Vector3 normal, Vector2 texcoord) => Vert(p, normal, texcoord, texcoord);
+
+            public int Vert(Vector3 p, Vector3 normal, Vector2 texcoord, Vector2 wind)
             {
-                v.Add(p); n.Add(normal); uv.Add(texcoord);
+                v.Add(p); n.Add(normal); uv.Add(texcoord); uv2.Add(wind);
                 return v.Count - 1;
             }
 
@@ -87,6 +91,7 @@ namespace CrimsonVeil.World
                 mesh.SetVertices(v);
                 mesh.SetNormals(n);
                 mesh.SetUVs(0, uv);
+                mesh.SetUVs(1, uv2);
                 mesh.subMeshCount = tris.Length;
                 for (int i = 0; i < tris.Length; i++) mesh.SetTriangles(tris[i], i);
                 mesh.RecalculateBounds();
@@ -424,15 +429,15 @@ namespace CrimsonVeil.World
                     var c = center + new Vector3(R(-1f, 1f) * radius, R(-0.6f, 0.7f) * radius * 0.7f, R(-0.5f, 0.5f) * radius);
                     float s = leafSize * R(0.6f, 1.3f);
                     float rot = R(0f, Mathf.PI * 2f);
-                    // Maple-ish diamond leaf card (4 tris), facing the camera (-z).
+                    // Maple leaf card facing the camera: uv = leaf texture (alpha-clipped), uv2.y = 1 so it sways.
                     Vector3 ax = new Vector3(Mathf.Cos(rot), Mathf.Sin(rot), 0f) * s;
-                    Vector3 ay = new Vector3(-Mathf.Sin(rot), Mathf.Cos(rot), 0f) * s * 0.75f;
-                    int m = b.Vert(c, Vector3.back, new Vector2(0.5f, 1f));
-                    int p0 = b.Vert(c + ax, Vector3.back, new Vector2(1f, 1f));
-                    int p1 = b.Vert(c + ay, Vector3.back, new Vector2(0.5f, 1f));
-                    int p2 = b.Vert(c - ax * 0.6f, Vector3.back, new Vector2(0f, 1f));
-                    int p3 = b.Vert(c - ay, Vector3.back, new Vector2(0.5f, 1f));
-                    b.Tri(m, p0, p1, 1); b.Tri(m, p1, p2, 1); b.Tri(m, p2, p3, 1); b.Tri(m, p3, p0, 1);
+                    Vector3 ay = new Vector3(-Mathf.Sin(rot), Mathf.Cos(rot), 0f) * s;
+                    var wind = new Vector2(0f, 1f);
+                    int q0 = b.Vert(c - ax - ay, Vector3.back, new Vector2(0f, 0f), wind);
+                    int q1 = b.Vert(c + ax - ay, Vector3.back, new Vector2(1f, 0f), wind);
+                    int q2 = b.Vert(c + ax + ay, Vector3.back, new Vector2(1f, 1f), wind);
+                    int q3 = b.Vert(c - ax + ay, Vector3.back, new Vector2(0f, 1f), wind);
+                    b.Tri(q0, q2, q1, 1); b.Tri(q0, q3, q2, 1);
                 }
             }
 

@@ -13,6 +13,7 @@ Material:
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
   m_InvalidKeywords:
+  - _ALPHACLIP_ON
   - _WIND_ON
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
@@ -23,10 +24,18 @@ Material:
   m_LockedProperties: 
   m_SavedProperties:
     serializedVersion: 3
-    m_TexEnvs: []
+    m_TexEnvs:
+    - _MainTex:
+        m_Texture: {fileID: 2800000, guid: 6e0c2851e8e9e214bb7153b1a195cb12, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
+    - _AlphaClip: 1
+    - _CrackScale: 1.2
+    - _Cracks: 0
     - _Cull: 0
+    - _Cutoff: 0.5
     - _EdgeLight: 0
     - _GrainScale: 0.6
     - _GrainStrength: 0.7

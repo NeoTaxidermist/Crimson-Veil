@@ -1,0 +1,422 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &1601772969606637615
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 8104905997885049269}
+  m_Layer: 0
+  m_Name: Visual
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &8104905997885049269
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1601772969606637615}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 2239127941129956613}
+  m_Father: {fileID: 3420818352555040997}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &2481503692788009236
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3420818352555040997}
+  - component: {fileID: 8894462019269945284}
+  - component: {fileID: 60626348130321056}
+  - component: {fileID: 2947942836197595002}
+  - component: {fileID: 4233667051544647546}
+  - component: {fileID: 4684705822456326274}
+  - component: {fileID: 5389534785771705521}
+  - component: {fileID: 8109110925475585351}
+  - component: {fileID: 3181452723038322252}
+  - component: {fileID: 8655229459203128116}
+  - component: {fileID: 8008510758073263660}
+  m_Layer: 0
+  m_Name: Player
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &3420818352555040997
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2481503692788009236}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 8104905997885049269}
+  - {fileID: 2336203059466012997}
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!143 &8894462019269945284
+CharacterController:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2481503692788009236}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Height: 1.8
+  m_Radius: 0.28
+  m_SlopeLimit: 50
+  m_StepOffset: 0.3
+  m_SkinWidth: 0.03
+  m_MinMoveDistance: 0.001
+  m_Center: {x: 0, y: 0.9, z: 0}
+--- !u!114 &60626348130321056
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2481503692788009236}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5b5499db6039e374aa816bd9a04e291e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CrimsonVeil.Runtime::CrimsonVeil.Player.PlayerInputReader
+--- !u!114 &2947942836197595002
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2481503692788009236}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 41b95c034422e214e848e372e475dee8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CrimsonVeil.Runtime::CrimsonVeil.Player.PlayerController
+  settings:
+    maxRunSpeed: 8
+    groundAcceleration: 85
+    groundDeceleration: 100
+    turnAcceleration: 160
+    airAcceleration: 55
+    airDeceleration: 22
+    jumpHeight: 3.1
+    timeToApex: 0.36
+    fallGravityMultiplier: 1.8
+    jumpCutGravityMultiplier: 2.8
+    apexThreshold: 1.6
+    apexGravityMultiplier: 0.55
+    apexSpeedBonus: 1.1
+    maxFallSpeed: 20
+    coyoteTime: 0.1
+    jumpBufferTime: 0.13
+    groundStickVelocity: 2
+    dashSpeed: 19
+    dashDuration: 0.16
+    dashCooldown: 0.35
+    dashEndSpeedFactor: 0.55
+    wallSlideSpeed: 3.2
+    wallJumpHeight: 2.6
+    wallJumpPush: 8.5
+    wallJumpInputLock: 0.16
+    wallCoyoteTime: 0.1
+    climbDuration: 0.34
+    ledgeRegrabDelay: 0.3
+  visualRoot: {fileID: 8104905997885049269}
+  turnSharpness: 22
+  squashRecover: 12
+  killY: -25
+  environment:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  hangDrop: 1.95
+  minLedgeHeight: 1.2
+  maxLedgeHeight: 2.1
+--- !u!114 &4233667051544647546
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2481503692788009236}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d587b073d3830a1468443e5163408990, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CrimsonVeil.Runtime::CrimsonVeil.Veil.VeilController
+  settings:
+    nodeCount: 32
+    length: 3.3
+    constraintIterations: 8
+    damping: 0.985
+    airDrag: 7
+    gravityScale: 0.08
+    depthOffset: 0.12
+    depthWobble: 0.08
+    strouhal: 0.21
+    bodyDiameter: 0.45
+    idleShedFrequency: 1.8
+    circulationGain: 2.3
+    idleCirculation: 1.6
+    coreRadius: 0.2
+    viscosity: 0.03
+    vortexLifetime: 1.8
+    maxVortices: 40
+    lateralShedOffset: 0.3
+    hardenRate: 28
+    maxSubstep: 0.008333334
+    teleportDistance: 5
+  anchor: {fileID: 2336203059466012997}
+  player: {fileID: 2947942836197595002}
+  transformTime: 0.2
+  morphTime: 0.3
+  turnSpeed: 7
+  idleDriftSpeed: 0.75
+  wind: {x: -0.3, y: 0.05}
+  arrowMaterial: {fileID: 2100000, guid: 191086c641e9fc845acacd74fa34b1fb, type: 2}
+  arrowSpeed: 26
+--- !u!114 &4684705822456326274
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2481503692788009236}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7f7e6af87e784834ea9e0d8d1110e5a1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CrimsonVeil.Runtime::CrimsonVeil.Veil.VeilRenderer
+  material: {fileID: 2100000, guid: 191086c641e9fc845acacd74fa34b1fb, type: 2}
+  rootColor: {r: 0.9, g: 0.02, b: 0.04, a: 1}
+  tipColor: {r: 0.45, g: 0, b: 0.02, a: 0}
+  hardColor: {r: 1.4, g: 0.03, b: 0.05, a: 1}
+  flutterTwist: 0.6
+--- !u!114 &5389534785771705521
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2481503692788009236}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4d23505337eb2e5499339e2368924ed6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CrimsonVeil.Runtime::CrimsonVeil.Veil.VeilWisps
+  material: {fileID: 2100000, guid: 9d7c5d21c989ee84891ac3a3737a6614, type: 2}
+  maxWisps: 360
+  baseRate: 35
+  speedRate: 12
+  lifetime: 1.4
+  sizeRange: {x: 0.04, y: 0.12}
+  streak: 0.06
+  followSharpness: 8
+  color: {r: 0.85, g: 0.02, b: 0.04, a: 0.55}
+--- !u!114 &8109110925475585351
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2481503692788009236}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c93a2544756235443a5b4420e9c26f73, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CrimsonVeil.Runtime::CrimsonVeil.Combat.VeilCombat
+  hitMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  upwardKnock: 2.5
+--- !u!114 &3181452723038322252
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2481503692788009236}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 13fce7404489b1b41bbbf1e50de0306e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CrimsonVeil.Runtime::CrimsonVeil.Combat.PlayerHealth
+  maxHealth: 5
+  invulnerableTime: 0.9
+  stunTime: 0.3
+  respawnDelay: 1.4
+  regenDelay: 6
+  regenPerSecond: 0.25
+  visualRoot: {fileID: 8104905997885049269}
+--- !u!114 &8655229459203128116
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2481503692788009236}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: abccbe4585baa924cac068d1fc1a8906, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CrimsonVeil.Runtime::CrimsonVeil.Player.HeroAnimator
+  player: {fileID: 2947942836197595002}
+  veil: {fileID: 4233667051544647546}
+  model: {fileID: 2239127941129956613}
+  veilAnchor: {fileID: 2336203059466012997}
+  veilAnchorOffset: {x: 0, y: -0.04, z: 0}
+--- !u!114 &8008510758073263660
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2481503692788009236}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 19f39d87c02a376469407a67d4a90111, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CrimsonVeil.Runtime::CrimsonVeil.Player.SpringBones
+  root: {fileID: 2239127941129956613}
+  prefix: Hair.
+  stiffness: 9
+  tipStiffness: 2.2
+  damping: 0.86
+  gravity: {x: 0, y: -5, z: 0}
+  drag: 0.6
+--- !u!1 &6980102738665917204
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2336203059466012997}
+  m_Layer: 0
+  m_Name: VeilAnchor
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2336203059466012997
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6980102738665917204}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 1.5, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 3420818352555040997}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1001 &1772240682200500974
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 8104905997885049269}
+    m_Modifications:
+    - target: {fileID: -8679921383154817045, guid: 9e1b4aec7f13a0846b4f0cff868ddf28, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 9e1b4aec7f13a0846b4f0cff868ddf28, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 9e1b4aec7f13a0846b4f0cff868ddf28, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 9e1b4aec7f13a0846b4f0cff868ddf28, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 9e1b4aec7f13a0846b4f0cff868ddf28, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 9e1b4aec7f13a0846b4f0cff868ddf28, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 9e1b4aec7f13a0846b4f0cff868ddf28, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 9e1b4aec7f13a0846b4f0cff868ddf28, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 9e1b4aec7f13a0846b4f0cff868ddf28, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 9e1b4aec7f13a0846b4f0cff868ddf28, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: 9e1b4aec7f13a0846b4f0cff868ddf28, type: 3}
+      propertyPath: m_Name
+      value: Hero
+      objectReference: {fileID: 0}
+    - target: {fileID: 7219867370428330978, guid: 9e1b4aec7f13a0846b4f0cff868ddf28, type: 3}
+      propertyPath: m_CastShadows
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7219867370428330978, guid: 9e1b4aec7f13a0846b4f0cff868ddf28, type: 3}
+      propertyPath: m_UpdateWhenOffscreen
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7219867370428330978, guid: 9e1b4aec7f13a0846b4f0cff868ddf28, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 1ecf69995d1d81b478ae955c0b349b0b, type: 2}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 9e1b4aec7f13a0846b4f0cff868ddf28, type: 3}
+--- !u!4 &2239127941129956613 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 9e1b4aec7f13a0846b4f0cff868ddf28, type: 3}
+  m_PrefabInstance: {fileID: 1772240682200500974}
+  m_PrefabAsset: {fileID: 0}

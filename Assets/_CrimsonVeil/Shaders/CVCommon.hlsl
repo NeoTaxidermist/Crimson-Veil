@@ -25,6 +25,24 @@ float CV_ValueNoise(float2 p)
     return lerp(lerp(a, b, u.x), lerp(c, d, u.x), u.y);
 }
 
+// Distance to the nearest Voronoi cell border (0 on the border) — used for stone cracks.
+float CV_VoronoiEdge(float2 p)
+{
+    float2 g = floor(p);
+    float2 f = frac(p);
+    float d1 = 8.0, d2 = 8.0;
+    [unroll] for (int y = -1; y <= 1; y++)
+    [unroll] for (int x = -1; x <= 1; x++)
+    {
+        float2 o = float2(x, y);
+        float2 r = o + float2(CV_Hash21(g + o), CV_Hash21(g + o + 17.3)) - f;
+        float d = dot(r, r);
+        if (d < d1) { d2 = d1; d1 = d; }
+        else if (d < d2) { d2 = d; }
+    }
+    return sqrt(d2) - sqrt(d1);
+}
+
 float CV_Fbm(float2 p)
 {
     float v = 0.0;

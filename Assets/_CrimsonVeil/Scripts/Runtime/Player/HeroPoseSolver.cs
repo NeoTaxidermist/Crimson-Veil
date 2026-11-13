@@ -46,6 +46,8 @@ namespace CrimsonVeil.Player
         public bool hanging;
         public bool climbing;
         public float climbProgress;
+        /// <summary>0..1 how much a veil weapon is formed — the arm rises to hold it.</summary>
+        public float weaponHeld;
     }
 
     /// <summary>
@@ -99,6 +101,14 @@ namespace CrimsonVeil.Player
                 target.spine += 14f * k;
                 target.bob -= 0.14f * k;
                 target.armL += 15f * k; target.armR += 15f * k;
+            }
+
+            if (s.weaponHeld > 0f && !s.hanging && !s.climbing)
+            {
+                // Hold the weapon where the veil's grip is (forward and a little below the chest).
+                float w = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(s.weaponHeld));
+                target.armR = Mathf.Lerp(target.armR, 60f, w);
+                target.elbowR = Mathf.Lerp(target.elbowR, 15f, w);
             }
 
             if (s.attacking)

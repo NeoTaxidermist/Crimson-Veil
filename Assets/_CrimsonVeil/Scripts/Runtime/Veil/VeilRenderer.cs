@@ -69,7 +69,7 @@ namespace CrimsonVeil.Veil
 
             var p = sim.Positions;
             int n = sim.Count;
-            float hard = sim.Hardness;
+            float formHardness = Mathf.Max(0.01f, VeilFormLibrary.Hardness(veil.ShapeForm));
             float flowW = VeilFormLibrary.Width(VeilForm.Flow);
             float formW = VeilFormLibrary.Width(veil.ShapeForm);
             float hf = veil.HandFraction;
@@ -88,8 +88,11 @@ namespace CrimsonVeil.Veil
                 float twist = Mathf.Abs(Mathf.Cos(time * 3.1f + t * 7f));
                 flowProfile *= Mathf.Lerp(1f, twist * 0.7f + 0.3f, flutterTwist * t);
 
+                // Per-node visual hardness follows the hardening wave travelling down the ribbon.
+                float hard = sim.UseNodeHardness ? Mathf.Clamp01(sim.NodeHardness[i] / formHardness) : sim.Hardness;
                 float weaponProfile = t < hf ? 0.45f : 1f - Mathf.SmoothStep(0f, 1f, (t - 0.88f) / 0.12f) * 0.85f;
-                float w = Mathf.Lerp(flowW * flowProfile, formW * weaponProfile, hard);
+                weaponProfile *= 1f + 0.08f * Mathf.Sin(t * 14f - time * 5f); // the weapon is still cloth: it breathes
+                float w = Mathf.Lerp(flowW * flowProfile, formW * weaponProfile, Mathf.SmoothStep(0f, 1f, hard));
 
                 // Vitality: a wounded hero's veil is thinner, darker and frays away at the tail.
                 float vit = Mathf.Clamp01(veil.Vitality);

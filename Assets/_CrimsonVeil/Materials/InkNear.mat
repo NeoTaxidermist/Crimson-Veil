@@ -22,10 +22,18 @@ Material:
   m_LockedProperties: 
   m_SavedProperties:
     serializedVersion: 3
-    m_TexEnvs: []
+    m_TexEnvs:
+    - _MainTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
+    - _AlphaClip: 0
+    - _CrackScale: 1.1
+    - _Cracks: 0.5
     - _Cull: 2
+    - _Cutoff: 0.5
     - _EdgeLight: 0.03
     - _GrainScale: 0.6
     - _GrainStrength: 0.45

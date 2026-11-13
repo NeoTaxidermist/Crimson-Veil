@@ -107,6 +107,27 @@ namespace CrimsonVeil.Tests
         }
 
         [Test]
+        public void HoldingWeapon_RaisesArmToTheGrip()
+        {
+            var s = Ground(0f);
+            var bare = Run(new HeroPoseSolver(), 0.5f, s);
+            s.weaponHeld = 1f;
+            var armed = Run(new HeroPoseSolver(), 0.5f, s);
+            Assert.Greater(armed.armR, bare.armR + 40f);
+        }
+
+        [Test]
+        public void Hanging_RaisesBothArms_ClimbEndsStanding()
+        {
+            var hang = Run(new HeroPoseSolver(), 0.5f, new HeroState { hanging = true, maxSpeed = 8f });
+            Assert.Greater(hang.armL, 150f);
+            Assert.Greater(hang.armR, 150f);
+            var end = HeroPoseSolver.ClimbPose(1f);
+            Assert.Less(Mathf.Abs(end.armL), 30f);
+            Assert.Less(end.kneeL, 30f);
+        }
+
+        [Test]
         public void Output_StaysFinite()
         {
             var solver = new HeroPoseSolver();

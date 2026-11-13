@@ -8,7 +8,7 @@ namespace CrimsonVeil.Veil
     public class VeilSettings
     {
         [Header("Cloth")]
-        [Min(3)] public int nodeCount = 24;
+        [Min(3)] public int nodeCount = 32;
         public float length = 3.3f;
         [Range(1, 20)] public int constraintIterations = 8;
         [Range(0.9f, 1f)] public float damping = 0.985f;
@@ -72,7 +72,15 @@ namespace CrimsonVeil.Veil
         public float FlowRestLength { get; }
 
         public float Hardness { get; set; }
+        /// <summary>
+        /// Optional per-node hardness (0..1). When <see cref="UseNodeHardness"/> is set, hardening can
+        /// travel along the ribbon as a wave instead of snapping all at once.
+        /// </summary>
+        public float[] NodeHardness { get; private set; }
+        public bool UseNodeHardness { get; set; }
         public Vector2 Wind { get; set; }
+
+        float H(int i) => UseNodeHardness ? Mathf.Clamp01(NodeHardness[i]) : Mathf.Clamp01(Hardness);
         /// <summary>Slow magical drift of the air around the hero (e.g. "behind and slightly up").</summary>
         public Vector2 AmbientFlow { get; set; }
         public Vector3 AnchorVelocity { get; private set; }
@@ -94,6 +102,7 @@ namespace CrimsonVeil.Veil
             previous = new Vector3[Count];
             Targets = new Vector3[Count];
             TargetRest = new float[Count - 1];
+            NodeHardness = new float[Count];
             FlowRestLength = Settings.length / (Count - 1);
             Reset(anchor);
         }
@@ -187,23 +196,21 @@ namespace CrimsonVeil.Veil
             previous[0] = a - anchorVel * h;
 
             // 5) Hardening: pull towards the weapon shape and bleed velocity.
-            float hard = Mathf.Clamp01(Hardness);
-            if (hard > 0.001f)
+            for (int i = 1; i < Count; i++)
             {
-                float f = 1f - Mathf.Exp(-s.hardenRate * hard * h);
-                for (int i = 1; i < Count; i++)
-                {
-                    Positions[i] = Vector3.Lerp(Positions[i], Targets[i] + targetOffset, f);
-                    previous[i] = Vector3.Lerp(previous[i], Positions[i], f * 0.5f);
-                }
+                float hi = H(i);
+                if (hi <= 0.001f) continue;
+                float f = 1f - Mathf.Exp(-s.hardenRate * hi * h);
+                Positions[i] = Vector3.Lerp(Positions[i], Targets[i] + targetOffset, f);
+                previous[i] = Vector3.Lerp(previous[i], Positions[i], f * 0.5f);
             }
 
-            // 6) Distance constraints (rest length morphs from cloth to weapon shape).
+            // 6) Distance constraints (rest length morphs from cloth to weapon shape, node by node).
             for (int it = 0; it < s.constraintIterations; it++)
             {
                 for (int i = 0; i < Count - 1; i++)
                 {
-                    float rest = Mathf.Lerp(FlowRestLength, TargetRest[i], hard);
+                    float rest = Mathf.Lerp(FlowRestLength, TargetRest[i], 0.5f * (H(i) + H(i + 1)));
                     Vector3 d = Positions[i + 1] - Positions[i];
                     float len = d.magnitude;
                     if (len < 1e-6f) continue;

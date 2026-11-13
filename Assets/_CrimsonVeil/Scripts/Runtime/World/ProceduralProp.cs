@@ -23,6 +23,7 @@ namespace CrimsonVeil.World
 
         public void Rebuild()
         {
+            if (!gameObject.scene.IsValid()) return; // prefab asset on disk: generated on instances only
             if (mesh != null) DestroyMesh(mesh);
             mesh = Build();
             mesh.hideFlags = HideFlags.DontSave;

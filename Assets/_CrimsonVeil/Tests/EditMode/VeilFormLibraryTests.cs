@@ -37,6 +37,55 @@ namespace CrimsonVeil.Tests
         }
 
         [Test]
+        public void Shield_IsAVortexAroundItsCentre()
+        {
+            var pts = new Vector2[48];
+            float hf = VeilFormLibrary.BuildShape(VeilForm.Shield, pts);
+            var c = VeilFormLibrary.ShieldCenter;
+            float swept = 0f;
+            int start = Mathf.CeilToInt(hf * (pts.Length - 1)) + 2;
+            for (int i = start; i < pts.Length; i++)
+            {
+                Assert.Less(Vector2.Distance(pts[i], c), 0.7f, "stays within the shield radius");
+                if (i > start) swept += Vector2.SignedAngle(pts[i - 1] - c, pts[i] - c);
+            }
+            Assert.Greater(Mathf.Abs(swept), 360f, "winds more than one full turn");
+            Assert.Less(Vector2.Distance(pts[pts.Length - 1], c), 0.3f, "spirals inwards");
+        }
+
+        [Test]
+        public void HardeningWave_TravelsFromNeckToTip()
+        {
+            Assert.AreEqual(0f, VeilTransform.Wave(0f, 0.5f), 1e-5f);
+            Assert.AreEqual(1f, VeilTransform.Wave(1f, 1f), 1e-5f);
+            Assert.Greater(VeilTransform.Wave(0.4f, 0.1f), VeilTransform.Wave(0.4f, 0.9f), "neck hardens first");
+            for (float p = 0f; p <= 1f; p += 0.1f)
+                Assert.GreaterOrEqual(VeilTransform.Wave(p + 0.1f, 0.5f) + 1e-6f, VeilTransform.Wave(p, 0.5f), "monotonic");
+            Assert.Less(VeilTransform.TipSoftness(1f), 1f, "the tip stays a bit soft");
+            Assert.AreEqual(1f, VeilTransform.TipSoftness(0.5f), 1e-5f);
+        }
+
+        [Test]
+        public void Morph_StartsAtOldShapeAndEndsAtNewShape()
+        {
+            var a = new Vector2(0.2f, -1f);
+            var b = new Vector2(1.5f, 0.6f);
+            Assert.AreEqual(a, VeilTransform.MorphNode(a, b, 0f, 0.5f, 3.3f));
+            Assert.AreEqual(b, VeilTransform.MorphNode(a, b, 1f, 0.5f, 3.3f));
+            Assert.Greater(VeilTransform.MorphProgress(0.5f, 0.1f), VeilTransform.MorphProgress(0.5f, 0.9f), "neck leads the morph");
+            Assert.AreEqual(1f, VeilTransform.MorphProgress(1f, 1f), 1e-5f);
+        }
+
+        [Test]
+        public void IdlePose_KeepsTheGripNearTheHand()
+        {
+            var hand = VeilFormLibrary.Hand;
+            // The shield vortex turns around its own centre, so its grip may drift slightly more.
+            foreach (var f in Weapons)
+                Assert.Less(Vector2.Distance(hand, VeilWeaponPose.Idle(f, hand, true, 1.7f)), f == VeilForm.Shield ? 0.15f : 0.05f, f.ToString());
+        }
+
+        [Test]
         public void Spear_ReachesFurtherThanSword()
         {
             var sword = new Vector2[20];

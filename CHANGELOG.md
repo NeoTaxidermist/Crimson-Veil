@@ -10,6 +10,17 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 - **Chycení hrany a šplh**: hrdina se chytí hrany, která je v dosahu rukou, a vyšplhá nahoru (skok nebo nahoru). Dolů = pustit se, skok od hrany = odraz. Detekce hrany přes paprsky (zeď v úrovni hrudníku, volný prostor nad hranou, rovný vršek, místo pro postavení).
 - Animace pro klouzání po zdi, visení a šplh (`HeroPoseSolver`).
 - Testy: 11 EditMode testů stavů zdi a hrany, 2 PlayMode testy s reálnými kolizemi (chycení a vyšplhání na 4 m vysoký blok, odraz od vysoké zdi).
+- **Plynulá šála**: ztvrdnutí běží jako vlna od krku ke špičce (povolení od špičky), tvary zbraní se do sebe plynule převíjejí se spirálovým vinutím, při otočce se zbraň „přetočí“ místo skoku, zbraně v klidu dýchají (meč se pohupuje, bič vlní). Špička zbraně zůstává měkká.
+- **Nový štít**: šála stočená do rotujícího víru (místo ploché desky), při úderu se roztočí. Meč má zahnutou čepel. Hrdina drží zbraň zvednutou paží.
+- **Vlasy**: delší prameny padající dozadu a dolů (12 pramenů, každý se 3 kostmi), pružinová fyzika (`SpringBones`, `SpringChainSolver`) – vlají při běhu, skocích a otočkách.
+- **Level Editor** (menu *Crimson Veil ▸ Level Editor*, Ctrl+Shift+L): paleta dílků (Terén, Hratelnost, Dekorace, Scéna) s českými popisky, kliknutí do Scene view = položení s přichytáváním k mřížce, Shift = víc kusů, volba vrstvy hloubky pro dekorace, přesun vybraných do jiné vrstvy, „Hrát odsud“, kontrola úrovně, „Nová úroveň“, zobrazení dosahu skoku z hran vybrané plošiny.
+- **TerrainBlock**: plošina/zeď/útes s úchyty ve Scene view (šířka, výška), přesná kolize, generovaná skalní silueta (praskliny, zubatý spodek, převis), tráva a visící kořeny vždy uvnitř hran.
+- Dílky jako prefaby (`LevelKit/Prefabs`), generované z kódu (`LevelKitFactory`, `LevelKitCatalog`); prototypová úroveň se staví ze stejných dílků.
+- Detail: javorové listy (textura s alpha-clipem), praskliny v kameni (Voronoi), sloupy s hlavicemi, větší měsíc, víc vrstev ruin, vodopád u šachty.
+- Nová prototypová úroveň: blok na chycení hrany, šachta na odrazy od zdí, horní cesta, pláň s rudým stromem, propast s mostem.
+
+### Opraveno
+- Tráva přečnívala přes okraje plošin a při pohybu kamery se „rozjížděla“ – teď ji generuje sám TerrainBlock uvnitř svých hran.
 
 ## [0.3.1] – 2026-11-13
 

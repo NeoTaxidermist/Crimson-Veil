@@ -97,6 +97,7 @@ namespace CrimsonVeil.Player
                 hanging = player.Motor.State == MotorState.LedgeHang,
                 climbing = player.Motor.State == MotorState.Climbing,
                 climbProgress = player.Motor.ClimbProgress,
+                weaponHeld = veil != null && veil.Form != VeilForm.Flow ? veil.TransformProgress : 0f,
             };
             var p = Solver.Step(Time.deltaTime, s);
             Apply(p);

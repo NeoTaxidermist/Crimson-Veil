@@ -41,11 +41,11 @@ namespace CrimsonVeil.EditorTools
             T(terrain, -14f, 14f, 2f, 18f, TerrainStyle.Ruin, 1, false);    // back wall
             T(terrain, -1.5f, 0f, 25f, 12f, TerrainStyle.Rock, 2);          // start floor  (-14 .. 11)
             T(terrain, 14.5f, 3.6f, 5f, 4.2f, TerrainStyle.Ruin, 3);        // ledge block (grab & climb)
-            T(terrain, 20.5f, 0.6f, 7f, 10f, TerrainStyle.Rock, 4);          // landing     (17 .. 24)
-            T(terrain, 24.7f, 9f, 1.4f, 5.8f, TerrainStyle.Ruin, 5, false); // shaft left wall (hangs: walk in underneath)
-            T(terrain, 28f, -1.2f, 5.2f, 4f, TerrainStyle.Rock, 6);          // shaft floor
-            T(terrain, 31.3f, 7f, 1.4f, 9f, TerrainStyle.Ruin, 7, false);   // shaft right wall
-            T(terrain, 37f, 7f, 10f, 1.4f, TerrainStyle.Rock, 8);            // high road   (32 .. 42)
+            T(terrain, 21f, 0.6f, 8f, 10f, TerrainStyle.Rock, 4);            // landing     (17 .. 25)
+            T(terrain, 25.7f, 9f, 1.4f, 6.4f, TerrainStyle.Ruin, 5, false); // shaft left wall (hangs: walk in underneath, 2 m gap)
+            T(terrain, 28f, -1.2f, 3.2f, 4f, TerrainStyle.Rock, 6);          // shaft floor (3.2 m wide shaft)
+            T(terrain, 30.3f, 7f, 1.4f, 9f, TerrainStyle.Ruin, 7, false);   // shaft right wall
+            T(terrain, 36.5f, 7f, 11f, 1.4f, TerrainStyle.Rock, 8);          // high road   (31 .. 42)
             T(terrain, 49f, 5f, 7f, 1.2f, TerrainStyle.Rock, 9);             // stepping ledge
             T(terrain, 69f, 0f, 22f, 12f, TerrainStyle.Rock, 10);            // tree plain  (58 .. 80)
             T(terrain, 55.5f, 2.2f, 3f, 0.8f, TerrainStyle.Rock, 11);        // little ledge down

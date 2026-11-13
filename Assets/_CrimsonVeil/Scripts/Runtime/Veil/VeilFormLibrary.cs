@@ -46,7 +46,7 @@ namespace CrimsonVeil.Veil
                 case VeilForm.Spear: return 0.08f;
                 case VeilForm.Shield: return 0.2f;
                 case VeilForm.Bow: return 0.07f;
-                default: return 0.3f;
+                default: return 0.42f;
             }
         }
 
@@ -188,6 +188,24 @@ namespace CrimsonVeil.Veil
             if (t < t1) return Mathf.Lerp(0f, v1, MovementMath.EaseInOutSine(t / t1));
             if (t < t2) return Mathf.Lerp(v1, v2, MovementMath.EaseOutCubic((t - t1) / (t2 - t1)));
             return Mathf.Lerp(v2, 0f, MovementMath.EaseInOutSine((t - t2) / (1f - t2)));
+        }
+
+        /// <summary>
+        /// How much the weapon is swung (degrees, + = upwards) at attack progress t — the hero's arm follows it.
+        /// Thrusts are expressed as an equivalent arm extension.
+        /// </summary>
+        public static float SwingAngle(VeilForm form, float t)
+        {
+            if (t < 0f) return 0f;
+            switch (form)
+            {
+                case VeilForm.Sword: return Curve(t, 0.18f, 55f, 0.55f, -105f);
+                case VeilForm.Whip: return Curve(t, 0.25f, 75f, 0.6f, -35f);
+                case VeilForm.Spear: return Curve(t, 0.2f, -0.35f, 0.45f, 1.1f) * 22f;
+                case VeilForm.Shield: return Mathf.Sin(Mathf.Clamp01(t) * Mathf.PI) * 18f;
+                case VeilForm.Bow: return Curve(t, 0.25f, -10f, 0.4f, 4f);
+                default: return 0f;
+            }
         }
 
         /// <summary>Transforms a local shape point for attack progress <paramref name="t"/> (0..1).</summary>

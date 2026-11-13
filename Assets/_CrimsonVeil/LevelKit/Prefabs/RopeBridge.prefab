@@ -262,7 +262,7 @@ MonoBehaviour:
   start: {fileID: 3249386002614563847}
   end: {fileID: 9039025944226863165}
   bridge: {fileID: 3224860683694969787}
-  material: {fileID: 2100000, guid: 191086c641e9fc845acacd74fa34b1fb, type: 2}
+  material: {fileID: 2100000, guid: d5091d161340156418c7df6be668e41a, type: 2}
   width: 0.07
   sag: 0.25
   points: 12
@@ -292,7 +292,7 @@ LineRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 191086c641e9fc845acacd74fa34b1fb, type: 2}
+  - {fileID: 2100000, guid: d5091d161340156418c7df6be668e41a, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0

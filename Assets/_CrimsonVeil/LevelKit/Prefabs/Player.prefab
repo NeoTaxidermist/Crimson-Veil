@@ -131,14 +131,14 @@ MonoBehaviour:
     turnAcceleration: 160
     airAcceleration: 55
     airDeceleration: 22
-    jumpHeight: 3.1
-    timeToApex: 0.36
-    fallGravityMultiplier: 1.8
+    jumpHeight: 3.4
+    timeToApex: 0.38
+    fallGravityMultiplier: 1.6
     jumpCutGravityMultiplier: 2.8
     apexThreshold: 1.6
     apexGravityMultiplier: 0.55
     apexSpeedBonus: 1.1
-    maxFallSpeed: 20
+    maxFallSpeed: 18
     coyoteTime: 0.1
     jumpBufferTime: 0.13
     groundStickVelocity: 2
@@ -146,10 +146,10 @@ MonoBehaviour:
     dashDuration: 0.16
     dashCooldown: 0.35
     dashEndSpeedFactor: 0.55
-    wallSlideSpeed: 3.2
-    wallJumpHeight: 2.6
-    wallJumpPush: 8.5
-    wallJumpInputLock: 0.16
+    wallSlideSpeed: 2.3
+    wallJumpHeight: 3.3
+    wallJumpPush: 7.5
+    wallJumpInputLock: 0.12
     wallCoyoteTime: 0.1
     climbDuration: 0.34
     ledgeRegrabDelay: 0.3
@@ -204,8 +204,10 @@ MonoBehaviour:
   turnSpeed: 7
   idleDriftSpeed: 0.75
   wind: {x: -0.3, y: 0.05}
-  arrowMaterial: {fileID: 2100000, guid: 191086c641e9fc845acacd74fa34b1fb, type: 2}
+  arrowMaterial: {fileID: 2100000, guid: d5091d161340156418c7df6be668e41a, type: 2}
   arrowSpeed: 26
+  hand: {fileID: 3538522687630678429}
+  handFollowSharpness: 30
 --- !u!114 &4684705822456326274
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -219,10 +221,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: CrimsonVeil.Runtime::CrimsonVeil.Veil.VeilRenderer
   material: {fileID: 2100000, guid: 191086c641e9fc845acacd74fa34b1fb, type: 2}
-  rootColor: {r: 0.9, g: 0.02, b: 0.04, a: 1}
-  tipColor: {r: 0.45, g: 0, b: 0.02, a: 0}
-  hardColor: {r: 1.4, g: 0.03, b: 0.05, a: 1}
-  flutterTwist: 0.6
+  smoothing: 3
+  flutterTwist: 0.5
 --- !u!114 &5389534785771705521
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -235,15 +235,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4d23505337eb2e5499339e2368924ed6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: CrimsonVeil.Runtime::CrimsonVeil.Veil.VeilWisps
-  material: {fileID: 2100000, guid: 9d7c5d21c989ee84891ac3a3737a6614, type: 2}
-  maxWisps: 360
-  baseRate: 35
-  speedRate: 12
-  lifetime: 1.4
-  sizeRange: {x: 0.04, y: 0.12}
-  streak: 0.06
-  followSharpness: 8
-  color: {r: 0.85, g: 0.02, b: 0.04, a: 0.55}
+  material: {fileID: 2100000, guid: e31e8f4ee10ad1848910c961d170348a, type: 2}
+  maxWisps: 48
+  trailPoints: 14
+  sampleInterval: 0.04
+  baseRate: 6
+  speedRate: 3.5
+  lifetime: 1.6
+  widthRange: {x: 0.05, y: 0.14}
+  followSharpness: 3.5
+  curl: 1.4
+  maxSpeed: 4
 --- !u!114 &8109110925475585351
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -418,5 +420,10 @@ PrefabInstance:
 --- !u!4 &2239127941129956613 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 9e1b4aec7f13a0846b4f0cff868ddf28, type: 3}
+  m_PrefabInstance: {fileID: 1772240682200500974}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &3538522687630678429 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -6232110932308421773, guid: 9e1b4aec7f13a0846b4f0cff868ddf28, type: 3}
   m_PrefabInstance: {fileID: 1772240682200500974}
   m_PrefabAsset: {fileID: 0}

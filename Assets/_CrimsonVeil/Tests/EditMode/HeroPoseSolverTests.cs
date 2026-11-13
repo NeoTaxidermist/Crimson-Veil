@@ -102,8 +102,12 @@ namespace CrimsonVeil.Tests
         {
             var s = Ground(0f);
             s.attacking = true;
-            var p = Run(new HeroPoseSolver(), 0.3f, s);
-            Assert.Greater(p.armR, 70f);
+            s.swingAngle = 50f;
+            var up = Run(new HeroPoseSolver(), 0.3f, s);
+            Assert.Greater(up.armR, 80f, "wind-up raises the sword arm");
+            s.swingAngle = -100f;
+            var down = Run(new HeroPoseSolver(), 0.3f, s);
+            Assert.Less(down.armR, 10f, "the arm cuts down with the blade");
         }
 
         [Test]

@@ -25,8 +25,15 @@ namespace CrimsonVeil.Veil
         [SerializeField] Vector2 wind = new Vector2(-0.3f, 0.05f);
         [SerializeField] Material arrowMaterial;
         [SerializeField] float arrowSpeed = 26f;
+        [Tooltip("The hero's hand bone. When set, weapons grow out of the real hand instead of a fixed point.")]
+        [SerializeField] Transform hand;
+        [SerializeField] float handFollowSharpness = 30f;
 
         public VeilSimulation Simulation { get; private set; }
+        /// <summary>Current swing of the weapon in degrees (+ = up) — the arm animation follows it.</summary>
+        public float CurrentSwing { get; private set; }
+        public Transform Hand { get => hand; set => hand = value; }
+        Vector2 handDelta;
         public VeilForm Form { get; private set; }
         /// <summary>Shape used for targets; stays on the last weapon while the veil softens back.</summary>
         public VeilForm ShapeForm { get; private set; }
@@ -141,7 +148,7 @@ namespace CrimsonVeil.Veil
 
             UpdateNodeHardness();
             if (TransformProgress > 0f && ShapeForm != VeilForm.Flow) UpdateTargets(a, dt);
-            if (attackTime < 0f) AttackProgress = -1f;
+            if (attackTime < 0f) { AttackProgress = -1f; CurrentSwing = 0f; }
 
             Simulation.Hardness = Hardness;
             Simulation.Step(dt, a);
@@ -178,6 +185,17 @@ namespace CrimsonVeil.Veil
                 }
                 AttackProgress = t;
             }
+            CurrentSwing = VeilWeaponPose.SwingAngle(ShapeForm, t);
+
+            // Where is the real hand, in the shape's local space? Grow the weapon from there.
+            if (hand != null)
+            {
+                float s = Mathf.Abs(facingScale) < 0.3f ? Facing : facingScale;
+                var lh = new Vector2((hand.position.x - a.x) / s, hand.position.y - a.y);
+                var wanted = lh - VeilFormLibrary.Hand;
+                if (wanted.sqrMagnitude > 1f) wanted = wanted.normalized; // guard against a bad first frame
+                handDelta = Vector2.Lerp(handDelta, wanted, 1f - Mathf.Exp(-handFollowSharpness * dt));
+            }
 
             var targets = Simulation.Targets;
             int n = Simulation.Count;
@@ -185,11 +203,13 @@ namespace CrimsonVeil.Veil
             {
                 float f = (float)i / (n - 1);
                 bool weapon = f >= HandFraction;
+                // Pose around the canonical grip first, then move the whole weapon onto the real hand.
                 Vector2 rest = VeilWeaponPose.Idle(ShapeForm, shape[i], weapon, time);
+                rest = VeilWeaponPose.Apply(ShapeForm, rest, weapon, t);
+                rest += weapon ? handDelta : handDelta * (HandFraction > 0f ? f / HandFraction : 1f);
                 Vector2 l = morph < 1f
                     ? VeilTransform.MorphNode(fromShape[i], rest, VeilTransform.MorphProgress(morph, f), f, time)
                     : rest;
-                l = VeilWeaponPose.Apply(ShapeForm, l, weapon, t);
                 current[i] = l;
                 targets[i] = a + new Vector3(l.x * facingScale, l.y, 0f);
             }

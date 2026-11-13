@@ -62,7 +62,7 @@ namespace CrimsonVeil.EditorTools
 
             var fx = new GameObject("CombatFx").AddComponent<CombatFx>();
             fx.transform.SetParent(root.transform, false);
-            SetRef(fx, "burstMaterial", M.wisp);
+            SetRef(fx, "burstMaterial", M.burst);
 
             var camGo = new GameObject("Main Camera") { tag = "MainCamera" };
             camGo.transform.SetParent(root.transform, false);
@@ -111,7 +111,7 @@ namespace CrimsonVeil.EditorTools
             var veil = player.AddComponent<VeilController>();
             SetRef(veil, "anchor", anchor);
             SetRef(veil, "player", pc);
-            SetRef(veil, "arrowMaterial", M.veil);
+            SetRef(veil, "arrowMaterial", M.rope);
             SetRef(player.AddComponent<VeilRenderer>(), "material", M.veil);
             SetRef(player.AddComponent<VeilWisps>(), "material", M.wisp);
             player.AddComponent<VeilCombat>();
@@ -135,6 +135,8 @@ namespace CrimsonVeil.EditorTools
                 SetRef(anim, "model", hero.transform);
                 SetRef(anim, "veilAnchor", anchor);
                 SetRef(player.AddComponent<SpringBones>(), "root", hero.transform);
+                var handBone = CrimsonVeil.Core.RigJoint.FindDeep(hero.transform, "Hand.R");
+                if (handBone != null) SetRef(veil, "hand", handBone);
             }
             return player;
         }
@@ -247,12 +249,12 @@ namespace CrimsonVeil.EditorTools
 
             var rope = new GameObject("CrimsonRope").AddComponent<CuttableRope>();
             rope.transform.SetParent(root.transform, false);
-            rope.Configure(post, top, bridge, M.veil);
+            rope.Configure(post, top, bridge, M.rope);
             var so = new SerializedObject(rope);
             so.FindProperty("start").objectReferenceValue = post;
             so.FindProperty("end").objectReferenceValue = top;
             so.FindProperty("bridge").objectReferenceValue = bridge;
-            so.FindProperty("material").objectReferenceValue = M.veil;
+            so.FindProperty("material").objectReferenceValue = M.rope;
             so.ApplyModifiedPropertiesWithoutUndo();
 
             var zone = new GameObject("CameraZone").AddComponent<CameraZone>();

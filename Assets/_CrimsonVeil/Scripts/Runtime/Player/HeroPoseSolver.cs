@@ -48,6 +48,8 @@ namespace CrimsonVeil.Player
         public float climbProgress;
         /// <summary>0..1 how much a veil weapon is formed — the arm rises to hold it.</summary>
         public float weaponHeld;
+        /// <summary>Weapon swing in degrees (+ = up) — the sword arm follows the blade.</summary>
+        public float swingAngle;
     }
 
     /// <summary>
@@ -113,9 +115,12 @@ namespace CrimsonVeil.Player
 
             if (s.attacking)
             {
-                target.armR = 85f;
-                target.elbowR = 8f;
-                target.chest += 6f;
+                // The arm drives the blade: raised on the wind-up, cutting down through the swing.
+                target.armR = 60f + s.swingAngle * 0.7f;
+                target.elbowR = Mathf.Lerp(25f, 4f, Mathf.Abs(s.swingAngle) / 100f);
+                target.chest += s.swingAngle * -0.08f + 4f;
+                target.spine += Mathf.Max(0f, -s.swingAngle) * 0.08f;
+                target.armL = Mathf.Lerp(target.armL, -20f - s.swingAngle * 0.2f, 0.6f); // counter-balance
             }
 
             if (!initialised)

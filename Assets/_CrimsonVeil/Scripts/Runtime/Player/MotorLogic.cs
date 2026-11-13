@@ -16,15 +16,15 @@ namespace CrimsonVeil.Player
         public float airDeceleration = 22f;
 
         [Header("Jump")]
-        public float jumpHeight = 3.1f;
-        public float timeToApex = 0.36f;
-        public float fallGravityMultiplier = 1.8f;
+        public float jumpHeight = 3.4f;
+        public float timeToApex = 0.38f;
+        public float fallGravityMultiplier = 1.6f;
         public float jumpCutGravityMultiplier = 2.8f;
         [Tooltip("|vy| below this counts as the apex of a jump.")]
         public float apexThreshold = 1.6f;
         public float apexGravityMultiplier = 0.55f;
         public float apexSpeedBonus = 1.1f;
-        public float maxFallSpeed = 20f;
+        public float maxFallSpeed = 18f;
         public float coyoteTime = 0.1f;
         public float jumpBufferTime = 0.13f;
         public float groundStickVelocity = 2f;
@@ -37,11 +37,11 @@ namespace CrimsonVeil.Player
         public float dashEndSpeedFactor = 0.55f;
 
         [Header("Wall")]
-        public float wallSlideSpeed = 3.2f;
-        public float wallJumpHeight = 2.6f;
-        public float wallJumpPush = 8.5f;
+        public float wallSlideSpeed = 2.3f;
+        public float wallJumpHeight = 3.3f;
+        public float wallJumpPush = 7.5f;
         [Tooltip("After a wall jump, horizontal input is ignored this long so the push carries.")]
-        public float wallJumpInputLock = 0.16f;
+        public float wallJumpInputLock = 0.12f;
         public float wallCoyoteTime = 0.1f;
 
         [Header("Ledge")]

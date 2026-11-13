@@ -16,6 +16,8 @@ namespace CrimsonVeil.EditorTools
         public Material inkFG, inkPlay, inkNear, inkMid, inkFar, inkSky, grass, banner, leaf, hero, wraith, wraithEyes;
         public Material mistBand, mistLow, waterfall, shaft, moon;
         public Material veil, wisp, leafParticle, inkGrade;
+        /// <summary>Simple particle materials (hit bursts, ropes) — the veil shader is for cloth only.</summary>
+        public Material burst, rope;
 
         static LevelKitMaterials cached;
 
@@ -71,14 +73,16 @@ namespace CrimsonVeil.EditorTools
                 shaft = MistMat("LightShaft", mist, "_MODE_SHAFT", 1, Color.white, 0.16f, new Vector2(2f, 4f), new Vector2(0.01f, -0.02f), new Vector2(0.35f, 0.3f)),
                 moon = Mat("Moon", unlit, new Color(3.4f, 3.4f, 3.3f)),
 
-                veil = Transparent(Mat("Veil", particles, new Color(1.25f, 0.06f, 0.07f, 1f))),
-                wisp = Transparent(Mat("VeilWisp", particles, new Color(1.1f, 0.05f, 0.06f, 1f))),
+                veil = VeilMat("Veil", 0.45f, 0.75f, 1.4f),
+                wisp = VeilMat("VeilSmoke", 0.9f, 0.95f, 0.9f),
+                burst = Transparent(Mat("InkBurst", particles, new Color(1.1f, 0.05f, 0.06f, 1f))),
+                rope = Transparent(Mat("Rope", particles, new Color(1.1f, 0.04f, 0.05f, 1f))),
                 leafParticle = Transparent(Mat("Leaf", particles, new Color(0.9f, 0.03f, 0.05f, 1f))),
                 inkGrade = Mat("InkGrade", Shader.Find("CrimsonVeil/InkGrade"), Color.white),
             };
             m.shaft.SetFloat("_SrcBlend", (float)BlendMode.SrcAlpha);
             m.shaft.SetFloat("_DstBlend", (float)BlendMode.One);
-            m.wisp.SetTexture("_BaseMap", SpriteTexture("SoftDot", 64, SoftDot));
+            m.burst.SetTexture("_BaseMap", SpriteTexture("SoftDot", 64, SoftDot));
             m.leafParticle.SetTexture("_BaseMap", maple);
             AssetDatabase.SaveAssets();
             return m;
@@ -92,6 +96,19 @@ namespace CrimsonVeil.EditorTools
             m.SetFloat("_MistStrength", mist);
             m.SetFloat("_GrainStrength", grain);
             m.SetFloat("_EdgeLight", color.grayscale > 0.15f && color.r - color.g < 0.1f ? 0.03f : 0f);
+            return m;
+        }
+
+        static Material VeilMat(string name, float edgeSoftness, float erosion, float flowSpeed)
+        {
+            var m = Mat(name, Shader.Find("CrimsonVeil/Veil"), Color.white);
+            m.SetColor("_Deep", new Color(0.26f, 0.0f, 0.02f));
+            m.SetColor("_Mid", new Color(0.85f, 0.02f, 0.045f));
+            m.SetColor("_Glow", new Color(1.9f, 0.13f, 0.1f));
+            m.SetFloat("_EdgeSoftness", edgeSoftness);
+            m.SetFloat("_Erosion", erosion);
+            m.SetFloat("_FlowSpeed", flowSpeed);
+            m.renderQueue = (int)RenderQueue.Transparent;
             return m;
         }
 

@@ -27,7 +27,7 @@ namespace CrimsonVeil.Tests
         {
             root = new GameObject("TraversalLevel");
             Box(new Vector3(0f, -0.5f, 0f), new Vector3(40f, 1f, 4f));       // floor
-            Box(new Vector3(4.5f, 2f, 0f), new Vector3(2f, 4f, 4f));         // ledge, top at y=4 (above a plain jump)
+            Box(new Vector3(4.5f, 2.3f, 0f), new Vector3(2f, 4.6f, 4f));     // ledge, top at y=4.6 (above a plain jump)
             Box(new Vector3(-6f, 6f, 0f), new Vector3(1f, 12f, 4f));         // tall wall on the left
 
             player = new GameObject("TestPlayer");
@@ -74,8 +74,37 @@ namespace CrimsonVeil.Tests
             input.jumpHeld = false;
             yield return Wait(0.4f);
             Assert.IsTrue(grabbed, "the ledge is higher than a jump, so it must be grabbed");
-            Assert.Greater(player.transform.position.y, 3.9f, "standing on top of the ledge");
+            Assert.Greater(player.transform.position.y, 4.5f, "standing on top of the ledge");
             Assert.Greater(player.transform.position.x, 3.5f);
+        }
+
+        [UnityTest]
+        public IEnumerator Shaft_CanBeClimbedByAlternatingWallJumps()
+        {
+            // Second wall 3.2 m to the right of the tall left wall: a shaft like the one in the level.
+            Box(new Vector3(-2.3f, 6f, 0f), new Vector3(1f, 12f, 4f));
+            player.transform.position = new Vector3(-4f, 0.05f, 0f);
+            controller.Teleport(new Vector3(-4f, 0.05f, 0f));
+            yield return Wait(0.2f);
+
+            int dir = -1;
+            input.moveX = dir;
+            input.jump = true; input.jumpHeld = true;
+            float maxY = 0f;
+            float end = Time.time + 5f;
+            while (Time.time < end)
+            {
+                var m = controller.Motor;
+                if (m.State == MotorState.WallSlide && m.AttachSide == dir)
+                {
+                    dir = -dir;           // kick off and steer to the other wall
+                    input.jump = true;
+                    input.moveX = dir;
+                }
+                maxY = Mathf.Max(maxY, player.transform.position.y);
+                yield return null;
+            }
+            Assert.Greater(maxY, 7f, "a 3.2 m shaft must be climbable");
         }
 
         [UnityTest]

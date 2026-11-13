@@ -5,6 +5,23 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.5.0] – 2026-11-13
+Lehčí pohyb, elegantní šála a nový hrdina podle key artu.
+
+### Změněno
+- **Lehčí pohyb**: vyšší skok (3,4 m, delší stoupání), mírnější pád, pomalejší klouzání po zdi (2,3 m/s), vyšší odraz od zdi (3,3 m), kratší zámek ovládání po odrazu (lépe se řídí zpět ke zdi).
+- **Šachta** v prototypu je užší (3,2 m) a levý pilíř začíná níž – dá se vyskákat. Nový PlayMode test šachtu opravdu vyleze střídavými odrazy.
+- **Hrdina** přemodelovaný podle obrázku: atletická postava, široká ramena, chrániče na obou ramenou, hrudní plát, opasek se sponou, rukavice, chrániče předloktí a kolen, vysoké boty, bez sukně. Vlasy: hmota ostrých pramenů učesaných dozadu a nahoru (14 pramenů s pružinovou fyzikou).
+
+### Přidáno
+- **Shader šály** (`CrimsonVeil/Veil`): odstíny od tmavě vínové po zářivé jádro, pruhy tekoucí po délce látky, tmavé záhyby, měkké nepravidelné okraje, ocas rozpadající se v kouř. Ztvrdlé zbraně mají ostřejší hranu a jasnější jádro.
+- **Vrstvená šála**: tři pruhy látky (hlavní, široký zadní, tenký světlý), které se k ocasu rozbíhají jako vrstvený plášť a při proměně ve zbraň se slijí do jedné čepele. Křivka vyhlazená Catmull-Romem (žádné lomy).
+- **Kouřové kudrlinky**: z ocasu šály se odvíjejí tenké stuhy kouře, které nesou víry. Po teleportu nebo respawnu se smažou.
+- **Zbraň v ruce**: zbraně vyrůstají ze skutečné kosti ruky a paže sleduje švih (nápřah, sek dolů, protiváha druhé ruky).
+
+### Opraveno
+- Výbuchy zásahů, šíp i provaz mají vlastní jednoduché materiály (nerozpadají se jako látka).
+
 ## [0.4.1] – 2026-11-13
 
 ### Přidáno

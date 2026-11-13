@@ -9,7 +9,7 @@ namespace CrimsonVeil.Veil
     {
         [Header("Cloth")]
         [Min(3)] public int nodeCount = 32;
-        public float length = 3.3f;
+        public float length = 2.7f;
         [Range(1, 20)] public int constraintIterations = 14;
         [Range(0.9f, 1f)] public float damping = 0.985f;
         public float airDrag = 4.5f;

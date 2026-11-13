@@ -93,7 +93,7 @@ Shader "CrimsonVeil/Veil"
                 float alpha = smoothstep(0.0, soft, edge - (edgeNoise - 0.5) * lerp(0.7, 0.34, hard));
 
                 // Translucent gaps between the streaks: the flame is layered, you see one tongue through another.
-                alpha *= lerp(1.0, lerp(0.6, 1.0, smoothstep(0.25, 0.65, streak)), loose * (1.0 - core * 0.6));
+                alpha *= lerp(1.0, lerp(0.75, 1.0, smoothstep(0.25, 0.65, streak)), loose * (1.0 - core * 0.6));
 
                 // Tail dissolves into smoke; a weapon's tip smoulders away more subtly.
                 // (the strand's end curl lives at along 0.75..0.9, so erosion only frays its very tip)

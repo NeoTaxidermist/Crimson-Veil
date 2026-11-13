@@ -5,6 +5,17 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.6.4] – 2026-11-13
+Šála v proporcích key artu.
+
+### Změněno
+- **Mohutnější a kratší šála.** Je kratší (3,3 → 2,7 m, i s víry asi 1,7× výška postavy) a širší (0,42 → 0,65 m, zhruba třetina výšky postavy). U krku zůstává úzká a ke středu se rozšiřuje.
+- Vrstvy plamene se rozestupují víc, takže tvoří větší hmotu, a koncové víry jsou větší.
+- Mezery mezi pruhy jsou méně průsvitné, takže šála působí plnější.
+
+### Testy
+- Proporce šály vůči postavě: šála není zbytečně dlouhá a je široká aspoň třetinu výšky postavy.
+
 ## [0.6.3] – 2026-11-13
 Šála jako plamen: nižší, lehká a v odstínech červené.
 

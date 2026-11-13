@@ -20,9 +20,9 @@ namespace CrimsonVeil.Veil
         [Tooltip("Points in each end curl.")]
         [SerializeField, Range(6, 40)] int curlPoints = 22;
         [Tooltip("Global multiplier of the curl size.")]
-        [SerializeField] float curlScale = 1.1f;
+        [SerializeField] float curlScale = 1.3f;
         [Tooltip("How far (m) the tendrils fan away from the main ribbon at their ends.")]
-        [SerializeField] float tendrilSpread = 0.3f;
+        [SerializeField] float tendrilSpread = 0.42f;
 
         public struct Strand
         {
@@ -219,7 +219,7 @@ namespace CrimsonVeil.Veil
                 hardAt[i] = hard;
 
                 // A scarf: snug at the neck, a band that slowly tapers; it ripples and twists as it flies.
-                float flowProfile = Mathf.Lerp(0.75f, 1f, Mathf.SmoothStep(0f, 1f, t * 5f)) * (1f + 0.35f * Mathf.Sin(Mathf.PI * Mathf.Clamp01(t * 1.2f))) * Mathf.Lerp(1f, 0.55f, Mathf.Pow(t, 1.6f))
+                float flowProfile = Mathf.Lerp(0.45f, 1f, Mathf.SmoothStep(0f, 1f, t * 4f)) * (1f + 0.35f * Mathf.Sin(Mathf.PI * Mathf.Clamp01(t * 1.2f))) * Mathf.Lerp(1f, 0.55f, Mathf.Pow(t, 1.6f))
                                     * (1f + 0.18f * Mathf.Sin(t * 7f - time * 2.4f));
                 float twist = Mathf.Abs(Mathf.Cos(time * 1.1f + t * 5f));
                 flowProfile *= Mathf.Lerp(1f, twist * 0.65f + 0.35f, flutterTwist * t);

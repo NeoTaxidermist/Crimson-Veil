@@ -34,6 +34,16 @@ namespace CrimsonVeil.Tests
         }
 
         [Test]
+        public void Scarf_HasKeyArtProportions_RobustNotThinAndLong()
+        {
+            const float heroHeight = 2f; // Hero.fbx with hair
+            float length = new VeilSettings().length;
+            float width = VeilFormLibrary.Width(VeilForm.Flow);
+            Assert.LessOrEqual(length, heroHeight * 1.4f, "not needlessly long next to the hero");
+            Assert.GreaterOrEqual(width, heroHeight * 0.3f, "a robust band, about a third of the hero's height");
+        }
+
+        [Test]
         public void Curl_IsContinuousAndWindsIntoASpiral()
         {
             const int count = 24;

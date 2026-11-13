@@ -46,7 +46,7 @@ namespace CrimsonVeil.Veil
                 case VeilForm.Spear: return 0.08f;
                 case VeilForm.Shield: return 0.2f;
                 case VeilForm.Bow: return 0.07f;
-                default: return 0.42f;
+                default: return 0.65f;
             }
         }
 

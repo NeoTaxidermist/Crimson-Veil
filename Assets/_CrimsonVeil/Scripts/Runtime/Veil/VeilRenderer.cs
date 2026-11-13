@@ -209,6 +209,7 @@ namespace CrimsonVeil.Veil
             float vit = Mathf.Clamp01(veil.Vitality);
             float facing = veil.Facing;
             bool bow = veil.ShapeForm == VeilForm.Bow;
+            float gripFraction = Mathf.Max(hf, VeilFormLibrary.GripFraction(veil.ShapeForm));
 
             // Per-sample frame, width and alpha of the scarf body.
             for (int i = 0; i < samples; i++)
@@ -256,13 +257,16 @@ namespace CrimsonVeil.Veil
                 float lastW = 0f, lastA = 0f, lastHard = 0f, lastFront = 0f;
                 // As a weapon, each strand ends somewhere along the blade, where its flame tongue peels off.
                 // (On a bow every strand runs the whole way round, so both limbs are equally full.)
-                float end = Mathf.Lerp(st.end, bow ? 1f : WeaponStrandEnd(st, hf), weaponness);
+                float end = StrandEnd(st, main, bow, weaponness, gripFraction);
+                // On a weapon the braided strands start at the hand, so the part behind it (a spear's butt) is
+                // just the slim shaft, not every layer of the scarf bundled together.
+                float start = branch && !bow ? Mathf.Lerp(st.start, Mathf.Max(st.start, gripFraction), weaponness) : st.start;
 
                 // 1) Body: follows the scarf from `start` to `end`.
                 for (int i = 0; i < samples; i++)
                 {
                     float u = (float)i / (samples - 1);
-                    float f = Mathf.Lerp(st.start, end, u);
+                    float f = Mathf.Lerp(start, end, u);
                     float fi = f * (samples - 1);
                     int i0 = Mathf.Min(Mathf.FloorToInt(fi), samples - 2);
                     float fr = fi - i0;
@@ -379,6 +383,14 @@ namespace CrimsonVeil.Veil
         /// tongues peel off all along it rather than only at the tip.</summary>
         public static float WeaponStrandEnd(Strand st, float handFraction)
             => Mathf.Lerp(Mathf.Min(handFraction + 0.12f, 0.95f), 0.99f, 0.15f + 0.85f * Mathf.Repeat(st.seed * 1.7f + st.phase * 0.13f, 1f));
+
+        /// <summary>
+        /// Where a strand ends (veil fraction) for weapon-ness 0..1. The core ribbon always runs the whole weapon to
+        /// its tip, as does every strand of a bow; the other strands' flame tongues peel off along the part of the
+        /// weapon in front of the hand (<paramref name="gripFraction"/>).
+        /// </summary>
+        public static float StrandEnd(Strand st, bool main, bool bow, float weaponness, float gripFraction)
+            => Mathf.Lerp(st.end, main || bow ? 1f : WeaponStrandEnd(st, gripFraction), weaponness);
 
         /// <summary>Length (m) of the flame tongue at a weapon strand's end.</summary>
         public static float FlameTongueLength(bool main) => main ? 0.22f : 0.34f;

@@ -123,6 +123,31 @@ namespace CrimsonVeil.Veil
             return pts;
         }
 
+        static readonly float[] gripFractions = new float[8];
+
+        /// <summary>
+        /// Where along the veil (0 neck .. 1 end) the hand grips the weapon. Usually where the weapon starts, but a
+        /// spear's shaft starts at the butt behind the hand.
+        /// </summary>
+        public static float GripFraction(VeilForm form)
+        {
+            int k = (int)form;
+            if (k < 0 || k >= gripFractions.Length) return 0f;
+            if (gripFractions[k] > 0f) return gripFractions[k];
+            var pts = ControlPoints(form, out int start);
+            int grip = pts.IndexOf(Hand);
+            if (grip < 0) grip = start;
+            float total = 0f, upTo = 0f;
+            for (int i = 1; i < pts.Count; i++)
+            {
+                float d = Vector2.Distance(pts[i - 1], pts[i]);
+                total += d;
+                if (i <= grip) upTo += d;
+            }
+            gripFractions[k] = total > 1e-6f ? Mathf.Max(1e-4f, upTo / total) : 1e-4f;
+            return gripFractions[k];
+        }
+
         /// <summary>Spear shaft behind the hand (the butt) and ahead of it (to the point), in metres.</summary>
         public const float SpearButt = 1.05f, SpearReach = 2.1f;
 

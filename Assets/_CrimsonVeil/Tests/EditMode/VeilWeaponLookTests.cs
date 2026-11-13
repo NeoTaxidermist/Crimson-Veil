@@ -62,6 +62,31 @@ namespace CrimsonVeil.Tests
         }
 
         [Test]
+        public void WeaponCore_RunsAllTheWayToTheTip()
+        {
+            var core = VeilRenderer.Strands[1];
+            Assert.AreEqual(1f, VeilRenderer.StrandEnd(core, true, false, 1f, 0.3f), 1e-5f, "a solid core along the whole blade / shaft");
+            foreach (var st in VeilRenderer.Strands)
+                Assert.AreEqual(1f, VeilRenderer.StrandEnd(st, false, true, 1f, 0.3f), 1e-5f, "every bow strand runs round the whole bow");
+        }
+
+        [Test]
+        public void Spear_FlameTonguesStartInFrontOfTheHand_NotBehindIt()
+        {
+            var shape = new Vector2[32];
+            float butt = VeilFormLibrary.BuildShape(VeilForm.Spear, shape);
+            float grip = VeilFormLibrary.GripFraction(VeilForm.Spear);
+            Assert.Greater(grip, butt + 0.15f, "the spear is gripped well in front of its butt");
+            foreach (var st in VeilRenderer.Strands)
+            {
+                if (st.start <= 0f) continue;
+                Assert.Greater(VeilRenderer.StrandEnd(st, false, false, 1f, grip), grip, "tongues flare in front of the hand");
+            }
+            Assert.AreEqual(VeilFormLibrary.BuildShape(VeilForm.Sword, shape), VeilFormLibrary.GripFraction(VeilForm.Sword), 0.02f,
+                "a sword is gripped where the blade starts");
+        }
+
+        [Test]
         public void Weapons_AreVisibleBands()
         {
             foreach (var form in new[] { VeilForm.Whip, VeilForm.Sword, VeilForm.Spear, VeilForm.Shield, VeilForm.Bow })

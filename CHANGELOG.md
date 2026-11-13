@@ -5,6 +5,19 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.7.5] – 2026-11-13
+Plné jádro zbraní, kopí stejně silné po celé délce.
+
+### Opraveno
+- **Plné jádro zbraní.** Hlavní pás zbraně omylem končil kousek za rukou, takže čepele a ratiště byly vpředu jen z tenkých ovinutých nití. Teď jádro vede celou zbraní až ke špičce. Týká se všech zbraní, nejvíc je to vidět na meči a kopí.
+- **Kopí je stejně silné před tělem i za ním.** Za rukou se dřív překrývaly všechny pramínky šály a vpředu jich ubývalo. Teď pramínky začínají až u dlaně a plamenné jazyky šlehají jen z části před rukou. Za tělem zůstává štíhlé ratiště s patkou.
+
+### Testy
+- Jádro vede až ke špičce zbraně.
+- U luku vedou všechny prameny celým lukem.
+- Plamenné jazyky kopí šlehají až před rukou.
+- Meč se drží tam, kde začíná čepel.
+
 ## [0.7.4] – 2026-11-13
 Zbraně bez vazby ke krku a šála, která nepředbíhá.
 

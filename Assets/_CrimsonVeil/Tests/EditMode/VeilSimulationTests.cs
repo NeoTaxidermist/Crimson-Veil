@@ -72,7 +72,11 @@ namespace CrimsonVeil.Tests
         [Test]
         public void StandingStill_ScarfFloatsBehindOnItsBreeze()
         {
-            var sim = new VeilSimulation(new VeilSettings(), Vector3.zero) { DriftDirection = -1f };
+            // Same air as in the game (VeilController: horizontal ambient flow + level wind).
+            var sim = new VeilSimulation(new VeilSettings(), Vector3.zero)
+            {
+                DriftDirection = -1f, AmbientFlow = new Vector2(-0.75f, 0f), Wind = new Vector2(-0.3f, 0.05f),
+            };
             float tipX = 0f, tipY = 0f;
             int frames = 0;
             for (int i = 1; i <= 300; i++)
@@ -86,6 +90,57 @@ namespace CrimsonVeil.Tests
             tipX /= frames; tipY /= frames;
             Assert.Less(tipX, -sim.Settings.length * 0.45f, "streams out behind the hero (key art), not hanging down");
             Assert.Greater(tipY, -sim.Settings.length * 0.35f, "doesn't droop to the ground");
+            Assert.Less(tipY, -0.15f, "nor does it rise up: at rest the tail sinks a little below the neck (key art)");
+        }
+
+        [Test]
+        public void Landing_ScarfSettlesSoftly_NoSlapOntoTheFloor()
+        {
+            float Measure(VeilSettings settings) => MeasureJump(settings, out _);
+            float soft = Measure(new VeilSettings());
+            float heavy = Measure(new VeilSettings { maxRelativeFall = 0f, maxShedSpeed = 99f });
+            Assert.Less(soft, 3f, "the veil is weightless: it drifts down after a landing");
+            Assert.Less(soft, heavy * 0.7f, "clearly softer than a heavy cloth carrying the fall's momentum");
+        }
+
+        [Test]
+        public void Jump_DoesNotFlingTheScarfUpOverTheHead()
+        {
+            MeasureJump(new VeilSettings(), out float above);
+            Assert.Less(above, 1.2f, "the scarf rides along with the jump instead of shooting up over the head");
+        }
+
+        /// <summary>Jump and fall back down hard (like the hero's motor); returns the fastest drop of the scarf after landing.</summary>
+        static float MeasureJump(VeilSettings settings, out float maxAbove)
+        {
+            var sim = new VeilSimulation(settings, Vector3.zero) { DriftDirection = -1f };
+            var a = Vector3.zero;
+            for (int i = 0; i < 300; i++) sim.Step(Dt, a);
+            float Mean()
+            {
+                float m = 0f;
+                for (int k = 1; k < sim.Count; k++) m += sim.Positions[k].y;
+                return m / (sim.Count - 1) - a.y;
+            }
+            maxAbove = float.MinValue;
+            float vy = 9f;
+            do
+            {
+                vy = Mathf.Max(vy - (vy > 0f ? 24f : 38f) * Dt, -18f);
+                a.y = Mathf.Max(0f, a.y + vy * Dt);
+                sim.Step(Dt, a);
+                maxAbove = Mathf.Max(maxAbove, Mean());
+            } while (a.y > 0f);
+            float prev = Mean(), maxDown = 0f;
+            for (int i = 0; i < 90; i++)
+            {
+                sim.Step(Dt, a);
+                float m = Mean();
+                maxAbove = Mathf.Max(maxAbove, m);
+                maxDown = Mathf.Max(maxDown, (prev - m) / Dt);
+                prev = m;
+            }
+            return maxDown;
         }
 
         [Test]

@@ -102,9 +102,9 @@ namespace CrimsonVeil.EditorTools
         static Material VeilMat(string name, float edgeSoftness, float erosion, float flowSpeed)
         {
             var m = Mat(name, Shader.Find("CrimsonVeil/Veil"), Color.white);
-            m.SetColor("_Deep", new Color(0.26f, 0.0f, 0.02f));
-            m.SetColor("_Mid", new Color(0.85f, 0.02f, 0.045f));
-            m.SetColor("_Glow", new Color(1.9f, 0.13f, 0.1f));
+            m.SetColor("_Deep", new Color(0.34f, 0.0f, 0.025f));
+            m.SetColor("_Mid", new Color(0.78f, 0.02f, 0.04f));
+            m.SetColor("_Glow", new Color(1.45f, 0.1f, 0.07f));
             m.SetFloat("_EdgeSoftness", edgeSoftness);
             m.SetFloat("_Erosion", erosion);
             m.SetFloat("_FlowSpeed", flowSpeed);

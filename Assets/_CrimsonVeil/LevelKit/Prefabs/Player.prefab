@@ -194,15 +194,17 @@ MonoBehaviour:
     vortexLifetime: 1.8
     maxVortices: 40
     lateralShedOffset: 0.3
+    maxShedSpeed: 8
     maxRelativeWind: 1.2
     undulation: 7
     undulationWaves: 1.6
     undulationSpeed: 3.2
     undulationPerSpeed: 2.2
-    buoyancy: 2.6
+    buoyancy: 1.4
     tipCurl: 5
     drift: 1.4
-    driftLift: 0.5
+    driftLift: 0.1
+    maxRelativeFall: 2.5
     hardenRate: 45
     maxSubstep: 0.008333334
     teleportDistance: 5
@@ -237,8 +239,8 @@ MonoBehaviour:
   smoothing: 3
   flutterTwist: 0.35
   curlPoints: 22
-  curlScale: 1.7
-  tendrilSpread: 0.5
+  curlScale: 1.1
+  tendrilSpread: 0.3
 --- !u!114 &5389534785771705521
 MonoBehaviour:
   m_ObjectHideFlags: 0

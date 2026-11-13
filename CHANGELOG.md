@@ -5,6 +5,23 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.6.3] – 2026-11-13
+Šála jako plamen: nižší, lehká a v odstínech červené.
+
+### Změněno
+- **Šála ve stoje už nevlaje nahoru.** Vlaje vodorovně za krkem a konec mírně klesá, jako na key artu. Okolní proudění je vodorovné (dřív mělo složku vzhůru, která se sčítala s novým vánkem), vztlak je menší a koncové víry kratší.
+- **Šála jako plamen, ne chobotnice.** Vrstvy se překrývají v jedné hmotě a rozestupují se až ke konci. Všechny konce se stáčejí stejným směrem do jednoho volného víru (nejvýš o otáčku), žádné samostatné kroužky. Uprostřed se plamen mírně rozšiřuje.
+- **Odstíny červené:** dlouhé zvlněné pruhy od tmavě vínové přes karmínovou a červenou po jasnou, mezi nimi průsvitné mezery, okraje tmavší a tělo prosvícené zevnitř. Méně neonové barvy.
+
+### Opraveno
+- **Šála už nepadá těžce na zem.** Vůči hrdinovi se svisle pohybuje nejvýš 2,5 m/s. Při skoku už nevystřelí nad hlavu (dřív až 1,7 m nad krk, teď 0,9 m) a po dopadu se snáší (2,8 m/s místo 9,4 m/s). Víry od těla už nezesilují nad rychlost běhu, takže pád nerozvíří bouři.
+
+### Testy
+- Šála ve stoje nestoupá nad krk.
+- Po dopadu se snáší výrazně měkčeji než těžká látka.
+- Při skoku nevyletí nad hlavu.
+- Konce šály tvoří jeden vír, ne kroužky chobotnice.
+
 ## [0.6.2] – 2026-11-13
 Klidnější šála a tráva, která neutíká.
 

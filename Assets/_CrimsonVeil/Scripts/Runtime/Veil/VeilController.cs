@@ -161,7 +161,7 @@ namespace CrimsonVeil.Veil
             Vector3 a = anchor.position;
 
             Simulation.Wind = wind;
-            Simulation.AmbientFlow = new Vector2(-facing, 0.45f).normalized * idleDriftSpeed;
+            Simulation.AmbientFlow = new Vector2(-facing, 0f) * idleDriftSpeed; // horizontal: the veil streams behind, it doesn't rise
 
             UpdateNodeHardness();
             if (TransformProgress > 0f && ShapeForm != VeilForm.Flow) UpdateTargets(a, dt);

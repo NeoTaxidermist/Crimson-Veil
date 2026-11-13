@@ -20,14 +20,17 @@ namespace CrimsonVeil.Tests
         [Test]
         public void Scarf_HasSeveralEnds_EachEndingInACurl()
         {
-            int ends = 0;
+            int ends = 0, sameWay = 0;
             foreach (var st in VeilRenderer.Strands)
             {
                 ends++;
-                Assert.Greater(st.curlTurns, 0.9f, "every end winds into a curl");
+                Assert.Greater(st.curlTurns, 0.5f, "every end winds into a curl");
+                Assert.LessOrEqual(st.curlTurns, 1.1f, "a loose swirl, not a tight ring (rings read as octopus tentacles)");
                 Assert.Greater(st.curlLength, 0.2f);
+                if (st.curlSign == VeilRenderer.Strands[1].curlSign) sameWay++;
             }
             Assert.GreaterOrEqual(ends, 5, "the veil splits into many ends like the key art");
+            Assert.GreaterOrEqual(sameWay, ends - 1, "the ends roll the same way: one swirling flame, not separate tentacles");
         }
 
         [Test]

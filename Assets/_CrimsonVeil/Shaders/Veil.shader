@@ -74,36 +74,41 @@ Shader "CrimsonVeil/Veil"
                 float seed = i.data.y * 17.31;
                 float t = _Time.y * _FlowSpeed;
 
-                // Streaks flowing from neck to tip, stretched along the cloth.
-                float2 sp = float2(along * 7.0 - t, across * 1.6 + seed);
-                float streak = CV_Fbm(sp) * 0.65 + CV_ValueNoise(float2(along * 22.0 - t * 2.3, across * 4.0 + seed)) * 0.35;
-
-                // Ragged soft edges: the edge line wanders with noise.
-                float edgeNoise = CV_Fbm(float2(along * 9.0 - t * 0.7, seed + across * 0.3));
+                float loose = 1.0 - hard;
                 float edge = 1.0 - abs(across);
+                float core = pow(saturate(edge), 1.6);
+
+                // Flame streaks: long stripes running along the cloth, their lateral position bent by a slow
+                // domain warp so they ripple and lick like the tongues of a fire.
+                float warp = (CV_Fbm(float2(along * 3.0 - t * 0.5, seed)) - 0.5) * 1.4;
+                float stripeCoord = across * 1.7 + warp + seed;
+                float stripes = CV_Fbm(float2(stripeCoord * 1.8, along * 1.4 - t * 0.8));
+                float fine = CV_ValueNoise(float2(stripeCoord * 5.0, along * 2.5 - t * 1.3));
+                float streak = saturate(stripes * 0.8 + fine * 0.3 + 0.12);
+
+                // Ragged, flickering edges, stretched along the flow.
+                float edgeNoise = CV_Fbm(float2(along * 6.0 - t * 0.9, seed + across * 0.4));
                 // Even a hardened weapon keeps smoky, wandering edges — it is still the veil.
                 float soft = lerp(_EdgeSoftness, 0.24, hard);
-                float alpha = smoothstep(0.0, soft, edge - (edgeNoise - 0.5) * lerp(0.55, 0.34, hard));
+                float alpha = smoothstep(0.0, soft, edge - (edgeNoise - 0.5) * lerp(0.7, 0.34, hard));
+
+                // Translucent gaps between the streaks: the flame is layered, you see one tongue through another.
+                alpha *= lerp(1.0, lerp(0.6, 1.0, smoothstep(0.25, 0.65, streak)), loose * (1.0 - core * 0.6));
 
                 // Tail dissolves into smoke; a weapon's tip smoulders away more subtly.
                 // (the strand's end curl lives at along 0.75..0.9, so erosion only frays its very tip)
                 float erode = smoothstep(lerp(0.8, 0.84, hard), 1.0, along + (streak - 0.5) * 0.3) * _Erosion * lerp(1.0, 0.5, hard);
                 alpha *= 1.0 - erode;
 
-                // Shades: deep wine at the edges and in streak troughs, bright glowing core.
-                float core = pow(saturate(edge), 1.6);
-                half3 col = lerp(_Deep.rgb, _Mid.rgb, saturate(core * 0.9 + streak * 0.5));
-                col = lerp(col, _Glow.rgb, saturate(core * (0.35 + hard * 0.55) * (0.6 + streak * 0.6)));
-                // Thin dark folds running along the cloth.
-                float fold = smoothstep(0.08, 0.0, abs(frac(across * 1.5 + streak * 0.8 + seed) - 0.5) - 0.42);
-                col *= 1.0 - fold * 0.35 * (1.0 - hard);
-
-                // Silk threads: many fine strands running along the cloth; towards the edges they part,
-                // so the ribbon reads as woven of glowing fibres (the key art), not a flat band.
-                float threads = CV_ValueNoise(float2(across * 19.0 + seed * 3.0, along * 2.5 - t * 0.6));
-                threads = threads * 0.6 + CV_ValueNoise(float2(across * 41.0 + seed, along * 5.0 - t)) * 0.4;
-                col *= lerp(1.0, lerp(0.7, 1.2, threads), 1.0 - hard * 0.7);
-                alpha *= lerp(1.0, smoothstep(0.25, 0.6, threads), (1.0 - core) * 0.65 * (1.0 - hard));
+                // Palette of a fire seen in red ink: near-black wine → deep crimson → red → hot bright red.
+                half3 wine = _Deep.rgb * 0.55;
+                half3 col = lerp(wine, _Deep.rgb, smoothstep(0.05, 0.3, streak));
+                col = lerp(col, _Mid.rgb, smoothstep(0.28, 0.6, streak));
+                col = lerp(col, _Glow.rgb, smoothstep(0.62, 0.95, streak) * (0.45 + core * 0.55));
+                // Edges sink into darker wine, the body is lit from within.
+                col *= lerp(0.7, 1.0, saturate(core * 1.4));
+                // A weapon glows more evenly along its blade.
+                col = lerp(col, lerp(_Mid.rgb, _Glow.rgb, core * 0.6 * (0.6 + streak * 0.6)), hard * 0.7);
 
                 col *= i.color.rgb;
                 return half4(col, saturate(alpha * i.color.a));

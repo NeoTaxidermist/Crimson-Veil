@@ -28,6 +28,8 @@ namespace CrimsonVeil.Veil
         public float vortexLifetime = 1.8f;
         [Min(1)] public int maxVortices = 40;
         public float lateralShedOffset = 0.3f;
+        [Tooltip("Body speed (m/s) above which shedding gets no stronger, so falls and dashes don't throw the scarf around.")]
+        public float maxShedSpeed = 8f;
 
         [Header("Life (a scarf with a will of its own, not a cape)")]
         [Tooltip("The run wind is felt at most this strongly (m/s), so the scarf trails without stretching into a sheet.")]
@@ -39,13 +41,15 @@ namespace CrimsonVeil.Veil
         [Tooltip("Extra undulation per m/s of the hero's speed.")]
         public float undulationPerSpeed = 2.2f;
         [Tooltip("Upward drift of the tail, like smoke rising.")]
-        public float buoyancy = 2.6f;
+        public float buoyancy = 1.4f;
         [Tooltip("The tip slowly curls into a loop.")]
         public float tipCurl = 5f;
         [Tooltip("Magical breeze (m/s) that keeps the scarf floating behind the hero even at rest (key art).")]
         public float drift = 1.4f;
         [Tooltip("Upward part of the breeze (m/s).")]
-        public float driftLift = 0.5f;
+        public float driftLift = 0.1f;
+        [Tooltip("Weightless cloth: its vertical speed relative to the hero is limited to this (m/s), so jumps don't fling it up and landings don't slam it down. 0 = off.")]
+        public float maxRelativeFall = 2.5f;
 
         [Header("Hardening (weapon forms)")]
         public float hardenRate = 45f;
@@ -189,7 +193,7 @@ namespace CrimsonVeil.Veil
 
             // 2) Shed alternating vortices at the Strouhal frequency f = St·U/D (+ idle magic).
             Vector2 rel = air - new Vector2(anchorVel.x, anchorVel.y);
-            float speed = rel.magnitude;
+            float speed = Mathf.Min(rel.magnitude, s.maxShedSpeed); // a fall must not whip up a storm
             float freq = s.idleShedFrequency + s.strouhal * speed / Mathf.Max(0.05f, s.bodyDiameter);
             shedPhase += freq * h;
             while (shedPhase >= 1f)
@@ -247,6 +251,17 @@ namespace CrimsonVeil.Veil
                     acc.y += s.buoyancy * f * f * loose;
                 }
                 Vector3 next = p + (p - previous[i]) * s.damping + acc * (h * h);
+                // The veil is weightless: it rides along with the hero's jumps and falls instead of carrying
+                // their momentum — no flinging up over the head at the apex, no slapping onto the floor on landing.
+                if (s.maxRelativeFall > 0f && loose > 0.001f)
+                {
+                    Vector3 relV = (next - p) / h - anchorVel;
+                    if (Mathf.Abs(relV.y) > s.maxRelativeFall)
+                    {
+                        relV.y = Mathf.Lerp(relV.y, Mathf.Sign(relV.y) * s.maxRelativeFall, loose);
+                        next = p + (anchorVel + relV) * h;
+                    }
+                }
                 previous[i] = p;
                 Positions[i] = next;
             }
@@ -298,7 +313,7 @@ namespace CrimsonVeil.Veil
         void Shed(Vector3 anchor, Vector2 rel, float speed)
         {
             var s = Settings;
-            Vector2 dir = speed > 1e-3f ? rel / speed : Vector2.down;
+            Vector2 dir = rel.sqrMagnitude > 1e-6f ? rel.normalized : Vector2.down;
             Vector2 perp = new Vector2(-dir.y, dir.x);
             float d = s.bodyDiameter;
 

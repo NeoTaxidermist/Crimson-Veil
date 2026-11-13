@@ -20,9 +20,9 @@ namespace CrimsonVeil.Veil
         [Tooltip("Points in each end curl.")]
         [SerializeField, Range(6, 40)] int curlPoints = 22;
         [Tooltip("Global multiplier of the curl size.")]
-        [SerializeField] float curlScale = 1.7f;
+        [SerializeField] float curlScale = 1.1f;
         [Tooltip("How far (m) the tendrils fan away from the main ribbon at their ends.")]
-        [SerializeField] float tendrilSpread = 0.5f;
+        [SerializeField] float tendrilSpread = 0.3f;
 
         public struct Strand
         {
@@ -36,30 +36,30 @@ namespace CrimsonVeil.Veil
 
         public static readonly Strand[] Strands =
         {
-            // Back ribbon: darker, drifts behind the main one.
-            new Strand { start = 0f, end = 0.96f, width = 0.7f, side = 0.45f, spread = 0.9f, phase = 1.7f, alpha = 0.6f, seed = 0.31f,
-                curlLength = 0.5f, curlTurns = 1.1f, curlSign = -1f, tint = new Color(0.68f, 0.68f, 0.68f) },
-            // Main ribbon: ends in one big loop, like the key art.
-            new Strand { start = 0f, end = 1f, width = 1f, side = 0f, spread = 0.25f, phase = 0f, alpha = 1f, seed = 0f,
-                curlLength = 0.95f, curlTurns = 1.05f, curlSign = 1f, tint = Color.white },
-            // Broad tendrils splitting off the main ribbon, each ending in its own curl.
-            new Strand { start = 0.32f, end = 0.8f, width = 0.7f, side = -0.95f, spread = 1.1f, phase = 3.9f, alpha = 0.92f, seed = 0.67f,
-                curlLength = 0.6f, curlTurns = 1.4f, curlSign = -1f, tint = new Color(1.15f, 1.05f, 1.05f) },
-            new Strand { start = 0.45f, end = 0.92f, width = 0.6f, side = 1f, spread = 1.2f, phase = 0.8f, alpha = 0.88f, seed = 0.12f,
-                curlLength = 0.65f, curlTurns = 1.6f, curlSign = 1f, tint = Color.white },
-            new Strand { start = 0.22f, end = 0.6f, width = 0.5f, side = 1.2f, spread = 1f, phase = 2.4f, alpha = 0.75f, seed = 0.48f,
-                curlLength = 0.5f, curlTurns = 1.4f, curlSign = -1f, tint = new Color(0.78f, 0.76f, 0.76f) },
-            new Strand { start = 0.55f, end = 0.82f, width = 0.45f, side = -0.6f, spread = 1.3f, phase = 5.1f, alpha = 0.8f, seed = 0.83f,
-                curlLength = 0.45f, curlTurns = 1.9f, curlSign = 1f, tint = new Color(0.75f, 0.72f, 0.72f) },
-            // Fine silk threads riding along the scarf and fanning out at its tail.
-            new Strand { start = 0.15f, end = 1f, width = 0.09f, side = 0.3f, spread = 1.6f, phase = 4.4f, alpha = 0.9f, seed = 0.21f,
-                curlLength = 0.55f, curlTurns = 2.2f, curlSign = -1f, tint = new Color(1.3f, 1.15f, 1.15f) },
-            new Strand { start = 0.38f, end = 0.95f, width = 0.07f, side = -0.35f, spread = 1.8f, phase = 1.1f, alpha = 0.85f, seed = 0.92f,
-                curlLength = 0.5f, curlTurns = 2.4f, curlSign = 1f, tint = new Color(1.3f, 1.15f, 1.15f) },
-            new Strand { start = 0.6f, end = 1f, width = 0.08f, side = 1.6f, spread = 1.4f, phase = 3.2f, alpha = 0.8f, seed = 0.57f,
-                curlLength = 0.45f, curlTurns = 1.8f, curlSign = 1f, tint = new Color(1.2f, 1.1f, 1.1f) },
-            new Strand { start = 0.5f, end = 0.97f, width = 0.06f, side = -1.5f, spread = 1.5f, phase = 0.3f, alpha = 0.75f, seed = 0.39f,
-                curlLength = 0.5f, curlTurns = 2f, curlSign = -1f, tint = new Color(1.2f, 1.1f, 1.1f) },
+            // One flame-like mass, not an octopus: the layers overlap, only fan apart towards the tail, and all
+            // their ends roll the same way into one loose swirl (a vortex, not separate rings).
+            // Dark wine under-layer, drifting a little behind.
+            new Strand { start = 0f, end = 0.97f, width = 1.15f, side = 0.35f, spread = 0.8f, phase = 1.7f, alpha = 0.75f, seed = 0.31f,
+                curlLength = 0.9f, curlTurns = 0.8f, curlSign = -1f, tint = new Color(0.42f, 0.4f, 0.4f) },
+            // Main body.
+            new Strand { start = 0f, end = 1f, width = 1f, side = 0f, spread = 0.25f, phase = 0f, alpha = 0.95f, seed = 0f,
+                curlLength = 1f, curlTurns = 0.95f, curlSign = -1f, tint = Color.white },
+            // Layers peeling off the body like tongues of a flame.
+            new Strand { start = 0.35f, end = 0.92f, width = 0.75f, side = -0.8f, spread = 1f, phase = 3.9f, alpha = 0.8f, seed = 0.67f,
+                curlLength = 0.8f, curlTurns = 0.75f, curlSign = -1f, tint = new Color(0.75f, 0.72f, 0.72f) },
+            new Strand { start = 0.45f, end = 1f, width = 0.6f, side = 0.9f, spread = 1.1f, phase = 0.8f, alpha = 0.8f, seed = 0.12f,
+                curlLength = 0.85f, curlTurns = 0.9f, curlSign = -1f, tint = new Color(1.1f, 1.02f, 1.02f) },
+            new Strand { start = 0.25f, end = 0.75f, width = 0.55f, side = 0.7f, spread = 0.9f, phase = 2.4f, alpha = 0.65f, seed = 0.48f,
+                curlLength = 0.6f, curlTurns = 0.6f, curlSign = -1f, tint = new Color(0.55f, 0.52f, 0.52f) },
+            new Strand { start = 0.55f, end = 0.95f, width = 0.5f, side = -1.1f, spread = 1.2f, phase = 5.1f, alpha = 0.7f, seed = 0.83f,
+                curlLength = 0.7f, curlTurns = 0.7f, curlSign = 1f, tint = new Color(0.9f, 0.86f, 0.86f) },
+            // Bright streaks running along the flame.
+            new Strand { start = 0.1f, end = 1f, width = 0.18f, side = 0.15f, spread = 1.2f, phase = 4.4f, alpha = 0.85f, seed = 0.21f,
+                curlLength = 0.8f, curlTurns = 0.85f, curlSign = -1f, tint = new Color(1.35f, 1.2f, 1.2f) },
+            new Strand { start = 0.3f, end = 0.95f, width = 0.14f, side = -0.35f, spread = 1.3f, phase = 1.1f, alpha = 0.8f, seed = 0.92f,
+                curlLength = 0.7f, curlTurns = 0.8f, curlSign = -1f, tint = new Color(1.3f, 1.15f, 1.15f) },
+            new Strand { start = 0.5f, end = 1f, width = 0.12f, side = 1.2f, spread = 1.2f, phase = 3.2f, alpha = 0.7f, seed = 0.57f,
+                curlLength = 0.6f, curlTurns = 0.7f, curlSign = -1f, tint = new Color(1.2f, 1.1f, 1.1f) },
         };
 
         VeilController veil;
@@ -219,7 +219,7 @@ namespace CrimsonVeil.Veil
                 hardAt[i] = hard;
 
                 // A scarf: snug at the neck, a band that slowly tapers; it ripples and twists as it flies.
-                float flowProfile = Mathf.Lerp(0.75f, 1f, Mathf.SmoothStep(0f, 1f, t * 5f)) * Mathf.Lerp(1f, 0.55f, Mathf.Pow(t, 1.6f))
+                float flowProfile = Mathf.Lerp(0.75f, 1f, Mathf.SmoothStep(0f, 1f, t * 5f)) * (1f + 0.35f * Mathf.Sin(Mathf.PI * Mathf.Clamp01(t * 1.2f))) * Mathf.Lerp(1f, 0.55f, Mathf.Pow(t, 1.6f))
                                     * (1f + 0.18f * Mathf.Sin(t * 7f - time * 2.4f));
                 float twist = Mathf.Abs(Mathf.Cos(time * 1.1f + t * 5f));
                 flowProfile *= Mathf.Lerp(1f, twist * 0.65f + 0.35f, flutterTwist * t);

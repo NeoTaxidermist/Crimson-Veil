@@ -3,22 +3,22 @@ using UnityEngine;
 namespace CrimsonVeil.Veil
 {
     /// <summary>
-    /// Smoke curls peeling off the veil's tail. Each wisp is advected by the same vortex field as the
-    /// cloth and remembers its path, drawn as a thin tapering ribbon — the Kármán street becomes
-    /// visible as red curling strokes behind the hero.
+    /// Rare fine smoke threads leaving the veil's tip (the main swirl is the connected tendrils of
+    /// VeilRenderer). Each thread is advected by the same vortex field as the cloth and remembers its
+    /// path, drawn as a thin tapering ribbon.
     /// </summary>
     [DefaultExecutionOrder(70)]
     [RequireComponent(typeof(VeilController))]
     public sealed class VeilWisps : MonoBehaviour
     {
         [SerializeField] Material material;
-        [SerializeField] int maxWisps = 230;
+        [SerializeField] int maxWisps = 60;
         [SerializeField] int trailPoints = 24;
         [SerializeField] float sampleInterval = 0.025f;
-        [SerializeField] float baseRate = 28f;
-        [SerializeField] float speedRate = 5f;
-        [SerializeField] float weaponRate = 30f;
-        [SerializeField] float swingRate = 70f;
+        [SerializeField] float baseRate = 3f;
+        [SerializeField] float speedRate = 0.6f;
+        [SerializeField] float weaponRate = 5f;
+        [SerializeField] float swingRate = 16f;
         [SerializeField] float lifetime = 1.9f;
         [SerializeField] Vector2 widthRange = new Vector2(0.05f, 0.18f);
         [SerializeField] float followSharpness = 1.6f;
@@ -123,7 +123,7 @@ namespace CrimsonVeil.Veil
             {
                 emitAccumulator -= 1f;
                 if (weapon) Emit(sim, Mathf.Max(veil.HandFraction, 0.2f), 1f, 0.6f);
-                else Emit(sim, 0.35f, 1f, 0.4f);
+                else Emit(sim, 0.85f, 1f, 0.25f); // only a faint thread now and then leaves the very tip
             }
             // A swing leaves a smoky arc behind the tip.
             if (veil.IsAttacking)
@@ -185,7 +185,7 @@ namespace CrimsonVeil.Veil
         }
 
         // The cloth unfurls into (or dissolves out of) a weapon in a swirl of smoke.
-        void OnFormChanged(VeilForm form) => Burst(form == VeilForm.Flow ? 30 : 22, 0.2f, 1f, 2.2f);
+        void OnFormChanged(VeilForm form) => Burst(form == VeilForm.Flow ? 10 : 8, 0.4f, 1f, 1.4f);
 
         void Emit(VeilSimulation sim, float fromFraction, float toFraction, float speed)
         {
@@ -202,8 +202,9 @@ namespace CrimsonVeil.Veil
             w.head.z = p.z + Random.Range(-0.05f, 0.05f);
             w.velocity = normal * speed * Random.Range(0.5f, 1.2f);
             w.age = 0f;
-            // Two kinds of smoke: thick curls, and fine filaments that live longer and wind tighter.
-            bool filament = Random.value < 0.45f;
+            // The swirl itself is drawn by VeilRenderer as connected tendrils; detached smoke is only rare,
+            // fine filaments (thick loose curls read as flying petals, not as part of the veil).
+            bool filament = Random.value < 0.85f;
             w.life = lifetime * Random.Range(0.6f, 1.2f) * (filament ? 1.35f : 1f);
             w.width = filament ? Random.Range(0.015f, 0.04f) : Random.Range(widthRange.x, widthRange.y);
             w.seed = Random.value;

@@ -39,9 +39,13 @@ namespace CrimsonVeil.Veil
         [Tooltip("Extra undulation per m/s of the hero's speed.")]
         public float undulationPerSpeed = 1.6f;
         [Tooltip("Upward drift of the tail, like smoke rising.")]
-        public float buoyancy = 1.4f;
+        public float buoyancy = 2.6f;
         [Tooltip("The tip slowly curls into a loop.")]
-        public float tipCurl = 9f;
+        public float tipCurl = 5f;
+        [Tooltip("Magical breeze (m/s) that keeps the scarf floating behind the hero even at rest (key art).")]
+        public float drift = 1.4f;
+        [Tooltip("Upward part of the breeze (m/s).")]
+        public float driftLift = 0.5f;
 
         [Header("Hardening (weapon forms)")]
         public float hardenRate = 45f;
@@ -98,6 +102,8 @@ namespace CrimsonVeil.Veil
         /// <summary>Slow magical drift of the air around the hero (e.g. "behind and slightly up").</summary>
         public Vector2 AmbientFlow { get; set; }
         public Vector3 AnchorVelocity { get; private set; }
+        /// <summary>Which way (-1/+1 in x) the magical breeze blows; 0 = no breeze. Set to minus the hero's facing.</summary>
+        public float DriftDirection { get; set; }
         public IReadOnlyList<Vortex> Vortices => vortices;
         public int ShedCount { get; private set; }
 
@@ -219,6 +225,9 @@ namespace CrimsonVeil.Veil
                 Vector2 relAir = airV - bodyVel;
                 if (relAir.sqrMagnitude > s.maxRelativeWind * s.maxRelativeWind) relAir = relAir.normalized * s.maxRelativeWind;
                 airV = Vector2.Lerp(airV, bodyVel + relAir, loose);
+                // The veil floats on its own breeze: it streams behind the hero even standing still.
+                if (DriftDirection != 0f)
+                    airV += new Vector2(DriftDirection * s.drift, s.driftLift) * (loose * Mathf.SmoothStep(0f, 1f, f * 4f));
                 Vector3 acc = new Vector3((airV.x - vel.x) * s.airDrag, (airV.y - vel.y) * s.airDrag, 0f) + g;
 
                 if (loose > 0.001f)

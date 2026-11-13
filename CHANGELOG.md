@@ -5,6 +5,25 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.6.1] – 2026-11-13
+Šála podle key artu a zbraň v běhu vepředu.
+
+### Změněno
+- **Zbraň v běhu už se netáhne za hrdinou.** Paže drží zbraň v gardě před tělem, čepel vede pohyb vpřed a mírně vzhůru.
+- **Šála je jedna souvislá látka s „víc konci“** jako na key artu:
+  - hlavní stuha končí velkou smyčkou,
+  - z hlavní stuhy se odštěpují široké pramínky a jemná hedvábná vlákna; každý pramínek začíná přímo na stuze, takže víření zůstává spojité,
+  - každý konec se stáčí do plynulé spirály (zakřivení roste ke špičce), v běhu se spirály trochu rozvinou,
+  - látka je širší a v shaderu má jemná podélná vlákna, která se k okrajům rozestupují.
+- **Šála se vznáší** na vlastním magickém vánku i ve stoje a vlaje za hrdinou, místo aby visela k zemi.
+- **Odletující kouřové útržky** (vypadaly jako poletující lístky) jsou omezené na občasná jemná vlákna ze špičky.
+
+### Testy
+- Pramínky začínají na hlavní stuze, šála má aspoň 5 konců a každý končí spirálou.
+- Spirála je spojitá a stočí se o víc než jednu otáčku.
+- Šála ve stoje vlaje za hrdinou a neklesne k zemi.
+- V běhu drží hrdina zbraň v gardě vpředu.
+
 ## [0.6.0] – 2026-11-13
 Skutečné útoky zbraněmi, kamera, která ukazuje, kam skáčeš, a víc kouře.
 

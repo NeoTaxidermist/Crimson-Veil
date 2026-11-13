@@ -199,8 +199,10 @@ MonoBehaviour:
     undulationWaves: 1.6
     undulationSpeed: 6.5
     undulationPerSpeed: 1.6
-    buoyancy: 1.4
-    tipCurl: 9
+    buoyancy: 2.6
+    tipCurl: 5
+    drift: 1.4
+    driftLift: 0.5
     hardenRate: 45
     maxSubstep: 0.008333334
     teleportDistance: 5
@@ -216,7 +218,7 @@ MonoBehaviour:
   hand: {fileID: 3538522687630678429}
   handFollowSharpness: 30
   canonicalForearmAngle: -15
-  carryAngle: -128
+  runGuardAngle: -25
   drawHand: {fileID: 2001109480714135967}
   stringMaterial: {fileID: 2100000, guid: d5091d161340156418c7df6be668e41a, type: 2}
 --- !u!114 &4684705822456326274
@@ -233,7 +235,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: CrimsonVeil.Runtime::CrimsonVeil.Veil.VeilRenderer
   material: {fileID: 2100000, guid: 191086c641e9fc845acacd74fa34b1fb, type: 2}
   smoothing: 3
-  flutterTwist: 0.5
+  flutterTwist: 0.35
+  curlPoints: 22
+  curlScale: 1.7
+  tendrilSpread: 0.5
 --- !u!114 &5389534785771705521
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -247,13 +252,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: CrimsonVeil.Runtime::CrimsonVeil.Veil.VeilWisps
   material: {fileID: 2100000, guid: e31e8f4ee10ad1848910c961d170348a, type: 2}
-  maxWisps: 230
+  maxWisps: 60
   trailPoints: 24
   sampleInterval: 0.025
-  baseRate: 28
-  speedRate: 5
-  weaponRate: 30
-  swingRate: 70
+  baseRate: 3
+  speedRate: 0.6
+  weaponRate: 5
+  swingRate: 16
   lifetime: 1.9
   widthRange: {x: 0.05, y: 0.18}
   followSharpness: 1.6

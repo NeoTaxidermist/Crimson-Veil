@@ -152,7 +152,7 @@ namespace CrimsonVeil.Tests
             var running = Ground(8f);
             running.weaponHeld = 1f;
             var p = Run(new HeroPoseSolver(), 0.6f, running);
-            Assert.Less(p.armR, -15f, "running: blade trails low behind");
+            Assert.Greater(p.armR, 25f, "running: forward guard, the weapon is never dragged behind");
         }
 
         [Test]

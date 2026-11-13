@@ -66,8 +66,8 @@ namespace CrimsonVeil.Player
 
         /// <summary>Sword-arm angle when standing ready (blade forward and low).</summary>
         public const float HoldArm = 28f;
-        /// <summary>Sword-arm angle when running (blade trailing low behind).</summary>
-        public const float RunHoldArm = -32f;
+        /// <summary>Sword-arm angle when running: a forward guard, the blade leads the hero (never dragged behind).</summary>
+        public const float RunHoldArm = 42f;
 
         public float Phase { get; private set; }
         public HeroPose Current { get; private set; }
@@ -114,13 +114,14 @@ namespace CrimsonVeil.Player
             if (s.weaponHeld > 0f && !s.hanging && !s.climbing)
             {
                 // Hold the weapon where the veil's grip is (forward and a little below the chest).
-                // Ready stance: blade held forward-low when standing, trailing low behind when running
-                // (like the key art). The weapon follows the forearm, so this *is* the weapon's pose.
+                // Ready stance: blade held forward-low when standing; when running the arm stays up in a
+                // forward guard so the weapon leads the hero instead of being dragged behind.
+                // The weapon follows the forearm, so this *is* the weapon's pose.
                 float w = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(s.weaponHeld));
                 float hold = Mathf.Lerp(HoldArm, RunHoldArm, Mathf.SmoothStep(0f, 1f, run));
-                float sway = Mathf.Sin(time * 1.4f) * 3f * (1f - run) + Mathf.Sin(Phase * Mathf.PI * 4f) * 6f * run;
+                float sway = Mathf.Sin(time * 1.4f) * 3f * (1f - run) + Mathf.Sin(Phase * Mathf.PI * 4f) * 2.5f * run;
                 target.armR = Mathf.Lerp(target.armR, hold + sway, w);
-                target.elbowR = Mathf.Lerp(target.elbowR, Mathf.Lerp(18f, 30f, run), w);
+                target.elbowR = Mathf.Lerp(target.elbowR, Mathf.Lerp(18f, 40f, run), w);
             }
 
             bool attacking = s.attacking && s.attackT >= 0f && !s.hanging && !s.climbing;

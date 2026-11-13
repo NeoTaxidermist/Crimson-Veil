@@ -31,8 +31,8 @@ namespace CrimsonVeil.Veil
         [SerializeField] float handFollowSharpness = 30f;
         [Tooltip("Forearm angle (degrees, facing space) at which the weapon shapes were designed.")]
         [SerializeField] float canonicalForearmAngle = -15f;
-        [Tooltip("Extra blade turn while running at full speed (degrees) — carries the blade low behind.")]
-        [SerializeField] float carryAngle = -128f;
+        [Tooltip("Extra blade turn while running at full speed (degrees, + = tip up). The blade leads in a forward guard.")]
+        [SerializeField] float runGuardAngle = -25f;
         float forearmTurn;
         float carry;
         bool morphFromCloth;
@@ -168,6 +168,7 @@ namespace CrimsonVeil.Veil
             if (attackTime < 0f) { AttackProgress = -1f; CurrentSwing = 0f; }
 
             Simulation.Hardness = Hardness;
+            Simulation.DriftDirection = -Facing;
             Simulation.Step(dt, a);
             UpdateBowString();
         }
@@ -264,11 +265,11 @@ namespace CrimsonVeil.Veil
                     Vector3 d = hand.position - forearm.position;
                     float angle = Mathf.Atan2(d.y, d.x / s) * Mathf.Rad2Deg;
                     float wantedTurn = Mathf.DeltaAngle(canonicalForearmAngle, angle) * VeilWeaponPose.ForearmFollow(ShapeForm);
-                    // Running: the blade is carried low and trailing behind (like the key art), not pointed ahead.
+                    // Running: the blade leads in a forward guard — never dragged behind the hero.
                     float run = player != null && player.Motor != null
                         ? Mathf.Clamp01(Mathf.Abs(player.Velocity.x) / Mathf.Max(0.1f, player.Settings.maxRunSpeed)) : 0f;
                     carry = Mathf.Lerp(carry, IsAttacking ? 0f : run, 1f - Mathf.Exp(-6f * dt));
-                    wantedTurn += carry * carryAngle * VeilWeaponPose.CarryFactor(ShapeForm);
+                    wantedTurn += carry * runGuardAngle * VeilWeaponPose.CarryFactor(ShapeForm);
                     forearmTurn = Mathf.LerpAngle(forearmTurn, wantedTurn, 1f - Mathf.Exp(-handFollowSharpness * dt));
                 }
             }

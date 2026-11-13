@@ -70,6 +70,25 @@ namespace CrimsonVeil.Tests
         }
 
         [Test]
+        public void StandingStill_ScarfFloatsBehindOnItsBreeze()
+        {
+            var sim = new VeilSimulation(new VeilSettings(), Vector3.zero) { DriftDirection = -1f };
+            float tipX = 0f, tipY = 0f;
+            int frames = 0;
+            for (int i = 1; i <= 300; i++)
+            {
+                sim.Step(Dt, Vector3.zero);
+                if (i < 150) continue;
+                tipX += sim.Positions[sim.Count - 1].x;
+                tipY += sim.Positions[sim.Count - 1].y;
+                frames++;
+            }
+            tipX /= frames; tipY /= frames;
+            Assert.Less(tipX, -sim.Settings.length * 0.45f, "streams out behind the hero (key art), not hanging down");
+            Assert.Greater(tipY, -sim.Settings.length * 0.35f, "doesn't droop to the ground");
+        }
+
+        [Test]
         public void Vortices_AlternateSign()
         {
             var sim = new VeilSimulation(new VeilSettings(), Vector3.zero);

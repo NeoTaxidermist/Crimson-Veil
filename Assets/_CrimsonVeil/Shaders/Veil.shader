@@ -86,7 +86,8 @@ Shader "CrimsonVeil/Veil"
                 float alpha = smoothstep(0.0, soft, edge - (edgeNoise - 0.5) * lerp(0.55, 0.34, hard));
 
                 // Tail dissolves into smoke; a weapon's tip smoulders away more subtly.
-                float erode = smoothstep(lerp(0.55, 0.78, hard), 1.0, along + (streak - 0.5) * 0.5) * _Erosion * lerp(1.0, 0.5, hard);
+                // (the strand's end curl lives at along 0.75..0.9, so erosion only frays its very tip)
+                float erode = smoothstep(lerp(0.8, 0.84, hard), 1.0, along + (streak - 0.5) * 0.3) * _Erosion * lerp(1.0, 0.5, hard);
                 alpha *= 1.0 - erode;
 
                 // Shades: deep wine at the edges and in streak troughs, bright glowing core.
@@ -96,6 +97,13 @@ Shader "CrimsonVeil/Veil"
                 // Thin dark folds running along the cloth.
                 float fold = smoothstep(0.08, 0.0, abs(frac(across * 1.5 + streak * 0.8 + seed) - 0.5) - 0.42);
                 col *= 1.0 - fold * 0.35 * (1.0 - hard);
+
+                // Silk threads: many fine strands running along the cloth; towards the edges they part,
+                // so the ribbon reads as woven of glowing fibres (the key art), not a flat band.
+                float threads = CV_ValueNoise(float2(across * 19.0 + seed * 3.0, along * 2.5 - t * 0.6));
+                threads = threads * 0.6 + CV_ValueNoise(float2(across * 41.0 + seed, along * 5.0 - t)) * 0.4;
+                col *= lerp(1.0, lerp(0.7, 1.2, threads), 1.0 - hard * 0.7);
+                alpha *= lerp(1.0, smoothstep(0.25, 0.6, threads), (1.0 - core) * 0.65 * (1.0 - hard));
 
                 col *= i.color.rgb;
                 return half4(col, saturate(alpha * i.color.a));

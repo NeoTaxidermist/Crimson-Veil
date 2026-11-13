@@ -81,11 +81,12 @@ Shader "CrimsonVeil/Veil"
                 // Ragged soft edges: the edge line wanders with noise.
                 float edgeNoise = CV_Fbm(float2(along * 9.0 - t * 0.7, seed + across * 0.3));
                 float edge = 1.0 - abs(across);
-                float soft = lerp(_EdgeSoftness, 0.12, hard);
-                float alpha = smoothstep(0.0, soft, edge - (edgeNoise - 0.5) * lerp(0.55, 0.15, hard));
+                // Even a hardened weapon keeps smoky, wandering edges — it is still the veil.
+                float soft = lerp(_EdgeSoftness, 0.24, hard);
+                float alpha = smoothstep(0.0, soft, edge - (edgeNoise - 0.5) * lerp(0.55, 0.34, hard));
 
-                // Tail dissolves into smoke (cloth only).
-                float erode = smoothstep(0.55, 1.0, along + (streak - 0.5) * 0.5) * _Erosion * (1.0 - hard);
+                // Tail dissolves into smoke; a weapon's tip smoulders away more subtly.
+                float erode = smoothstep(lerp(0.55, 0.78, hard), 1.0, along + (streak - 0.5) * 0.5) * _Erosion * lerp(1.0, 0.5, hard);
                 alpha *= 1.0 - erode;
 
                 // Shades: deep wine at the edges and in streak troughs, bright glowing core.

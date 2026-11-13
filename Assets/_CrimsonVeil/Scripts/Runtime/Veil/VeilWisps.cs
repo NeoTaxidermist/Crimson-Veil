@@ -12,16 +12,21 @@ namespace CrimsonVeil.Veil
     public sealed class VeilWisps : MonoBehaviour
     {
         [SerializeField] Material material;
-        [SerializeField] int maxWisps = 48;
-        [SerializeField] int trailPoints = 14;
-        [SerializeField] float sampleInterval = 0.04f;
-        [SerializeField] float baseRate = 6f;
-        [SerializeField] float speedRate = 3.5f;
-        [SerializeField] float lifetime = 1.6f;
-        [SerializeField] Vector2 widthRange = new Vector2(0.05f, 0.14f);
-        [SerializeField] float followSharpness = 3.5f;
-        [SerializeField] float curl = 1.4f;
-        [SerializeField] float maxSpeed = 4f;
+        [SerializeField] int maxWisps = 150;
+        [SerializeField] int trailPoints = 22;
+        [SerializeField] float sampleInterval = 0.025f;
+        [SerializeField] float baseRate = 18f;
+        [SerializeField] float speedRate = 5f;
+        [SerializeField] float weaponRate = 30f;
+        [SerializeField] float swingRate = 70f;
+        [SerializeField] float lifetime = 1.9f;
+        [SerializeField] Vector2 widthRange = new Vector2(0.05f, 0.18f);
+        [SerializeField] float followSharpness = 1.6f;
+        [Tooltip("Base turn rate of a curl (rad/s); grows as the curl ages, so strokes wind into spirals.")]
+        [SerializeField] float curl = 3.6f;
+        [SerializeField] float drag = 0.7f;
+        [SerializeField] float maxSpeed = 3.5f;
+        float swingAccumulator;
 
         struct Wisp
         {
@@ -109,15 +114,26 @@ namespace CrimsonVeil.Veil
                 for (int i = 0; i < wisps.Length; i++) wisps[i].life = 0f;
                 return;
             }
-            float softness = 1f - Mathf.Clamp01(veil.Hardness) * 0.8f;
-            emitAccumulator += (baseRate + speedRate * speed) * softness * Mathf.Lerp(0.3f, 1f, veil.Vitality) * dt;
+            float vit = Mathf.Lerp(0.3f, 1f, veil.Vitality);
+            bool weapon = veil.Form != VeilForm.Flow && veil.Hardness > 0.2f;
+
+            // Loose cloth: curls peel off the tail. Weapon: the blade keeps smoking along its length.
+            emitAccumulator += (weapon ? weaponRate : baseRate + speedRate * speed) * vit * dt;
             while (emitAccumulator >= 1f)
             {
                 emitAccumulator -= 1f;
-                Emit(sim);
+                if (weapon) Emit(sim, Mathf.Max(veil.HandFraction, 0.2f), 1f, 0.6f);
+                else Emit(sim, 0.35f, 1f, 0.4f);
+            }
+            // A swing leaves a smoky arc behind the tip.
+            if (veil.IsAttacking)
+            {
+                swingAccumulator += swingRate * dt;
+                while (swingAccumulator >= 1f) { swingAccumulator -= 1f; Emit(sim, 0.8f, 1f, 0.3f); }
             }
 
             float follow = 1f - Mathf.Exp(-followSharpness * dt);
+            float decay = Mathf.Exp(-drag * dt);
             int active = 0;
             for (int i = 0; i < wisps.Length; i++)
             {
@@ -128,9 +144,11 @@ namespace CrimsonVeil.Veil
                 active++;
 
                 Vector2 air = sim.SampleAirVelocity(w.head);
-                // A gentle curl of its own so every stroke spirals a little.
-                var spinV = new Vector2(-w.velocity.y, w.velocity.x) * (w.spin * curl * dt);
-                w.velocity = Vector3.Lerp(w.velocity, new Vector3(air.x, air.y, 0f), follow) + new Vector3(spinV.x, spinV.y, 0f);
+                // Every stroke curls into a tightening spiral: its turn rate grows as it ages and slows.
+                float omega = w.spin * curl * (0.6f + 1.6f * w.age / w.life);
+                Vector3 v = Vector3.Lerp(w.velocity, new Vector3(air.x, air.y, 0f), follow) * decay;
+                float c = Mathf.Cos(omega * dt), s = Mathf.Sin(omega * dt);
+                w.velocity = new Vector3(v.x * c - v.y * s, v.x * s + v.y * c, 0f);
                 w.velocity = Vector3.ClampMagnitude(w.velocity, maxSpeed); // smoke drifts, it never darts
                 w.head += w.velocity * dt;
 
@@ -147,21 +165,47 @@ namespace CrimsonVeil.Veil
             ActiveCount = active;
         }
 
-        void Emit(VeilSimulation sim)
+        /// <summary>Puff of curls along part of the veil (e.g. when it changes form).</summary>
+        public void Burst(int count, float fromFraction, float toFraction, float speed)
+        {
+            var sim = veil != null ? veil.Simulation : null;
+            if (sim == null) return;
+            for (int i = 0; i < count; i++) Emit(sim, fromFraction, toFraction, speed);
+        }
+
+        void OnEnable()
+        {
+            if (veil == null) veil = GetComponent<VeilController>();
+            veil.FormChanged += OnFormChanged;
+        }
+
+        void OnDisable()
+        {
+            if (veil != null) veil.FormChanged -= OnFormChanged;
+        }
+
+        // The cloth unfurls into (or dissolves out of) a weapon in a swirl of smoke.
+        void OnFormChanged(VeilForm form) => Burst(form == VeilForm.Flow ? 30 : 22, 0.2f, 1f, 2.2f);
+
+        void Emit(VeilSimulation sim, float fromFraction, float toFraction, float speed)
         {
             int n = sim.Count;
-            int node = Random.Range(Mathf.FloorToInt(n * 0.55f), n);
+            int node = Mathf.Clamp(Mathf.RoundToInt(Random.Range(fromFraction, toFraction) * (n - 1)), 0, n - 1);
             ref var w = ref wisps[cursor];
             int baseIdx = cursor * trailPoints;
             cursor = (cursor + 1) % wisps.Length;
 
-            w.head = sim.Positions[node] + (Vector3)(Random.insideUnitCircle * 0.06f);
-            w.velocity = Vector3.zero;
+            Vector3 p = sim.Positions[node];
+            Vector3 tan = sim.Positions[Mathf.Min(node + 1, n - 1)] - sim.Positions[Mathf.Max(node - 1, 0)];
+            Vector3 normal = new Vector3(-tan.y, tan.x, 0f).normalized * (Random.value < 0.5f ? -1f : 1f);
+            w.head = p + normal * Random.Range(0f, 0.08f);
+            w.head.z = p.z + Random.Range(-0.05f, 0.05f);
+            w.velocity = normal * speed * Random.Range(0.5f, 1.2f);
             w.age = 0f;
-            w.life = lifetime * Random.Range(0.6f, 1.15f);
+            w.life = lifetime * Random.Range(0.6f, 1.2f);
             w.width = Random.Range(widthRange.x, widthRange.y);
             w.seed = Random.value;
-            w.spin = Random.value < 0.5f ? -1f : 1f;
+            w.spin = (Random.value < 0.5f ? -1f : 1f) * Random.Range(0.6f, 1.4f);
             w.sampleTimer = sampleInterval;
             w.count = 1;
             for (int k = 0; k < trailPoints; k++) trails[baseIdx + k] = w.head;

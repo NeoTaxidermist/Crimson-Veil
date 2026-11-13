@@ -46,5 +46,12 @@ namespace CrimsonVeil.Core
             t = Mathf.Clamp01(t);
             return 0.5f - 0.5f * Mathf.Cos(t * Mathf.PI);
         }
+
+        /// <summary>Ease-out that overshoots a little and settles (snappy, alive).</summary>
+        public static float EaseOutBack(float t, float overshoot = 1.4f)
+        {
+            t = Mathf.Clamp01(t) - 1f;
+            return 1f + (overshoot + 1f) * t * t * t + overshoot * t * t;
+        }
     }
 }

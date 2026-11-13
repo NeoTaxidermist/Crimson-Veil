@@ -63,6 +63,11 @@ namespace CrimsonVeil.Player
         public float sharpness = 18f;
         public float landDuration = 0.22f;
 
+        /// <summary>Sword-arm angle when standing ready (blade forward and low).</summary>
+        public const float HoldArm = 28f;
+        /// <summary>Sword-arm angle when running (blade trailing low behind).</summary>
+        public const float RunHoldArm = -32f;
+
         public float Phase { get; private set; }
         public HeroPose Current { get; private set; }
         public float LandWeight => landTimer > 0f ? landTimer / landDuration : 0f;
@@ -108,19 +113,25 @@ namespace CrimsonVeil.Player
             if (s.weaponHeld > 0f && !s.hanging && !s.climbing)
             {
                 // Hold the weapon where the veil's grip is (forward and a little below the chest).
+                // Ready stance: blade held forward-low when standing, trailing low behind when running
+                // (like the key art). The weapon follows the forearm, so this *is* the weapon's pose.
                 float w = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(s.weaponHeld));
-                target.armR = Mathf.Lerp(target.armR, 60f, w);
-                target.elbowR = Mathf.Lerp(target.elbowR, 15f, w);
+                float hold = Mathf.Lerp(HoldArm, RunHoldArm, Mathf.SmoothStep(0f, 1f, run));
+                float sway = Mathf.Sin(time * 1.4f) * 3f * (1f - run) + Mathf.Sin(Phase * Mathf.PI * 4f) * 6f * run;
+                target.armR = Mathf.Lerp(target.armR, hold + sway, w);
+                target.elbowR = Mathf.Lerp(target.elbowR, Mathf.Lerp(18f, 30f, run), w);
             }
 
             if (s.attacking)
             {
-                // The arm drives the blade: raised on the wind-up, cutting down through the swing.
-                target.armR = 60f + s.swingAngle * 0.7f;
-                target.elbowR = Mathf.Lerp(25f, 4f, Mathf.Abs(s.swingAngle) / 100f);
-                target.chest += s.swingAngle * -0.08f + 4f;
-                target.spine += Mathf.Max(0f, -s.swingAngle) * 0.08f;
-                target.armL = Mathf.Lerp(target.armL, -20f - s.swingAngle * 0.2f, 0.6f); // counter-balance
+                // The arm drives the blade: raised on the wind-up, cutting down through the swing,
+                // the body turning into it and the free arm counter-balancing.
+                target.armR = HoldArm + s.swingAngle * 0.95f;
+                target.elbowR = Mathf.Lerp(28f, 4f, Mathf.Abs(s.swingAngle) / 100f);
+                target.chest += s.swingAngle * -0.1f + 4f;
+                target.spine += Mathf.Max(0f, -s.swingAngle) * 0.12f;
+                target.head += s.swingAngle * -0.05f;
+                target.armL = Mathf.Lerp(target.armL, -25f - s.swingAngle * 0.3f, 0.7f);
             }
 
             if (!initialised)

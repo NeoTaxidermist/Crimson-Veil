@@ -56,6 +56,43 @@ namespace CrimsonVeil.Tests
         }
 
         [Test]
+        public void SameWall_CannotBeClimbedByRepeatedWallJumps()
+        {
+            FallInto(1);
+            m.Tick(Dt, new MotorInput { moveX = 1f, jumpPressed = true, jumpHeld = true }, Wall(1));
+            Assert.Greater(m.Velocity.y, 0f, "first kick works");
+            // Steer straight back into the same wall and try again once falling.
+            for (int i = 0; i < 60; i++) m.Tick(Dt, new MotorInput { moveX = 1f }, Wall(1));
+            float vyBefore = m.Velocity.y;
+            m.Tick(Dt, new MotorInput { moveX = 1f, jumpPressed = true, jumpHeld = true }, Wall(1));
+            Assert.LessOrEqual(m.Velocity.y, vyBefore + 0.01f, "no second kick off the same wall");
+        }
+
+        [Test]
+        public void OppositeWall_AllowsTheNextWallJump()
+        {
+            FallInto(1);
+            m.Tick(Dt, new MotorInput { moveX = 1f, jumpPressed = true, jumpHeld = true }, Wall(1));
+            for (int i = 0; i < 40; i++) m.Tick(Dt, new MotorInput { moveX = -1f }, Wall(-1));
+            m.Tick(Dt, new MotorInput { moveX = -1f, jumpPressed = true, jumpHeld = true }, Wall(-1));
+            Assert.Greater(m.Velocity.y, 0f);
+            Assert.Greater(m.Velocity.x, 0f, "kicked off the left wall");
+        }
+
+        [Test]
+        public void Landing_ResetsTheWallJumpRule()
+        {
+            FallInto(1);
+            m.Tick(Dt, new MotorInput { moveX = 1f, jumpPressed = true, jumpHeld = true }, Wall(1));
+            m.Tick(Dt, new MotorInput(), new MotorContacts { grounded = true });
+            m.Tick(Dt, new MotorInput(), new MotorContacts { grounded = true });
+            for (int i = 0; i < 5; i++) m.Tick(Dt, new MotorInput(), new MotorContacts());
+            FallInto(1);
+            m.Tick(Dt, new MotorInput { moveX = 1f, jumpPressed = true, jumpHeld = true }, Wall(1));
+            Assert.Greater(m.Velocity.y, 0f, "same wall again after touching the ground");
+        }
+
+        [Test]
         public void WallCoyote_AllowsLateWallJump()
         {
             FallInto(-1);

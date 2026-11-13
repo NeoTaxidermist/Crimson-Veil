@@ -5,6 +5,16 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.5.1] – 2026-11-13
+
+### Změněno
+- **Odrazy od zdi**: od jedné zdi se už nedá šplhat opakovanými odrazy. Další odraz musí být od protější zdi, nebo až po dotyku země či chycení hrany. Zeď, od které ses právě odrazil, ti taky nevrátí dash ve vzduchu.
+- **Zbraň jako prodloužení předloktí**: čepel sleduje úhel předloktí, takže švih, nápřah i postoj dělá paže a zbraň s ní letí jako jeden celek (žádné samostatné otáčení zbraně).
+- **Postoj se zbraní**: v klidu čepel vpředu a nízko, v běhu nesená nízko za tělem (jako na key artu). Při útoku tělo zabírá do seku a volná ruka dělá protiváhu.
+- **Proměna ve zbraň**: čepel vyroste z dlaně s mírným přešvihnutím, látka se kolem ní rozvine ve víru kouře. Zpětná proměna se rozplyne v kouř.
+- **Kouř**: mnohem víc kudrlinek (až 150 najednou, delší stopy), každá se stáčí do zrychlující spirály. Kouří i ztvrdlá čepel a při seku za špičkou zůstává kouřový oblouk. Zbraně si v shaderu drží kouřové, neklidné okraje a doutnající špičku.
+- Testy: tři nové testy pravidla odrazů od zdi, postoj se zbraní v klidu a v běhu.
+
 ## [0.5.0] – 2026-11-13
 Lehčí pohyb, elegantní šála a nový hrdina podle key artu.
 

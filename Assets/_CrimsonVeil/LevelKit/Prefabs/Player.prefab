@@ -208,6 +208,8 @@ MonoBehaviour:
   arrowSpeed: 26
   hand: {fileID: 3538522687630678429}
   handFollowSharpness: 30
+  canonicalForearmAngle: -15
+  carryAngle: -128
 --- !u!114 &4684705822456326274
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -236,16 +238,19 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: CrimsonVeil.Runtime::CrimsonVeil.Veil.VeilWisps
   material: {fileID: 2100000, guid: e31e8f4ee10ad1848910c961d170348a, type: 2}
-  maxWisps: 48
-  trailPoints: 14
-  sampleInterval: 0.04
-  baseRate: 6
-  speedRate: 3.5
-  lifetime: 1.6
-  widthRange: {x: 0.05, y: 0.14}
-  followSharpness: 3.5
-  curl: 1.4
-  maxSpeed: 4
+  maxWisps: 150
+  trailPoints: 22
+  sampleInterval: 0.025
+  baseRate: 18
+  speedRate: 5
+  weaponRate: 30
+  swingRate: 70
+  lifetime: 1.9
+  widthRange: {x: 0.05, y: 0.18}
+  followSharpness: 1.6
+  curl: 3.6
+  drag: 0.7
+  maxSpeed: 3.5
 --- !u!114 &8109110925475585351
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -1,4 +1,5 @@
 using System;
+using CrimsonVeil.Core;
 using CrimsonVeil.Player;
 using UnityEngine;
 
@@ -28,6 +29,13 @@ namespace CrimsonVeil.Veil
         [Tooltip("The hero's hand bone. When set, weapons grow out of the real hand instead of a fixed point.")]
         [SerializeField] Transform hand;
         [SerializeField] float handFollowSharpness = 30f;
+        [Tooltip("Forearm angle (degrees, facing space) at which the weapon shapes were designed.")]
+        [SerializeField] float canonicalForearmAngle = -15f;
+        [Tooltip("Extra blade turn while running at full speed (degrees) — carries the blade low behind.")]
+        [SerializeField] float carryAngle = -128f;
+        float forearmTurn;
+        float carry;
+        bool morphFromCloth;
 
         public VeilSimulation Simulation { get; private set; }
         /// <summary>Current swing of the weapon in degrees (+ = up) — the arm animation follows it.</summary>
@@ -97,7 +105,8 @@ namespace CrimsonVeil.Veil
             if (form != VeilForm.Flow)
             {
                 // Morph from what the veil looks like right now: the previous weapon, or the loose cloth.
-                if (TransformProgress > 0.05f && ShapeForm != VeilForm.Flow) Array.Copy(current, fromShape, current.Length);
+                morphFromCloth = !(TransformProgress > 0.05f && ShapeForm != VeilForm.Flow);
+                if (!morphFromCloth) Array.Copy(current, fromShape, current.Length);
                 else CaptureClothAsShape(fromShape);
                 ShapeForm = form;
                 HandFraction = VeilFormLibrary.BuildShape(form, shape);
@@ -195,7 +204,24 @@ namespace CrimsonVeil.Veil
                 var wanted = lh - VeilFormLibrary.Hand;
                 if (wanted.sqrMagnitude > 1f) wanted = wanted.normalized; // guard against a bad first frame
                 handDelta = Vector2.Lerp(handDelta, wanted, 1f - Mathf.Exp(-handFollowSharpness * dt));
+
+                // The weapon is an extension of the forearm: it turns with it (swings, stance, running).
+                var forearm = hand.parent;
+                if (forearm != null)
+                {
+                    Vector3 d = hand.position - forearm.position;
+                    float angle = Mathf.Atan2(d.y, d.x / s) * Mathf.Rad2Deg;
+                    float wantedTurn = Mathf.DeltaAngle(canonicalForearmAngle, angle) * VeilWeaponPose.ForearmFollow(ShapeForm);
+                    // Running: the blade is carried low and trailing behind (like the key art), not pointed ahead.
+                    float run = player != null && player.Motor != null
+                        ? Mathf.Clamp01(Mathf.Abs(player.Velocity.x) / Mathf.Max(0.1f, player.Settings.maxRunSpeed)) : 0f;
+                    carry = Mathf.Lerp(carry, IsAttacking ? 0f : run, 1f - Mathf.Exp(-6f * dt));
+                    wantedTurn += carry * carryAngle * VeilWeaponPose.CarryFactor(ShapeForm);
+                    forearmTurn = Mathf.LerpAngle(forearmTurn, wantedTurn, 1f - Mathf.Exp(-handFollowSharpness * dt));
+                }
             }
+            bool armDriven = hand != null && hand.parent != null;
+            Vector2 grip = VeilFormLibrary.Hand + handDelta;
 
             var targets = Simulation.Targets;
             int n = Simulation.Count;
@@ -203,13 +229,22 @@ namespace CrimsonVeil.Veil
             {
                 float f = (float)i / (n - 1);
                 bool weapon = f >= HandFraction;
-                // Pose around the canonical grip first, then move the whole weapon onto the real hand.
+                // Pose around the canonical grip, move onto the real hand, turn with the forearm.
                 Vector2 rest = VeilWeaponPose.Idle(ShapeForm, shape[i], weapon, time);
-                rest = VeilWeaponPose.Apply(ShapeForm, rest, weapon, t);
+                rest = VeilWeaponPose.Apply(ShapeForm, rest, weapon, t, armDriven);
                 rest += weapon ? handDelta : handDelta * (HandFraction > 0f ? f / HandFraction : 1f);
-                Vector2 l = morph < 1f
-                    ? VeilTransform.MorphNode(fromShape[i], rest, VeilTransform.MorphProgress(morph, f), f, time)
-                    : rest;
+                if (weapon && armDriven) rest = VeilWeaponPose.Rotate(rest, grip, forearmTurn);
+
+                Vector2 l;
+                if (morph < 1f)
+                {
+                    float m = VeilTransform.MorphProgress(morph, f);
+                    // From loose cloth the blade *grows* out of the palm, overshooting a touch before it settles.
+                    if (weapon && morphFromCloth)
+                        rest = grip + (rest - grip) * Mathf.Lerp(0.05f, 1f, MovementMath.EaseOutBack(m, 1.7f));
+                    l = VeilTransform.MorphNode(fromShape[i], rest, m, f, time, morphFromCloth ? 0.22f : 0.14f);
+                }
+                else l = rest;
                 current[i] = l;
                 targets[i] = a + new Vector3(l.x * facingScale, l.y, 0f);
             }

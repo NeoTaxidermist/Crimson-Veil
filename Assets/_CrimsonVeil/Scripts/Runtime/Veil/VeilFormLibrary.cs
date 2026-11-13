@@ -209,16 +209,18 @@ namespace CrimsonVeil.Veil
         }
 
         /// <summary>Transforms a local shape point for attack progress <paramref name="t"/> (0..1).</summary>
-        public static Vector2 Apply(VeilForm form, Vector2 local, bool isWeaponPart, float t)
+        /// <param name="armDriven">When the weapon already follows the hero's forearm, the arm animation
+        /// performs sword and whip swings, so they are not rotated here a second time.</param>
+        public static Vector2 Apply(VeilForm form, Vector2 local, bool isWeaponPart, float t, bool armDriven = false)
         {
             if (!isWeaponPart || t < 0f) return local;
             Vector2 pivot = VeilFormLibrary.Hand;
             switch (form)
             {
                 case VeilForm.Sword:
-                    return Rotate(local, pivot, Curve(t, 0.18f, 55f, 0.55f, -105f));
+                    return armDriven ? local : Rotate(local, pivot, Curve(t, 0.18f, 55f, 0.55f, -105f));
                 case VeilForm.Whip:
-                    return Rotate(local, pivot, Curve(t, 0.25f, 75f, 0.6f, -35f));
+                    return armDriven ? local : Rotate(local, pivot, Curve(t, 0.25f, 75f, 0.6f, -35f));
                 case VeilForm.Spear:
                     return local + new Vector2(Curve(t, 0.2f, -0.35f, 0.45f, 1.1f), 0f);
                 case VeilForm.Shield:
@@ -260,7 +262,33 @@ namespace CrimsonVeil.Veil
             }
         }
 
-        static Vector2 Rotate(Vector2 p, Vector2 pivot, float degrees)
+        /// <summary>How strongly each weapon turns with the forearm (a bow stays upright, a sword is the arm).</summary>
+        public static float ForearmFollow(VeilForm form)
+        {
+            switch (form)
+            {
+                case VeilForm.Sword: return 1f;
+                case VeilForm.Spear: return 1f;
+                case VeilForm.Whip: return 0.85f;
+                case VeilForm.Shield: return 0.35f;
+                case VeilForm.Bow: return 0.25f;
+                default: return 0f;
+            }
+        }
+
+        /// <summary>How much a weapon is swung behind the hero while running.</summary>
+        public static float CarryFactor(VeilForm form)
+        {
+            switch (form)
+            {
+                case VeilForm.Sword: return 1f;
+                case VeilForm.Spear: return 0.85f;
+                case VeilForm.Whip: return 0.5f;
+                default: return 0f;
+            }
+        }
+
+        public static Vector2 Rotate(Vector2 p, Vector2 pivot, float degrees)
         {
             float r = degrees * Mathf.Deg2Rad;
             float c = Mathf.Cos(r), s = Mathf.Sin(r);

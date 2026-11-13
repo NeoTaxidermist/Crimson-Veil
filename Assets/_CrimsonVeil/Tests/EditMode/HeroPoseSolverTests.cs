@@ -104,7 +104,7 @@ namespace CrimsonVeil.Tests
             s.attacking = true;
             s.swingAngle = 50f;
             var up = Run(new HeroPoseSolver(), 0.3f, s);
-            Assert.Greater(up.armR, 80f, "wind-up raises the sword arm");
+            Assert.Greater(up.armR, 70f, "wind-up raises the sword arm");
             s.swingAngle = -100f;
             var down = Run(new HeroPoseSolver(), 0.3f, s);
             Assert.Less(down.armR, 10f, "the arm cuts down with the blade");
@@ -117,7 +117,11 @@ namespace CrimsonVeil.Tests
             var bare = Run(new HeroPoseSolver(), 0.5f, s);
             s.weaponHeld = 1f;
             var armed = Run(new HeroPoseSolver(), 0.5f, s);
-            Assert.Greater(armed.armR, bare.armR + 40f);
+            Assert.Greater(armed.armR, bare.armR + 15f, "standing: blade held forward");
+            var running = Ground(8f);
+            running.weaponHeld = 1f;
+            var p = Run(new HeroPoseSolver(), 0.6f, running);
+            Assert.Less(p.armR, -15f, "running: blade trails low behind");
         }
 
         [Test]

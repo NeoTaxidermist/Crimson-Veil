@@ -117,6 +117,7 @@ namespace CrimsonVeil.Player
         float stunTimer;
         float wallCoyoteTimer;
         int lastWallSide;
+        int lastWallJumpSide;
         float inputLockTimer;
         float regrabTimer;
         bool airDashAvailable = true;
@@ -175,6 +176,7 @@ namespace CrimsonVeil.Player
             {
                 Velocity = Vector2.zero;
                 airDashAvailable = true;
+                lastWallJumpSide = 0;
                 bool jump = bufferTimer > 0f;
                 if (jump && inputSide == -AttachSide)
                 {
@@ -206,6 +208,7 @@ namespace CrimsonVeil.Player
                 coyoteTimer = s.coyoteTime;
                 airDashAvailable = true;
                 wallCoyoteTimer = 0f;
+                lastWallJumpSide = 0;
                 if (!wasGrounded && Velocity.y <= 0f)
                 {
                     IsJumping = false;
@@ -219,7 +222,8 @@ namespace CrimsonVeil.Player
                 {
                     lastWallSide = contacts.wallSide;
                     wallCoyoteTimer = s.wallCoyoteTime;
-                    airDashAvailable = true; // touching a wall refreshes the air dash
+                    // A fresh wall refreshes the air dash — the wall you just kicked off does not.
+                    if (contacts.wallSide != lastWallJumpSide) airDashAvailable = true;
                 }
                 else wallCoyoteTimer -= dt;
             }
@@ -250,7 +254,11 @@ namespace CrimsonVeil.Player
             }
 
             bool canJump = bufferTimer > 0f && coyoteTimer > 0f;
-            bool canWallJump = !canJump && bufferTimer > 0f && !IsGrounded && (sliding || wallCoyoteTimer > 0f);
+            int jumpWall = sliding ? contacts.wallSide : lastWallSide;
+            // No climbing a single wall by kicking off it again and again: the next wall jump must be
+            // from the other side (or after touching ground / grabbing a ledge).
+            bool canWallJump = !canJump && bufferTimer > 0f && !IsGrounded && (sliding || wallCoyoteTimer > 0f)
+                               && jumpWall != 0 && jumpWall != lastWallJumpSide;
 
             // --- Dash (from a wall it always launches away from it) ------------------------
             if (input.dashPressed && !IsDashing && dashCooldownTimer <= 0f && (IsGrounded || airDashAvailable))
@@ -328,7 +336,7 @@ namespace CrimsonVeil.Player
             else if (canWallJump)
             {
                 bufferTimer = 0f;
-                WallJump(sliding ? contacts.wallSide : lastWallSide);
+                WallJump(jumpWall);
             }
             else if (IsGrounded && Velocity.y <= 0f)
             {
@@ -356,6 +364,7 @@ namespace CrimsonVeil.Player
             var s = Settings;
             Velocity = new Vector2(-wallSide * s.wallJumpPush, s.WallJumpVelocity);
             Facing = -wallSide;
+            lastWallJumpSide = wallSide;
             State = MotorState.Normal;
             IsJumping = true;
             IsGrounded = false;
@@ -374,6 +383,7 @@ namespace CrimsonVeil.Player
             IsJumping = false;
             coyoteTimer = bufferTimer = dashTimer = dashCooldownTimer = stunTimer = 0f;
             wallCoyoteTimer = inputLockTimer = regrabTimer = 0f;
+            lastWallJumpSide = 0;
             ClimbProgress = 0f;
             airDashAvailable = true;
         }

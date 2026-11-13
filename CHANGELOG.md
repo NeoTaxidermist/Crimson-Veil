@@ -5,6 +5,18 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.4.1] – 2026-11-13
+
+### Přidáno
+- **Ruiny z Blenderu** (`Art/Ruins`, zdroj `ArtSource/Ruins.blend`): zeď s klenutými okny a ulomenou korunou, osmiboká věž s okny a římsami, rozpadlé schody. V Level Editoru jako „Zeď s okny“, „Věž“, „Schody“, v libovolné vrstvě.
+- **Kapradí** (`FernProp`): keře s obloukovitými listy a lístky, vlají ve větru. Do popředí i na hrací plochu.
+- Prototypová úroveň: věže v dálce a ve střední vrstvě, zdi s okny, schody, kapradí v popředí a u paty zdí.
+- Testy Level Kitu: každý dílek z palety se položí přesně na místo kliknutí, do správné vrstvy a bez chybějících materiálů; TerrainBlock má přesnou kolizi a trávu uvnitř hran; přesun do vrstvy mění hloubku, odstín i měřítko. Celkem 144 EditMode + 13 PlayMode.
+
+### Opraveno
+- Stébla trávy se mohla naklonit přes okraj trsu (a tím i přes okraj plošiny) – teď zůstávají uvnitř.
+- Pásy mlhy v prototypu jsou uklizené ve skupině Dekorace.
+
 ### Přidáno
 - **Pohyb po zdech**: klouzání po zdi (když tlačíš proti zdi a padáš), odraz od zdi (s krátkou „coyote“ tolerancí po opuštění zdi), dash od zdi (vždy směrem od ní). Dotek zdi obnoví dash ve vzduchu.
 - **Chycení hrany a šplh**: hrdina se chytí hrany, která je v dosahu rukou, a vyšplhá nahoru (skok nebo nahoru). Dolů = pustit se, skok od hrany = odraz. Detekce hrany přes paprsky (zeď v úrovni hrudníku, volný prostor nad hranou, rovný vršek, místo pro postavení).

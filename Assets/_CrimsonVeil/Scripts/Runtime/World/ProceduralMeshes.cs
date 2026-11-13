@@ -299,8 +299,10 @@ namespace CrimsonVeil.World
                 float x0 = R(-width * 0.5f, width * 0.5f);
                 float z = R(-0.15f, 0.15f);
                 float h = R(heightRange.x, heightRange.y);
-                float lean = R(-0.45f, 0.45f) * h;
                 float w = bladeWidth * R(0.6f, 1.4f);
+                // Blades may lean, but never past the clump's edges (a clump on a platform must not overhang it).
+                x0 = Mathf.Clamp(x0, -width * 0.5f + w, width * 0.5f - w);
+                float lean = Mathf.Clamp(R(-0.45f, 0.45f) * h, -width * 0.5f - x0 + w, width * 0.5f - x0 - w);
                 int prevL = -1, prevR = -1;
                 for (int s = 0; s <= segs; s++)
                 {

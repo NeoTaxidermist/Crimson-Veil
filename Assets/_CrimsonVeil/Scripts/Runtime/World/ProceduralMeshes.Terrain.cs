@@ -199,6 +199,58 @@ namespace CrimsonVeil.World
             return b.ToMesh("HangingRoots");
         }
 
+        /// <summary>
+        /// Fern / bush silhouette: arching fronds with alternating leaflets, rooted at y = 0.
+        /// uv2.y grows along each frond so the tips sway most.
+        /// </summary>
+        public static Mesh Fern(int seed, int fronds, float size)
+        {
+            var rnd = new System.Random(seed);
+            float R(float a, float c) => a + (float)rnd.NextDouble() * (c - a);
+            var b = new Builder(1);
+            for (int f = 0; f < fronds; f++)
+            {
+                float side = R(-1f, 1f);
+                float len = size * R(0.6f, 1f);
+                // quadratic arch: up first, then over and down
+                Vector2 p0 = new Vector2(R(-0.1f, 0.1f) * size, 0f);
+                Vector2 p1 = p0 + new Vector2(side * len * 0.35f, len * R(0.6f, 0.9f));
+                Vector2 p2 = p0 + new Vector2(side * len * R(0.8f, 1.1f), len * R(0.15f, 0.45f));
+                float z = R(-0.2f, 0.2f);
+                Vector2 Q(float t) => (1 - t) * (1 - t) * p0 + 2 * (1 - t) * t * p1 + t * t * p2;
+
+                const int segs = 10;
+                int pl = -1, pr = -1;
+                for (int s = 0; s <= segs; s++)
+                {
+                    float t = (float)s / segs;
+                    Vector2 c = Q(t);
+                    Vector2 tan = (Q(Mathf.Min(1f, t + 0.02f)) - Q(Mathf.Max(0f, t - 0.02f))).normalized;
+                    Vector2 n = new Vector2(-tan.y, tan.x);
+                    float stem = size * 0.018f * (1f - t * 0.8f);
+                    var w = new Vector2(0f, t);
+                    int l = b.Vert(new Vector3(c.x + n.x * stem, c.y + n.y * stem, z), Vector3.back, new Vector2(0f, t), w);
+                    int r = b.Vert(new Vector3(c.x - n.x * stem, c.y - n.y * stem, z), Vector3.back, new Vector2(1f, t), w);
+                    if (s > 0) { b.Tri(pl, l, r); b.Tri(pl, r, pr); }
+                    pl = l; pr = r;
+
+                    // leaflets, alternating, shrinking towards the tip
+                    if (s > 1 && s < segs)
+                    {
+                        float leaf = size * 0.16f * (1f - t) + size * 0.03f;
+                        float dir = s % 2 == 0 ? 1f : -1f;
+                        Vector2 baseA = c - tan * leaf * 0.12f, baseB = c + tan * leaf * 0.12f;
+                        Vector2 tip = c + (n * dir * 0.85f + tan * 0.5f).normalized * leaf;
+                        int a0 = b.Vert(new Vector3(baseA.x, baseA.y, z), Vector3.back, Vector2.zero, w);
+                        int a1 = b.Vert(new Vector3(baseB.x, baseB.y, z), Vector3.back, Vector2.zero, w);
+                        int a2 = b.Vert(new Vector3(tip.x, tip.y, z), Vector3.back, Vector2.one, new Vector2(0f, Mathf.Min(1f, t + 0.15f)));
+                        b.Tri(a0, a1, a2);
+                    }
+                }
+            }
+            return b.ToMesh("Fern");
+        }
+
         /// <summary>Classical column with base and capital, standing on y = 0.</summary>
         public static Mesh Column(float height, float radius, bool broken, int seed)
         {

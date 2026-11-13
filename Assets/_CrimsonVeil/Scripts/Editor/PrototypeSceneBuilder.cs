@@ -82,7 +82,17 @@ namespace CrimsonVeil.EditorTools
 
             // ---------------------------------------------------------------- decoration: foreground
             for (int i = 0; i < 46; i++)
+            {
                 F.Grass(new Vector3(-16f + i * 2.9f, -2.6f + (i % 3) * 0.3f, 0f), LevelLayer.Foreground, 100 + i, 3.4f, new Vector2(0.6f, 2.1f), 40, null, 0.07f).transform.SetParent(deco, true);
+                if (i % 4 == 1) F.Fern(new Vector3(-15f + i * 2.9f, -2.4f, 0f), LevelLayer.Foreground, 400 + i, 2.2f, 11).transform.SetParent(deco, true);
+            }
+            // Ferns behind the play plane, at the foot of walls and ledges.
+            foreach (var (x, y) in new[] { (-12f, 0f), (11f, 0f), (17.5f, 0.6f), (30f, -1.2f), (57f, 0f), (79f, 0f), (91.5f, 0f), (114f, 0f) })
+            {
+                var fern = F.Fern(new Vector3(x, y, 0f), LevelLayer.Playfield, (int)(x * 7f) + 900, 1.3f, 8);
+                fern.transform.position += new Vector3(0f, 0f, 1.5f);
+                fern.transform.SetParent(deco, true);
+            }
             F.Block(deco, "BrokenPost", new Vector3(-4f, -1f, -3.6f), new Vector3(0.5f, 3.2f, 0.5f), LevelKitMaterials.Get().inkFG, false).transform.rotation = Quaternion.Euler(0, 0, 8f);
             F.Block(deco, "BrokenPost", new Vector3(52f, -1.2f, -3.6f), new Vector3(0.6f, 3f, 0.6f), LevelKitMaterials.Get().inkFG, false).transform.rotation = Quaternion.Euler(0, 0, -12f);
 
@@ -95,6 +105,10 @@ namespace CrimsonVeil.EditorTools
                 F.Rubble(new Vector3(x + 3.5f, -1f, 0f), LevelLayer.Near, 200 + i, 3.5f, 1.2f).transform.SetParent(deco, true);
                 if (i % 3 == 1) F.Column(new Vector3(x + 5.2f, -1f, 0f), LevelLayer.Near, 7f, i % 2 == 0, i).transform.SetParent(deco, true);
             }
+            foreach (var x in new[] { -9f, 37f, 70f, 105f })
+                F.Ruin("RuinWall", new Vector3(x, -1f, 0f), LevelLayer.Near).transform.SetParent(deco, true);
+            foreach (var x in new[] { 15f, 88f })
+                F.Ruin("RuinStairs", new Vector3(x, -1f, 0f), LevelLayer.Near).transform.SetParent(deco, true);
             foreach (var (x, y, h) in new[] { (6.6f, 8.6f, 3.6f), (29f, 8.2f, 3f), (51f, 8.6f, 3.4f), (95f, 8.4f, 3.2f) })
                 F.Banner(new Vector3(x, y, 0f), LevelLayer.Near, 1.1f, h, (int)x).transform.SetParent(deco, true);
             F.Waterfall(new Vector3(27.5f, 14f, 0f), LevelLayer.Near, 2.4f, 16f).transform.SetParent(deco, true);
@@ -111,17 +125,23 @@ namespace CrimsonVeil.EditorTools
             float[] farBreak = { 0f, 0.3f, 0f, 0f, 0.6f, 0f, 0.2f, 0f, 0f, 0.45f, 0f, 0.7f, 0f, 0.25f, 0f };
             for (int i = 0; i < 15; i++)
                 F.Arch(new Vector3(-60f + i * 13f, -12f + (i % 3) * 1.5f, 0f), LevelLayer.Far, 3.4f, 5.8f, farBreak[i], i).transform.SetParent(deco, true);
-            F.Block(deco, "FarTower", new Vector3(-22f, 10f, 69f), new Vector3(6f, 40f, 6f), LevelKitMaterials.Get().inkFar, false);
-            F.Block(deco, "FarTowerTop", new Vector3(-22f, 31f, 69f), new Vector3(8f, 2f, 8f), LevelKitMaterials.Get().inkFar, false);
-            F.Block(deco, "FarTower", new Vector3(86f, 8f, 75f), new Vector3(7f, 36f, 7f), LevelKitMaterials.Get().inkFar, false);
+            foreach (var (x, y) in new[] { (-22f, -12f), (40f, -10f), (86f, -12f), (130f, -11f) })
+                F.Ruin("Tower", new Vector3(x, y, 0f), LevelLayer.Far).transform.SetParent(deco, true);
+            foreach (var (x, y) in new[] { (8f, -2f), (58f, -2f), (98f, -2f) })
+                F.Ruin("Tower", new Vector3(x, y, 0f), LevelLayer.Mid).transform.SetParent(deco, true);
+            foreach (var (x, y) in new[] { (-30f, -2f), (25f, -2f), (80f, -2f), (115f, -2f) })
+                F.Ruin("RuinWall", new Vector3(x, y, 0f), LevelLayer.Mid).transform.SetParent(deco, true);
             F.Waterfall(new Vector3(14f, 16f, 0f), LevelLayer.Far, 4f, 30f).transform.SetParent(deco, true);
             F.Block(deco, "DistantCliffs", new Vector3(30f, -10f, 110f), new Vector3(500f, 24f, 4f), LevelKitMaterials.Get().inkSky, false);
 
             // ---------------------------------------------------------------- mist & light
             F.MistBand(new Vector3(50f, -1.6f, 1.2f), LevelLayer.Playfield, 180f, 2.6f).transform.SetParent(deco, true);
-            F.MistBand(new Vector3(50f, -1f, 0f), LevelLayer.Near, 220f, 7f).transform.position += new Vector3(0f, 0f, -4f);
-            F.MistBand(new Vector3(50f, 0f, 0f), LevelLayer.Mid, 300f, 12f).transform.position += new Vector3(0f, 0f, -10f);
-            F.MistBand(new Vector3(50f, -2f, 0f), LevelLayer.Far, 400f, 22f).transform.position += new Vector3(0f, 0f, -20f);
+            foreach (var (y, l, w, h, dz) in new[] { (-1f, LevelLayer.Near, 220f, 7f, -4f), (0f, LevelLayer.Mid, 300f, 12f, -10f), (-2f, LevelLayer.Far, 400f, 22f, -20f) })
+            {
+                var band = F.MistBand(new Vector3(50f, y, 0f), l, w, h);
+                band.transform.position += new Vector3(0f, 0f, dz);
+                band.transform.SetParent(deco, true);
+            }
             for (int i = 0; i < 6; i++)
                 F.LightShaft(new Vector3(-6f + i * 21f, 12f, 0f), LevelLayer.Mid, 5f + i % 3, 34f).transform.SetParent(deco, true);
 

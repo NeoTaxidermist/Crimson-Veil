@@ -3,6 +3,7 @@
     "rootNamespace": "CrimsonVeil.Tests",
     "references": [
         "CrimsonVeil.Runtime",
+        "CrimsonVeil.Editor",
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner"
     ],

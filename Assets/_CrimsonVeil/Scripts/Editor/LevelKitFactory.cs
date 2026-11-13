@@ -346,6 +346,39 @@ namespace CrimsonVeil.EditorTools
             return g.gameObject;
         }
 
+        public const string RuinDir = LevelKitMaterials.Root + "/Art/Ruins/";
+
+        /// <summary>Modelled ruin piece from Blender (RuinWall, Tower, RuinStairs), tinted for its layer.</summary>
+        public static GameObject Ruin(string model, Vector3 pos, LevelLayer layer)
+        {
+            var asset = AssetDatabase.LoadAssetAtPath<GameObject>(RuinDir + model + ".fbx");
+            GameObject go;
+            if (asset != null)
+            {
+                go = (GameObject)PrefabUtility.InstantiatePrefab(asset);
+                go.name = model;
+            }
+            else go = new GameObject(model);
+            go.transform.position = Layered(pos, layer);
+            go.transform.localScale = Vector3.one * LayerScale(layer);
+            foreach (var r in go.GetComponentsInChildren<Renderer>())
+            {
+                r.sharedMaterial = M.ForLayer(layer);
+                r.shadowCastingMode = ShadowCastingMode.Off;
+            }
+            Tag(go, layer);
+            return go;
+        }
+
+        public static GameObject Fern(Vector3 pos, LevelLayer layer, int seed = 1, float size = 1.6f, int fronds = 9)
+        {
+            var f = Prop<FernProp>(null, "Fern", Layered(pos, layer), seed, new[] { M.grass });
+            f.size = size; f.fronds = fronds;
+            f.Rebuild();
+            Tag(f.gameObject, layer);
+            return f.gameObject;
+        }
+
         public static GameObject Waterfall(Vector3 top, LevelLayer layer = LevelLayer.Mid, float width = 3.2f, float height = 22f)
         {
             var root = new GameObject("Waterfall");

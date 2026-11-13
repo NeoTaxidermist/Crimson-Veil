@@ -5,6 +5,14 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.7.6] – 2026-11-13
+
+### Změněno
+- **Štíhlejší zbraně:** s plným jádrem byly kopí a meč moc tlusté.
+  - Kopí je teď štíhlé ratiště (0,12 → 0,07 m).
+  - Meč má užší čepel (0,22 → 0,16 m).
+- Test: zbraně nejsou vlasově tenké, ale kopí je štíhlé a meč není prkno.
+
 ## [0.7.5] – 2026-11-13
 Plné jádro zbraní, kopí stejně silné po celé délce.
 

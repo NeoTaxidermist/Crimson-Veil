@@ -42,8 +42,8 @@ namespace CrimsonVeil.Veil
             switch (form)
             {
                 case VeilForm.Whip: return 0.1f;
-                case VeilForm.Sword: return 0.22f;
-                case VeilForm.Spear: return 0.12f;
+                case VeilForm.Sword: return 0.16f;
+                case VeilForm.Spear: return 0.07f; // a slim shaft
                 case VeilForm.Shield: return 0.26f;
                 case VeilForm.Bow: return 0.1f;
                 default: return 0.65f;

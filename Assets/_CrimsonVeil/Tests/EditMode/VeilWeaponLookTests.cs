@@ -87,10 +87,12 @@ namespace CrimsonVeil.Tests
         }
 
         [Test]
-        public void Weapons_AreVisibleBands()
+        public void Weapons_AreVisibleBands_ButSlim()
         {
             foreach (var form in new[] { VeilForm.Whip, VeilForm.Sword, VeilForm.Spear, VeilForm.Shield, VeilForm.Bow })
-                Assert.GreaterOrEqual(VeilFormLibrary.Width(form), 0.1f, form + " must not be a hairline");
+                Assert.GreaterOrEqual(VeilFormLibrary.Width(form), 0.06f, form + " must not be a hairline");
+            Assert.LessOrEqual(VeilFormLibrary.Width(VeilForm.Spear), 0.08f, "a spear is a slim shaft");
+            Assert.LessOrEqual(VeilFormLibrary.Width(VeilForm.Sword), 0.17f, "a blade, not a plank");
         }
     }
 }

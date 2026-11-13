@@ -57,7 +57,7 @@ namespace CrimsonVeil.Combat
         {
             switch (form)
             {
-                case VeilForm.Whip: return new Vector2(0.42f, 0.66f);
+                case VeilForm.Whip: return new Vector2(0.52f, 0.78f); // the lash rolling out to the crack
                 case VeilForm.Spear: return new Vector2(0.34f, 0.62f);
                 case VeilForm.Shield: return new Vector2(0.24f, 0.55f);
                 case VeilForm.Bow: return new Vector2(2f, 2f); // arrows deal the damage

@@ -184,6 +184,7 @@ MonoBehaviour:
     gravityScale: 0.08
     depthOffset: 0.12
     depthWobble: 0.08
+    weaponDepth: 0.3
     strouhal: 0.21
     bodyDiameter: 0.45
     idleShedFrequency: 0.8
@@ -222,6 +223,7 @@ MonoBehaviour:
   handFollowSharpness: 30
   canonicalForearmAngle: -15
   runGuardAngle: -25
+  whipLag: 0.16
   drawHand: {fileID: 2001109480714135967}
   stringMaterial: {fileID: 2100000, guid: d5091d161340156418c7df6be668e41a, type: 2}
 --- !u!114 &4684705822456326274

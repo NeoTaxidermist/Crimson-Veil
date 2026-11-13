@@ -41,6 +41,47 @@ namespace CrimsonVeil.Veil
         bool lunged;
         float releaseTime = 99f;
 
+        [Header("Whip")]
+        [Tooltip("How long (s) the whip's tip lags behind its handle — the travelling loop.")]
+        [SerializeField] float whipLag = 0.16f;
+        bool whipCracked;
+        Vector2[] restBuf, whipBuf;
+        const int TurnHistory = 128;
+        readonly float[] turnTimes = new float[TurnHistory];
+        readonly float[] turnValues = new float[TurnHistory];
+        int turnHead = -1, turnCount;
+
+        /// <summary>Fired when the whip's loop reaches the tip and it cracks.</summary>
+        public event Action WhipCracked;
+
+        void RecordTurn(float at, float turn)
+        {
+            turnHead = (turnHead + 1) % TurnHistory;
+            turnTimes[turnHead] = at;
+            turnValues[turnHead] = turn;
+            turnCount = Mathf.Min(turnCount + 1, TurnHistory);
+        }
+
+        /// <summary>The forearm turn (degrees) <paramref name="secondsAgo"/> seconds ago.</summary>
+        float TurnAgo(float secondsAgo)
+        {
+            if (turnCount == 0) return forearmTurn;
+            float at = time - secondsAgo;
+            int idx = turnHead;
+            for (int k = 0; k < turnCount - 1; k++)
+            {
+                int prev = (idx - 1 + TurnHistory) % TurnHistory;
+                if (turnTimes[prev] <= at)
+                {
+                    float span = turnTimes[idx] - turnTimes[prev];
+                    float u = span > 1e-6f ? Mathf.Clamp01((at - turnTimes[prev]) / span) : 1f;
+                    return Mathf.LerpAngle(turnValues[prev], turnValues[idx], u);
+                }
+                idx = prev;
+            }
+            return turnValues[idx];
+        }
+
         [Header("Bow string")]
         [Tooltip("The hand that draws the bow string (the other hand).")]
         [SerializeField] Transform drawHand;
@@ -149,6 +190,7 @@ namespace CrimsonVeil.Veil
             attackTime = 0f;
             arrowFired = false;
             lunged = false;
+            whipCracked = false;
             aimUp = input != null && input.AimY > 0.5f;
             Attacked?.Invoke(Form);
             return true;
@@ -296,9 +338,12 @@ namespace CrimsonVeil.Veil
             }
             bool armDriven = hand != null && hand.parent != null;
             Vector2 grip = VeilFormLibrary.Hand + handDelta;
+            RecordTurn(time, forearmTurn);
 
             var targets = Simulation.Targets;
             int n = Simulation.Count;
+            if (restBuf == null || restBuf.Length != n) { restBuf = new Vector2[n]; whipBuf = new Vector2[n]; }
+            bool whip = ShapeForm == VeilForm.Whip && armDriven;
             for (int i = 0; i < n; i++)
             {
                 float f = (float)i / (n - 1);
@@ -307,7 +352,29 @@ namespace CrimsonVeil.Veil
                 Vector2 rest = VeilWeaponPose.Idle(ShapeForm, shape[i], weapon, time);
                 rest = VeilWeaponPose.Apply(ShapeForm, rest, weapon, t, armDriven);
                 rest += weapon ? handDelta : handDelta * (HandFraction > 0f ? f / HandFraction : 1f);
-                if (weapon && armDriven) rest = VeilWeaponPose.Rotate(rest, grip, forearmTurn);
+                if (weapon && armDriven && !whip) rest = VeilWeaponPose.Rotate(rest, grip, forearmTurn);
+                restBuf[i] = rest;
+            }
+            if (whip)
+            {
+                // A whip is not a stick: every bit of it repeats the handle's motion a moment later, so a
+                // swing sends a loop rolling down to the tip, which cracks when the loop runs out.
+                int handIndex = Mathf.Clamp(Mathf.CeilToInt(HandFraction * (n - 1)), 0, n - 1);
+                Array.Copy(restBuf, whipBuf, n);
+                VeilWeaponPose.WhipChain(restBuf, handIndex, TurnAgo, whipLag, whipBuf);
+                Array.Copy(whipBuf, restBuf, n);
+                if (t >= 0f && !whipCracked && t >= VeilWeaponPose.WhipCrackAt)
+                {
+                    whipCracked = true;
+                    WhipCracked?.Invoke();
+                }
+            }
+
+            for (int i = 0; i < n; i++)
+            {
+                float f = (float)i / (n - 1);
+                bool weapon = f >= HandFraction;
+                Vector2 rest = restBuf[i];
 
                 Vector2 l;
                 if (morph < 1f)

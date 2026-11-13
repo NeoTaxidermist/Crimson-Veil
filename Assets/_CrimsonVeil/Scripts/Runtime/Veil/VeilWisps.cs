@@ -177,12 +177,18 @@ namespace CrimsonVeil.Veil
         {
             if (veil == null) veil = GetComponent<VeilController>();
             veil.FormChanged += OnFormChanged;
+            veil.WhipCracked += OnWhipCracked;
         }
 
         void OnDisable()
         {
-            if (veil != null) veil.FormChanged -= OnFormChanged;
+            if (veil == null) return;
+            veil.FormChanged -= OnFormChanged;
+            veil.WhipCracked -= OnWhipCracked;
         }
+
+        // The crack: a sharp spray of fine threads from the very tip.
+        void OnWhipCracked() => Burst(12, 0.94f, 1f, 3.2f);
 
         // The cloth unfurls into (or dissolves out of) a weapon in a swirl of smoke.
         void OnFormChanged(VeilForm form) => Burst(form == VeilForm.Flow ? 10 : 8, 0.4f, 1f, 1.4f);

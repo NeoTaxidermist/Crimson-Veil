@@ -5,6 +5,26 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.7.1] – 2026-11-13
+Luk před tělem, vodorovné kopí a bič, který opravdu práská.
+
+### Změněno
+- **Bič se pohybuje jako bič.** Už se neotáčí jako tuhá tyč: každý jeho kousek opakuje pohyb rukojeti s malým zpožděním (u špičky asi 0,16 s).
+  - Ruka se pomalu napřáhne za hlavu a bič zůstane ležet za ní.
+  - Pak ruka rychle vyrazí vpřed a zastaví se v natažení. Po biči se odvalí smyčka až ke špičce.
+  - Špička je nejrychlejší až na konci a práskne: vystříkne z ní sprška jemných vláken. Zásah platí ve chvíli prásknutí.
+  - Útok bičem trvá 0,8 s.
+- **Kopí míří vodorovně.** Neotáčí se s předloktím: drží se u boku s vodorovným předloktím a při bodnutí ho paže tlačí rovně vpřed s výpadem. Změřený sklon je −1° v klidu a −2° při bodnutí.
+- **Luk už nezakrývá tělo.** Postava ho drží v natažené ruce před sebou a luk zůstává svisle. Jeho oblouk je mělčí, takže ramena nesahají do trupu. Je i širší.
+- **Zbraň v ruce je před postavou**, šála zůstává za ní.
+- Každá zbraň má vlastní postoj a útoky v něm začínají i končí.
+
+### Testy
+- Bič v klidu drží jako celek, švih vytvoří smyčku a prásknutí přijde po zastavení ruky a zasáhne.
+- Kopí je vodorovné a neotáčí se.
+- Luk je v natažené ruce a jeho ramena nezajíždějí do těla.
+- Zbraň je před postavou.
+
 ## [0.7.0] – 2026-11-13
 Zbraně z plamene a proměna jako vír.
 

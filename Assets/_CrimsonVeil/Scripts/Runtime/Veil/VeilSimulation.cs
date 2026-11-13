@@ -16,6 +16,8 @@ namespace CrimsonVeil.Veil
         public float gravityScale = 0.08f;
         public float depthOffset = 0.12f;
         public float depthWobble = 0.08f;
+        [Tooltip("How far (m) in front of the hero a hardened weapon is held.")]
+        public float weaponDepth = 0.3f;
 
         [Header("Vortex shedding (Karman street)")]
         public float strouhal = 0.21f;
@@ -101,6 +103,9 @@ namespace CrimsonVeil.Veil
         public float[] NodeHardness { get; private set; }
         public bool UseNodeHardness { get; set; }
         public Vector2 Wind { get; set; }
+
+        /// <summary>0 = cloth behind the hero, 1 = weapon in front of the hero, by node hardness.</summary>
+        public static float WeaponDepthBlend(float hardness) => Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.25f, 0.7f, hardness));
 
         float H(int i) => UseNodeHardness ? Mathf.Clamp01(NodeHardness[i]) : Mathf.Clamp01(Hardness);
         /// <summary>Slow magical drift of the air around the hero (e.g. "behind and slightly up").</summary>
@@ -305,11 +310,13 @@ namespace CrimsonVeil.Veil
                 }
             }
 
-            // 7) 2.5D: keep the ribbon just behind the hero with a little depth flutter.
+            // 7) 2.5D: keep the ribbon just behind the hero with a little depth flutter; a weapon in the hand is
+            // held in front of the body, so the torso never hides it.
             for (int i = 1; i < Count; i++)
             {
                 float t = (float)i / (Count - 1);
-                float z = a.z + s.depthOffset + Mathf.Sin(time * 2.3f + i * 0.55f) * s.depthWobble * t;
+                float behind = s.depthOffset + Mathf.Sin(time * 2.3f + i * 0.55f) * s.depthWobble * t;
+                float z = a.z + Mathf.Lerp(behind, -s.weaponDepth, WeaponDepthBlend(H(i)));
                 Positions[i].z = z;
                 previous[i].z = z;
             }

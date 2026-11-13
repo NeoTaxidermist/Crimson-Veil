@@ -57,12 +57,16 @@ namespace CrimsonVeil.Player
             At(Hold, 1f),
         };
 
+        // A real crack: the hand goes back over the shoulder (the whip lies out behind), then drives forward
+        // and *stops* at arm's length. The stop sends a loop rolling down the whip; it cracks at the tip a
+        // moment later (the delay along the whip is done by the veil, see VeilWeaponPose.WhipChain).
         static readonly Key[] Whip =
         {
             At(Hold, 0f),
-            K(0.35f, 170f, 50f, 20f, 30f, -12f, -10f, 8f, 8f, 15f, -6f, 20f),   // overhead wind-up
-            K(0.50f, 40f, 10f, -20f, 20f, 16f, 14f, -6f, 30f, 40f, -20f, 15f),  // lash down
-            K(0.62f, -10f, 5f, -25f, 20f, 20f, 16f, -8f, 32f, 42f, -22f, 15f),  // crack / follow-through
+            K(0.38f, 165f, 70f, 25f, 30f, -14f, -12f, 8f, 6f, 15f, -6f, 20f),   // slow wind-up: hand back behind the head
+            K(0.50f, 100f, 8f, -25f, 20f, 18f, 14f, -6f, 30f, 38f, -20f, 15f),  // fast drive forward, stop at arm's length
+            K(0.70f, 90f, 10f, -25f, 20f, 16f, 12f, -6f, 30f, 38f, -20f, 15f),  // hold while the loop rolls out and cracks
+            K(0.86f, 55f, 18f, -10f, 20f, 8f, 6f, -2f, 18f, 25f, -10f, 15f),    // let the whip fall
             At(Hold, 1f),
         };
 
@@ -104,9 +108,12 @@ namespace CrimsonVeil.Player
             var keys = For(form);
             if (keys == null) return Hold;
             t = Mathf.Clamp01(t);
-            for (int i = 0; i < keys.Length - 1; i++)
+            int last = keys.Length - 1;
+            for (int i = 0; i < last; i++)
             {
-                var a = keys[i]; var b = keys[i + 1];
+                // Every attack starts and ends in that weapon's own ready stance.
+                var a = i == 0 ? Ready(form, keys[i]) : keys[i];
+                var b = i + 1 == last ? Ready(form, keys[i + 1]) : keys[i + 1];
                 if (t > b.t) continue;
                 float u = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(a.t, b.t, t));
                 return new Key(t,
@@ -116,7 +123,15 @@ namespace CrimsonVeil.Player
                     Mathf.Lerp(a.thighL, b.thighL, u), Mathf.Lerp(a.kneeL, b.kneeL, u),
                     Mathf.Lerp(a.thighR, b.thighR, u), Mathf.Lerp(a.kneeR, b.kneeR, u));
             }
-            return keys[keys.Length - 1];
+            return Ready(form, keys[last]);
+        }
+
+        static Key Ready(VeilForm form, Key k)
+        {
+            HeroPoseSolver.WeaponHold(form, 0f, out float arm, out float elbow);
+            k.armR = arm;
+            k.elbowR = elbow;
+            return k;
         }
 
         /// <summary>Overlays the attack on a locomotion pose. Legs only take over when standing, so you can attack on the run.</summary>

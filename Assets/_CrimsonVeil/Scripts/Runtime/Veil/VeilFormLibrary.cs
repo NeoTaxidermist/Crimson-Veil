@@ -28,7 +28,7 @@ namespace CrimsonVeil.Veil
         {
             switch (form)
             {
-                case VeilForm.Whip: return 0.5f;
+                case VeilForm.Whip: return 0.75f; // firm enough to show the rolling loop, still supple
                 case VeilForm.Sword: return 0.92f;
                 case VeilForm.Spear: return 0.95f;
                 case VeilForm.Shield: return 0.88f;
@@ -45,7 +45,7 @@ namespace CrimsonVeil.Veil
                 case VeilForm.Sword: return 0.22f;
                 case VeilForm.Spear: return 0.12f;
                 case VeilForm.Shield: return 0.26f;
-                case VeilForm.Bow: return 0.12f;
+                case VeilForm.Bow: return 0.16f;
                 default: return 0.65f;
             }
         }
@@ -54,7 +54,7 @@ namespace CrimsonVeil.Veil
         {
             switch (form)
             {
-                case VeilForm.Whip: return 0.58f;
+                case VeilForm.Whip: return 0.8f;
                 case VeilForm.Sword: return 0.46f;
                 case VeilForm.Spear: return 0.5f;
                 case VeilForm.Shield: return 0.45f;
@@ -99,7 +99,7 @@ namespace CrimsonVeil.Veil
                     break;
                 }
                 case VeilForm.Spear:
-                    pts.Add(Hand + new Vector2(2.5f, 0.12f));
+                    pts.Add(Hand + new Vector2(2.5f, 0f)); // level: a spear is thrust straight ahead
                     break;
                 case VeilForm.Shield:
                     AddSpiral(pts, ShieldCenter, 0.62f, 0.2f, 1.5f, 40);
@@ -107,10 +107,19 @@ namespace CrimsonVeil.Veil
                 case VeilForm.Bow:
                 {
                     // Neck → top limb tip, then arc down through the grip (hand) to the bottom tip.
-                    var center = Hand + new Vector2(-0.85f, 0f);
+                    // A shallow arc, so the limbs don't reach back into the hero's body.
+                    var center = Hand + new Vector2(-BowRadius, 0f);
                     pts.Clear();
                     pts.Add(Vector2.zero);
-                    AddArc(pts, center, 0.85f, 60f, -60f, 12, 1f);
+                    AddArc(pts, center, BowRadius, BowHalfAngle, -BowHalfAngle, 12, 1f);
+                    // Round the corner where the scarf from the neck turns into the top limb (no kink).
+                    Vector2 tip = pts[1], a = tip + (pts[0] - tip).normalized * 0.16f, c = pts[2];
+                    pts.RemoveAt(1);
+                    for (int k = 2; k >= 0; k--)
+                    {
+                        float u = k / 3f;
+                        pts.Insert(1, (1 - u) * (1 - u) * a + 2f * (1 - u) * u * tip + u * u * c);
+                    }
                     weaponStartIndex = 1;
                     break;
                 }
@@ -123,6 +132,12 @@ namespace CrimsonVeil.Veil
             }
             return pts;
         }
+
+        /// <summary>Bow arc radius (m) and half-angle (degrees).</summary>
+        public const float BowRadius = 1.05f, BowHalfAngle = 46f;
+
+        /// <summary>How far (m) the bow's limb tips reach back from the grip towards the hero.</summary>
+        public static float BowLimbReachBack => BowRadius * (1f - Mathf.Cos(BowHalfAngle * Mathf.Deg2Rad));
 
         /// <summary>Centre of the vortex shield, in front of the hand.</summary>
         public static readonly Vector2 ShieldCenter = Hand + new Vector2(0.38f, 0.32f);
@@ -268,10 +283,10 @@ namespace CrimsonVeil.Veil
             switch (form)
             {
                 case VeilForm.Sword: return 1f;
-                case VeilForm.Spear: return 1f;
-                case VeilForm.Whip: return 0.85f;
+                case VeilForm.Spear: return 0f;  // a spear stays level: it is aimed, the arm only pushes it
+                case VeilForm.Whip: return 1f;   // the handle is the forearm; the rest lags behind (WhipChain)
                 case VeilForm.Shield: return 0.35f;
-                case VeilForm.Bow: return 0.25f;
+                case VeilForm.Bow: return 0f;    // a bow stays upright
                 default: return 0f;
             }
         }
@@ -282,9 +297,34 @@ namespace CrimsonVeil.Veil
             switch (form)
             {
                 case VeilForm.Sword: return 1f;
-                case VeilForm.Spear: return 0.85f;
+                case VeilForm.Spear: return 0f;
                 case VeilForm.Whip: return 0.5f;
                 default: return 0f;
+            }
+        }
+
+        /// <summary>Attack progress at which the whip's loop reaches the tip (the crack).</summary>
+        public const float WhipCrackAt = 0.66f;
+
+        /// <summary>
+        /// Whip as a chain that propagates the handle's motion with a delay: segment k of the lash (s = 0 at the
+        /// handle, 1 at the tip) points the way the handle pointed <c>s · lag</c> seconds ago. A fast swing that
+        /// stops therefore rolls a loop out along the whip, and the tip moves last and fastest — the crack.
+        /// Segment lengths and the rest curve come from <paramref name="rest"/>; nodes before the hand are copied.
+        /// </summary>
+        /// <param name="turnAgo">Handle turn (degrees) the given number of seconds ago.</param>
+        public static void WhipChain(Vector2[] rest, int handIndex, System.Func<float, float> turnAgo, float lag, Vector2[] output)
+        {
+            int last = rest.Length - 1;
+            for (int i = 0; i <= handIndex && i <= last; i++) output[i] = rest[i];
+            if (handIndex >= last) return;
+            for (int i = handIndex + 1; i <= last; i++)
+            {
+                Vector2 seg = rest[i] - rest[i - 1];
+                float len = seg.magnitude;
+                float s = (float)(i - handIndex) / (last - handIndex);
+                float a = Mathf.Atan2(seg.y, seg.x) + turnAgo(s * lag) * Mathf.Deg2Rad;
+                output[i] = output[i - 1] + new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * len;
             }
         }
 

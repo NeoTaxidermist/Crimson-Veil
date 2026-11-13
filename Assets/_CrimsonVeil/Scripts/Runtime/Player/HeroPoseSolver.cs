@@ -1,4 +1,5 @@
 using CrimsonVeil.Core;
+using CrimsonVeil.Veil;
 using UnityEngine;
 
 namespace CrimsonVeil.Player
@@ -69,6 +70,31 @@ namespace CrimsonVeil.Player
         /// <summary>Sword-arm angle when running: a forward guard, the blade leads the hero (never dragged behind).</summary>
         public const float RunHoldArm = 42f;
 
+        /// <summary>
+        /// Ready stance of the weapon arm per form (shoulder and elbow, standing / running).
+        /// The bow is held at arm's length in front of the body (never hidden by the torso);
+        /// the spear is couched at the hip with the forearm level, so the shaft points straight ahead.
+        /// </summary>
+        public static void WeaponHold(VeilForm form, float run, out float arm, out float elbow)
+        {
+            switch (form)
+            {
+                case VeilForm.Bow:
+                    arm = Mathf.Lerp(78f, 62f, run); elbow = Mathf.Lerp(4f, 14f, run); return;
+                case VeilForm.Spear:
+                    arm = Mathf.Lerp(30f, 38f, run); elbow = Mathf.Lerp(62f, 58f, run); return;
+                default:
+                    arm = Mathf.Lerp(HoldArm, RunHoldArm, run); elbow = Mathf.Lerp(18f, 40f, run); return;
+            }
+        }
+
+        /// <summary>Shoulder angle of the standing ready stance for a weapon (attacks start and end here).</summary>
+        public static float HoldArmFor(VeilForm form)
+        {
+            WeaponHold(form, 0f, out float arm, out _);
+            return arm;
+        }
+
         public float Phase { get; private set; }
         public HeroPose Current { get; private set; }
         public float LandWeight => landTimer > 0f ? landTimer / landDuration : 0f;
@@ -118,10 +144,10 @@ namespace CrimsonVeil.Player
                 // forward guard so the weapon leads the hero instead of being dragged behind.
                 // The weapon follows the forearm, so this *is* the weapon's pose.
                 float w = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(s.weaponHeld));
-                float hold = Mathf.Lerp(HoldArm, RunHoldArm, Mathf.SmoothStep(0f, 1f, run));
+                WeaponHold(s.attackForm, Mathf.SmoothStep(0f, 1f, run), out float hold, out float holdElbow);
                 float sway = Mathf.Sin(time * 1.4f) * 3f * (1f - run) + Mathf.Sin(Phase * Mathf.PI * 4f) * 2.5f * run;
                 target.armR = Mathf.Lerp(target.armR, hold + sway, w);
-                target.elbowR = Mathf.Lerp(target.elbowR, Mathf.Lerp(18f, 40f, run), w);
+                target.elbowR = Mathf.Lerp(target.elbowR, holdElbow, w);
             }
 
             bool attacking = s.attacking && s.attackT >= 0f && !s.hanging && !s.climbing;

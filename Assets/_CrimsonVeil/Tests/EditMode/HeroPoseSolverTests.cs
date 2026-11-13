@@ -136,8 +136,8 @@ namespace CrimsonVeil.Tests
         {
             foreach (var f in new[] { CrimsonVeil.Veil.VeilForm.Sword, CrimsonVeil.Veil.VeilForm.Spear, CrimsonVeil.Veil.VeilForm.Whip, CrimsonVeil.Veil.VeilForm.Shield, CrimsonVeil.Veil.VeilForm.Bow })
             {
-                Assert.AreEqual(HeroPoseSolver.HoldArm, HeroAttackChoreography.Sample(f, 0f).armR, 1e-3f, f.ToString());
-                Assert.AreEqual(HeroPoseSolver.HoldArm, HeroAttackChoreography.Sample(f, 1f).armR, 1e-3f, f.ToString());
+                Assert.AreEqual(HeroPoseSolver.HoldArmFor(f), HeroAttackChoreography.Sample(f, 0f).armR, 1e-3f, f.ToString());
+                Assert.AreEqual(HeroPoseSolver.HoldArmFor(f), HeroAttackChoreography.Sample(f, 1f).armR, 1e-3f, f.ToString());
             }
         }
 

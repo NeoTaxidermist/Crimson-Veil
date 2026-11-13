@@ -10,6 +10,8 @@ namespace CrimsonVeil.Combat
         Bash,
         Arrow,
         Contact,
+        /// <summary>The whip's lash: wraps around and pulls (e.g. tears a shield away).</summary>
+        Lash,
     }
 
     public struct DamageInfo

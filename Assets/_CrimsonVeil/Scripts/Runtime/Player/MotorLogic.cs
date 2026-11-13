@@ -97,6 +97,13 @@ namespace CrimsonVeil.Player
         public bool IsJumping { get; private set; }
         public bool IsStunned => stunTimer > 0f;
         public int Facing { get; private set; } = 1;
+
+        /// <summary>Seconds of gliding left (granted by a captured kite's cloth); spent only while gliding.</summary>
+        public float GlideTime { get; set; }
+        /// <summary>True while the hero floats down holding jump.</summary>
+        public bool IsGliding { get; private set; }
+        /// <summary>Fall speed (m/s) while gliding.</summary>
+        public const float GlideFallSpeed = 2.2f;
         /// <summary>Side of the wall/ledge the hero is attached to.</summary>
         public int AttachSide { get; private set; }
         /// <summary>0..1 progress of a ledge climb.</summary>
@@ -149,6 +156,7 @@ namespace CrimsonVeil.Player
         {
             var s = Settings;
             if (dt <= 0f) return Velocity;
+            IsGliding = false;
 
             if (stunTimer > 0f)
             {
@@ -359,6 +367,13 @@ namespace CrimsonVeil.Player
 
                 Velocity.y -= s.Gravity * mult * dt;
                 if (Velocity.y < -s.maxFallSpeed) Velocity.y = -s.maxFallSpeed;
+                // Gliding on a captured kite's cloth: holding jump while falling floats the hero down.
+                IsGliding = GlideTime > 0f && input.jumpHeld && Velocity.y < 0f && State == MotorState.Normal;
+                if (IsGliding)
+                {
+                    GlideTime = Mathf.Max(0f, GlideTime - dt);
+                    if (Velocity.y < -GlideFallSpeed) Velocity.y = Mathf.MoveTowards(Velocity.y, -GlideFallSpeed, s.Gravity * 3f * dt);
+                }
                 if (State == MotorState.WallSlide && Velocity.y < -s.wallSlideSpeed) Velocity.y = -s.wallSlideSpeed;
             }
 

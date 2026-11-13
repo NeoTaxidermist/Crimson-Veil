@@ -51,18 +51,29 @@ namespace CrimsonVeil.EditorTools
             T(terrain, 55.5f, 2.2f, 3f, 0.8f, TerrainStyle.Rock, 11);        // little ledge down
             T(terrain, 103f, 0f, 24f, 12f, TerrainStyle.Rock, 12);           // far side    (91 .. 115)
             T(terrain, 116f, 14f, 2f, 18f, TerrainStyle.Ruin, 13, false);   // end wall
+            T(terrain, 98.5f, 4.6f, 4.5f, 1f, TerrainStyle.Ruin, 14, false); // overhang (a root crawler hangs under it)
 
             // ---------------------------------------------------------------- gameplay
             Place("PlayerSpawn", new Vector3(-7f, 0.05f, 0f), LevelLayer.Playfield, play);
             Place("Player", new Vector3(-7f, 0.05f, 0f), LevelLayer.Playfield, null);
             foreach (var (x, y) in new[] { (-1.2f, 0f), (-0.4f, 0f), (0.5f, 0f), (62f, 0f), (62.8f, 0f), (95f, 0f), (110f, 0f) })
                 Place("Urn", new Vector3(x, y, 0f), LevelLayer.Playfield, play);
-            foreach (var (x, y) in new[] { (6f, 0f), (39f, 7f), (72f, 0f), (101f, 0f), (108f, 0f) })
+            foreach (var (x, y) in new[] { (3f, 0f), (36f, 7f), (61f, 0f), (110f, 0f) })
                 Place("Wraith", new Vector3(x, y, 0f), LevelLayer.Playfield, play);
             Place("Checkpoint", new Vector3(21f, 0.6f, 0f), LevelLayer.Playfield, play);
             Place("Checkpoint", new Vector3(60f, 0f, 0f), LevelLayer.Playfield, play);
             Place("Checkpoint", new Vector3(93f, 0f, 0f), LevelLayer.Playfield, play);
             Place("RopeBridge", new Vector3(80.2f, 0f, 0f), LevelLayer.Playfield, play);
+
+            // Bestiary: each creature where it teaches something.
+            Place("ShieldMonk", new Vector3(9f, 0f, 0f), LevelLayer.Playfield, play);       // climb the ledge block to get behind him
+            Place("ShadowDouble", new Vector3(40f, 7f, 0f), LevelLayer.Playfield, play);    // leap to the stepping ledge: it walks off the edge
+            Place("PaperKite", new Vector3(50.5f, 5f, 0f), LevelLayer.Playfield, play);     // cut it down, glide off the ledge
+            Place("HangedMan", new Vector3(68.2f, 1.4f, 0f), LevelLayer.Playfield, play);   // hangs from the crimson tree
+            Place("CrowSwarm", new Vector3(70f, 3.5f, 0f), LevelLayer.Playfield, play);
+            Place("LanternWisp", new Vector3(77f, 1.6f, 0f), LevelLayer.Playfield, play);   // lures over the gap before the bridge
+            Place("RootCrawler", new Vector3(98.5f, 2.6f, 0f), LevelLayer.Playfield, play); // under the overhang
+            Place("AshMoth", new Vector3(105f, 5f, 0f), LevelLayer.Playfield, play);
             var shaftZone = Place("CameraZone", new Vector3(28f, 0f, 0f), LevelLayer.Playfield, play).GetComponent<CrimsonVeil.CameraSystem.CameraZone>();
             shaftZone.minX = -5f; shaftZone.maxX = 5f; shaftZone.offset = new Vector3(0f, 4.5f, -17f);
 

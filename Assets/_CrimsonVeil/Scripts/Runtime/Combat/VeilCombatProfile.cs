@@ -45,6 +45,7 @@ namespace CrimsonVeil.Combat
         {
             switch (form)
             {
+                case VeilForm.Whip: return DamageKind.Lash;
                 case VeilForm.Spear: return DamageKind.Pierce;
                 case VeilForm.Shield: return DamageKind.Bash;
                 case VeilForm.Bow: return DamageKind.Arrow;

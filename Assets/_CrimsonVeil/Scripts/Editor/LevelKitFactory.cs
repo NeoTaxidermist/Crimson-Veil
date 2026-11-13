@@ -209,6 +209,115 @@ namespace CrimsonVeil.EditorTools
             return go;
         }
 
+        // ------------------------------------------------------------------ bestiary
+
+        static GameObject Creature(string name, Vector3 pos)
+        {
+            var go = new GameObject(name);
+            go.transform.position = pos;
+            return go;
+        }
+
+        static CapsuleCollider Capsule(GameObject go, Vector3 center, float height, float radius)
+        {
+            var c = go.AddComponent<CapsuleCollider>();
+            c.isTrigger = true; c.center = center; c.height = height; c.radius = radius;
+            return c;
+        }
+
+        static SphereCollider Sphere(GameObject go, float radius)
+        {
+            var c = go.AddComponent<SphereCollider>();
+            c.isTrigger = true; c.radius = radius;
+            return c;
+        }
+
+        public static GameObject ShieldMonk(Vector3 pos)
+        {
+            var go = Creature("ShieldMonk", pos);
+            Capsule(go, new Vector3(0f, 1f, 0f), 2f, 0.45f);
+            CrimsonVeil.Combat.ShieldMonk.BuildVisual(go.transform, M.wraith, M.wraithEyes);
+            go.AddComponent<CrimsonVeil.Combat.ShieldMonk>();
+            return go;
+        }
+
+        public static GameObject RootCrawler(Vector3 pos)
+        {
+            var go = Creature("RootCrawler", pos);
+            Sphere(go, 0.4f);
+            CrimsonVeil.Combat.RootCrawler.BuildVisual(go.transform, M.wraith, M.wraithEyes);
+            go.AddComponent<CrimsonVeil.Combat.RootCrawler>();
+            return go;
+        }
+
+        public static GameObject HangedMan(Vector3 pos)
+        {
+            var go = Creature("HangedMan", pos);
+            Capsule(go, new Vector3(0f, 0.85f, 0f), 1.7f, 0.3f);
+            CrimsonVeil.Combat.HangedMan.BuildVisual(go.transform, M.wraith, M.wraithEyes, M.rope);
+            go.AddComponent<CrimsonVeil.Combat.HangedMan>();
+            return go;
+        }
+
+        public static GameObject ShadowDouble(Vector3 pos)
+        {
+            var go = Creature("ShadowDouble", pos);
+            Capsule(go, new Vector3(0f, 0.9f, 0f), 1.8f, 0.3f);
+            var visual = new GameObject("Visual").transform;
+            visual.SetParent(go.transform, false);
+            var heroAsset = AssetDatabase.LoadAssetAtPath<GameObject>(HeroPath);
+            if (heroAsset != null)
+            {
+                var model = (GameObject)PrefabUtility.InstantiatePrefab(heroAsset);
+                model.name = "Hero";
+                model.transform.SetParent(visual, false);
+                foreach (var smr in model.GetComponentsInChildren<SkinnedMeshRenderer>())
+                {
+                    smr.sharedMaterial = M.wraith; // pure ink: the hero's own shadow
+                    smr.updateWhenOffscreen = true;
+                    smr.shadowCastingMode = ShadowCastingMode.Off;
+                }
+            }
+            go.AddComponent<CrimsonVeil.Combat.ShadowDouble>();
+            return go;
+        }
+
+        public static GameObject CrowSwarm(Vector3 pos)
+        {
+            var go = Creature("CrowSwarm", pos);
+            CrimsonVeil.Combat.CrowSwarm.BuildVisual(go.transform, M.wraith, M.wraithEyes);
+            go.AddComponent<CrimsonVeil.Combat.CrowSwarm>();
+            return go;
+        }
+
+        public static GameObject AshMoth(Vector3 pos)
+        {
+            var go = Creature("AshMoth", pos);
+            Sphere(go, 0.6f);
+            CrimsonVeil.Combat.AshMoth.BuildVisual(go.transform, M.wraith, M.wraithEyes);
+            go.AddComponent<CrimsonVeil.Combat.AshMoth>();
+            return go;
+        }
+
+        public static GameObject LanternWisp(Vector3 pos)
+        {
+            var go = Creature("LanternWisp", pos);
+            Sphere(go, 0.35f);
+            CrimsonVeil.Combat.LanternWisp.BuildVisual(go.transform, M.wraith, M.wraithEyes);
+            go.AddComponent<CrimsonVeil.Combat.LanternWisp>();
+            return go;
+        }
+
+        public static GameObject PaperKite(Vector3 pos)
+        {
+            var go = Creature("PaperKite", pos);
+            var box = go.AddComponent<BoxCollider>();
+            box.isTrigger = true; box.size = new Vector3(0.9f, 0.9f, 0.4f);
+            CrimsonVeil.Combat.PaperKite.BuildVisual(go.transform, M.wraith, M.wraithEyes, M.rope);
+            go.AddComponent<CrimsonVeil.Combat.PaperKite>();
+            return go;
+        }
+
         public static GameObject Checkpoint(Vector3 pos)
         {
             var go = new GameObject("Checkpoint");

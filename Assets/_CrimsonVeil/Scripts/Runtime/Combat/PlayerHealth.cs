@@ -47,8 +47,22 @@ namespace CrimsonVeil.Combat
             Model.Tick(dt);
             sinceHit += dt;
             if (IsAlive && sinceHit > regenDelay) Model.Heal(regenPerSecond * dt);
-            if (veil != null) veil.Vitality = Mathf.MoveTowards(veil.Vitality, Model.Fraction, dt * 2f);
+            dimTimer = Mathf.Max(0f, dimTimer - dt);
+            float dim = dimTimer > 0f ? dimAmount : 0f;
+            if (veil != null) veil.Vitality = Mathf.MoveTowards(veil.Vitality, Model.Fraction * (1f - dim), dt * 2f);
         }
+
+        float dimTimer, dimAmount;
+
+        /// <summary>Ash and the like smother the veil: its glow (and with it the hero's strength) is dimmed for a while.</summary>
+        public void Dim(float amount, float seconds)
+        {
+            dimAmount = Mathf.Clamp01(Mathf.Max(dimTimer > 0f ? dimAmount : 0f, amount));
+            dimTimer = Mathf.Max(dimTimer, seconds);
+        }
+
+        /// <summary>True while the veil is smothered.</summary>
+        public bool IsDimmed => dimTimer > 0f;
 
         public bool ReceiveHit(in DamageInfo info)
         {

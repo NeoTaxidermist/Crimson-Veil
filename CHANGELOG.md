@@ -5,6 +5,25 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.8.0] – 2026-11-13
+Bestiář: osm nových nepřátel, z toho čtyři létající.
+
+### Přidáno
+- **Mnich se štítem:** pomalý mnich s kamenným štítem, který se pomalu otáčí. Zepředu odrazí každý zásah, zezadu je zranitelný. Švih bičem mu štít na 3 s vytrhne. Na blízko se napřáhne a udeří štítem.
+- **Kořenolez:** klubko černých kořenů. Visí pod stropem nebo převisem a seskočí na hrdinu, který projde pod ním. Pak běhá po zemi v krátkých skocích. Bodnutí kopím ho přišpendlí: chvíli se nehýbe a bere dvojnásobné poškození.
+- **Oběšenec:** houpe se na rudém laně a rozhoupe se proti hrdinovi, dotek bolí. Údery do těla ho jen rozhoupou. Po přestřelení lana spadne a jeho tělo zůstane jako pevný předmět, na který se dá stoupnout nebo ho použít jako závaží.
+- **Stínový dvojník:** opakuje hrdinovu cestu i pózy s vteřinovým zpožděním, ale nikdy neskáče. Kde hrdina přeskočil mezeru, dvojník spadne. Zbraně ho jen odstrčí, porazit se dá jen pádem.
+- **Havraní roj (létající):** osm inkoustových havranů krouží kolem společného středu, pronásleduje hrdinu shora a občas jím proletí střemhlav. Každý havran je samostatný cíl, takže bič jich srazí víc najednou. Zasažený roj se rozprchne.
+- **Popelavá můra (létající):** poletuje vysoko nad hrdinou, takže na ni dosáhne hlavně luk. Pod stropem letí níž. Občas sype popel: hrdinovi, který v něm stojí, na pár sekund pohasne šála a s ní i jeho síla.
+- **Bludička s lucernou (létající):** sama neublíží, ale láká: zavěsí se nad nejbližší propast před hrdinou. Zásah ji chytí a zůstane jasně svítit na místě, připravená pro budoucí hádanky.
+- **Papírový drak (létající):** létá na rudé niti od kolíku v zemi, houpe se ve větru a vrhá se na hrdinu v dosahu niti. Po přestřelení niti nebo sestřelení se zřítí. Hrdina, který sebere jeho látku, může 8 s plachtit: drží skok a padá pomalu.
+- Bič teď zasahuje vlastním typem úderu (švih), který umí vytrhnout štít.
+- Všech osm nepřátel je v paletě editoru úrovní (kategorie Hra) s českým popisem. V prototypové úrovni je každý na místě, kde něco učí. Na vzdálené straně přibyl převis pro kořenolez.
+
+### Testy
+- Pravidla všech nepřátel: blok a vytržení štítu, seskok kořenolezu, kyvadlo a pumpování oběšence, zpoždění a smrtelný pád dvojníka, střemhlavý let roje, popel můry včetně stropu, hledání propasti bludičkou, nit draka a plachtění.
+- PlayMode: mnich blokuje, dokud mu bič nevytrhne štít. Přestřelený oběšenec spadne a zůstane pevný. Roj zmizí s posledním havranem. Drak po přestřelení niti spadne a nechá látku.
+
 ## [0.7.7] – 2026-11-13
 Hroty zbraní a bič svinutý jako lano.
 

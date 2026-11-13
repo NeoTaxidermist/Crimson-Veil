@@ -17,22 +17,27 @@
 | Skok (držet = výš) | Mezerník | A / South |
 | Dash | Levý Shift | B / East, RB |
 | Útok | J, levé tlačítko myši | X / West |
+| Mířit nahoru (luk) | držet W / šipku nahoru při útoku | páčka nahoru |
 | Bič / Meč / Kopí / Štít / Luk | 1 / 2 / 3 / 4 / 5 (znovu = zpět na látku) | D-pad ← ↑ → ↓, LB |
+
+Bez HUD: zdraví poznáš podle šály, která se při zranění ztenčuje, tmavne a třepí. Rudá v prostředí (provazy, prapory) znamená „tohle šála dosáhne“.
 
 ## Struktura
 ```
 Assets/_CrimsonVeil/
   Scripts/Runtime/
-    Core/      MovementMath – ladění skoku přes výšku a čas
+    Core/      MovementMath, RigJoint (kalibrace kostí pro procedurální animaci)
     Player/    MotorLogic (logika pohybu), PlayerController (2.5D), HeroPoseSolver + HeroAnimator (procedurální animace), vstupy
     Veil/      VeilSimulation (Verlet + Lamb-Oseen víry), formy zbraní, renderer stuhy, chomáčky, šíp
-    Camera/    CameraFollow25D – look-ahead, měkčí sledování ve vzduchu
-    World/     ProceduralMeshes (oblouky, tráva, prapory, strom), AtmosphereController, LeafFall
+    Combat/    VeilCombat, PlayerHealth, Enemy + EnemyBrain + EnemyAnimator, CombatFx (hitstop, třes, inkoust)
+    Camera/    CameraFollow25D – look-ahead, měkčí sledování ve vzduchu, třes kamery
+    World/     ProceduralMeshes (oblouky i rozbité, sutiny, urny, tráva, prapory, strom), Breakable,
+               CuttableRope + HingedBridge (hádanka), Checkpoint, AtmosphereController, LeafFall
   Shaders/     Silhouette (inkoust + mlha + vítr), Mist (mlha, paprsky, vodopády), InkGrade (šeď + ruda)
-  Art/Hero/    Hero.fbx (export z ArtSource/Hero.blend)
+  Art/         Hero/Hero.fbx, Enemy/Wraith.fbx (exporty z ArtSource/*.blend)
   Scripts/Editor/  PrototypeSceneBuilder – menu "Crimson Veil > Build Prototype Scene"
-  Tests/EditMode   unit testy pohybu, šály, animace a geometrie
-  Tests/PlayMode   integrační testy hráče, autopilota a proměny šály
+  Tests/EditMode   unit testy pohybu, šály, boje, AI, animace a geometrie
+  Tests/PlayMode   integrační testy hráče, boje, hádanky a respawnu
 ArtSource/     zdrojové .blend soubory (mimo Assets, Unity je neimportuje)
 ```
 
@@ -51,4 +56,4 @@ Coyote time, jump buffer, variabilní výška skoku (pustit = rychlejší dopad)
 ![Běh](Docs/prototype-run.png)
 
 ## Testy
-Unity → Window → General → Test Runner → EditMode / PlayMode (62 EditMode + 5 PlayMode).
+Unity → Window → General → Test Runner → EditMode / PlayMode (84 EditMode + 11 PlayMode).

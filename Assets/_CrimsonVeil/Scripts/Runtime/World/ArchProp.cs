@@ -9,7 +9,8 @@ namespace CrimsonVeil.World
         public float springHeight = 4f;
         public float crown = 0.8f;
         public float depth = 1.2f;
+        [Range(0f, 1f)] public float breakAmount;
 
-        protected override Mesh Build() => ProceduralMeshes.Arch(span, pillarWidth, springHeight, crown, depth);
+        protected override Mesh Build() => ProceduralMeshes.Arch(span, pillarWidth, springHeight, crown, depth, breakAmount, seed);
     }
 }

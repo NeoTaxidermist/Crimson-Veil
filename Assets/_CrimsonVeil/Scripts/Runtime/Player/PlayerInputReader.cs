@@ -11,7 +11,7 @@ namespace CrimsonVeil.Player
     /// </summary>
     public sealed class PlayerInputReader : MonoBehaviour, IPlayerInput
     {
-        InputAction move, jump, dash, attack;
+        InputAction move, aim, jump, dash, attack;
         InputAction whip, sword, spear, shield, bow;
 
         void Awake()
@@ -20,6 +20,11 @@ namespace CrimsonVeil.Player
             move.AddCompositeBinding("1DAxis").With("Negative", "<Keyboard>/a").With("Positive", "<Keyboard>/d");
             move.AddCompositeBinding("1DAxis").With("Negative", "<Keyboard>/leftArrow").With("Positive", "<Keyboard>/rightArrow");
             move.AddBinding("<Gamepad>/leftStick/x").WithProcessor("axisDeadzone(min=0.2,max=0.95)");
+
+            aim = new InputAction("Aim", InputActionType.Value, expectedControlType: "Axis");
+            aim.AddCompositeBinding("1DAxis").With("Negative", "<Keyboard>/s").With("Positive", "<Keyboard>/w");
+            aim.AddCompositeBinding("1DAxis").With("Negative", "<Keyboard>/downArrow").With("Positive", "<Keyboard>/upArrow");
+            aim.AddBinding("<Gamepad>/leftStick/y").WithProcessor("axisDeadzone(min=0.3,max=0.95)");
 
             jump = Button("Jump", "<Keyboard>/space", "<Gamepad>/buttonSouth");
             dash = Button("Dash", "<Keyboard>/leftShift", "<Gamepad>/buttonEast", "<Gamepad>/rightShoulder");
@@ -39,13 +44,14 @@ namespace CrimsonVeil.Player
             return action;
         }
 
-        InputAction[] All => new[] { move, jump, dash, attack, whip, sword, spear, shield, bow };
+        InputAction[] All => new[] { move, aim, jump, dash, attack, whip, sword, spear, shield, bow };
 
         void OnEnable() { foreach (var a in All) a.Enable(); }
         void OnDisable() { foreach (var a in All) a.Disable(); }
         void OnDestroy() { foreach (var a in All) a.Dispose(); }
 
         public float MoveX => move.ReadValue<float>();
+        public float AimY => aim.ReadValue<float>();
         public bool JumpPressed => jump.WasPressedThisFrame();
         public bool JumpHeld => jump.IsPressed();
         public bool DashPressed => dash.WasPressedThisFrame();

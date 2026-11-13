@@ -85,10 +85,30 @@ namespace CrimsonVeil.Player
             Settings = settings ?? new MotorSettings();
         }
 
+        public bool IsStunned => stunTimer > 0f;
+
+        float stunTimer;
+
+        /// <summary>Pushes the hero (hit reaction). Input is ignored while stunned.</summary>
+        public void ApplyKnockback(Vector2 velocity, float stunTime)
+        {
+            Velocity = velocity;
+            stunTimer = Mathf.Max(stunTimer, stunTime);
+            dashTimer = 0f;
+            IsJumping = false;
+            if (velocity.y > 0f) IsGrounded = false;
+        }
+
         public Vector2 Tick(float dt, MotorInput input, MotorContacts contacts)
         {
             var s = Settings;
             if (dt <= 0f) return Velocity;
+
+            if (stunTimer > 0f)
+            {
+                stunTimer -= dt;
+                input = new MotorInput();
+            }
 
             bool wasGrounded = IsGrounded;
             IsGrounded = contacts.grounded;
@@ -170,6 +190,8 @@ namespace CrimsonVeil.Player
             if (hasInput && Mathf.Sign(target) == Mathf.Sign(Velocity.x) && Mathf.Abs(Velocity.x) > Mathf.Abs(target))
                 rate = IsGrounded ? s.groundDeceleration : s.airDeceleration;
 
+            if (IsStunned) rate = s.airDeceleration; // let the knockback carry
+
             Velocity.x = Mathf.MoveTowards(Velocity.x, target, rate * dt);
 
             if (contacts.wallSide != 0 && Mathf.Sign(Velocity.x) == contacts.wallSide && Mathf.Abs(Velocity.x) > 0f)
@@ -212,7 +234,7 @@ namespace CrimsonVeil.Player
             Velocity = Vector2.zero;
             IsGrounded = false;
             IsJumping = false;
-            coyoteTimer = bufferTimer = dashTimer = dashCooldownTimer = 0f;
+            coyoteTimer = bufferTimer = dashTimer = dashCooldownTimer = stunTimer = 0f;
             airDashAvailable = true;
         }
     }

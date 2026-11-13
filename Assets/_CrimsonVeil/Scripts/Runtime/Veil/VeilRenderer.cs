@@ -91,11 +91,19 @@ namespace CrimsonVeil.Veil
                 float weaponProfile = t < hf ? 0.45f : 1f - Mathf.SmoothStep(0f, 1f, (t - 0.88f) / 0.12f) * 0.85f;
                 float w = Mathf.Lerp(flowW * flowProfile, formW * weaponProfile, hard);
 
+                // Vitality: a wounded hero's veil is thinner, darker and frays away at the tail.
+                float vit = Mathf.Clamp01(veil.Vitality);
+                w *= Mathf.Lerp(0.45f, 1f, vit);
+                float frayStart = Mathf.Lerp(0.3f, 1.05f, vit);
+                float fray = 1f - Mathf.SmoothStep(0f, 1f, (t - frayStart) / 0.25f);
+
                 vertices[i * 2] = p[i] + normal * (w * 0.5f);
                 vertices[i * 2 + 1] = p[i] - normal * (w * 0.5f);
 
                 Color soft = Color.Lerp(rootColor, tipColor, t * t);
                 Color c = Color.Lerp(soft, hardColor, hard);
+                c.r *= Mathf.Lerp(0.55f, 1f, vit);
+                c.a *= Mathf.Lerp(fray, 1f, hard);
                 colors[i * 2] = c;
                 colors[i * 2 + 1] = c;
             }

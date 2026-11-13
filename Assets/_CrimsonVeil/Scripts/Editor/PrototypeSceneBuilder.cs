@@ -1,5 +1,6 @@
 using System.Linq;
 using CrimsonVeil.CameraSystem;
+using CrimsonVeil.Combat;
 using CrimsonVeil.Player;
 using CrimsonVeil.Veil;
 using CrimsonVeil.World;
@@ -21,6 +22,7 @@ namespace CrimsonVeil.EditorTools
         const string ScenePath = Root + "/Scenes/Prototype_Ruins.unity";
         const string MatDir = Root + "/Materials";
         const string HeroPath = Root + "/Art/Hero/Hero.fbx";
+        const string WraithPath = Root + "/Art/Enemy/Wraith.fbx";
 
         static readonly Color FogColor = new Color(0.76f, 0.76f, 0.76f);
 
@@ -77,15 +79,35 @@ namespace CrimsonVeil.EditorTools
             Block(level, "HighLedge", new Vector3(31f, 3f, 0f), new Vector3(4f, 1f, 4f), m.inkPlay);
             Block(level, "Floor2", new Vector3(47f, -0.5f, 0f), new Vector3(22f, 1f, 4f), m.inkPlay);
             Block(level, "Floor2Cliff", new Vector3(47f, -8f, 0f), new Vector3(21f, 14f, 3.8f), m.inkPlay);
-            Block(level, "EndWall", new Vector3(59f, 6f, 0f), new Vector3(2f, 14f, 4f), m.inkPlay);
+            Block(level, "FarLedge", new Vector3(81f, -0.5f, 0f), new Vector3(24f, 1f, 4f), m.inkPlay);
+            Block(level, "FarLedgeCliff", new Vector3(81f, -8f, 0f), new Vector3(23f, 14f, 3.8f), m.inkPlay);
+            Block(level, "EndWall", new Vector3(94f, 6f, 0f), new Vector3(2f, 14f, 4f), m.inkPlay);
             Block(level, "BackWall", new Vector3(-14f, 6f, 0f), new Vector3(2f, 14f, 4f), m.inkPlay);
 
             // Ruined arch the player runs through.
-            Arch(level, "PlayArch", new Vector3(44f, 0f, 1.6f), 4.2f, 0.9f, 3.6f, 0.9f, 1.4f, m.inkPlay);
+            Arch(level, "PlayArch", new Vector3(44f, 0f, 1.6f), 4.2f, 0.9f, 3.6f, 0.9f, 1.4f, m.inkPlay, 0.35f, 4);
+
+            // Puzzle: a plank stands at the chasm edge, held up by a high crimson rope.
+            // Crimson means "the veil can touch this" — only an arrow loosed upwards reaches it.
+            BuildRopeBridge(level, m);
+            new GameObject("Checkpoint").AddComponent<Checkpoint>().transform.position = new Vector3(71.5f, 0f, 0f);
+
+            // Things to break and creatures to fight.
+            var props = Group("Breakables", level);
+            foreach (var (x, s) in new[] { (-1.2f, 1), (-0.4f, 2), (0.5f, 3), (37.5f, 4), (38.3f, 5), (73f, 6), (89f, 7) })
+                Urn(props, new Vector3(x, 0f, 0f), s, m.inkPlay);
+            var enemies = Group("Enemies");
+            foreach (var x in new[] { 6f, 23f, 49f, 79f, 87f })
+                Wraith(enemies, new Vector3(x, x > 20f && x < 27f ? 0.5f : 0f, 0f), m);
+
+            // Rubble behind the play plane.
+            int rs = 50;
+            foreach (var x in new[] { -6f, 3f, 17f, 28f, 41f, 55f, 75f, 84f })
+                Rubble(level, new Vector3(x, x > 10f && x < 16f ? 2.5f : (x > 20f && x < 27f ? 0.5f : 0f), 1.4f), rs++, m.inkPlay);
 
             // Grass along every walkable edge, in front of and behind the play plane.
             int seed = 10;
-            foreach (var (x0, x1, y) in new[] { (-13f, 9f, 0f), (10.6f, 15.4f, 2.5f), (19.6f, 26.4f, 0.5f), (29.2f, 32.8f, 3.5f), (36f, 58f, 0f) })
+            foreach (var (x0, x1, y) in new[] { (-13f, 9f, 0f), (10.6f, 15.4f, 2.5f), (19.6f, 26.4f, 0.5f), (29.2f, 32.8f, 3.5f), (36f, 58f, 0f), (69.5f, 92.5f, 0f) })
             {
                 for (float x = x0 + 1f; x < x1; x += 2.2f)
                 {
@@ -111,17 +133,19 @@ namespace CrimsonVeil.EditorTools
 
             // --- Foreground silhouettes --------------------------------------
             var fg = Group("Foreground");
-            for (int i = 0; i < 26; i++)
+            for (int i = 0; i < 38; i++)
                 Grass(fg, new Vector3(-14f + i * 2.9f, -2.4f + (i % 3) * 0.3f, ZForeground), 100 + i, 3.4f, new Vector2(0.6f, 1.9f), 40, m.grass, 0.07f);
             Block(fg, "BrokenPost", new Vector3(-4f, -1f, ZForeground - 0.4f), new Vector3(0.5f, 3.2f, 0.5f), m.inkFG, collider: false).transform.rotation = Quaternion.Euler(0, 0, 8f);
             Block(fg, "BrokenPost", new Vector3(33f, -1.2f, ZForeground - 0.4f), new Vector3(0.6f, 3f, 0.6f), m.inkFG, collider: false).transform.rotation = Quaternion.Euler(0, 0, -12f);
 
             // --- Near ruins ----------------------------------------------------
             var near = Group("NearRuins");
-            for (int i = 0; i < 7; i++)
+            float[] nearBreak = { 0f, 0.55f, 0.2f, 0.75f, 0f, 0.4f, 0.65f, 0.1f, 0.5f, 0.3f };
+            for (int i = 0; i < 10; i++)
             {
                 float x = -12f + i * 11.5f;
-                Arch(near, "Arch", new Vector3(x, -1f, ZNear + (i % 2) * 2.5f), 3.6f + (i % 3) * 0.6f, 0.8f, 4.5f + (i % 2), 0.9f, 1.2f, m.inkNear);
+                Arch(near, "Arch", new Vector3(x, -1f, ZNear + (i % 2) * 2.5f), 3.6f + (i % 3) * 0.6f, 0.8f, 4.5f + (i % 2), 0.9f, 1.2f, m.inkNear, nearBreak[i], i);
+                Rubble(near, new Vector3(x + 3.5f, -1f, ZNear + 1f), 200 + i, m.inkNear, 3.5f, 1.2f);
             }
             Banner(near, new Vector3(6.6f, 8.6f, ZNear - 0.4f), 1.1f, 3.6f, 9, m.banner);
             Banner(near, new Vector3(29f, 8.2f, ZNear + 2f), 1.0f, 3.0f, 10, m.banner);
@@ -129,16 +153,21 @@ namespace CrimsonVeil.EditorTools
             // --- Mid ruins + waterfall -----------------------------------------
             var mid = Group("MidRuins");
             for (int i = 0; i < 9; i++)
-                Arch(mid, "Aqueduct", new Vector3(-30f + i * 9f, -2f, ZMid), 6f, 1.4f, 8f, 2f, 3f, m.inkMid);
-            Block(mid, "AqueductDeck", new Vector3(6f, 15.8f, ZMid), new Vector3(84f, 2.2f, 3f), m.inkMid, collider: false);
+                Arch(mid, "Aqueduct", new Vector3(-30f + i * 9f, -2f, ZMid), 6f, 1.4f, 8f, 2f, 3f, m.inkMid, i == 3 ? 0.5f : 0f, i);
+            Block(mid, "AqueductDeck", new Vector3(-12f, 15.8f, ZMid), new Vector3(30f, 2.2f, 3f), m.inkMid, collider: false);
+            Block(mid, "AqueductDeck", new Vector3(19f, 15.8f, ZMid), new Vector3(22f, 2.2f, 3f), m.inkMid, collider: false);
+            // Beyond the cliff the aqueduct is broken: lone, ruined arches.
+            for (int i = 0; i < 5; i++)
+                Arch(mid, "AqueductRuin", new Vector3(60f + i * 10f, -2f + (i % 2) * 1.5f, ZMid + (i % 2) * 3f), 6f, 1.4f, 7f + (i % 3), 2f, 3f, m.inkMid, 0.3f + 0.15f * (i % 3), i + 1);
             Block(mid, "Cliff", new Vector3(48f, 4f, ZMid - 2f), new Vector3(14f, 22f, 6f), m.inkMid, collider: false);
             Card(mid, "Waterfall", new Vector3(40.5f, 2f, ZMid - 3.4f), new Vector2(3.2f, 22f), m.waterfall);
             Card(mid, "WaterfallMist", new Vector3(40.5f, -6f, ZMid - 4f), new Vector2(14f, 6f), m.mistBand);
 
             // --- Far ruins -------------------------------------------------------
             var far = Group("FarRuins");
-            for (int i = 0; i < 12; i++)
-                Arch(far, "FarAqueduct", new Vector3(-60f + i * 13f, -12f + (i % 3) * 1.5f, ZFar + (i % 2) * 8f), 8f, 2f, 14f, 3f, 4f, m.inkFar);
+            float[] farBreak = { 0f, 0.3f, 0f, 0f, 0.6f, 0f, 0.2f, 0f, 0f, 0.45f, 0f, 0.7f, 0f, 0.25f };
+            for (int i = 0; i < 14; i++)
+                Arch(far, "FarAqueduct", new Vector3(-60f + i * 13f, -12f + (i % 3) * 1.5f, ZFar + (i % 2) * 8f), 8f, 2f, 14f, 3f, 4f, m.inkFar, farBreak[i], i);
             Block(far, "Tower", new Vector3(-22f, 10f, ZFar + 4f), new Vector3(6f, 40f, 6f), m.inkFar, collider: false);
             Block(far, "TowerTop", new Vector3(-22f, 31f, ZFar + 4f), new Vector3(8f, 2f, 8f), m.inkFar, collider: false);
             Block(far, "Tower", new Vector3(70f, 8f, ZFar + 10f), new Vector3(7f, 36f, 7f), m.inkFar, collider: false);
@@ -166,16 +195,18 @@ namespace CrimsonVeil.EditorTools
             moon.GetComponent<Renderer>().sharedMaterial = m.moon;
 
             var leaves = new GameObject("FallingLeaves");
-            leaves.transform.position = new Vector3(40f, 10f, 0f);
+            leaves.transform.position = new Vector3(45f, 10f, 0f);
             leaves.AddComponent<ParticleSystem>();
             leaves.GetComponent<ParticleSystemRenderer>().sharedMaterial = m.leafParticle;
             leaves.AddComponent<LeafFall>();
             var so = new SerializedObject(leaves.GetComponent<LeafFall>());
-            so.FindProperty("area").vector3Value = new Vector3(70f, 1f, 6f);
+            so.FindProperty("area").vector3Value = new Vector3(100f, 1f, 6f);
             so.FindProperty("rate").floatValue = 12f;
             so.ApplyModifiedPropertiesWithoutUndo();
 
             // --- Player & camera ------------------------------------------------
+            var fx = new GameObject("CombatFx").AddComponent<CombatFx>();
+            SetRef(fx, "burstMaterial", m.wisp);
             var player = BuildPlayer(m);
 
             var camGo = new GameObject("Main Camera") { tag = "MainCamera" };
@@ -229,6 +260,8 @@ namespace CrimsonVeil.EditorTools
             SetRef(veil, "arrowMaterial", m.veil);
             SetRef(player.AddComponent<VeilRenderer>(), "material", m.veil);
             SetRef(player.AddComponent<VeilWisps>(), "material", m.wisp);
+            player.AddComponent<VeilCombat>();
+            SetRef(player.AddComponent<PlayerHealth>(), "visualRoot", visual);
 
             var heroAsset = AssetDatabase.LoadAssetAtPath<GameObject>(HeroPath);
             if (heroAsset != null)
@@ -262,8 +295,9 @@ namespace CrimsonVeil.EditorTools
 
         static void ConfigureHeroImport()
         {
-            if (AssetImporter.GetAtPath(HeroPath) is ModelImporter mi)
+            foreach (var path in new[] { HeroPath, WraithPath })
             {
+                if (!(AssetImporter.GetAtPath(path) is ModelImporter mi)) continue;
                 bool dirty = mi.animationType != ModelImporterAnimationType.Generic || mi.importAnimation || mi.materialImportMode != ModelImporterMaterialImportMode.None;
                 mi.animationType = ModelImporterAnimationType.Generic;
                 mi.importAnimation = false;
@@ -281,6 +315,7 @@ namespace CrimsonVeil.EditorTools
             public Material inkFG, inkPlay, inkNear, inkMid, inkFar, inkSky, grass, banner, leaf, hero;
             public Material mistBand, mistLow, waterfall, shaft, moon;
             public Material veil, wisp, leafParticle, inkGrade;
+            public Material wraith, wraithEyes;
         }
 
         static Materials CreateMaterials()
@@ -301,6 +336,8 @@ namespace CrimsonVeil.EditorTools
                 inkMid = Ink("InkMid", 0.36f, 1.2f, 0.45f),
                 inkFar = Ink("InkFar", 0.5f, 1.1f, 0.4f),
                 inkSky = Ink("InkSky", 0.62f, 0.6f, 0.3f),
+                wraith = Sil("WraithInk", sil, new Color(0.008f, 0.008f, 0.01f), 0.15f, 0.25f),
+                wraithEyes = Sil("WraithEyes", sil, new Color(1f, 0.02f, 0.04f), 0f, 0f),
                 grass = Wind(Sil("GrassInk", sil, new Color(0.02f, 0.02f, 0.022f), 0.4f, 0.2f), 1f, false),
                 banner = Wind(Sil("BannerCrimson", sil, new Color(0.62f, 0.015f, 0.03f), 0.3f, 0.6f), 1.6f, true),
                 leaf = Wind(Sil("LeafCrimson", sil, new Color(0.78f, 0.02f, 0.035f), 0.2f, 0.7f), 0.6f, false),
@@ -543,11 +580,97 @@ namespace CrimsonVeil.EditorTools
             return p;
         }
 
-        static void Arch(Transform parent, string name, Vector3 pos, float span, float pillar, float spring, float crown, float depth, Material mat)
+        static void Arch(Transform parent, string name, Vector3 pos, float span, float pillar, float spring, float crown, float depth, Material mat, float breakAmount = 0f, int seed = 0)
         {
-            var a = Prop<ArchProp>(parent, name, pos, 0, new[] { mat });
-            a.span = span; a.pillarWidth = pillar; a.springHeight = spring; a.crown = crown; a.depth = depth;
+            var a = Prop<ArchProp>(parent, name, pos, seed, new[] { mat });
+            a.span = span; a.pillarWidth = pillar; a.springHeight = spring; a.crown = crown; a.depth = depth; a.breakAmount = breakAmount;
             a.Rebuild();
+        }
+
+        static void Rubble(Transform parent, Vector3 pos, int seed, Material mat, float width = 2.2f, float size = 0.6f)
+        {
+            var r = Prop<RubbleProp>(parent, "Rubble", pos, seed, new[] { mat });
+            r.width = width; r.maxSize = size; r.blocks = 7 + seed % 5;
+            r.Rebuild();
+        }
+
+        static void Urn(Transform parent, Vector3 pos, int seed, Material mat)
+        {
+            var u = Prop<UrnProp>(parent, "Urn", pos, seed, new[] { mat });
+            u.height = 0.65f + (seed % 3) * 0.12f;
+            u.Rebuild();
+            var box = u.gameObject.AddComponent<BoxCollider>();
+            box.isTrigger = true; // the hero walks past; the veil and arrows still hit it
+            box.center = new Vector3(0f, u.height * 0.5f, 0f);
+            box.size = new Vector3(0.6f, u.height, 0.6f);
+            u.gameObject.AddComponent<Breakable>();
+        }
+
+        static void Wraith(Transform parent, Vector3 pos, Materials m)
+        {
+            var go = new GameObject("Wraith");
+            go.transform.SetParent(parent, false);
+            go.transform.position = pos;
+            var cap = go.AddComponent<CapsuleCollider>();
+            cap.isTrigger = true;
+            cap.center = new Vector3(0f, 1.05f, 0f);
+            cap.height = 2f;
+            cap.radius = 0.4f;
+            go.AddComponent<Enemy>();
+
+            var visual = new GameObject("Visual").transform;
+            visual.SetParent(go.transform, false);
+            var asset = AssetDatabase.LoadAssetAtPath<GameObject>(WraithPath);
+            Renderer eyes = null;
+            if (asset != null)
+            {
+                var model = (GameObject)PrefabUtility.InstantiatePrefab(asset);
+                model.name = "Model";
+                model.transform.SetParent(visual, false);
+                foreach (var smr in model.GetComponentsInChildren<SkinnedMeshRenderer>())
+                {
+                    smr.sharedMaterials = new[] { m.wraith, m.wraithEyes };
+                    smr.updateWhenOffscreen = true;
+                    smr.shadowCastingMode = ShadowCastingMode.Off;
+                    eyes = smr;
+                }
+            }
+            var anim = go.AddComponent<EnemyAnimator>();
+            SetRef(anim, "visualRoot", visual);
+            if (eyes != null) SetRef(anim, "eyes", eyes);
+        }
+
+        static void BuildRopeBridge(Transform parent, Materials m)
+        {
+            var root = Group("RopeBridgePuzzle", parent);
+
+            var pivot = new GameObject("BridgeHinge").transform;
+            pivot.SetParent(root, false);
+            pivot.position = new Vector3(58.2f, 0f, 0f);
+            var plank = Block(pivot, "Plank", Vector3.zero, new Vector3(0.45f, 11f, 2.6f), m.inkPlay);
+            plank.isStatic = false;
+            plank.transform.localPosition = new Vector3(0f, 5.5f, 0f);
+            var hinge = pivot.gameObject.AddComponent<HingedBridge>();
+            hinge.Configure(0f, -90f, 0.9f);
+
+            var top = new GameObject("RopeTop").transform;
+            top.SetParent(pivot, false);
+            top.localPosition = new Vector3(-0.2f, 10.6f, 0f);
+
+            Block(root, "RopePost", new Vector3(53.8f, 4.2f, 0.7f), new Vector3(0.4f, 8.4f, 0.4f), m.inkPlay, collider: false);
+            var post = new GameObject("RopePostTop").transform;
+            post.SetParent(root, false);
+            post.position = new Vector3(54f, 8.2f, 0f);
+
+            var rope = new GameObject("CrimsonRope").AddComponent<CuttableRope>();
+            rope.transform.SetParent(root, false);
+            rope.Configure(post, top, hinge, m.veil);
+            var so = new SerializedObject(rope);
+            so.FindProperty("start").objectReferenceValue = post;
+            so.FindProperty("end").objectReferenceValue = top;
+            so.FindProperty("bridge").objectReferenceValue = hinge;
+            so.FindProperty("material").objectReferenceValue = m.veil;
+            so.ApplyModifiedPropertiesWithoutUndo();
         }
 
         static void Grass(Transform parent, Vector3 pos, int seed, float width, Vector2 height, int blades, Material mat, float bladeWidth = 0.05f)

@@ -6,6 +6,8 @@ namespace CrimsonVeil.Player
     public interface IPlayerInput
     {
         float MoveX { get; }
+        /// <summary>Vertical aim (-1 down .. 1 up), used e.g. to loose arrows upwards.</summary>
+        float AimY { get; }
         bool JumpPressed { get; }
         bool JumpHeld { get; }
         bool DashPressed { get; }

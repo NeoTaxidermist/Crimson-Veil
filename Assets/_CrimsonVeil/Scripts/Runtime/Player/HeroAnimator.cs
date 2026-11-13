@@ -1,4 +1,4 @@
-using System;
+using CrimsonVeil.Core;
 using CrimsonVeil.Veil;
 using UnityEngine;
 
@@ -6,7 +6,7 @@ namespace CrimsonVeil.Player
 {
     /// <summary>
     /// Applies <see cref="HeroPoseSolver"/> to the hero rig by bone name. Rotation axes and signs are
-    /// calibrated at startup from the rig itself, so the import axis convention does not matter.
+    /// calibrated at startup from the rig itself (<see cref="RigJoint"/>).
     /// </summary>
     [DefaultExecutionOrder(0)]
     public sealed class HeroAnimator : MonoBehaviour
@@ -22,14 +22,7 @@ namespace CrimsonVeil.Player
         public HeroPoseSolver Solver { get; } = new HeroPoseSolver();
         public bool IsReady { get; private set; }
 
-        sealed class Joint
-        {
-            public Transform t;
-            public Quaternion rest;
-            public Vector3 axis; // local-space axis where +angle moves the probe forward/up
-        }
-
-        Joint spine, chest, head, thighL, kneeL, footL, thighR, kneeR, footR, armL, elbowL, armR, elbowR;
+        RigJoint spine, chest, head, thighL, kneeL, footL, thighR, kneeR, footR, armL, elbowL, armR, elbowR;
         Transform hips;
         Vector3 hipsRest;
         Transform neck;
@@ -44,11 +37,12 @@ namespace CrimsonVeil.Player
 
         bool Setup()
         {
-            Transform Find(string n) => FindDeep(model, n);
+            Transform Find(string n) => RigJoint.FindDeep(model, n);
             hips = Find("Hips");
             neck = Find("Neck");
             var footLT = Find("Foot.L");
-            if (hips == null || neck == null || footLT == null)
+            var footRT = Find("Foot.R");
+            if (hips == null || neck == null || footLT == null || footRT == null)
             {
                 Debug.LogWarning("[HeroAnimator] Rig bones not found under " + model.name);
                 return false;
@@ -56,57 +50,35 @@ namespace CrimsonVeil.Player
 
             // Align the model so its forward (heel → toe) matches our forward (+Z of the parent).
             Vector3 up = model.parent != null ? model.parent.up : Vector3.up;
-            Vector3 toe = footLT.position + footLT.up * 0.1f;
-            Vector3 modelForward = Vector3.ProjectOnPlane(toe - footLT.position, up).normalized;
-            Vector3 wanted = model.parent != null ? model.parent.forward : Vector3.forward;
+            Vector3 modelForward = Vector3.ProjectOnPlane(footLT.up, up).normalized;
+            Vector3 forward = model.parent != null ? model.parent.forward : Vector3.forward;
             if (modelForward.sqrMagnitude > 0.5f)
-                model.rotation = Quaternion.FromToRotation(modelForward, wanted) * model.rotation;
+                model.rotation = Quaternion.FromToRotation(modelForward, forward) * model.rotation;
 
-            Vector3 forward = wanted;
             Vector3 lateral = Vector3.Cross(up, forward).normalized;
             hipsRest = hips.localPosition;
 
-            spine = Make(Find("Spine"), lateral, () => Find("Chest").position, forward);
-            chest = Make(Find("Chest"), lateral, () => neck.position, forward);
-            head = Make(Find("Head"), lateral, () => Find("Head").position + Find("Head").up * 0.15f, forward);
-            thighL = Make(Find("UpperLeg.L"), lateral, () => Find("LowerLeg.L").position, forward);
-            thighR = Make(Find("UpperLeg.R"), lateral, () => Find("LowerLeg.R").position, forward);
-            kneeL = Make(Find("LowerLeg.L"), lateral, () => Find("Foot.L").position, -forward);
-            kneeR = Make(Find("LowerLeg.R"), lateral, () => Find("Foot.R").position, -forward);
-            footL = Make(footLT, lateral, () => footLT.position + footLT.up * 0.15f, up);
-            var footRT = Find("Foot.R");
-            footR = Make(footRT, lateral, () => footRT.position + footRT.up * 0.15f, up);
-            armL = Make(Find("UpperArm.L"), lateral, () => Find("LowerArm.L").position, forward);
-            armR = Make(Find("UpperArm.R"), lateral, () => Find("LowerArm.R").position, forward);
-            elbowL = Make(Find("LowerArm.L"), lateral, () => Find("Hand.L").position, forward);
-            elbowR = Make(Find("LowerArm.R"), lateral, () => Find("Hand.R").position, forward);
-            return spine != null && thighL != null && thighR != null && armL != null && armR != null;
-        }
-
-        static Joint Make(Transform t, Vector3 worldAxis, Func<Vector3> probe, Vector3 measure)
-        {
-            if (t == null) return null;
-            var j = new Joint { t = t, rest = t.localRotation };
-            Vector3 local = Quaternion.Inverse(t.rotation) * worldAxis;
-
-            Vector3 before = probe();
-            t.localRotation = j.rest * Quaternion.AngleAxis(10f, local);
-            Vector3 after = probe();
-            t.localRotation = j.rest;
-
-            j.axis = Vector3.Dot(after - before, measure) >= 0f ? local : -local;
-            return j;
-        }
-
-        static Transform FindDeep(Transform root, string name)
-        {
-            if (root.name == name) return root;
-            for (int i = 0; i < root.childCount; i++)
+            RigJoint J(string bone, string child, Vector3 measure)
             {
-                var r = FindDeep(root.GetChild(i), name);
-                if (r != null) return r;
+                var c = Find(child);
+                return c == null ? null : RigJoint.Create(Find(bone), lateral, () => c.position, measure);
             }
-            return null;
+
+            spine = J("Spine", "Chest", forward);
+            chest = J("Chest", "Neck", forward);
+            var headT = Find("Head");
+            head = RigJoint.Create(headT, lateral, () => headT.position + headT.up * 0.15f, forward);
+            thighL = J("UpperLeg.L", "LowerLeg.L", forward);
+            thighR = J("UpperLeg.R", "LowerLeg.R", forward);
+            kneeL = J("LowerLeg.L", "Foot.L", -forward);
+            kneeR = J("LowerLeg.R", "Foot.R", -forward);
+            footL = RigJoint.Create(footLT, lateral, () => footLT.position + footLT.up * 0.15f, up);
+            footR = RigJoint.Create(footRT, lateral, () => footRT.position + footRT.up * 0.15f, up);
+            armL = J("UpperArm.L", "LowerArm.L", forward);
+            armR = J("UpperArm.R", "LowerArm.R", forward);
+            elbowL = J("LowerArm.L", "Hand.L", forward);
+            elbowR = J("LowerArm.R", "Hand.R", forward);
+            return spine != null && thighL != null && thighR != null && armL != null && armR != null;
         }
 
         void LateUpdate()
@@ -131,20 +103,14 @@ namespace CrimsonVeil.Player
 
         void Apply(in HeroPose p)
         {
-            Set(spine, p.spine); Set(chest, p.chest); Set(head, p.head);
-            Set(thighL, p.thighL); Set(kneeL, p.kneeL); Set(footL, p.footL);
-            Set(thighR, p.thighR); Set(kneeR, p.kneeR); Set(footR, p.footR);
-            Set(armL, p.armL); Set(elbowL, p.elbowL); Set(armR, p.armR); Set(elbowR, p.elbowR);
+            spine?.Set(p.spine); chest?.Set(p.chest); head?.Set(p.head);
+            thighL?.Set(p.thighL); kneeL?.Set(p.kneeL); footL?.Set(p.footL);
+            thighR?.Set(p.thighR); kneeR?.Set(p.kneeR); footR?.Set(p.footR);
+            armL?.Set(p.armL); elbowL?.Set(p.elbowL); armR?.Set(p.armR); elbowR?.Set(p.elbowR);
 
             var parent = hips.parent;
             Vector3 up = model.parent != null ? model.parent.up : Vector3.up;
             hips.localPosition = hipsRest + (parent != null ? parent.InverseTransformVector(up * p.bob) : up * p.bob);
-        }
-
-        static void Set(Joint j, float degrees)
-        {
-            if (j == null) return;
-            j.t.localRotation = j.rest * Quaternion.AngleAxis(degrees, j.axis);
         }
     }
 }

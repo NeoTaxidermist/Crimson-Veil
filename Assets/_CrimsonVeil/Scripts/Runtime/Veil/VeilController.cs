@@ -28,7 +28,23 @@ namespace CrimsonVeil.Veil
         public float Hardness { get; private set; }
         public float HandFraction { get; private set; }
         public bool IsAttacking => attackTime >= 0f;
+        /// <summary>Normalised progress of the current attack (0..1), or -1 when not attacking.</summary>
+        public float AttackProgress { get; private set; } = -1f;
+        /// <summary>Hero's life force (0..1). The veil thins and dims as it drops — no HUD needed.</summary>
+        public float Vitality { get; set; } = 1f;
+        public int Facing => player != null && player.Motor != null ? player.Motor.Facing : 1;
         public VeilSettings Settings => settings;
+
+        /// <summary>Where the veil is tied (the neck). Setting it re-seats the cloth.</summary>
+        public Transform Anchor
+        {
+            get => anchor;
+            set
+            {
+                anchor = value != null ? value : transform;
+                Simulation?.Reset(anchor.position);
+            }
+        }
 
         public event Action<VeilForm> FormChanged;
         public event Action<VeilForm> Attacked;
@@ -36,6 +52,7 @@ namespace CrimsonVeil.Veil
         Vector2[] shape;
         float attackTime = -1f;
         bool arrowFired;
+        bool aimUp;
         IPlayerInput input;
 
         void Awake()
@@ -71,6 +88,7 @@ namespace CrimsonVeil.Veil
             if (Form == VeilForm.Flow || Hardness < 0.5f * VeilFormLibrary.Hardness(Form)) return false;
             attackTime = 0f;
             arrowFired = false;
+            aimUp = input != null && input.AimY > 0.5f;
             Attacked?.Invoke(Form);
             return true;
         }
@@ -101,6 +119,7 @@ namespace CrimsonVeil.Veil
             Simulation.AmbientFlow = new Vector2(-facing, 0.45f).normalized * idleDriftSpeed;
 
             if (Hardness > 0f && ShapeForm != VeilForm.Flow) UpdateTargets(a, facing, dt);
+            if (attackTime < 0f) AttackProgress = -1f;
 
             Simulation.Hardness = Hardness;
             Simulation.Step(dt, a);
@@ -123,6 +142,7 @@ namespace CrimsonVeil.Veil
                     attackTime = -1f;
                     t = -1f;
                 }
+                AttackProgress = t;
             }
 
             var targets = Simulation.Targets;
@@ -140,7 +160,9 @@ namespace CrimsonVeil.Veil
         {
             var hand = VeilFormLibrary.Hand;
             var pos = a + new Vector3((hand.x + 0.35f) * facing, hand.y, 0f);
-            VeilArrow.Spawn(pos, new Vector3(facing * arrowSpeed, 1.5f, 0f), arrowMaterial);
+            // Hold up while attacking to loose the arrow at 50° — needed to reach high ropes.
+            Vector3 dir = aimUp ? new Vector3(facing * 0.64f, 0.77f, 0f) : new Vector3(facing, 0.06f, 0f);
+            VeilArrow.Spawn(pos, dir.normalized * arrowSpeed, arrowMaterial, gameObject);
         }
 
         void OnDrawGizmosSelected()

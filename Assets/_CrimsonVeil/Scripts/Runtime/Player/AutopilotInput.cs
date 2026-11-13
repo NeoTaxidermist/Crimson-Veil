@@ -24,6 +24,7 @@ namespace CrimsonVeil.Player
         }
 
         public float MoveX => direction;
+        public float AimY => 0f;
         public bool JumpPressed { get { bool v = jumpPulse; jumpPulse = false; return v; } }
         public bool JumpHeld => jumpInterval > 0f && Mathf.Repeat(timer, jumpInterval) < jumpHold;
         public bool DashPressed => false;

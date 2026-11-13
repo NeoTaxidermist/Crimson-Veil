@@ -5,6 +5,27 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.3.0] – 2026-11-13
+Boj, první nepřítel, první hádanka a doladěný hrdina a svět.
+
+### Přidáno
+- **Boj šálou** (`VeilCombat`): během aktivní fáze švihu tvoří každý segment zbraňové části stuhy kapsli zásahu. Zasahuje simulovaná stuha, takže co vidíš, to zasáhne. Každý cíl dostane max. 1 zásah za švih. Zbraně se liší poškozením, odhozem a dosahem: kopí bodne nejdál, štít nejvíc odhodí, bič sahá nízko a daleko.
+- **Luk s mířením**: W / šipka nahoru / páčka nahoru při výstřelu pošle šíp pod úhlem 50°. Šípy zraňují a přeřezávají.
+- **Zdraví hrdiny** (`PlayerHealth`) bez HUD: šála se s úbytkem zdraví ztenčuje, tmavne a třepí na konci. Po chvíli bez zásahu se zdraví pomalu vrací. Po smrti se hrdina rozplyne v inkoustu a objeví se na posledním checkpointu.
+- **Blok štítem**: zpevněný štít natočený proti útočníkovi zásah zablokuje a útočníka vyvede z rovnováhy.
+- **Game feel**: hitstop (krátké zmrazení při zásahu), třes kamery podle „traumatu“ (Perlin, běží i během hitstopu), inkoustové výbuchy při zásahu.
+- **Nepřítel – inkoustový přízrak** (`Art/Enemy/Wraith.fbx`, zdroj `ArtSource/Wraith.blend`): kápě s hroty, dlouhé ruce s drápy, potrhaný plášť, rudé oči. Chování (`EnemyBrain`): hlídkuje, pronásleduje, pak dobře čitelně telegrafuje útok (ruce se zvednou, oči se rozžhaví) a teprve potom se vrhne. Zásah wind-up přeruší. Hrdinou lze proplout, ale dotek bolí. Procedurální animace (`EnemyAnimator`) a rozpad v inkoust při smrti.
+- **Reakce prostředí**: rozbitné urny (`Breakable`) se rozletí na střepy.
+- **První hádanka**: u propasti stojí prkno držené vysoko nataženým rudým provazem. Rudá znamená „tohle šála dosáhne“. Přeřízne ho jen šíp vystřelený nahoru, prkno pak spadne (`HingedBridge`, zrychluje jako při pádu a na konci se odrazí) a vytvoří most. Za propastí je checkpoint a další přízraci.
+- **Svět**: rozbité oblouky s rozeklaným lomem (`ArchProp.breakAmount`), hromady sutin (`RubbleProp`), urny (`UrnProp`, rotační těleso), rozpadlý akvadukt za útesem, úroveň prodloužená o propast a další plošinu.
+- `RigJoint`: sdílená kalibrace kostí pro procedurální animaci (hrdina i nepřítel).
+- Testy: zdraví, mozek nepřítele, bojové profily, odhoz, rozbité oblouky, sutiny, urny, padající most. PlayMode: meč rozbije urnu, kopí zraní přízraka právě jednou, přízrak telegrafuje a zraní, štít blokuje, šíp přeřízne provaz a most spadne, smrt a respawn. Celkem 84 EditMode + 11 PlayMode.
+
+### Změněno
+- **Hrdina**: tunika s potrhaným lemem, opasek, ovinutí šály kolem krku, chránič ramene, chrániče předloktí a objemnější hrudník.
+- `MotorLogic` umí odhoz se stunem (`ApplyKnockback`), během kterého hráč neovládá postavu.
+- `IPlayerInput` má vertikální míření `AimY`.
+
 ## [0.2.0] – 2026-11-13
 Vizuální průchod: hrdina z Blenderu s procedurální animací a atmosféra blíž ke key artu.
 

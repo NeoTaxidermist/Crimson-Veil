@@ -9,21 +9,6 @@ namespace CrimsonVeil.Tests
 {
     public class PlayerControllerPlayTests
     {
-        sealed class ScriptedInput : MonoBehaviour, IPlayerInput
-        {
-            public float moveX;
-            public bool jump, jumpHeld, dash, attack;
-            public VeilForm? form;
-
-            // "Pressed" flags are one-shot pulses consumed by the first reader.
-            public float MoveX => moveX;
-            public bool JumpPressed { get { bool v = jump; jump = false; return v; } }
-            public bool JumpHeld => jumpHeld;
-            public bool DashPressed { get { bool v = dash; dash = false; return v; } }
-            public bool AttackPressed { get { bool v = attack; attack = false; return v; } }
-            public VeilForm? FormRequested { get { var v = form; form = null; return v; } }
-        }
-
         GameObject ground, player;
         ScriptedInput input;
         PlayerController controller;

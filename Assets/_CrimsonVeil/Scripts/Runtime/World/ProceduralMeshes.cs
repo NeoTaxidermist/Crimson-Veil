@@ -48,6 +48,38 @@ namespace CrimsonVeil.World
                 t.Add(a); t.Add(b); t.Add(c);
             }
 
+            /// <summary>Removes every triangle whose centroid satisfies <paramref name="remove"/>.</summary>
+            public void Clip(System.Func<Vector3, bool> remove)
+            {
+                foreach (var t in tris)
+                {
+                    var kept = new List<int>(t.Count);
+                    for (int i = 0; i < t.Count; i += 3)
+                    {
+                        var c = (v[t[i]] + v[t[i + 1]] + v[t[i + 2]]) / 3f;
+                        if (remove(c)) continue;
+                        kept.Add(t[i]); kept.Add(t[i + 1]); kept.Add(t[i + 2]);
+                    }
+                    t.Clear();
+                    t.AddRange(kept);
+                }
+            }
+
+            public void Box(Vector3 center, Vector3 size, Quaternion rotation, int sub = 0)
+            {
+                Vector3 h = size * 0.5f;
+                Vector3 P(float x, float y, float z) => center + rotation * new Vector3(x * h.x, y * h.y, z * h.z);
+                Vector3[] n = { Vector3.right, Vector3.left, Vector3.up, Vector3.down, Vector3.forward, Vector3.back };
+                foreach (var dir in n)
+                {
+                    Vector3 a = Mathf.Abs(dir.y) > 0.5f ? Vector3.right : Vector3.up;
+                    Vector3 bAxis = Vector3.Cross(dir, a);
+                    Vector3 c0 = dir + a + bAxis, c1 = dir + a - bAxis, c2 = dir - a - bAxis, c3 = dir - a + bAxis;
+                    Quad(P(c0.x, c0.y, c0.z), P(c1.x, c1.y, c1.z), P(c2.x, c2.y, c2.z), P(c3.x, c3.y, c3.z), rotation * dir,
+                        new Vector2(0, 0), new Vector2(1, 0), new Vector2(1, 1), new Vector2(0, 1), sub);
+                }
+            }
+
             public Mesh ToMesh(string name)
             {
                 var mesh = new Mesh { name = name };
@@ -68,12 +100,41 @@ namespace CrimsonVeil.World
         /// Round arch: two pillars and a semicircular opening. Base at y = 0, centred on x, depth along z.
         /// </summary>
         public static Mesh Arch(float span, float pillarWidth, float springHeight, float crown, float depth, int segments = 16)
+            => Arch(span, pillarWidth, springHeight, crown, depth, 0f, 0, segments);
+
+        /// <summary>
+        /// Round arch, optionally ruined: <paramref name="breakAmount"/> (0..1) removes a jagged chunk from
+        /// the top corner (side chosen by <paramref name="seed"/>). Geometry is finely subdivided so the
+        /// break follows a ragged line.
+        /// </summary>
+        public static Mesh Arch(float span, float pillarWidth, float springHeight, float crown, float depth, float breakAmount, int seed, int segments = 16)
+        {
+            var mesh = BuildArch(span, pillarWidth, springHeight, crown, depth, segments, out var builder);
+            if (breakAmount <= 0.001f) return mesh;
+
+            float r = span * 0.5f, R = r + pillarWidth, H = springHeight + r + crown;
+            float side = (seed & 1) == 0 ? 1f : -1f;
+            var n = new Vector2(side, 1.3f).normalized;
+            var corner = new Vector2(side * R, H);
+            var p0 = corner - n * (Mathf.Clamp01(breakAmount) * (R + H) * 0.55f);
+            float ox = seed * 3.17f, oy = seed * 1.91f;
+            builder.Clip(c =>
+            {
+                float jag = (Mathf.PerlinNoise(c.x * 1.7f + ox, c.y * 1.7f + oy) - 0.5f) * 1.1f;
+                return Vector2.Dot(new Vector2(c.x, c.y) - p0, n) + jag > 0f;
+            });
+            return builder.ToMesh("ArchRuined");
+        }
+
+        static Mesh BuildArch(float span, float pillarWidth, float springHeight, float crown, float depth, int segments, out Builder b)
         {
             float r = span * 0.5f;
             float R = r + pillarWidth;
             float H = springHeight + r + crown;
             float hz = depth * 0.5f;
-            var b = new Builder(1);
+            b = new Builder(1);
+            var bb = b;
+            const float piece = 0.45f; // subdivision length so ruins can break raggedly
 
             // Outline with the solid on the left (counter-clockwise).
             var loop = new List<Vector2> { new Vector2(-R, 0f), new Vector2(-r, 0f), new Vector2(-r, springHeight) };
@@ -97,8 +158,13 @@ namespace CrimsonVeil.World
                 Vector2 d = q - p;
                 if (d.sqrMagnitude < 1e-8f) continue;
                 var normal = new Vector3(d.y, -d.x, 0f).normalized;
-                b.Quad(new Vector3(p.x, p.y, -hz), new Vector3(q.x, q.y, -hz), new Vector3(q.x, q.y, hz), new Vector3(p.x, p.y, hz),
-                    normal, UV(p), UV(q), UV(q), UV(p));
+                int parts = Mathf.Max(1, Mathf.CeilToInt(d.magnitude / piece));
+                for (int k = 0; k < parts; k++)
+                {
+                    Vector2 s0 = Vector2.Lerp(p, q, (float)k / parts), s1 = Vector2.Lerp(p, q, (float)(k + 1) / parts);
+                    b.Quad(new Vector3(s0.x, s0.y, -hz), new Vector3(s1.x, s1.y, -hz), new Vector3(s1.x, s1.y, hz), new Vector3(s0.x, s0.y, hz),
+                        normal, UV(s0), UV(s1), UV(s1), UV(s0));
+                }
             }
 
             // Front and back faces: pillars + ring between intrados and outer rectangle.
@@ -118,14 +184,26 @@ namespace CrimsonVeil.World
                 {
                     Vector2 i0 = Inner(angles[k]), i1 = Inner(angles[k + 1]);
                     Vector2 o0 = Outer(angles[k]), o1 = Outer(angles[k + 1]);
-                    b.Quad(new Vector3(i0.x, i0.y, z), new Vector3(o0.x, o0.y, z), new Vector3(o1.x, o1.y, z), new Vector3(i1.x, i1.y, z),
-                        normal, UV(i0), UV(o0), UV(o1), UV(i1));
+                    int parts = Mathf.Max(1, Mathf.CeilToInt(Mathf.Max(Vector2.Distance(i0, o0), Vector2.Distance(i1, o1)) / piece));
+                    for (int m = 0; m < parts; m++)
+                    {
+                        float t0 = (float)m / parts, t1 = (float)(m + 1) / parts;
+                        Vector2 a0 = Vector2.Lerp(i0, o0, t0), a1 = Vector2.Lerp(i0, o0, t1);
+                        Vector2 c0 = Vector2.Lerp(i1, o1, t0), c1 = Vector2.Lerp(i1, o1, t1);
+                        bb.Quad(new Vector3(a0.x, a0.y, z), new Vector3(a1.x, a1.y, z), new Vector3(c1.x, c1.y, z), new Vector3(c0.x, c0.y, z),
+                            normal, UV(a0), UV(a1), UV(c1), UV(c0));
+                    }
                 }
 
                 void Rect(float x0, float y0, float x1, float y1)
                 {
-                    b.Quad(new Vector3(x0, y0, z), new Vector3(x1, y0, z), new Vector3(x1, y1, z), new Vector3(x0, y1, z),
-                        normal, UV(new Vector2(x0, y0)), UV(new Vector2(x1, y0)), UV(new Vector2(x1, y1)), UV(new Vector2(x0, y1)));
+                    int rows = Mathf.Max(1, Mathf.CeilToInt((y1 - y0) / piece));
+                    for (int m = 0; m < rows; m++)
+                    {
+                        float ya = Mathf.Lerp(y0, y1, (float)m / rows), yb = Mathf.Lerp(y0, y1, (float)(m + 1) / rows);
+                        bb.Quad(new Vector3(x0, ya, z), new Vector3(x1, ya, z), new Vector3(x1, yb, z), new Vector3(x0, yb, z),
+                            normal, UV(new Vector2(x0, ya)), UV(new Vector2(x1, ya)), UV(new Vector2(x1, yb)), UV(new Vector2(x0, yb)));
+                    }
                 }
             }
 
@@ -142,6 +220,63 @@ namespace CrimsonVeil.World
             Face(-hz, Vector3.back);
             Face(hz, Vector3.forward);
             return b.ToMesh("Arch");
+        }
+
+        // ------------------------------------------------------------------ Rubble & urns
+
+        /// <summary>Pile of tumbled stone blocks resting on y = 0.</summary>
+        public static Mesh Rubble(int seed, int blocks, float width, float maxSize)
+        {
+            var rnd = new System.Random(seed);
+            float R(float a, float c) => a + (float)rnd.NextDouble() * (c - a);
+            var b = new Builder(1);
+            for (int i = 0; i < blocks; i++)
+            {
+                float x = R(-0.5f, 0.5f) * width;
+                // bigger blocks in the middle, smaller towards the edges
+                float s = maxSize * R(0.35f, 1f) * (1f - Mathf.Abs(x) / width);
+                var size = new Vector3(s * R(0.8f, 1.6f), s * R(0.5f, 1f), s * R(0.7f, 1.2f));
+                var rot = Quaternion.Euler(R(-12f, 12f), R(-30f, 30f), R(-35f, 35f));
+                b.Box(new Vector3(x, size.y * 0.35f, R(-0.3f, 0.3f)), size, rot);
+            }
+            return b.ToMesh("Rubble");
+        }
+
+        /// <summary>Surface of revolution around +y from a (radius, height) profile.</summary>
+        public static Mesh Lathe(IReadOnlyList<Vector2> profile, int sides = 16, string name = "Lathe")
+        {
+            var b = new Builder(1);
+            for (int i = 0; i < profile.Count - 1; i++)
+            {
+                Vector2 p = profile[i], q = profile[i + 1];
+                Vector2 edge = q - p;
+                var n2 = new Vector2(edge.y, -edge.x).normalized; // outward in the (r, y) plane
+                for (int k = 0; k < sides; k++)
+                {
+                    float a0 = Mathf.PI * 2f * k / sides, a1 = Mathf.PI * 2f * (k + 1) / sides;
+                    Vector3 D(float a) => new Vector3(Mathf.Cos(a), 0f, Mathf.Sin(a));
+                    Vector3 v0 = D(a0) * p.x + Vector3.up * p.y, v1 = D(a1) * p.x + Vector3.up * p.y;
+                    Vector3 v2 = D(a1) * q.x + Vector3.up * q.y, v3 = D(a0) * q.x + Vector3.up * q.y;
+                    Vector3 normal = (D((a0 + a1) * 0.5f) * n2.x + Vector3.up * n2.y).normalized;
+                    b.Quad(v0, v1, v2, v3, normal, new Vector2(0, p.y), new Vector2(1, p.y), new Vector2(1, q.y), new Vector2(0, q.y));
+                }
+            }
+            return b.ToMesh(name);
+        }
+
+        public static Mesh Urn(int seed, float height = 0.8f)
+        {
+            var rnd = new System.Random(seed);
+            float w = 0.85f + (float)rnd.NextDouble() * 0.4f;
+            var profile = new List<Vector2>
+            {
+                new Vector2(0f, 0f), new Vector2(0.16f, 0f), new Vector2(0.24f, 0.12f), new Vector2(0.27f, 0.32f),
+                new Vector2(0.21f, 0.52f), new Vector2(0.11f, 0.62f), new Vector2(0.1f, 0.7f), new Vector2(0.15f, 0.76f),
+                new Vector2(0.13f, 0.8f), new Vector2(0f, 0.8f),
+            };
+            for (int i = 0; i < profile.Count; i++)
+                profile[i] = new Vector2(profile[i].x * w, profile[i].y) * (height / 0.8f);
+            return Lathe(profile, 14, "Urn");
         }
 
         // ------------------------------------------------------------------ Grass

@@ -62,6 +62,29 @@ namespace CrimsonVeil.Tests
         }
 
         [Test]
+        public void Spear_IsHeldAlongTheShaft_ButtReachesBehindTheHand()
+        {
+            var pts = VeilFormLibrary.ControlPoints(VeilForm.Spear, out int start);
+            Vector2 butt = pts[start], tip = pts[pts.Count - 1], hand = VeilFormLibrary.Hand;
+            Assert.Greater(hand.x - butt.x, 0.5f, "the butt sticks out behind the hand");
+            Assert.Greater(tip.x - hand.x, 1.8f, "most of the shaft is in front");
+            Assert.IsTrue(pts.Contains(hand), "the shaft passes through the fist");
+            Assert.Less(butt.x, 0f, "the butt reaches back past the hero's neck line");
+        }
+
+        [Test]
+        public void Bow_LimbsAreEqual_StringIsVisible()
+        {
+            var range = VeilFormLibrary.BowStringRange;
+            var pts = new Vector2[64];
+            float hf = VeilFormLibrary.BuildShape(VeilForm.Bow, pts);
+            // Upper limb (grip → upper tip) and lower limb (lower tip → grip) take the same share of the ribbon.
+            Assert.AreEqual(range.x - hf, 1f - range.y, 0.03f);
+            Assert.Greater(VeilFormLibrary.BowBraceHeight, 0.15f, "a clear gap between grip and string");
+            Assert.Less(VeilFormLibrary.Width(VeilForm.Bow), VeilFormLibrary.BowBraceHeight, "limbs thinner than the gap: it reads as a bow");
+        }
+
+        [Test]
         public void Bow_IsHeldOutInFront_NotHiddenByTheBody()
         {
             Assert.Greater(HeroPoseSolver.HoldArmFor(VeilForm.Bow), 65f, "bow arm extended forward");

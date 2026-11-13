@@ -256,7 +256,7 @@ namespace CrimsonVeil.Veil
                 go.transform.SetParent(transform, false);
                 bowString = go.AddComponent<LineRenderer>();
                 bowString.positionCount = 3;
-                bowString.widthMultiplier = 0.018f;
+                bowString.widthMultiplier = 0.04f;
                 bowString.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
                 bowString.sharedMaterial = stringMaterial;
                 bowString.startColor = bowString.endColor = new Color(1f, 0.1f, 0.1f, 0.9f);

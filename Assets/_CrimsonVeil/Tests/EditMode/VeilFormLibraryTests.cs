@@ -21,7 +21,8 @@ namespace CrimsonVeil.Tests
             float first = Vector2.Distance(pts[0], pts[1]);
             // The bow has two sharp corners by design (where the string meets the limb tips): a node that
             // straddles one is closer to its neighbour along the chord. Nothing else may be uneven.
-            int allowedCorners = form == VeilForm.Bow ? 2 : 0, corners = 0;
+            // (The spear has one: the scarf comes down to its butt and the shaft runs back forward through the hand.)
+            int allowedCorners = form == VeilForm.Bow ? 2 : form == VeilForm.Spear ? 1 : 0, corners = 0;
             for (int i = 1; i < pts.Length - 1; i++)
             {
                 float d = Vector2.Distance(pts[i], pts[i + 1]);

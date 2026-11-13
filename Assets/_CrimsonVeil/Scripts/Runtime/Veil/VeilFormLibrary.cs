@@ -45,7 +45,7 @@ namespace CrimsonVeil.Veil
                 case VeilForm.Sword: return 0.22f;
                 case VeilForm.Spear: return 0.12f;
                 case VeilForm.Shield: return 0.26f;
-                case VeilForm.Bow: return 0.16f;
+                case VeilForm.Bow: return 0.1f;
                 default: return 0.65f;
             }
         }
@@ -99,7 +99,13 @@ namespace CrimsonVeil.Veil
                     break;
                 }
                 case VeilForm.Spear:
-                    pts.Add(Hand + new Vector2(2.5f, 0f)); // level: a spear is thrust straight ahead
+                    // Held a third of the way along, not by its end: the scarf runs down to the butt behind the
+                    // hand, and the shaft passes through the fist straight ahead (level: a spear is thrust).
+                    pts.RemoveRange(1, 2); // straight from the neck down to the butt
+                    pts.Add(Hand + new Vector2(-SpearButt, 0f));
+                    weaponStartIndex = pts.Count - 1;
+                    pts.Add(Hand);
+                    pts.Add(Hand + new Vector2(SpearReach, 0f));
                     break;
                 case VeilForm.Shield:
                     AddSpiral(pts, ShieldCenter, 0.62f, 0.2f, 1.5f, 40);
@@ -116,6 +122,9 @@ namespace CrimsonVeil.Veil
             }
             return pts;
         }
+
+        /// <summary>Spear shaft behind the hand (the butt) and ahead of it (to the point), in metres.</summary>
+        public const float SpearButt = 0.75f, SpearReach = 2.2f;
 
         /// <summary>
         /// The whip at rest: coiled in the hand. Same ribbon and same length as the extended whip (so the hand
@@ -175,20 +184,27 @@ namespace CrimsonVeil.Veil
             // The grip sits in the fist, a little ahead of the wrist.
             Vector2 grip = Hand + BowGripOffset;
             pts.Add(grip);
-            foreach (var p in BowLimb) pts.Add(grip + p * BowScale);
+            foreach (var p in BowLimb) pts.Add(grip + Bend(p));
             stringStart = pts.Count - 1;
-            var tip = BowLimb[BowLimb.Length - 1] * BowScale;
+            var tip = Bend(BowLimb[BowLimb.Length - 1]);
             Vector2 top = pts[stringStart], bottom = grip + new Vector2(tip.x, -tip.y);
             const int stringSteps = 10;
             for (int i = 1; i <= stringSteps; i++) pts.Add(Vector2.Lerp(top, bottom, (float)i / stringSteps));
             stringEnd = pts.Count - 1;
-            for (int i = BowLimb.Length - 2; i >= 0; i--) pts.Add(grip + new Vector2(BowLimb[i].x, -BowLimb[i].y) * BowScale);
+            for (int i = BowLimb.Length - 2; i >= 0; i--) { var b = Bend(BowLimb[i]); pts.Add(grip + new Vector2(b.x, -b.y)); }
             pts.Add(grip);
         }
 
         /// <summary>Size of the bow relative to the limb template (1 = 1.66 m tall).</summary>
         public const float BowScale = 0.78f;
+        /// <summary>Extra sweep of the limbs towards the archer, so there is a clear gap between grip and string.</summary>
+        public const float BowDepth = 1.6f;
         public static readonly Vector2 BowGripOffset = new Vector2(0.07f, 0f);
+
+        static Vector2 Bend(Vector2 limbPoint) => new Vector2(limbPoint.x * BowDepth, limbPoint.y) * BowScale;
+
+        /// <summary>Gap (m) between the grip and the string at rest (brace height).</summary>
+        public static float BowBraceHeight => -Bend(BowLimb[BowLimb.Length - 1]).x;
 
         /// <summary>How far (m) the bow's limb tips reach back from the grip towards the hero.</summary>
         public static float BowLimbReachBack
@@ -196,7 +212,7 @@ namespace CrimsonVeil.Veil
             get
             {
                 float min = 0f;
-                foreach (var p in BowLimb) min = Mathf.Min(min, p.x * BowScale + BowGripOffset.x);
+                foreach (var p in BowLimb) min = Mathf.Min(min, Bend(p).x + BowGripOffset.x);
                 return -min;
             }
         }

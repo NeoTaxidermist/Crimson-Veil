@@ -5,6 +5,19 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.7.3] – 2026-11-13
+Luk se stejnými rameny a kopí držené za ratiště.
+
+### Změněno
+- **Luk:** obě ramena jsou stejně silná. Dřív většina plamenných pramenů šály končila na horním rameni, takže bylo tlusté a spodní tenké. Teď všechny prameny vedou kolem celého luku.
+- Ramena jsou tenčí (0,1 m) a víc prohnutá, takže je mezi madlem a tětivou vidět mezera asi 0,2 m a luk se čte jako luk, ne jako srpek.
+- Tětiva je zhruba třikrát silnější.
+- **Kopí** postava drží asi ve třetině ratiště, ne za konec. Šála vede z krku k patce kopí, ta přečuhuje asi 0,75 m za ruku (za záda), a ratiště prochází dlaní dopředu ke hrotu 2,2 m před rukou.
+
+### Testy
+- Obě ramena luku mají stejný podíl a mezi madlem a tětivou je mezera širší než rameno.
+- Patka kopí přečuhuje za ruku, ratiště prochází dlaní a většina kopí je vpředu.
+
 ## [0.7.2] – 2026-11-13
 Skutečný luk s tětivou a bič smotaný v ruce.
 

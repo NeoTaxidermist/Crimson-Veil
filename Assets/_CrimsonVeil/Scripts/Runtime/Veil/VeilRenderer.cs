@@ -231,7 +231,7 @@ namespace CrimsonVeil.Veil
                 float weaponProfile = t < hf ? 0.4f : bow ? 1f : 1f - Mathf.SmoothStep(0f, 1f, (t - 0.86f) / 0.14f) * 0.85f;
                 weaponProfile *= 1f + 0.08f * Mathf.Sin(t * 14f - time * 5f);
                 // The bow's string is part of the same ribbon: a thin glowing thread between the limb tips.
-                if (bow) weaponProfile *= Mathf.Lerp(1f, 0.12f, VeilFormLibrary.BowStringWeight(t));
+                if (bow) weaponProfile *= Mathf.Lerp(1f, 0.32f, VeilFormLibrary.BowStringWeight(t));
                 // Keeps its volume until nearly set, so the transformation reads as the scarf winding in, not thinning out.
                 widthAt[i] = Mathf.Lerp(flowW * flowProfile, formW * weaponProfile, hard * hard * hard) * Mathf.Lerp(0.45f, 1f, vit);
 
@@ -252,7 +252,8 @@ namespace CrimsonVeil.Veil
                 Vector3 lastC = centre[0], lastTan = Vector3.right;
                 float lastW = 0f, lastA = 0f, lastHard = 0f, lastFront = 0f;
                 // As a weapon, each strand ends somewhere along the blade, where its flame tongue peels off.
-                float end = Mathf.Lerp(st.end, WeaponStrandEnd(st, hf), weaponness);
+                // (On a bow every strand runs the whole way round, so both limbs are equally full.)
+                float end = Mathf.Lerp(st.end, bow ? 1f : WeaponStrandEnd(st, hf), weaponness);
 
                 // 1) Body: follows the scarf from `start` to `end`.
                 for (int i = 0; i < samples; i++)

@@ -100,7 +100,8 @@ namespace CrimsonVeil.Tests
             var veil = player.GetComponent<VeilController>();
             yield return WaitSeconds(0.3f);
             input.form = VeilForm.Sword;
-            yield return WaitSeconds(0.4f);
+            // The transformation is a visible vortex now (~0.4 s); give it time to set fully.
+            yield return WaitSeconds(0.7f);
             Assert.AreEqual(VeilForm.Sword, veil.Form);
             Assert.AreEqual(VeilFormLibrary.Hardness(VeilForm.Sword), veil.Hardness, 1e-3f);
             input.attack = true;
@@ -109,7 +110,7 @@ namespace CrimsonVeil.Tests
             Assert.IsTrue(veil.IsAttacking);
 
             input.form = VeilForm.Sword; // toggle back to cloth
-            yield return WaitSeconds(0.4f);
+            yield return WaitSeconds(0.7f);
             Assert.AreEqual(VeilForm.Flow, veil.Form);
             Assert.AreEqual(0f, veil.Hardness, 1e-3f);
         }

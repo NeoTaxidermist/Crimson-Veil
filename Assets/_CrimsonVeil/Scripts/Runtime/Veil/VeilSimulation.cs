@@ -106,6 +106,8 @@ namespace CrimsonVeil.Veil
         /// <summary>Slow magical drift of the air around the hero (e.g. "behind and slightly up").</summary>
         public Vector2 AmbientFlow { get; set; }
         public Vector3 AnchorVelocity { get; private set; }
+        /// <summary>Extra acceleration (m/s²) on the loose cloth, growing towards the tail (e.g. a weapon melting back).</summary>
+        public Vector2 Breath { get; set; }
         /// <summary>Which way (-1/+1 in x) the magical breeze blows; 0 = no breeze. Set to minus the hero's facing.</summary>
         public float DriftDirection { get; set; }
         public IReadOnlyList<Vortex> Vortices => vortices;
@@ -249,6 +251,7 @@ namespace CrimsonVeil.Veil
                         acc += normal * (amp * wave + s.tipCurl * Mathf.SmoothStep(0f, 1f, (f - 0.7f) / 0.3f)) * loose;
                     }
                     acc.y += s.buoyancy * f * f * loose;
+                    acc += new Vector3(Breath.x, Breath.y, 0f) * (f * loose);
                 }
                 Vector3 next = p + (p - previous[i]) * s.damping + acc * (h * h);
                 // The veil is weightless: it rides along with the hero's jumps and falls instead of carrying
@@ -256,9 +259,11 @@ namespace CrimsonVeil.Veil
                 if (s.maxRelativeFall > 0f && loose > 0.001f)
                 {
                     Vector3 relV = (next - p) / h - anchorVel;
-                    if (Mathf.Abs(relV.y) > s.maxRelativeFall)
+                    // A breath (weapon melting back) may lift it faster than the normal limit.
+                    float limit = relV.y > 0f ? s.maxRelativeFall + Mathf.Max(0f, Breath.y) * 0.25f : s.maxRelativeFall;
+                    if (Mathf.Abs(relV.y) > limit)
                     {
-                        relV.y = Mathf.Lerp(relV.y, Mathf.Sign(relV.y) * s.maxRelativeFall, loose);
+                        relV.y = Mathf.Lerp(relV.y, Mathf.Sign(relV.y) * limit, loose);
                         next = p + (anchorVel + relV) * h;
                     }
                 }

@@ -44,6 +44,14 @@ namespace CrimsonVeil.Tests
         }
 
         [Test]
+        public void Scarf_HangsFromTheNeck_NotCentredOnIt()
+        {
+            // Centred on the neck, half of the broad band (and its upper layers) rose over the head when running.
+            Assert.Greater(VeilRenderer.HangBelowNeck, 0.15f);
+            Assert.Less(VeilRenderer.HangBelowNeck, 0.5f, "still wraps the neck");
+        }
+
+        [Test]
         public void Curl_IsContinuousAndWindsIntoASpiral()
         {
             const int count = 24;

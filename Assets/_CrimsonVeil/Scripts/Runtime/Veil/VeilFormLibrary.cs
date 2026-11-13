@@ -41,11 +41,11 @@ namespace CrimsonVeil.Veil
         {
             switch (form)
             {
-                case VeilForm.Whip: return 0.07f;
-                case VeilForm.Sword: return 0.16f;
-                case VeilForm.Spear: return 0.08f;
-                case VeilForm.Shield: return 0.2f;
-                case VeilForm.Bow: return 0.07f;
+                case VeilForm.Whip: return 0.1f;
+                case VeilForm.Sword: return 0.22f;
+                case VeilForm.Spear: return 0.12f;
+                case VeilForm.Shield: return 0.26f;
+                case VeilForm.Bow: return 0.12f;
                 default: return 0.65f;
             }
         }

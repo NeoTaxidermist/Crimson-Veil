@@ -18,9 +18,11 @@ namespace CrimsonVeil.Veil
         [SerializeField] Transform anchor;
         [SerializeField] PlayerController player;
         [Tooltip("Smoothing time of hardening / softening.")]
-        [SerializeField] float transformTime = 0.2f;
+        [SerializeField] float transformTime = 0.36f;
         [Tooltip("Seconds for one weapon shape to morph into another.")]
-        [SerializeField] float morphTime = 0.3f;
+        [SerializeField] float morphTime = 0.42f;
+        [Tooltip("Which way the scarf winds into the palm (+1 / -1).")]
+        [SerializeField] float spiralDirection = 1f;
         [SerializeField] float turnSpeed = 7f;
         [SerializeField] float idleDriftSpeed = 0.75f;
         [SerializeField] Vector2 wind = new Vector2(-0.3f, 0.05f);
@@ -37,6 +39,7 @@ namespace CrimsonVeil.Veil
         float carry;
         bool morphFromCloth;
         bool lunged;
+        float releaseTime = 99f;
 
         [Header("Bow string")]
         [Tooltip("The hand that draws the bow string (the other hand).")]
@@ -108,6 +111,7 @@ namespace CrimsonVeil.Veil
         public void SetForm(VeilForm form)
         {
             if (form == Form) return;
+            if (form == VeilForm.Flow && TransformProgress > 0.05f) releaseTime = 0f; // start exhaling
             Form = form;
             if (form != VeilForm.Flow)
             {
@@ -124,6 +128,20 @@ namespace CrimsonVeil.Veil
         }
 
         public void ToggleForm(VeilForm form) => SetForm(Form == form ? VeilForm.Flow : form);
+
+        /// <summary>Seconds the veil keeps exhaling after a weapon is released.</summary>
+        public const float ReleaseBreathDuration = 0.9f;
+
+        /// <summary>
+        /// Acceleration (m/s²) lifting the veil up and back after a weapon melts back into cloth,
+        /// for release phase 0..1 (zero outside it).
+        /// </summary>
+        public static Vector2 ReleaseBreath(float phase, int facing)
+        {
+            if (phase <= 0f || phase >= 1f) return Vector2.zero;
+            float k = Mathf.Sin(phase * Mathf.PI);
+            return new Vector2(-facing * 9f, 16f) * k;
+        }
 
         public bool Attack()
         {
@@ -160,7 +178,10 @@ namespace CrimsonVeil.Veil
             facingScale = Mathf.MoveTowards(facingScale, facing, dt * turnSpeed);
             Vector3 a = anchor.position;
 
+            // Releasing a weapon, the flame exhales back over the shoulder instead of pooling at the feet.
             Simulation.Wind = wind;
+            releaseTime += dt;
+            Simulation.Breath = Form == VeilForm.Flow ? ReleaseBreath(releaseTime / ReleaseBreathDuration, facing) : Vector2.zero;
             Simulation.AmbientFlow = new Vector2(-facing, 0f) * idleDriftSpeed; // horizontal: the veil streams behind, it doesn't rise
 
             UpdateNodeHardness();
@@ -296,8 +317,15 @@ namespace CrimsonVeil.Veil
                     if (weapon && morphFromCloth)
                         rest = grip + (rest - grip) * Mathf.Lerp(0.05f, 1f, MovementMath.EaseOutBack(m, 1.7f));
                     l = VeilTransform.MorphNode(fromShape[i], rest, m, f, time, morphFromCloth ? 0.22f : 0.14f);
+                    // The scarf is sucked into the palm as a vortex, then the weapon grows out of it.
+                    // Like a real vortex it spins fastest near the palm, far cloth only drifts in.
+                    if (morphFromCloth)
+                        l = VeilWeaponPose.Rotate(l, grip, VeilTransform.SpiralIn(m) * spiralDirection * VeilTransform.VortexFalloff(Vector2.Distance(l, grip)));
                 }
                 else l = rest;
+                // Back to cloth: the weapon unwinds the same way as it melts, tip first.
+                if (Form == VeilForm.Flow && weapon)
+                    l = VeilWeaponPose.Rotate(l, grip, -0.6f * VeilTransform.SpiralIn(1f - TransformProgress) * spiralDirection);
                 current[i] = l;
                 targets[i] = a + new Vector3(l.x * facingScale, l.y, 0f);
             }

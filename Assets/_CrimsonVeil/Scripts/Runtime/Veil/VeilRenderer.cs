@@ -75,6 +75,9 @@ namespace CrimsonVeil.Veil
         Vector3 lastAnchor;
         float speedSmoothed;
 
+        /// <summary>How far (in band widths) the loose scarf hangs below the line of the neck.</summary>
+        public const float HangBelowNeck = 0.3f;
+
         public int SampleCount => samples;
         public int PointsPerStrand => perStrand;
 
@@ -226,13 +229,17 @@ namespace CrimsonVeil.Veil
 
                 float weaponProfile = t < hf ? 0.4f : 1f - Mathf.SmoothStep(0f, 1f, (t - 0.86f) / 0.14f) * 0.85f;
                 weaponProfile *= 1f + 0.08f * Mathf.Sin(t * 14f - time * 5f);
-                widthAt[i] = Mathf.Lerp(flowW * flowProfile, formW * weaponProfile, hard) * Mathf.Lerp(0.45f, 1f, vit);
+                // Keeps its volume until nearly set, so the transformation reads as the scarf winding in, not thinning out.
+                widthAt[i] = Mathf.Lerp(flowW * flowProfile, formW * weaponProfile, hard * hard * hard) * Mathf.Lerp(0.45f, 1f, vit);
 
                 float fray = 1f - Mathf.SmoothStep(0f, 1f, (t - Mathf.Lerp(0.3f, 1.05f, vit)) / 0.25f);
                 alphaAt[i] = Mathf.Lerp(fray, 1f, hard) * Mathf.Lerp(0.6f, 1f, vit) * Mathf.SmoothStep(0f, 1f, t * 12f + 0.3f);
             }
 
             int per = perStrand * 2;
+            // How far the veil is into its weapon form (0 cloth .. 1 weapon).
+            float weaponness = Mathf.Clamp01(veil.Hardness / formHardness);
+            Vector3 up = Vector3.up, back = new Vector3(-facing, 0f, 0f);
             for (int s = 0; s < Strands.Length; s++)
             {
                 var st = Strands[s];
@@ -240,13 +247,15 @@ namespace CrimsonVeil.Veil
                 bool branch = st.start > 0f;
                 int baseV = s * per;
                 Vector3 lastC = centre[0], lastTan = Vector3.right;
-                float lastW = 0f, lastA = 0f, lastHard = 0f;
+                float lastW = 0f, lastA = 0f, lastHard = 0f, lastFront = 0f;
+                // As a weapon, each strand ends somewhere along the blade, where its flame tongue peels off.
+                float end = Mathf.Lerp(st.end, WeaponStrandEnd(st, hf), weaponness);
 
                 // 1) Body: follows the scarf from `start` to `end`.
                 for (int i = 0; i < samples; i++)
                 {
                     float u = (float)i / (samples - 1);
-                    float f = Mathf.Lerp(st.start, st.end, u);
+                    float f = Mathf.Lerp(st.start, end, u);
                     float fi = f * (samples - 1);
                     int i0 = Mathf.Min(Mathf.FloorToInt(fi), samples - 2);
                     float fr = fi - i0;
@@ -264,26 +273,43 @@ namespace CrimsonVeil.Veil
                         off = (BranchOffset(u, st.side, tendrilSpread * Mathf.Lerp(0.5f, 1f, vit)) + wave * 0.14f * st.spread * u) * loose;
                     else
                         off = (st.side + wave * 0.35f * st.spread * f) * w * loose * Mathf.SmoothStep(0f, 1f, f * 3f);
-                    c += nrm * off + new Vector3(0f, 0f, (s - 1) * 0.012f);
+                    // Hang from the neck rather than centre on it: the band and its layers spread mostly
+                    // downwards, so the scarf streams level behind the hero instead of rising over the head.
+                    // The hardening front (half-set cloth) flares up and swirls hardest: the ignition wave.
+                    float front = 4f * hard * loose;
+                    // As a weapon the strands don't vanish into the blade: they braid around it like
+                    // twisting flames (a helix running up the blade), wilder while it ignites.
+                    if (!main)
+                        off += WeaponBraid(f, time, st.phase, w, hard) * (1f + 1.5f * front);
+
+                    Vector3 ov = nrm * off;
+                    if (ov.y > 0f) ov.y *= 0.5f;
+                    c += ov + new Vector3(0f, -w * HangBelowNeck * loose * Mathf.SmoothStep(0f, 1f, f * 4f), (s - 1) * 0.012f);
 
                     // Tendrils emerge from the ribbon: thin where they split, then full.
-                    float sw = w * Mathf.Lerp(st.width, main ? 1f : 0.2f, hard);
+                    float sw = w * Mathf.Lerp(st.width, main ? 1f : 0.3f, hard);
                     if (branch) sw *= Mathf.Lerp(0.25f, 1f, Mathf.SmoothStep(0f, 0.35f, u));
-                    float alpha = a * Mathf.Lerp(st.alpha, main ? 1f : 0.1f, hard);
+                    float alpha = a * Mathf.Lerp(st.alpha, main ? 1f : 0.7f, hard);
                     if (branch) alpha *= Mathf.SmoothStep(0f, 1f, u * 5f);
 
-                    WriteVertex(baseV + i * 2, c, nrm, sw, alpha, st, hard, vit);
+                    WriteVertex(baseV + i * 2, c, nrm, sw, alpha, st, hard, vit, front);
                     if (i > 0) lastTan = c - lastC;
-                    lastC = c; lastW = sw; lastA = alpha; lastHard = hard;
+                    lastC = c; lastW = sw; lastA = alpha; lastHard = hard; lastFront = front;
                 }
 
-                // 2) End curl: the stroke keeps going and winds into a spiral. A hardened tip doesn't curl.
+                // 2) End curl: loose cloth winds into a spiral; on a weapon the end becomes a flame tongue
+                // that licks upwards and back off the blade.
                 float looseEnd = 1f - lastHard;
                 float breathe = 1f + 0.18f * Mathf.Sin(time * (0.5f + 0.4f * st.seed) + st.phase);
-                float turns = st.curlTurns * breathe * unroll * looseEnd;
-                float length = st.curlLength * curlScale * Mathf.Lerp(0.5f, 1f, vit) * Mathf.Lerp(0.15f, 1f, looseEnd);
+                float flicker = 1f + 0.25f * Mathf.Sin(time * (3.1f + 2f * st.seed) + st.phase * 2f);
+                float turns = Mathf.Lerp(0.2f * flicker, st.curlTurns * breathe * unroll, looseEnd);
+                float length = Mathf.Lerp(FlameTongueLength(main) * flicker, st.curlLength * curlScale, looseEnd) * Mathf.Lerp(0.5f, 1f, vit);
                 lastTan.z = 0f;
-                float heading = lastTan.sqrMagnitude > 1e-10f ? Mathf.Atan2(lastTan.y, lastTan.x) : -Mathf.PI * 0.5f;
+                Vector3 dir = lastTan.sqrMagnitude > 1e-10f ? lastTan.normalized : Vector3.down;
+                // Flames rise: a weapon's tongues bend up and back, away from the direction of the blow.
+                Vector3 flameDir = (dir * 0.35f + up * 0.9f + back * 0.35f).normalized;
+                dir = Vector3.Slerp(dir, flameDir, lastHard).normalized;
+                float heading = Mathf.Atan2(dir.y, dir.x);
                 BuildCurl(lastC, heading, st.curlSign * facing, length, turns, curlPoints, curl);
                 for (int k = 1; k <= curlPoints; k++)
                 {
@@ -292,9 +318,9 @@ namespace CrimsonVeil.Veil
                     d.z = 0f;
                     Vector3 nrm = d.sqrMagnitude > 1e-10f ? new Vector3(-d.y, d.x, 0f).normalized : Vector3.up;
                     // Stays broad through most of the loop, thinning only at the very tip.
-                    float sw = lastW * Mathf.Lerp(1f, 0.12f, Mathf.Pow(u, 1.6f));
+                    float sw = lastW * Mathf.Lerp(1f, 0.08f, Mathf.Pow(u, Mathf.Lerp(1.6f, 0.6f, lastHard)));
                     float alpha = lastA * Mathf.Lerp(1f, 0.55f, u);
-                    WriteVertex(baseV + (samples - 1 + k) * 2, curl[k], nrm, sw, alpha, st, lastHard, vit);
+                    WriteVertex(baseV + (samples - 1 + k) * 2, curl[k], nrm, sw, alpha, st, lastHard, vit, lastFront);
                 }
             }
 
@@ -304,11 +330,23 @@ namespace CrimsonVeil.Veil
             mesh.RecalculateBounds();
         }
 
-        void WriteVertex(int v, Vector3 c, Vector3 nrm, float width, float alpha, Strand st, float hard, float vit)
+        /// <summary>Sideways offset of a strand braided around a weapon: a travelling helix, zero for loose cloth.</summary>
+        public static float WeaponBraid(float f, float time, float phase, float width, float hard)
+            => Mathf.Sin(f * 16f - time * 3.2f + phase) * width * 0.24f * hard;
+
+        /// <summary>Where along the veil a strand ends once it is a weapon: spread along the blade, so flame
+        /// tongues peel off all along it rather than only at the tip.</summary>
+        public static float WeaponStrandEnd(Strand st, float handFraction)
+            => Mathf.Lerp(Mathf.Min(handFraction + 0.12f, 0.95f), 0.99f, 0.15f + 0.85f * Mathf.Repeat(st.seed * 1.7f + st.phase * 0.13f, 1f));
+
+        /// <summary>Length (m) of the flame tongue at a weapon strand's end.</summary>
+        public static float FlameTongueLength(bool main) => main ? 0.22f : 0.34f;
+
+        void WriteVertex(int v, Vector3 c, Vector3 nrm, float width, float alpha, Strand st, float hard, float vit, float glow = 0f)
         {
             vertices[v] = c + nrm * (width * 0.5f);
             vertices[v + 1] = c - nrm * (width * 0.5f);
-            var col = st.tint;
+            var col = st.tint * (1f + 0.9f * glow);
             col.a = alpha;
             col.r *= Mathf.Lerp(0.6f, 1f, vit);
             colors[v] = colors[v + 1] = col;

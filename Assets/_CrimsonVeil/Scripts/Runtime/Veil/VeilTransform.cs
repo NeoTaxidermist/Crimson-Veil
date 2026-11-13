@@ -29,6 +29,19 @@ namespace CrimsonVeil.Veil
         }
 
         /// <summary>
+        /// Turn (degrees) of the cloth around the palm while it winds into a weapon: zero at the start (it leaves
+        /// the scarf where it is), strongest mid-way, zero once the weapon has formed — a vortex sucked into the hand.
+        /// </summary>
+        public static float SpiralIn(float m)
+        {
+            m = Mathf.Clamp01(m);
+            return 320f * Mathf.Sin(m * Mathf.PI) * (1f - m);
+        }
+
+        /// <summary>Share of the spiral turn a point at <paramref name="distance"/> (m) from the palm gets.</summary>
+        public static float VortexFalloff(float distance) => 1f / (1f + 2.5f * distance * distance);
+
+        /// <summary>
         /// Position of a node while morphing from <paramref name="from"/> to <paramref name="to"/>: it travels
         /// along a lazy curl (strongest mid-morph) so the cloth winds into its new shape.
         /// </summary>

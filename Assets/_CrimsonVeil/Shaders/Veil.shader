@@ -108,7 +108,7 @@ Shader "CrimsonVeil/Veil"
                 // Edges sink into darker wine, the body is lit from within.
                 col *= lerp(0.7, 1.0, saturate(core * 1.4));
                 // A weapon glows more evenly along its blade.
-                col = lerp(col, lerp(_Mid.rgb, _Glow.rgb, core * 0.6 * (0.6 + streak * 0.6)), hard * 0.7);
+                col = lerp(col, lerp(_Mid.rgb, _Glow.rgb, core * 0.6 * (0.6 + streak * 0.6)), hard * 0.4);
 
                 col *= i.color.rgb;
                 return half4(col, saturate(alpha * i.color.a));

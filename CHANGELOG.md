@@ -5,6 +5,27 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.7.0] – 2026-11-13
+Zbraně z plamene a proměna jako vír.
+
+### Přidáno
+- **Zbraně ve stylu plamenné šály.** Pramínky šály v zbrani nemizí: ovíjejí čepel jako pletené plameny a podél celé čepele z nich vyšlehují plamenné jazyky, které stoupají nahoru a dozadu. Jádro čepele je plné, štít je plamenný vír. Zbraně jsou širší (luk a bič už nejsou tenké nitky) a v shaderu si drží plamenné pruhy.
+- **Proměna šály ve zbraň jako vír.** Šála se stáhne spirálou do dlaně (nejrychleji u dlaně, vzdálená látka jen přitéká) a zbraň z ní vyroste. Látka drží objem, dokud skoro neztuhne. Tam, kde právě tuhne, se rozzáří čelo proměny. Proměna trvá asi 0,4 s místo 0,25 s, aby byla vidět.
+- **Návrat do šály.** Čepel se při tání odvine stejným směrem, jakým vznikla. Uvolněný plamen pak vydechne nahoru a dozadu (asi 0,9 s), takže odvane zpátky za ramena, místo aby se slil k nohám.
+
+### Opraveno
+- **Šála v běhu vlaje vodorovně.** Široký pás už není vycentrovaný na krk, ale z krku visí. Jeho horní vrstvy se rozestupují méně než dolní, takže nepřečuhuje nad hlavu.
+
+### Testy
+- Spirála proměny začíná i končí v klidu.
+- Vír je nejsilnější u dlaně.
+- Pletení se týká jen zbraně a drží se u čepele.
+- Plamenné jazyky vyrůstají podél celé čepele.
+- Zbraně nejsou tenké nitky.
+- Výdech při návratu do šály.
+- Šála visí z krku.
+- PlayMode test proměny počítá s delší proměnou.
+
 ## [0.6.4] – 2026-11-13
 Šála v proporcích key artu.
 

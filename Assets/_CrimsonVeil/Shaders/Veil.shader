@@ -97,7 +97,7 @@ Shader "CrimsonVeil/Veil"
 
                 // Tail dissolves into smoke; a weapon's tip smoulders away more subtly.
                 // (the strand's end curl lives at along 0.75..0.9, so erosion only frays its very tip)
-                float erode = smoothstep(lerp(0.8, 0.84, hard), 1.0, along + (streak - 0.5) * 0.3) * _Erosion * lerp(1.0, 0.5, hard);
+                float erode = smoothstep(lerp(0.8, 0.84, hard), 1.0, along + (streak - 0.5) * 0.3) * _Erosion * lerp(1.0, 0.15, hard); // weapons keep their ends (a bow ends in its lower limb)
                 alpha *= 1.0 - erode;
 
                 // Palette of a fire seen in red ink: near-black wine → deep crimson → red → hot bright red.

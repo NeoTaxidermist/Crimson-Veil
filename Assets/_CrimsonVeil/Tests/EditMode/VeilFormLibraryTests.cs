@@ -19,8 +19,17 @@ namespace CrimsonVeil.Tests
             Assert.That(handFraction, Is.InRange(0f, 1f));
 
             float first = Vector2.Distance(pts[0], pts[1]);
+            // The bow has two sharp corners by design (where the string meets the limb tips): a node that
+            // straddles one is closer to its neighbour along the chord. Nothing else may be uneven.
+            int allowedCorners = form == VeilForm.Bow ? 2 : 0, corners = 0;
             for (int i = 1; i < pts.Length - 1; i++)
-                Assert.AreEqual(first, Vector2.Distance(pts[i], pts[i + 1]), first * 0.35f, $"{form} segment {i}");
+            {
+                float d = Vector2.Distance(pts[i], pts[i + 1]);
+                if (Mathf.Abs(d - first) <= first * 0.35f) continue;
+                corners++;
+                Assert.Greater(d, first * 0.2f, $"{form} segment {i} collapsed");
+                Assert.LessOrEqual(corners, allowedCorners, $"{form} segment {i}");
+            }
         }
 
         [TestCaseSource(nameof(Weapons))]

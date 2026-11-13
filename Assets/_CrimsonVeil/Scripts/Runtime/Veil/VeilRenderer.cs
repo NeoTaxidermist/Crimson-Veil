@@ -208,6 +208,7 @@ namespace CrimsonVeil.Veil
             float time = Time.time;
             float vit = Mathf.Clamp01(veil.Vitality);
             float facing = veil.Facing;
+            bool bow = veil.ShapeForm == VeilForm.Bow;
 
             // Per-sample frame, width and alpha of the scarf body.
             for (int i = 0; i < samples; i++)
@@ -227,8 +228,10 @@ namespace CrimsonVeil.Veil
                 float twist = Mathf.Abs(Mathf.Cos(time * 1.1f + t * 5f));
                 flowProfile *= Mathf.Lerp(1f, twist * 0.65f + 0.35f, flutterTwist * t);
 
-                float weaponProfile = t < hf ? 0.4f : 1f - Mathf.SmoothStep(0f, 1f, (t - 0.86f) / 0.14f) * 0.85f;
+                float weaponProfile = t < hf ? 0.4f : bow ? 1f : 1f - Mathf.SmoothStep(0f, 1f, (t - 0.86f) / 0.14f) * 0.85f;
                 weaponProfile *= 1f + 0.08f * Mathf.Sin(t * 14f - time * 5f);
+                // The bow's string is part of the same ribbon: a thin glowing thread between the limb tips.
+                if (bow) weaponProfile *= Mathf.Lerp(1f, 0.12f, VeilFormLibrary.BowStringWeight(t));
                 // Keeps its volume until nearly set, so the transformation reads as the scarf winding in, not thinning out.
                 widthAt[i] = Mathf.Lerp(flowW * flowProfile, formW * weaponProfile, hard * hard * hard) * Mathf.Lerp(0.45f, 1f, vit);
 

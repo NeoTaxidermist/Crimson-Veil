@@ -72,6 +72,57 @@ namespace CrimsonVeil.Tests
         }
 
         [Test]
+        public void Bow_IsARecurveBowWithAString()
+        {
+            var pts = VeilFormLibrary.ControlPoints(VeilForm.Bow, out int grip);
+            Assert.AreEqual(VeilFormLibrary.Hand, pts[grip], "the scarf runs from the neck to the hand first");
+            Assert.AreEqual(VeilFormLibrary.Hand + VeilFormLibrary.BowGripOffset, pts[pts.Count - 1], "the lower limb ends back in the grip");
+            float top = float.MinValue, bottom = float.MaxValue;
+            foreach (var p in pts) { top = Mathf.Max(top, p.y); bottom = Mathf.Min(bottom, p.y); }
+            Assert.That(top - VeilFormLibrary.Hand.y, Is.InRange(0.5f, 0.8f), "upper limb: a bow, not a pole");
+            Assert.That(VeilFormLibrary.Hand.y - bottom, Is.InRange(0.5f, 0.8f), "lower limb");
+
+            var range = VeilFormLibrary.BowStringRange;
+            Assert.That(range.x, Is.InRange(0.2f, 0.6f));
+            Assert.Greater(range.y - range.x, 0.25f, "the string spans tip to tip");
+            Assert.AreEqual(1f, VeilFormLibrary.BowStringWeight((range.x + range.y) * 0.5f), 1e-4f);
+            Assert.AreEqual(0f, VeilFormLibrary.BowStringWeight(range.x * 0.5f), 1e-4f, "limbs are not string");
+        }
+
+        [Test]
+        public void Bow_StringIsDrawnThenSnapsBack()
+        {
+            Assert.AreEqual(0f, VeilWeaponPose.BowDraw(-1f));
+            Assert.AreEqual(0f, VeilWeaponPose.BowDraw(0.02f), 1e-4f);
+            Assert.AreEqual(1f, VeilWeaponPose.BowDraw(0.26f), 1e-4f, "full draw before the release at 0.3");
+            Assert.AreEqual(0f, VeilWeaponPose.BowDraw(0.4f), 1e-4f, "snapped straight after the release");
+        }
+
+        [Test]
+        public void Whip_RestsCoiledInTheHand()
+        {
+            var extended = new Vector2[32];
+            var coil = new Vector2[32];
+            float hfExt = VeilFormLibrary.BuildShape(VeilForm.Whip, extended);
+            float hfCoil = VeilFormLibrary.BuildWhipCoil(coil);
+            Assert.AreEqual(hfExt, hfCoil, 0.01f, "same ribbon, same length: the hand sits at the same place");
+            int hand = Mathf.CeilToInt(hfExt * 31);
+            for (int i = hand; i < 32; i++)
+                Assert.Less(Vector2.Distance(coil[i], VeilFormLibrary.Hand), 0.65f, $"node {i} stays in the coil by the hand");
+            Assert.Greater(Vector2.Distance(extended[31], VeilFormLibrary.Hand), 2.5f, "while the paid-out lash is long");
+        }
+
+        [Test]
+        public void Whip_UncoilsDuringTheWindUp_FromTheHandOut()
+        {
+            Assert.AreEqual(0f, VeilWeaponPose.WhipUncoil(-1f), "coiled when not attacking");
+            Assert.AreEqual(1f, VeilWeaponPose.WhipUncoil(0.42f), 1e-4f, "fully out before the throw");
+            Assert.Greater(VeilWeaponPose.WhipNodeOpen(0.4f, 0.1f), VeilWeaponPose.WhipNodeOpen(0.4f, 0.9f), "pays out from the hand");
+            Assert.AreEqual(1f, VeilWeaponPose.WhipNodeOpen(1f, 1f), 1e-4f);
+            Assert.Greater(VeilController.WhipCoilTime, 0.2f, "coils back smoothly, not instantly");
+        }
+
+        [Test]
         public void Weapon_IsInFrontOfTheHero_ClothBehind()
         {
             Assert.AreEqual(0f, VeilSimulation.WeaponDepthBlend(0f), 1e-4f);

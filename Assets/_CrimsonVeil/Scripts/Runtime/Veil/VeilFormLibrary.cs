@@ -105,24 +105,8 @@ namespace CrimsonVeil.Veil
                     AddSpiral(pts, ShieldCenter, 0.62f, 0.2f, 1.5f, 40);
                     break;
                 case VeilForm.Bow:
-                {
-                    // Neck → top limb tip, then arc down through the grip (hand) to the bottom tip.
-                    // A shallow arc, so the limbs don't reach back into the hero's body.
-                    var center = Hand + new Vector2(-BowRadius, 0f);
-                    pts.Clear();
-                    pts.Add(Vector2.zero);
-                    AddArc(pts, center, BowRadius, BowHalfAngle, -BowHalfAngle, 12, 1f);
-                    // Round the corner where the scarf from the neck turns into the top limb (no kink).
-                    Vector2 tip = pts[1], a = tip + (pts[0] - tip).normalized * 0.16f, c = pts[2];
-                    pts.RemoveAt(1);
-                    for (int k = 2; k >= 0; k--)
-                    {
-                        float u = k / 3f;
-                        pts.Insert(1, (1 - u) * (1 - u) * a + 2f * (1 - u) * u * tip + u * u * c);
-                    }
-                    weaponStartIndex = 1;
+                    AddBow(pts, out _, out _);
                     break;
-                }
                 default:
                     pts.Clear();
                     pts.Add(Vector2.zero);
@@ -133,11 +117,116 @@ namespace CrimsonVeil.Veil
             return pts;
         }
 
-        /// <summary>Bow arc radius (m) and half-angle (degrees).</summary>
-        public const float BowRadius = 1.05f, BowHalfAngle = 46f;
+        /// <summary>
+        /// The whip at rest: coiled in the hand. Same ribbon and same length as the extended whip (so the hand
+        /// sits at the same fraction and every node has a partner in both shapes), wound into a hanging coil.
+        /// </summary>
+        public static float BuildWhipCoil(Vector2[] output)
+        {
+            var extended = ControlPoints(VeilForm.Whip, out int handIndex);
+            float lash = 0f;
+            for (int i = handIndex + 1; i < extended.Count; i++) lash += Vector2.Distance(extended[i - 1], extended[i]);
+
+            var pts = new List<Vector2> { Vector2.zero, Shoulder, Hand };
+            Vector2 center = Hand + WhipCoilOffset;
+            float drop = Vector2.Distance(Hand, center) - WhipCoilRadius;
+            Vector2 entry = Hand + (center - Hand).normalized * drop;
+            pts.Add(entry);
+            float left = lash - drop;
+            float a0 = Mathf.Atan2(entry.y - center.y, entry.x - center.x);
+            const float step = 0.04f;
+            float angle = a0;
+            Vector2 prev = entry;
+            while (left > 1e-4f)
+            {
+                // Loops of rope: the radius breathes a little from loop to loop.
+                float r = WhipCoilRadius * (1f + 0.12f * Mathf.Sin((angle - a0) * 0.5f));
+                angle -= step / r;
+                Vector2 next = center + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * r;
+                float d = Vector2.Distance(prev, next);
+                if (d >= left) { next = prev + (next - prev) * (left / d); d = left; }
+                pts.Add(next);
+                left -= d;
+                prev = next;
+            }
+            return Resample(pts, 2, output);
+        }
+
+        /// <summary>Coil of the resting whip: centre relative to the hand, and loop radius (m).</summary>
+        public static readonly Vector2 WhipCoilOffset = new Vector2(0.06f, -0.3f);
+        public const float WhipCoilRadius = 0.16f;
+
+        /// <summary>
+        /// Upper limb of a recurve bow, relative to the grip (x = towards the target, the archer is at -x):
+        /// it sweeps back towards the archer and its tip flicks forward again.
+        /// </summary>
+        static readonly Vector2[] BowLimb =
+        {
+            new Vector2(-0.02f, 0.16f), new Vector2(-0.07f, 0.32f), new Vector2(-0.14f, 0.47f),
+            new Vector2(-0.2f, 0.6f), new Vector2(-0.22f, 0.7f), new Vector2(-0.19f, 0.78f), new Vector2(-0.14f, 0.83f),
+        };
+
+        /// <summary>
+        /// The bow as one ribbon: neck → hand (grip) → upper limb → the string straight down → lower limb back
+        /// into the grip. Returns the point indices where the string starts (upper tip) and ends (lower tip).
+        /// </summary>
+        static void AddBow(List<Vector2> pts, out int stringStart, out int stringEnd)
+        {
+            // The grip sits in the fist, a little ahead of the wrist.
+            Vector2 grip = Hand + BowGripOffset;
+            pts.Add(grip);
+            foreach (var p in BowLimb) pts.Add(grip + p * BowScale);
+            stringStart = pts.Count - 1;
+            var tip = BowLimb[BowLimb.Length - 1] * BowScale;
+            Vector2 top = pts[stringStart], bottom = grip + new Vector2(tip.x, -tip.y);
+            const int stringSteps = 10;
+            for (int i = 1; i <= stringSteps; i++) pts.Add(Vector2.Lerp(top, bottom, (float)i / stringSteps));
+            stringEnd = pts.Count - 1;
+            for (int i = BowLimb.Length - 2; i >= 0; i--) pts.Add(grip + new Vector2(BowLimb[i].x, -BowLimb[i].y) * BowScale);
+            pts.Add(grip);
+        }
+
+        /// <summary>Size of the bow relative to the limb template (1 = 1.66 m tall).</summary>
+        public const float BowScale = 0.78f;
+        public static readonly Vector2 BowGripOffset = new Vector2(0.07f, 0f);
 
         /// <summary>How far (m) the bow's limb tips reach back from the grip towards the hero.</summary>
-        public static float BowLimbReachBack => BowRadius * (1f - Mathf.Cos(BowHalfAngle * Mathf.Deg2Rad));
+        public static float BowLimbReachBack
+        {
+            get
+            {
+                float min = 0f;
+                foreach (var p in BowLimb) min = Mathf.Min(min, p.x * BowScale + BowGripOffset.x);
+                return -min;
+            }
+        }
+
+        /// <summary>1 on the bow string, 0 on the limbs, with a short smooth blend at the tips.</summary>
+        public static float BowStringWeight(float f)
+        {
+            var r = BowStringRange;
+            const float e = 0.01f;
+            return Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(r.x - e, r.x + e, f))
+                 * (1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(r.y - e, r.y + e, f)));
+        }
+
+        static Vector2 bowString = new Vector2(-1f, -1f);
+
+        /// <summary>Where along the veil (0 neck .. 1 end) the bow string runs, from the upper to the lower tip.</summary>
+        public static Vector2 BowStringRange
+        {
+            get
+            {
+                if (bowString.x >= 0f) return bowString;
+                var pts = new List<Vector2> { Vector2.zero, Shoulder, Hand };
+                AddBow(pts, out int s0, out int s1);
+                var cum = new float[pts.Count];
+                for (int i = 1; i < pts.Count; i++) cum[i] = cum[i - 1] + Vector2.Distance(pts[i - 1], pts[i]);
+                float total = cum[pts.Count - 1];
+                bowString = new Vector2(cum[s0] / total, cum[s1] / total);
+                return bowString;
+            }
+        }
 
         /// <summary>Centre of the vortex shield, in front of the hand.</summary>
         public static readonly Vector2 ShieldCenter = Hand + new Vector2(0.38f, 0.32f);
@@ -302,6 +391,23 @@ namespace CrimsonVeil.Veil
                 default: return 0f;
             }
         }
+
+        /// <summary>
+        /// How far the bow string is drawn (0..1) at attack progress t: pulled back to the face, held, the arrow
+        /// is loosed at 0.3 and the string snaps straight again.
+        /// </summary>
+        public static float BowDraw(float t)
+        {
+            if (t < 0f) return 0f;
+            if (t < 0.3f) return Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.06f, 0.22f, t));
+            return 1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.3f, 0.34f, t));
+        }
+
+        /// <summary>How far the coiled whip has unfurled (0 coiled .. 1 out) at attack progress t: during the wind-up.</summary>
+        public static float WhipUncoil(float t) => t < 0f ? 0f : Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.04f, 0.4f, t));
+
+        /// <summary>Per-node unfurling: the coil pays out from the hand towards the tip.</summary>
+        public static float WhipNodeOpen(float open, float alongLash) => Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(open * 1.6f - alongLash * 0.6f));
 
         /// <summary>Attack progress at which the whip's loop reaches the tip (the crack).</summary>
         public const float WhipCrackAt = 0.66f;

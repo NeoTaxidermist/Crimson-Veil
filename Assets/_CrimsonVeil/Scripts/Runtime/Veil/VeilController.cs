@@ -45,7 +45,12 @@ namespace CrimsonVeil.Veil
         [Tooltip("How long (s) the whip's tip lags behind its handle — the travelling loop.")]
         [SerializeField] float whipLag = 0.16f;
         bool whipCracked;
-        Vector2[] restBuf, whipBuf;
+        Vector2[] restBuf, whipBuf, whipCoil;
+        float whipOpen;
+        /// <summary>Seconds the whip takes to coil back into the hand after a blow.</summary>
+        public const float WhipCoilTime = 0.5f;
+        /// <summary>0 = coiled in the hand, 1 = fully paid out.</summary>
+        public float WhipOpen => whipOpen;
         const int TurnHistory = 128;
         readonly float[] turnTimes = new float[TurnHistory];
         readonly float[] turnValues = new float[TurnHistory];
@@ -257,17 +262,16 @@ namespace CrimsonVeil.Veil
                 bowString.startColor = bowString.endColor = new Color(1f, 0.1f, 0.1f, 0.9f);
             }
             bowString.enabled = true;
+            // A crisp core for the string section of the ribbon: upper tip → its middle (pulled when drawn) → lower tip.
             var p = Simulation.Positions;
             int n = Simulation.Count;
-            int top = Mathf.Clamp(Mathf.CeilToInt(HandFraction * (n - 1)) + 1, 0, n - 1);
-            Vector3 a = p[top], b = p[n - 1];
-            Vector3 mid = (a + b) * 0.5f;
-            float t = AttackProgress;
-            if (drawHand != null && t >= 0.08f && t < 0.3f)
-                mid = Vector3.Lerp(mid, drawHand.position, Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.08f, 0.2f, t)));
-            bowString.SetPosition(0, a);
-            bowString.SetPosition(1, mid);
-            bowString.SetPosition(2, b);
+            var range = VeilFormLibrary.BowStringRange;
+            int top = Mathf.Clamp(Mathf.RoundToInt(range.x * (n - 1)), 0, n - 1);
+            int bottom = Mathf.Clamp(Mathf.RoundToInt(range.y * (n - 1)), 0, n - 1);
+            int mid = Mathf.Clamp(Mathf.RoundToInt((range.x + range.y) * 0.5f * (n - 1)), 0, n - 1);
+            bowString.SetPosition(0, p[top]);
+            bowString.SetPosition(1, p[mid]);
+            bowString.SetPosition(2, p[bottom]);
         }
 
         public Transform DrawHand { get => drawHand; set => drawHand = value; }
@@ -280,7 +284,7 @@ namespace CrimsonVeil.Veil
             for (int i = 0; i < n; i++)
             {
                 float f = (float)i / (n - 1);
-                nh[i] = h * VeilTransform.Wave(TransformProgress, f) * VeilTransform.TipSoftness(f);
+                nh[i] = h * VeilTransform.Wave(TransformProgress, f) * (ShapeForm == VeilForm.Bow ? 1f : VeilTransform.TipSoftness(f)); // a bow has no loose tip: it ends in its lower limb
             }
         }
 
@@ -344,12 +348,24 @@ namespace CrimsonVeil.Veil
             int n = Simulation.Count;
             if (restBuf == null || restBuf.Length != n) { restBuf = new Vector2[n]; whipBuf = new Vector2[n]; }
             bool whip = ShapeForm == VeilForm.Whip && armDriven;
+            // The whip hangs coiled in the hand; it pays out during the wind-up and coils back after the blow.
+            if (ShapeForm == VeilForm.Whip)
+            {
+                if (whipCoil == null || whipCoil.Length != n) { whipCoil = new Vector2[n]; VeilFormLibrary.BuildWhipCoil(whipCoil); }
+                whipOpen = t >= 0f ? Mathf.Max(whipOpen, VeilWeaponPose.WhipUncoil(t)) : Mathf.MoveTowards(whipOpen, 0f, dt / WhipCoilTime);
+            }
             for (int i = 0; i < n; i++)
             {
                 float f = (float)i / (n - 1);
                 bool weapon = f >= HandFraction;
+                Vector2 basePoint = shape[i];
+                if (ShapeForm == VeilForm.Whip && weapon)
+                {
+                    float along = (f - HandFraction) / Mathf.Max(1e-3f, 1f - HandFraction);
+                    basePoint = Vector2.Lerp(whipCoil[i], shape[i], VeilWeaponPose.WhipNodeOpen(whipOpen, along));
+                }
                 // Pose around the canonical grip, move onto the real hand, turn with the forearm.
-                Vector2 rest = VeilWeaponPose.Idle(ShapeForm, shape[i], weapon, time);
+                Vector2 rest = VeilWeaponPose.Idle(ShapeForm, basePoint, weapon, time);
                 rest = VeilWeaponPose.Apply(ShapeForm, rest, weapon, t, armDriven);
                 rest += weapon ? handDelta : handDelta * (HandFraction > 0f ? f / HandFraction : 1f);
                 if (weapon && armDriven && !whip) rest = VeilWeaponPose.Rotate(rest, grip, forearmTurn);
@@ -367,6 +383,22 @@ namespace CrimsonVeil.Veil
                 {
                     whipCracked = true;
                     WhipCracked?.Invoke();
+                }
+            }
+
+            // Drawing the bow: the drawing hand pulls the middle of the string back into a V.
+            float pull = ShapeForm == VeilForm.Bow && drawHand != null ? VeilWeaponPose.BowDraw(t) : 0f;
+            if (pull > 0f)
+            {
+                float sx = Mathf.Abs(facingScale) < 0.3f ? Facing : facingScale;
+                var draw = new Vector2((drawHand.position.x - a.x) / sx, drawHand.position.y - a.y);
+                var range = VeilFormLibrary.BowStringRange;
+                for (int i = 0; i < n; i++)
+                {
+                    float f = (float)i / (n - 1);
+                    if (f <= range.x || f >= range.y) continue;
+                    float u = (f - range.x) / (range.y - range.x);
+                    restBuf[i] = Vector2.Lerp(restBuf[i], draw, (1f - Mathf.Abs(2f * u - 1f)) * pull);
                 }
             }
 

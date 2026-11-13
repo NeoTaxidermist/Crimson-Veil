@@ -5,6 +5,21 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.7.2] – 2026-11-13
+Skutečný luk s tětivou a bič smotaný v ruce.
+
+### Změněno
+- **Luk je skutečný reflexní luk.** Šála vede od krku k ruce a z madla v dlani vyrůstají dvě zahnutá ramena se špičkami ohnutými vpřed. Mezi špičkami je pořád vidět tětiva jako tenká zářící nit, která je součástí šály. Luk je vysoký asi 1,3 m a spodní rameno je stejně pevné a výrazné jako horní.
+- **Natažení luku:** při útoku ruka stáhne střed tětivy do špičky, ve chvíli výstřelu tětiva cvrnkne zpátky rovně.
+- **Bič je v klidu smotaný v ruce.** Visí z dlaně jako kotouč. Při náprahu se rozvine od ruky ke špičce, po švihu se do půl sekundy zase smotá.
+- Konec zbraně se už skoro nerozpouští do kouře.
+
+### Testy
+- Luk má obě ramena, tětivu od špičky ke špičce a madlo v ruce.
+- Tětiva se natáhne a po výstřelu narovná.
+- Bič je v klidu smotaný u ruky a má stejnou délku jako rozvinutý.
+- Bič se rozvíjí během náprahu, od ruky ke špičce.
+
 ## [0.7.1] – 2026-11-13
 Luk před tělem, vodorovné kopí a bič, který opravdu práská.
 

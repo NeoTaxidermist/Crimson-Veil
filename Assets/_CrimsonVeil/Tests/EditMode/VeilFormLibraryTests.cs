@@ -62,9 +62,19 @@ namespace CrimsonVeil.Tests
                 if (i > start) swept += Vector2.SignedAngle(pts[i - 1] - c, pts[i] - c);
                 minY = Mathf.Min(minY, pts[i].y); maxY = Mathf.Max(maxY, pts[i].y);
             }
-            Assert.That(Mathf.Abs(swept), Is.InRange(290f, 340f), "nearly all the way round, leaving a small gap");
+            Assert.That(Mathf.Abs(swept), Is.InRange(335f, 355f), "nearly all the way round, leaving a small gap");
             Assert.Greater(maxY, 0.15f, "over the head");
             Assert.Less(minY, -1.4f, "down to the feet");
+        }
+
+        [Test]
+        public void ShieldRing_ClearsTheHeadAndTheHand()
+        {
+            // Veil space: the anchor is at the neck; the top of the head is ~0.35 m above it.
+            var c = VeilFormLibrary.ShieldCenter;
+            float inner = VeilFormLibrary.ShieldRadius - VeilFormLibrary.Width(VeilForm.Shield) * 0.5f;
+            Assert.Greater(inner - Vector2.Distance(c, new Vector2(0f, 0.35f)), 0.15f, "passes well over the head");
+            Assert.Greater(inner - Vector2.Distance(c, VeilFormLibrary.Hand), 0.4f, "well outside the hand");
         }
 
         [Test]

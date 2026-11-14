@@ -5,6 +5,18 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.14.2] – 2026-11-14
+Robustnější štít, dál od postavy.
+
+### Změněno
+- **Prstenec štítu:**
+  - **Menší mezera:** prstenec obepíná 97 % kruhu.
+  - **Robustnější:** je širší (0,22 m místo 0,15 m) a tužší a skoro po celé délce drží plnou šířku. Zaobluje se jen úplně na konci.
+  - **Dál od postavy:** poloměr 1,22 m místo 1 m, takže už neprochází hlavou a vede s rezervou nad ní i mimo nataženou ruku.
+
+### Testy
+- Nový test `ShieldRing_ClearsTheHeadAndTheHand`.
+
 ## [0.14.1] – 2026-11-14
 Plynulejší salto, štít jako kroužící prstenec, rychlejší návrat do šály.
 

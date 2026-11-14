@@ -413,6 +413,9 @@ namespace CrimsonVeil.Veil
             {
                 case VeilForm.Bow:
                     return 1f;
+                case VeilForm.Shield:
+                    // A firm ring: full width almost to its end, rounded off only at the very tip.
+                    return 1f - Mathf.SmoothStep(0f, 1f, (t - 0.96f) / 0.04f) * 0.6f;
                 case VeilForm.Sword:
                 {
                     // Last 16% of the veil: the edges sweep into a point.

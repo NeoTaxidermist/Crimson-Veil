@@ -31,7 +31,7 @@ namespace CrimsonVeil.Veil
                 case VeilForm.Whip: return 0.75f; // firm enough to show the rolling loop, still supple
                 case VeilForm.Sword: return 0.96f; // a straight, stiff blade
                 case VeilForm.Spear: return 0.95f;
-                case VeilForm.Shield: return 0.88f;
+                case VeilForm.Shield: return 0.95f; // a firm ring
                 case VeilForm.Bow: return 0.9f;
                 default: return 0f;
             }
@@ -44,7 +44,7 @@ namespace CrimsonVeil.Veil
                 case VeilForm.Whip: return 0.1f;
                 case VeilForm.Sword: return 0.16f;
                 case VeilForm.Spear: return 0.07f; // a slim shaft
-                case VeilForm.Shield: return 0.15f; // one slim ring
+                case VeilForm.Shield: return 0.22f; // one firm ring
                 case VeilForm.Bow: return 0.1f;
                 default: return 0.65f;
             }
@@ -277,10 +277,10 @@ namespace CrimsonVeil.Veil
         /// <summary>Centre of the shield bubble: the middle of the body (the veil anchor is at the neck).</summary>
         public static readonly Vector2 ShieldCenter = new Vector2(0f, -0.58f);
         /// <summary>Radius of the shield bubble round the hero.</summary>
-        public const float ShieldRadius = 1.0f;
+        public const float ShieldRadius = 1.22f; // clear of the head and the outstretched arm
 
         /// <summary>How much of the circle the shield's ring covers: almost all of it, leaving a small gap.</summary>
-        public const float ShieldTurns = 0.88f;
+        public const float ShieldTurns = 0.97f;
         /// <summary>How fast the shield's ring circles round the hero (degrees per second, + = anticlockwise).</summary>
         public const float ShieldSpin = 330f;
 

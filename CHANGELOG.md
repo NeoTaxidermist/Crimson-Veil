@@ -5,6 +5,25 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.15.1] – 2026-11-14
+Hrdina přesně podle změřeného návrhu.
+
+### Změněno
+- **Proporce hrdiny jsou odměřené z koncept artu.**
+  - Silueta z návrhu je vyčištěná po pixelech a změřená v měřítku asi 1,66 mm/px (temeno 1,84 m odpovídá výšce kostry). Návrh ukazuje postavu z boku, stejně jako ji vidí hra.
+  - Model jsem upravoval tak dlouho, dokud se jeho boční silueta s návrhem nepřekrývala.
+- **Podle návrhu:**
+  - **Vlasy:** kompaktní kštice, za lebku sahá asi 6 cm a nad ni 3 cm. Ofina trčí nad čelem dopředu a nahoru.
+  - **Hlava** je předsunutá na delším krku dopředu, obličej je před linií hrudníku.
+  - **Trup:** hrudník vpředu nevystupuje nad břicho, záda jsou hladká (pláty jen vpředu a po stranách).
+  - **Paže:** paže 10 cm, předloktí s chráničem 5,5–6,5 cm, pěst 7,6 cm.
+  - **Nohy:** stehno 15 cm, lýtko 13,8 cm, štíhlá vysoká bota 7,5–9 cm, chodidlo 26 cm dlouhé.
+  - **Volné kalhoty** končí ve výšce 0,66 m, **opasek** sedí níž (0,89–0,94 m) a nevyčnívá.
+  - **Nárameníky** jsou menší.
+
+### Přidáno
+- `Captures/hero_vs_navrh.png`: návrh vedle siluety modelu, s obrysem modelu přes návrh a s mřížkou po 10 cm.
+
 ## [0.15.0] – 2026-11-14
 Nový model hrdiny podle koncept artu.
 

@@ -185,11 +185,11 @@ def tail_of(name):
 
 
 # ---------------------------------------------------------------- torso
-TORSO = [  # z, half width, half depth, centre y (forward is -y): deep chest, narrow waist, a straight back
-    (0.88, 0.150, 0.112, 0.000), (0.97, 0.158, 0.118, 0.004), (1.05, 0.144, 0.104, 0.000),
-    (1.13, 0.134, 0.098, -0.008), (1.22, 0.152, 0.116, -0.020), (1.31, 0.178, 0.136, -0.030),
-    (1.39, 0.194, 0.142, -0.034), (1.45, 0.192, 0.128, -0.024), (1.50, 0.162, 0.104, -0.010),
-    (1.54, 0.085, 0.068, 0.000),
+TORSO = [  # z, half width, half depth, centre y (forward is -y); depths measured off the concept's side profile
+    (0.88, 0.150, 0.110, 0.004), (0.97, 0.156, 0.112, 0.006), (1.05, 0.142, 0.1, 0.004),
+    (1.13, 0.132, 0.094, -0.004), (1.22, 0.150, 0.104, -0.006), (1.31, 0.176, 0.116, -0.006),
+    (1.39, 0.192, 0.12, -0.006), (1.45, 0.190, 0.11, -0.006), (1.50, 0.160, 0.094, -0.006),
+    (1.54, 0.085, 0.066, -0.004),
 ]
 
 
@@ -202,14 +202,15 @@ def torso_at(z):
 
 
 torso_w = blend_z([(1.0, "Hips"), (1.1, "Spine"), (1.26, "Spine"), (1.34, "Chest")])
-loft([((0, cy, z), rx, ry, {"front": 1.12 if 1.28 < z < 1.48 else 1.0, "back": 0.92 if 1.2 < z < 1.48 else 1.0})
+loft([((0, cy, z), rx, ry, {"back": 0.92 if 1.2 < z < 1.48 else 1.0})
       for z, rx, ry, cy in TORSO], torso_w, n=28)
 
 # Cuirass: layered bands over the belly and a raised breastplate edge — the stepped profile of the concept.
 for z, grow in ((1.17, 0.016), (1.235, 0.018), (1.30, 0.02)):
     rx, ry, cy = torso_at(z)
-    loft([((0, cy, z - 0.03), rx + 0.004, ry + 0.004), ((0, cy - 0.004, z - 0.008), rx + grow, ry + grow),
-          ((0, cy, z + 0.03), rx + 0.004, ry + 0.004)], torso_w, n=28)
+    flush = {"back": ry / (ry + grow)}  # plates on the front and sides only: the back stays smooth (concept)
+    loft([((0, cy, z - 0.03), rx + 0.004, ry + 0.004, {"back": ry / (ry + 0.004)}), ((0, cy - 0.004, z - 0.008), rx + grow, ry + grow, flush),
+          ((0, cy, z + 0.03), rx + 0.004, ry + 0.004, {"back": ry / (ry + 0.004)})], torso_w, n=28)
 rx, ry, cy = torso_at(1.40)
 loft([((0, cy, 1.34), rx + 0.004, ry + 0.004, {"back": 0.9}), ((0, cy - 0.006, 1.40), rx + 0.016, ry + 0.02, {"back": 0.9}),
       ((0, cy, 1.47), rx - 0.01, ry + 0.006, {"back": 0.9})], torso_w, n=28, square=0.25)
@@ -217,81 +218,84 @@ loft([((0, cy, 1.34), rx + 0.004, ry + 0.004, {"back": 0.9}), ((0, cy - 0.006, 1
 loft([((0, cy, 1.392), rx + 0.019, ry + 0.023, {"back": 0.9}), ((0, cy, 1.408), rx + 0.019, ry + 0.023, {"back": 0.9})],
      torso_w, mat=CRIMSON, n=28, cap0=False, cap1=False, square=0.25)
 
-# Belt with a crimson sash under it and a knot hanging at the left hip.
-rx, ry, cy = torso_at(0.97)
-loft([((0, cy, 0.935), rx + 0.022, ry + 0.022), ((0, cy, 0.985), rx + 0.024, ry + 0.024)], W("Hips"), mat=CRIMSON, n=28)
-loft([((0, cy, 0.975), rx + 0.026, ry + 0.026), ((0, cy, 1.015), rx + 0.026, ry + 0.026)], W("Hips"), n=28, square=0.4)
-box((0, cy - ry - 0.03, 0.995), (0.06, 0.02, 0.05), W("Hips"))  # buckle
-loft([((0.155, -0.02, 0.95), 0.03, 0.02), ((0.17, -0.005, 0.86), 0.022, 0.012), ((0.165, 0.01, 0.76), 0.03, 0.01)],
+# Belt (concept: z 0.89-0.93) with a crimson sash under it and a tail hanging at the left hip.
+rx, ry, cy = torso_at(0.91)
+loft([((0, cy, 0.875), rx + 0.008, ry + 0.008), ((0, cy, 0.905), rx + 0.01, ry + 0.01)], W("Hips"), mat=CRIMSON, n=28)
+loft([((0, cy, 0.9), rx + 0.012, ry + 0.012), ((0, cy, 0.94), rx + 0.012, ry + 0.012)], W("Hips"), n=28)
+box((0, cy - ry - 0.014, 0.92), (0.05, 0.012, 0.042), W("Hips"))  # buckle
+loft([((0.16, -0.02, 0.885), 0.03, 0.02), ((0.175, -0.005, 0.8), 0.022, 0.012), ((0.17, 0.01, 0.71), 0.03, 0.01)],
      W("Hips"), mat=CRIMSON, n=10)  # sash tail
 
 # ---------------------------------------------------------------- neck, scarf, head
-loft([((0, 0.0, 1.50), 0.05, 0.048), ((0, -0.01, 1.58), 0.043, 0.043), ((0, -0.015, 1.65), 0.045, 0.045)],
+loft([((0, 0.0, 1.50), 0.05, 0.048), ((0, -0.025, 1.58), 0.042, 0.042), ((0, -0.05, 1.65), 0.044, 0.044)],
      blend_z([(1.53, "Chest"), (1.58, "Neck"), (1.62, "Neck"), (1.66, "Head")]), n=16)
 # Crimson scarf wound round the neck: two thick turns.
-for z, r, t in ((1.545, 0.088, 0.03), (1.585, 0.078, 0.026)):
-    loft([((0, -0.008, z - t), r - 0.012, r - 0.016), ((0, -0.012, z), r + 0.012, r + 0.006),
-          ((0, -0.008, z + t), r - 0.012, r - 0.016)], blend_z([(1.53, "Chest"), (1.58, "Neck")]), mat=CRIMSON, n=20)
+for z, r, t, yc in ((1.545, 0.088, 0.03, -0.012), (1.585, 0.078, 0.026, -0.03)):
+    loft([((0, yc + 0.004, z - t), r - 0.012, r - 0.016), ((0, yc, z), r + 0.012, r + 0.006),
+          ((0, yc + 0.004, z + t), r - 0.012, r - 0.016)], blend_z([(1.53, "Chest"), (1.58, "Neck")]), mat=CRIMSON, n=20)
 
 HEAD = W("Head")
-blob((0, 0.005, 1.725), (0.083, 0.098, 0.105), HEAD, seg=20, rings=12)  # skull
-blob((0, -0.045, 1.655), (0.055, 0.05, 0.045), HEAD)  # jaw and chin
-blob((0, -0.06, 1.64), (0.03, 0.03, 0.025), HEAD)  # chin point (strong profile)
-box((0, -0.098, 1.705), (0.022, 0.03, 0.045), HEAD, rot=Matrix.Rotation(math.radians(-20), 3, 'X'))  # nose
+HF = -0.05  # the head juts forward on a long neck: the face is ahead of the chest line, as in the concept
+blob((0, 0.005 + HF, 1.725), (0.08, 0.09, 0.102), HEAD, seg=20, rings=12)  # skull
+blob((0, -0.04 + HF, 1.655), (0.052, 0.048, 0.044), HEAD)  # jaw and chin
+blob((0, -0.055 + HF, 1.64), (0.028, 0.03, 0.025), HEAD)  # chin point (strong profile)
+box((0, -0.086 + HF, 1.7), (0.016, 0.024, 0.034), HEAD, rot=Matrix.Rotation(math.radians(-25), 3, 'X'))  # nose
 for sx in (-1, 1):
-    blob((sx * 0.083, 0.01, 1.71), (0.012, 0.025, 0.03), HEAD, seg=10, rings=6)  # ears
+    blob((sx * 0.08, 0.01 + HF, 1.71), (0.012, 0.025, 0.03), HEAD, seg=10, rings=6)  # ears
 
-# ---------------------------------------------------------------- arms
-THICK = 1.15
+# ---------------------------------------------------------------- arms and legs
+# Measured from the concept art (side view, ~1.66 mm/px at the rig's 1.84 m to the crown). Values are half
+# thicknesses (rx sideways, ry front/back); the concept's side profile gives the front/back ones:
+#   upper arm 0.10 m, forearm 0.055-0.065, fist 0.076; thigh 0.15, knee with guard 0.15-0.16, calf 0.138,
+#   boot shin 0.075-0.09, ankle 0.067, foot 0.26 long and 0.075 high; breeches end at z 0.66, hem ~0.2 wide.
 for side, sx in (("L", 1), ("R", -1)):
     sh, el, wr = head_of("UpperArm." + side), head_of("LowerArm." + side), head_of("Hand." + side)
     ua, la = "UpperArm." + side, "LowerArm." + side
     # Deltoid and upper arm.
-    loft([(sh + Vector((0, 0, 0.02)), 0.05, 0.05), (sh.lerp(el, 0.18), 0.062, 0.058), (sh.lerp(el, 0.5), 0.056, 0.052),
-          (sh.lerp(el, 0.85), 0.046, 0.044), (el, 0.042, 0.042)], along(sh, el, ua, la), n=14)
-    # Forearm with a bracer from mid-forearm to the wrist (flared cuff).
-    loft([(el, 0.043, 0.043), (el.lerp(wr, 0.3), 0.046, 0.042), (wr, 0.034, 0.032)], along(el, wr, la, "Hand." + side), n=14)
-    loft([(el.lerp(wr, 0.28), 0.056, 0.052), (el.lerp(wr, 0.36), 0.05, 0.047), (el.lerp(wr, 0.85), 0.043, 0.04),
-          (el.lerp(wr, 0.96), 0.049, 0.046)], W(la), n=14, square=0.3)
-    # Gauntleted fist.
+    loft([(sh + Vector((0, 0, 0.02)), 0.046, 0.046), (sh.lerp(el, 0.18), 0.054, 0.05), (sh.lerp(el, 0.5), 0.05, 0.047),
+          (sh.lerp(el, 0.85), 0.04, 0.038), (el, 0.035, 0.034)], along(sh, el, ua, la), n=14)
+    # Forearm, wrapped in a bracer from mid-forearm to the wrist.
+    loft([(el, 0.035, 0.034), (el.lerp(wr, 0.3), 0.034, 0.031), (wr, 0.026, 0.024)], along(el, wr, la, "Hand." + side), n=14)
+    loft([(el.lerp(wr, 0.3), 0.038, 0.034), (el.lerp(wr, 0.36), 0.036, 0.032), (el.lerp(wr, 0.86), 0.031, 0.028),
+          (el.lerp(wr, 0.96), 0.034, 0.031)], W(la), n=14, square=0.3)
+    # Gauntleted fist (0.076 deep).
     hand = head_of("Hand." + side)
-    blob(hand + Vector((sx * 0.004, -0.008, -0.045)), (0.038, 0.048, 0.058), W("Hand." + side), seg=12, rings=8)
-    blob(hand + Vector((sx * -0.018, -0.03, -0.04)), (0.014, 0.016, 0.03), W("Hand." + side), seg=8, rings=6)  # thumb
-    # Stacked pauldron: three overlapping plates, the top one biggest, each a little lower and further out.
-    for k, (r, d) in enumerate(((0.112, 0.038), (0.1, 0.034), (0.088, 0.03))):
+    blob(hand + Vector((sx * 0.004, -0.008, -0.042)), (0.032, 0.038, 0.05), W("Hand." + side), seg=12, rings=8)
+    blob(hand + Vector((sx * -0.016, -0.026, -0.036)), (0.012, 0.014, 0.026), W("Hand." + side), seg=8, rings=6)  # thumb
+    # Stacked pauldron: three overlapping plates over the shoulder cap, each a little lower and further out.
+    for k, (r, d) in enumerate(((0.09, 0.03), (0.08, 0.026), (0.07, 0.022))):
         out = Vector((sx * (0.55 + 0.3 * k), 0.0, 1.0 - 0.25 * k)).normalized()
-        c = sh + Vector((sx * (0.0 + 0.022 * k), 0.005, 0.035 - 0.045 * k))
+        c = sh + Vector((sx * (0.0 + 0.02 * k), 0.005, 0.03 - 0.04 * k))
         w = (lambda b: (lambda p, s: {b: 1.0}))(ua) if k else (lambda p, s, a=ua, sd=side: {a: 0.6, "Shoulder." + sd: 0.4})
         dome(c, out, r, d, w, squash=0.9, up=(0, 1, 0))
 
-# ---------------------------------------------------------------- legs
 for side, sx in (("L", 1), ("R", -1)):
     hp, kn, an = head_of("UpperLeg." + side), head_of("LowerLeg." + side), head_of("Foot." + side)
     ul, ll, ft = "UpperLeg." + side, "LowerLeg." + side, "Foot." + side
     thigh = lambda p, s, a=hp, b=kn, ul=ul, ll=ll: (
         {"Hips": 0.35, ul: 0.65} if p.z > a.z + 0.02 else along(a, b, ul, ll)(p, s))
-    loft([(hp + Vector((0, 0, 0.04)), 0.088, 0.09), (hp.lerp(kn, 0.3), 0.084, 0.085), (hp.lerp(kn, 0.7), 0.068, 0.07),
-          (kn, 0.054, 0.056)], thigh, n=16)
-    # Short breeches: a looser tube over the thigh, ending above the knee in a hem.
-    loft([(hp + Vector((0, 0, 0.05)), 0.097, 0.1), (hp.lerp(kn, 0.3), 0.096, 0.095), (hp.lerp(kn, 0.5), 0.088, 0.086),
-          (hp.lerp(kn, 0.54), 0.093, 0.091)], thigh, n=16)
-    # Calf with the muscle at the back, then the tall boot.
+    loft([(hp + Vector((0, 0, 0.04)), 0.08, 0.08), (hp.lerp(kn, 0.3), 0.077, 0.077), (hp.lerp(kn, 0.7), 0.068, 0.072),
+          (kn, 0.058, 0.062)], thigh, n=16)
+    # Loose short breeches, ending above the knee (z 0.66) in a wide hem.
+    loft([(hp + Vector((0, 0, 0.05)), 0.094, 0.1), (hp.lerp(kn, 0.3), 0.098, 0.104), (hp.lerp(kn, 0.58), 0.1, 0.104),
+          (hp.lerp(kn, 0.65), 0.103, 0.106)], thigh, n=16)
+    # Calf: a strong muscle at the back (0.138 deep), narrowing into the slim boot.
     calf = along(kn, an, ll, ft, blend_from=0.9)
-    loft([(kn, 0.052, 0.054), (kn.lerp(an, 0.3), 0.056, 0.06, {"back": 1.2}), (kn.lerp(an, 0.6), 0.046, 0.046),
-          (an, 0.038, 0.04)], calf, n=16)
-    loft([(kn.lerp(an, 0.36), 0.068, 0.07), (kn.lerp(an, 0.42), 0.064, 0.066), (kn.lerp(an, 0.8), 0.052, 0.054),
-          (an + Vector((0, 0, -0.01)), 0.05, 0.056)], calf, n=16, square=0.2)
-    # Knee guard: a plate over the kneecap with a smaller one over the shin top.
-    dome(kn + Vector((0, -0.045, 0.0)), (0, -1, 0.15), 0.06, 0.035, W(ll), squash=1.1, up=(0, 0, 1))
-    dome(kn + Vector((0, -0.04, -0.07)), (0, -1, 0.05), 0.045, 0.025, W(ll), squash=1.3, up=(0, 0, 1))
-    # Boot foot: heel to toe.
-    loft([(an + Vector((0, 0.05, -0.03)), 0.042, 0.03), (an + Vector((0, 0.0, -0.045)), 0.05, 0.045),
-          (an + Vector((0, -0.09, -0.06)), 0.046, 0.032), (an + Vector((0, -0.17, -0.07)), 0.036, 0.02),
-          (an + Vector((0, -0.2, -0.075)), 0.02, 0.012)], along(an + Vector((0, 0.05, 0)), an + Vector((0, -0.2, 0)), ft, None),
+    loft([(kn, 0.056, 0.06), (kn.lerp(an, 0.22), 0.06, 0.062, {"back": 1.15}), (kn.lerp(an, 0.42), 0.05, 0.05, {"back": 1.1}),
+          (kn.lerp(an, 0.62), 0.04, 0.04), (an, 0.032, 0.034)], calf, n=16)
+    # Tall slim boot from mid-shin to the ankle (0.075-0.09 deep), with a turned rim.
+    loft([(kn.lerp(an, 0.5), 0.047, 0.048), (kn.lerp(an, 0.55), 0.044, 0.045), (kn.lerp(an, 0.85), 0.039, 0.04),
+          (an + Vector((0, 0, -0.01)), 0.038, 0.042)], calf, n=16, square=0.2)
+    # Knee guard: a plate over the kneecap and a smaller one over the shin top.
+    dome(kn + Vector((0, -0.05, 0.0)), (0, -1, 0.15), 0.05, 0.025, W(ll), squash=1.1, up=(0, 0, 1))
+    dome(kn + Vector((0, -0.045, -0.06)), (0, -1, 0.05), 0.038, 0.018, W(ll), squash=1.3, up=(0, 0, 1))
+    # Boot foot: heel to toe, 0.26 long, 0.075 high.
+    loft([(an + Vector((0, 0.05, -0.03)), 0.036, 0.028), (an + Vector((0, 0.0, -0.045)), 0.042, 0.04),
+          (an + Vector((0, -0.09, -0.058)), 0.04, 0.028), (an + Vector((0, -0.17, -0.068)), 0.032, 0.018),
+          (an + Vector((0, -0.21, -0.074)), 0.018, 0.01)], along(an + Vector((0, 0.05, 0)), an + Vector((0, -0.21, 0)), ft, None),
          n=12)
-    box(an + Vector((0, -0.06, -0.085)), (0.1, 0.27, 0.02), W(ft))  # sole
+    box(an + Vector((0, -0.075, -0.083)), (0.085, 0.27, 0.018), W(ft))  # sole
 
-THICK = 1.0
 # ---------------------------------------------------------------- hair: rebuilt chains, swept back by the wind
 bpy.context.view_layer.objects.active = rig
 rig.select_set(True)
@@ -303,8 +307,8 @@ eb = rig.data.edit_bones
 for b in [b for b in eb if b.name.startswith("Hair.")]:
     eb.remove(b)
 head_bone = eb["Head"]
-SK = Vector((0, 0.005, 1.725))
-SKR = (0.083, 0.098, 0.105)
+SK = Vector((0, 0.005 + HF, 1.725))
+SKR = (0.08, 0.09, 0.102)
 # (azimuth deg: 0 = straight back, + towards his left; elevation deg on the skull; length; width; rise deg; spread)
 LOCKS = [  # a shaggy mop blown back: short jagged spikes, the longest streaming behind
     (0, 80, 0.17, 0.06, 32, 0.0), (28, 74, 0.16, 0.055, 26, 0.3), (-28, 74, 0.16, 0.055, 26, -0.3),
@@ -312,16 +316,18 @@ LOCKS = [  # a shaggy mop blown back: short jagged spikes, the longest streaming
     (12, 42, 0.24, 0.06, 0, 0.15), (-12, 42, 0.24, 0.06, 0, -0.15), (30, 30, 0.2, 0.05, -8, 0.35), (-30, 30, 0.2, 0.05, -8, -0.35),
     (0, 22, 0.17, 0.06, -22, 0.0), (65, 38, 0.15, 0.045, 0, 0.7), (-65, 38, 0.15, 0.045, 0, -0.7),
     (95, 50, 0.13, 0.04, 8, 0.8), (-95, 50, 0.13, 0.04, 8, -0.8), (100, 25, 0.11, 0.035, -30, 0.6), (-100, 25, 0.11, 0.035, -30, -0.6),
-    (150, 66, 0.15, 0.05, 48, 0.2), (-150, 66, 0.15, 0.05, 48, -0.2), (175, 58, 0.13, 0.045, 58, 0.05), (-175, 58, 0.13, 0.045, 58, -0.05),
+    (150, 66, 0.16, 0.05, 40, 0.2, 1), (-150, 66, 0.16, 0.05, 40, -0.2, 1), (172, 58, 0.15, 0.045, 30, 0.08, 1), (-172, 58, 0.15, 0.045, 30, -0.08, 1),
     (125, 78, 0.16, 0.05, 40, 0.35), (-125, 78, 0.16, 0.05, 40, -0.35), (60, 82, 0.15, 0.05, 34, 0.4), (-60, 82, 0.15, 0.05, 34, -0.4),
 ]
+HAIR_LEN = 0.62  # the concept's mop is compact: tips ~5 cm behind the skull, ~3 cm above it
 rnd = random.Random(7)
 chains = []
-for i, (az, el, length, width, rise, spread) in enumerate(LOCKS):
+for i, (az, el, length, width, rise, spread, *fwd) in enumerate(LOCKS):
     a, e = math.radians(az), math.radians(el)
     root = SK + Vector((math.sin(a) * math.cos(e) * SKR[0], math.cos(a) * math.cos(e) * SKR[1], math.sin(e) * SKR[2])) * 0.9
+    length *= HAIR_LEN
     pts = [root]
-    heading = Vector((spread, 1.0, 0)).normalized()  # streaming back (+y), fanned to the side
+    heading = Vector((spread, -1.0 if fwd else 1.0, 0)).normalized()  # streaming back (+y), fanned; the fringe juts forward
     pitch = math.radians(rise)
     for k in range(3):
         pitch += math.radians(rnd.uniform(2, 9))  # the wind lifts the ends
@@ -341,7 +347,7 @@ with bpy.context.temp_override(**_ctx):
     bpy.ops.object.mode_set(mode='OBJECT')
 
 # A cap of hair over the skull (the locks grow out of it), slightly ragged at the back.
-blob(SK + Vector((0, 0.022, 0.016)), (0.094, 0.118, 0.106), HEAD, seg=20, rings=12)
+blob(SK + Vector((0, 0.014, 0.014)), (0.088, 0.102, 0.102), HEAD, seg=20, rings=12)
 for pts, width, names in chains:
     def hair_w(p, s, pts=pts, names=names):
         best, bk = 1e9, 0

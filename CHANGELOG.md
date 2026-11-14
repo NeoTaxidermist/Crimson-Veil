@@ -5,6 +5,20 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.9.1] – 2026-11-14
+Tráva navazuje na bloky.
+
+### Opraveno
+- **Tráva na plošinách vyrůstá přímo z přední hrany.** Dřív stála 35 cm za hranou, takže mezi ní a okrajem bloku zůstával nasvícený šedý pruh horní plochy. Tráva tam vypadala nalepená.
+- Kořínky trávy jsou mírně zanořené pod hranu, takže mezi trávou a kamenem není žádná spára. Přibyla prostřední řada trávy, která zakryje celou horní plochu.
+- Ke koncům bloku tráva plynule řídne a snižuje se. Dřív končila tvrdým řezem půl metru před okrajem.
+- Ostružiní a byliny se ve scéně umísťují jen tam, kde se celé vejdou na plochu. Už nepřečnívají přes okraj do vzduchu.
+
+### Testy
+- Tráva roste od přední hrany, má prostřední řadu a kořínky pod hranou.
+- Stébla ke koncům trsu ubývají a špičky zůstávají ve stejné výšce.
+- Ostružiní se nevejde těsně u okraje, užší byliny ano.
+
 ## [0.9.0] – 2026-11-14
 Světlejší a mnohem detailnější prostředí podle key artu.
 

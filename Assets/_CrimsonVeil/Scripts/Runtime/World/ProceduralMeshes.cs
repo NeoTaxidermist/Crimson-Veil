@@ -287,7 +287,11 @@ namespace CrimsonVeil.World
         // ------------------------------------------------------------------ Grass
 
         /// <summary>Clump of curved, tapering blades. uv.y = 0 at the root, 1 at the tip (for wind).</summary>
-        public static Mesh Grass(int seed, int blades, float width, Vector2 heightRange, float bladeWidth = 0.05f)
+        /// <param name="edgeTaper">Distance over which blades shrink towards both ends of the clump (0 = hard ends),
+        /// so grass thins out naturally at a platform's corners instead of stopping in a straight cut.</param>
+        /// <param name="rootDepth">Roots start up to this far below y = 0, so the clump's base is ragged and
+        /// overlaps the edge it grows from instead of sitting on it in one straight line.</param>
+        public static Mesh Grass(int seed, int blades, float width, Vector2 heightRange, float bladeWidth = 0.05f, float edgeTaper = 0f, float rootDepth = 0f)
         {
             var rnd = new System.Random(seed);
             float R(float a, float c) => a + (float)rnd.NextDouble() * (c - a);
@@ -300,6 +304,13 @@ namespace CrimsonVeil.World
                 float z = R(-0.15f, 0.15f);
                 float h = R(heightRange.x, heightRange.y);
                 float w = bladeWidth * R(0.6f, 1.4f);
+                float root = -R(0f, rootDepth);
+                if (edgeTaper > 0f)
+                {
+                    float edge = Mathf.Clamp01((width * 0.5f - Mathf.Abs(x0)) / edgeTaper);
+                    h *= Mathf.Lerp(0.2f, 1f, edge * edge * (3f - 2f * edge));
+                }
+                h -= root; // a sunk root still reaches the same tip height
                 // Blades may lean, but never past the clump's edges (a clump on a platform must not overhang it).
                 x0 = Mathf.Clamp(x0, -width * 0.5f + w, width * 0.5f - w);
                 float lean = Mathf.Clamp(R(-0.45f, 0.45f) * h, -width * 0.5f - x0 + w, width * 0.5f - x0 - w);
@@ -307,7 +318,7 @@ namespace CrimsonVeil.World
                 for (int s = 0; s <= segs; s++)
                 {
                     float t = (float)s / segs;
-                    var center = new Vector3(x0 + lean * t * t, h * t, z);
+                    var center = new Vector3(x0 + lean * t * t, root + h * t, z);
                     float half = w * 0.5f * (1f - t * 0.95f);
                     int l = b.Vert(center + Vector3.left * half, Vector3.back, new Vector2(0f, t));
                     int r = b.Vert(center + Vector3.right * half, Vector3.back, new Vector2(1f, t));

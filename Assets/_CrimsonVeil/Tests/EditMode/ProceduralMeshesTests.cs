@@ -59,6 +59,22 @@ namespace CrimsonVeil.Tests
         }
 
         [Test]
+        public void Grass_ThinsOutTowardsTheEnds_AndSinksItsRoots()
+        {
+            var m = ProceduralMeshes.Grass(5, 400, 4f, new Vector2(1f, 1f), 0.05f, 0.8f, 0.1f);
+            AssertFinite(m);
+            float endTop = 0f, midTop = 0f;
+            foreach (var v in m.vertices)
+            {
+                if (Mathf.Abs(v.x) > 1.9f) endTop = Mathf.Max(endTop, v.y);
+                if (Mathf.Abs(v.x) < 0.5f) midTop = Mathf.Max(midTop, v.y);
+            }
+            Assert.Less(endTop, midTop * 0.6f, "short blades at the ends, no hard cut");
+            Assert.That(m.bounds.min.y, Is.InRange(-0.1f - 1e-4f, -0.05f), "ragged base below the edge");
+            Assert.LessOrEqual(m.bounds.max.y, 1f + 1e-4f, "a sunk root still reaches the same tip height");
+        }
+
+        [Test]
         public void Grass_IsDeterministicPerSeed()
         {
             var a = ProceduralMeshes.Grass(3, 10, 1f, new Vector2(0.2f, 0.5f));

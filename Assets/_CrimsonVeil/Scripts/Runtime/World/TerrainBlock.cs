@@ -78,11 +78,15 @@ namespace CrimsonVeil.World
 
             if (grassOnTop && grassDensity > 0f && width > 0.8f)
             {
-                float w = width - 0.5f; // never overhang the edges
+                // Grass grows right up to the front lip and over the whole top, so no bare top face shows
+                // between the rows; it thins out towards the (chipped) corners instead of stopping short.
+                float w = width - 0.2f; // never overhang the edges
                 int blades = Mathf.Max(4, Mathf.RoundToInt(w * grassDensity));
                 var h = new Vector2(grassHeight * 0.3f, grassHeight);
-                Part(gen, "GrassFront", ProceduralMeshes.Grass(seed * 31 + 1, blades, w, h), grassMaterial, new Vector3(0f, 0f, -depth * 0.5f + 0.35f));
-                Part(gen, "GrassBack", ProceduralMeshes.Grass(seed * 31 + 2, Mathf.RoundToInt(blades * 0.8f), w, h * 1.4f), grassMaterial, new Vector3(0f, 0f, depth * 0.5f - 0.4f));
+                float taper = Mathf.Min(0.9f, w * 0.25f);
+                Part(gen, "GrassFront", ProceduralMeshes.Grass(seed * 31 + 1, Mathf.RoundToInt(blades * 1.3f), w, h, 0.05f, taper, 0.12f), grassMaterial, new Vector3(0f, 0f, -depth * 0.5f + 0.12f));
+                Part(gen, "GrassMid", ProceduralMeshes.Grass(seed * 31 + 3, blades, w, h * 1.2f, 0.05f, taper, 0.05f), grassMaterial, new Vector3(0f, 0f, -depth * 0.15f));
+                Part(gen, "GrassBack", ProceduralMeshes.Grass(seed * 31 + 2, Mathf.RoundToInt(blades * 0.8f), w, h * 1.4f, 0.05f, taper, 0.05f), grassMaterial, new Vector3(0f, 0f, depth * 0.5f - 0.4f));
             }
 
             if (hangingRoots && height > 0.6f)

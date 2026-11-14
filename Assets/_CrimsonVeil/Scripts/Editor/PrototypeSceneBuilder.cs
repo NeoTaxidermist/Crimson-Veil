@@ -103,15 +103,19 @@ namespace CrimsonVeil.EditorTools
                 if (i % 4 == 1 && GroundSpan(gx + 1f, 1f, out float fy, out _))
                     F.Fern(new Vector3(gx + 1f, fy - 0.2f, 0f), LevelLayer.Foreground, 400 + i, 2.2f, 11).transform.SetParent(deco, true);
                 // Thorny brambles and dry seed-heads between the grass tufts (key art density).
-                if (i % 4 == 3 && GroundSpan(gx + 0.6f, 1f, out float by, out _))
-                    FgModel(i % 8 == 3 ? "Bramble" : "Weeds", new Vector3(gx + 0.6f, by - 0.25f, 0f), LevelLayer.Foreground, deco, 1.1f + 0.15f * (i % 3), i % 2 == 0);
+                string fgModel = i % 8 == 3 ? "Bramble" : "Weeds";
+                float fgScale = 1.1f + 0.15f * (i % 3);
+                if (i % 4 == 3 && Fits(fgModel, gx + 0.6f, fgScale, out float by))
+                    FgModel(fgModel, new Vector3(gx + 0.6f, by - 0.25f, 0f), LevelLayer.Foreground, deco, fgScale, i % 2 == 0);
             }
             // The same weeds and brambles behind the play plane, at the feet of walls and on ledges.
             for (int i = 0; i < 30; i++)
             {
                 float gx = -14f + i * 4.4f + (i % 3) * 0.7f;
-                if (!GroundSpan(gx, 1f, out float gy, out _)) continue;
-                var m = FgModel(i % 3 == 0 ? "Bramble" : "Weeds", new Vector3(gx, gy - 0.05f, 0f), LevelLayer.Playfield, deco, 0.8f + 0.1f * (i % 4), i % 2 == 1);
+                string model = i % 3 == 0 ? "Bramble" : "Weeds";
+                float scale = 0.8f + 0.1f * (i % 4);
+                if (!Fits(model, gx, scale, out float gy)) continue;
+                var m = FgModel(model, new Vector3(gx, gy - 0.05f, 0f), LevelLayer.Playfield, deco, scale, i % 2 == 1);
                 m.transform.position += new Vector3(0f, 0f, 1.3f + 0.2f * (i % 3));
             }
             // Ferns behind the play plane, at the foot of walls and ledges.
@@ -189,6 +193,16 @@ namespace CrimsonVeil.EditorTools
             EditorBuildSettings.scenes = new[] { new EditorBuildSettingsScene(ScenePath, true) };
             AssetDatabase.SaveAssets();
             Debug.Log("[CrimsonVeil] Prototype scene built from the level kit: " + ScenePath);
+        }
+
+        /// <summary>Half-width of a modelled plant at scale 1 (bramble canes spread ~1.5 m each way, weeds ~0.9 m).</summary>
+        public static float PlantHalfWidth(string model) => model == "Bramble" ? 1.5f : 0.9f;
+
+        /// <summary>True when the whole plant fits on level ground at x — it never hangs over a ledge's edge.</summary>
+        public static bool Fits(string model, float x, float scale, out float y)
+        {
+            float hw = PlantHalfWidth(model) * scale;
+            return GroundSpan(x, hw, out y, out float span) && span >= hw * 2.2f - 1e-3f;
         }
 
         /// <summary>A modelled prop (bramble, weeds, chain…) on a layer, scaled and optionally mirrored for variety.</summary>

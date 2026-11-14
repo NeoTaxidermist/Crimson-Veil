@@ -38,5 +38,25 @@ namespace CrimsonVeil.Tests
             if (PrototypeSceneBuilder.GroundSpan(2.4f, 1.5f, out _, out float w))
                 Assert.LessOrEqual(2.4f + w * 0.5f, 3.2f, "clump stays on the block");
         }
+
+        [Test]
+        public void Bramble_FitsOnlyWhereItsCanesStayOnTheBlock()
+        {
+            Assert.IsTrue(PrototypeSceneBuilder.Fits("Bramble", 0f, 1f, out float y), "centre of a 6 m floor");
+            Assert.AreEqual(2f, y, 0.15f);
+            Assert.IsFalse(PrototypeSceneBuilder.Fits("Bramble", 2.2f, 1f, out _), "would hang over the edge");
+            Assert.IsTrue(PrototypeSceneBuilder.Fits("Weeds", 1.8f, 1f, out _), "narrower weeds still fit");
+        }
+
+        [Test]
+        public void TerrainGrass_GrowsFromTheFrontLip_AndCoversTheTop()
+        {
+            var block = LevelKitFactory.Terrain(new Vector3(20f, 0f, 0f), 6f, 2f).GetComponent<TerrainBlock>();
+            var gen = block.transform.Find("__Generated");
+            var front = gen.Find("GrassFront");
+            Assert.LessOrEqual(front.localPosition.z, -block.depth * 0.5f + 0.2f, "no bare top face in front of the grass");
+            Assert.IsNotNull(gen.Find("GrassMid"), "a middle row fills the top between front and back");
+            Assert.Less(front.GetComponent<MeshFilter>().sharedMesh.bounds.min.y, -0.03f, "roots sink into the edge, no seam");
+        }
     }
 }

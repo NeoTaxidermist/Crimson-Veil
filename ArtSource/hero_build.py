@@ -358,11 +358,115 @@ L2R = {"UpperLeg.L": "UpperLeg.R", "LowerLeg.L": "LowerLeg.R", "Foot.L": "Foot.R
 R2L = {"UpperArm.R": "UpperArm.L", "LowerArm.R": "LowerArm.L", "Hand.R": "Hand.L", "Shoulder.R": "Shoulder.L"}
 
 torso_w = blend_z([(1.0, "Hips"), (1.1, "Spine"), (1.26, "Spine"), (1.34, "Chest")])
+# ---------------------------------------------------------------- the walk sheet: the whole figure, arms clear
+# ArtSource/ref/walk_cycle.png shows the hero 12 times from the side with his arms away from the body; the rig was
+# fitted to every frame (hero_fit_walk.py -> ref/walk_poses.json). Posed as in each frame, every bone reads the
+# frame's outline across it; the 12 readings are combined per point along the bone, taking a low percentile so the
+# frames where something lies over the bone (an arm across the chest, the other leg) don't widen it.
+SHEET = ROOT + r"\ArtSource\ref\walk_cycle.png"
+WALK = json.load(open(ROOT + r"\ArtSource\ref\walk_poses.json"))["frames"]
+S_ROWS = [(35, 372), (463, 804), (901, 1242)]
+S_COLS = [(60, 300), (350, 590), (640, 880), (930, 1170)]
+WALK_BONES = ["Spine", "Neck", "UpperLeg.L", "LowerLeg.L", "Foot.L", "UpperLeg.R", "LowerLeg.R", "Foot.R",
+              "UpperArm.L", "LowerArm.L", "UpperArm.R", "LowerArm.R"]
+
+
+def sheet_frames():
+    im = bpy.data.images.load(SHEET, check_existing=True)
+    w, h = im.size
+    px = np.array(im.pixels[:], np.float32).reshape(h, w, 4)[::-1]
+    dark = (0.3 * px[..., 0] + 0.59 * px[..., 1] + 0.11 * px[..., 2]) < 0.3
+    out = []
+    for r0, r1 in S_ROWS:
+        for c0, c1 in S_COLS:
+            m = dark[r0 - 5:r1 + 3, c0:c1]
+            rows = np.nonzero(m.any(1))[0]
+            top, ground = rows.min(), rows.max()
+            k = 1.887 / (ground - top)
+            head = m[top:top + int(0.12 * (ground - top))]
+            out.append(dict(mask=m, ground=ground, k=k, head_col=np.nonzero(head.any(0))[0].mean()))
+    return out
+
+
+def pose_walk(angles):
+    for pb in rig.pose.bones:
+        pb.rotation_quaternion = (1, 0, 0, 0)
+        pb.location = (0, 0, 0)
+    for name in WALK_BONES:
+        pb = rig.pose.bones[name]
+        M3 = pb.bone.matrix_local.to_3x3()
+        pb.rotation_quaternion = (M3.inverted() @ Matrix.Rotation(math.radians(angles.get(name, 0.0)), 3, 'X') @ M3).to_quaternion()
+    hp = rig.pose.bones["Hips"]
+    hp.location = hp.bone.matrix_local.to_3x3().inverted() @ Vector((0, 0, -angles.get("drop", 0.0)))
+    bpy.context.view_layer.update()
+
+
+def measure_px(mask, to_px, k, h, t, ext0, ext1, max_r, step):
+    """Outline across the line h->t (model points) in one silhouette: [front m, back m] or None every `step` m."""
+    a = Vector(to_px(h.y, h.z))
+    b = Vector(to_px(t.y, t.z))
+    L = (b - a).length * k
+    d = (b - a).normalized()
+    n = Vector((-d.y, d.x))
+    reach = int(max_r / k)
+    H, Wd = mask.shape
+    out, s = [], -ext0
+    while s <= L + ext1 + 1e-6:
+        c = a + d * (s / k)
+        vals = []
+        for q in range(-reach, reach + 1):
+            p = c + n * q
+            r_, c_ = int(round(p.x)), int(round(p.y))
+            vals.append(0 <= r_ < H and 0 <= c_ < Wd and bool(mask[r_, c_]))
+        runs, start = [], None
+        for q, v in enumerate(vals + [False]):
+            if v and start is None:
+                start = q
+            if not v and start is not None:
+                runs.append((start - reach, q - 1 - reach))
+                start = None
+        if runs:
+            lo, hi = min(runs, key=lambda r: 0 if r[0] <= 0 <= r[1] else min(abs(r[0]), abs(r[1])))
+            out.append([s, max(hi, 1) * k, max(-lo, 1) * k])
+        else:
+            out.append([s, None, None])
+        s += step
+    return out
+
+
+SFR = sheet_frames()
+
+
+def sheet_profile(bones, ext0, ext1, max_r, pct=35, step=0.012, line=None):
+    """Combined reading of the sheet for one or more (symmetric) bones; line(): custom posed (head, tail)."""
+    readings = []
+    for f, ang in zip(SFR, WALK):
+        pose_walk(ang)
+        to_px = (lambda y, z, f=f, sh=ang.get("shift", 0.0):
+                 (f["ground"] - z / f["k"], f["head_col"] + (-0.05 + sh - y) / f["k"]))
+        for bone in (bones or [None]):
+            h, t = line() if line else (rig.pose.bones[bone].head.copy(), rig.pose.bones[bone].tail.copy())
+            readings.append(measure_px(f["mask"], to_px, f["k"], h, t, ext0, ext1, max_r, step))
+    n = min(len(r) for r in readings)
+    out = []
+    for i in range(n):
+        fr = [r[i][1] for r in readings if r[i][1] is not None]
+        bk = [r[i][2] for r in readings if r[i][2] is not None]
+        if fr and bk:
+            out.append([readings[0][i][0], float(np.percentile(fr, pct)), float(np.percentile(bk, pct))])
+    for _ in range(3):  # smooth along the bone
+        out = [[out[i][0]] + [(out[max(i - 1, 0)][j] + 2 * out[i][j] + out[min(i + 1, len(out) - 1)][j]) / 4 for j in (1, 2)]
+               for i in range(len(out))]
+    return out
+
+
 # Torso: along the spine line, from below the belt to the base of the neck. Its side-to-side breadth (not in the side
 # view) keeps the earlier front-view table.
 T_TOP, T_BOT = POSED["Chest"][1], POSED["Hips"][0] - Vector((0, 0, 0.12))
+# (The torso comes from the concept: on the walk sheet the near arm hangs over its front and the far arm over its back
+# in nearly every frame.)
 TORSO_PROFILE = measure_profile(None, 0.0, 0.0, 0.2, step=0.012, head=T_TOP, tail=T_BOT)
-# Where the drawing's arms lie over the torso it can't be read: the near elbow over the belly (front, z 0.95-1.2), the
+# Where the concept's arms lie over the torso it can't be read: the near elbow over the belly (front, z 0.95-1.2), the
 # far hand and the sword's hilt over the hips (back, below z 1.0), the scarf's knot under the chin (front, z 1.38-1.5).
 for e in TORSO_PROFILE:
     z = T_TOP.z - e[0]
@@ -377,13 +481,13 @@ loft_bone(None, TORSO_PROFILE, lambda s, dep, c: torso_at(c.z)[0], lambda p, s: 
           head=T_REST_TOP, tail=T_REST_BOT, n=28)
 _tz = [(T_REST_TOP.z - s, f, bk) for s, f, bk in TORSO_PROFILE]
 
-# Legs (the drawing's front leg) - breeches, knee guard, calf, boot - and the foot; mirrored for the other leg.
+# Legs (both legs of the walk sheet) - tunic, knee guard, calf, boot - and the foot (the concept's); mirrored.
 leg_l = lambda p, s: along(head_of("UpperLeg.L"), head_of("LowerLeg.L"), "UpperLeg.L", "LowerLeg.L", 0.85)(p, s) \
     if p.z < head_of("UpperLeg.L").z - 0.02 else {"Hips": 0.35, "UpperLeg.L": 0.65}
 # (the breeches stay narrow at the belt and balloon out below it, as drawn - side to side as well)
-loft_bone("UpperLeg.L", measure_profile("UpperLeg.L", 0.06, 0.02, 0.13),
+loft_bone("UpperLeg.L", sheet_profile(["UpperLeg.L", "UpperLeg.R"], 0.06, 0.02, 0.13, pct=55),
           lambda s, dep, c: dep * 0.85 * min(1.0, 0.55 + max(s + 0.06, 0.0) / 0.3), leg_l, cap_r=0.12, mirror=L2R)
-loft_bone("LowerLeg.L", measure_profile("LowerLeg.L", 0.02, 0.0, 0.1),
+loft_bone("LowerLeg.L", sheet_profile(["LowerLeg.L", "LowerLeg.R"], 0.02, 0.0, 0.1, pct=55),
           0.9, along(head_of("LowerLeg.L"), head_of("Foot.L"), "LowerLeg.L", "Foot.L", 0.9), cap_r=0.09, mirror=L2R)
 # The foot stands flat in the drawing: read it along the ground, 4.5 cm up, from the heel (col 755) to the toe
 # (col 918) of the front boot; its top above that line, the sole below. It lies flat under the ankle at rest.
@@ -394,14 +498,14 @@ _foot_len = _heel_y - _toe_y
 loft_bone("Foot.L", FOOT_PROFILE, 0.95, lambda p, s: {"Foot.L": 1.0}, cap_r=0.07, mirror=L2R,
           head=Vector((_ank.x, _ank.y + 0.075, 0.045)), tail=Vector((_ank.x, _ank.y + 0.075 - _foot_len, 0.045)))
 
-# Arms. The drawing can't be read straight for them: the near upper arm is lost in the chest and the far forearm
-# vanishes behind the sword's hilt. So the arm is composed: the upper part (shoulder, upper arm with its guard, elbow)
-# from the far arm - 0.10-0.13 m deep in the drawing - and the lower part (bracer, wrist, fist) from the near arm -
-# the bracer tapering to ~0.05 m at the wrist, the fist ~0.075 m. They are joined into one arm that tapers smoothly
-# from the shoulder to the wrist, straight along the arm's bones. (t: 0..1 along the bone; depth in metres)
-UPPER_ARM = [(-0.1, 0.08), (0.0, 0.1), (0.15, 0.108), (0.45, 0.1), (0.8, 0.085), (1.0, 0.076), (1.06, 0.073)]
-FOREARM = [(-0.06, 0.074), (0.0, 0.075), (0.16, 0.077), (0.2, 0.084), (0.3, 0.08), (0.75, 0.066), (0.9, 0.058), (1.0, 0.05), (1.04, 0.048)]
-FIST = [(-0.12, 0.05), (0.15, 0.072), (0.5, 0.078), (0.85, 0.07), (1.2, 0.036)]
+# Arms, after the walk sheet, where the far arm swings clear behind the body in every frame. Measured there: the upper
+# arm ~0.12 m deep at the elbow and ~0.13 at the shoulder guard, the bracer 0.08-0.095 m tapering to ~0.066 at the
+# wrist, the open hand ~0.08 m. Its
+# top half is lost in the shoulder in the side view, so the shoulder end is completed to taper smoothly into it.
+# (t: 0..1 along the bone; depth in metres)
+UPPER_ARM = [(-0.1, 0.1), (0.0, 0.128), (0.2, 0.134), (0.5, 0.122), (0.8, 0.112), (1.0, 0.102), (1.06, 0.098)]  # (the guard at the shoulder)
+FOREARM = [(-0.06, 0.098), (0.0, 0.096), (0.15, 0.092), (0.25, 0.09), (0.6, 0.082), (0.85, 0.074), (1.0, 0.066), (1.04, 0.063)]
+HAND = [(-0.12, 0.062), (0.15, 0.076), (0.5, 0.082), (0.85, 0.074), (1.2, 0.045)]  # (the sheet's hands are open, broad)
 
 
 def arm_profile(points, bone, step=0.012):
@@ -424,7 +528,7 @@ loft_bone("UpperArm.R", arm_profile(UPPER_ARM, "UpperArm.R"), 0.95,
           along(head_of("UpperArm.R"), head_of("LowerArm.R"), "UpperArm.R", "LowerArm.R", 0.85), mirror=R2L, n=16)
 loft_bone("LowerArm.R", arm_profile(FOREARM, "LowerArm.R"), 0.9,
           along(head_of("LowerArm.R"), head_of("Hand.R"), "LowerArm.R", "Hand.R", 0.9), mirror=R2L, n=16)
-loft_bone("Hand.R", arm_profile(FIST, "Hand.R", step=0.01), 0.8, lambda p, s: {"Hand.R": 1.0}, mirror=R2L, n=14)
+loft_bone("Hand.R", arm_profile(HAND, "Hand.R", step=0.01), 0.8, lambda p, s: {"Hand.R": 1.0}, mirror=R2L, n=14)
 
 # Back to the rest pose.
 for pb in rig.pose.bones:

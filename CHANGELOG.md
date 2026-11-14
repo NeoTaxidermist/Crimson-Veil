@@ -5,6 +5,19 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.16.1] – 2026-11-14
+Ruce a nohy podle sešitu chůze.
+
+### Změněno
+- **Ruce jsou podle sešitu chůze**, kde zadní ruka visí ve všech snímcích odděleně za tělem.
+  - Nadloktí má u lokte 12 cm a u ramene i s chráničem 13 cm.
+  - Chránič předloktí má 8–9,5 cm a k zápěstí se zužuje na 6,6 cm.
+  - Dlaň je otevřená a široká asi 8 cm.
+  - Horní polovina nadloktí v boční siluetě splývá s ramenem, tam se paže plynule dotahuje.
+- **Nohy a tunika** jsou změřené ze sešitu chůze: z 12 snímků a obou nohou.
+- **Trup** zůstává podle hlavního návrhu. V sešitu ho skoro ve všech snímcích zakrývají ruce: bližší vpředu, zadní za rameny.
+- Pózy ze sešitu jsou dohledané znovu, se zadní rukou za tělem (překryv 74–81 %). Model se sešitem v jeho pózách kryje ze 71–78 %.
+
 ## [0.16.0] – 2026-11-14
 Klidový postoj podle sešitu animace.
 

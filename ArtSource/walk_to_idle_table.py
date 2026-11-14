@@ -6,8 +6,15 @@ import json
 import os
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-data = json.load(open(os.path.join(ROOT, "ArtSource", "ref", "walk_poses.json")))
-frames = data["frames"]
+# The animation sheet's idle row (ArtSource/ref/anim_sheet.png, fitted by hero_fit_anim.py); the walk sheet's
+# frames (walk_poses.json) if it hasn't been fitted.
+_anim = os.path.join(ROOT, "ArtSource", "ref", "anim_poses.json")
+if os.path.exists(_anim) and json.load(open(_anim)).get("idle"):
+    frames = json.load(open(_anim))["idle"]["frames"]
+    SOURCE = "ArtSource/ref/anim_sheet.png (idle row, 8 frames; fitted by ArtSource/hero_fit_anim.py)"
+else:
+    frames = json.load(open(os.path.join(ROOT, "ArtSource", "ref", "walk_poses.json")))["frames"]
+    SOURCE = "ArtSource/ref/walk_cycle.png (12 frames; fitted by ArtSource/hero_fit_walk.py)"
 n = len(frames)
 
 
@@ -26,17 +33,20 @@ def mean(v):
     return sum(v) / len(v)
 
 
-# Fitted angles: rotation about the rig's X, + = the bone swings back. HeroPose: + = towards the hero's front
-# (thigh, upper arm, elbow, spine, head), knee + = bend, foot + = toes up.
+# Fitted angles: rotation about the rig's X. For a bone pointing down (legs, arms) + swings it back; for one pointing
+# up (spine, neck) + tips it forward. HeroPose: + = towards the hero's front (thigh, upper arm, elbow, spine, head),
+# knee + = bend, foot + = toes up. The game doesn't tip the hips, so the fitted hips' tilt is folded into the spine
+# and the thighs.
+hips = series("Hips")
 cols = {
-    "spine": smooth([-x for x in series("Spine")]),
-    "head": smooth([-x for x in series("Neck")]),
+    "spine": smooth([x + hp for x, hp in zip(series("Spine"), hips)]),
+    "head": smooth(series("Neck")),
     "bob": smooth([-x for x in series("drop")]),
     # the legs hold one stance: their mean (the frame-to-frame jitter is fitting noise)
-    "thighL": [-mean(series("UpperLeg.L"))] * n,
+    "thighL": [-mean([x + hp for x, hp in zip(series("UpperLeg.L"), hips)])] * n,
     "kneeL": [max(0.0, mean(series("LowerLeg.L")))] * n,
     "footL": None,  # set below: flat on the ground
-    "thighR": [-mean(series("UpperLeg.R"))] * n,
+    "thighR": [-mean([x + hp for x, hp in zip(series("UpperLeg.R"), hips)])] * n,
     "kneeR": [max(0.0, mean(series("LowerLeg.R")))] * n,
     "footR": None,
     "armL": smooth([-x for x in series("UpperArm.L")], 3),
@@ -59,15 +69,14 @@ cs = '''using UnityEngine;
 namespace CrimsonVeil.Player
 {
     /// <summary>
-    /// The hero's standing loop, from the walk-cycle sheet (ArtSource/ref/walk_cycle.png): the rig was fitted to each
-    /// of its 12 side-view silhouettes (ArtSource/hero_fit_walk.py) and the angles tabulated
+    /// The hero's standing loop, from %s: the rig was fitted to each side-view silhouette and the angles tabulated
     /// (ArtSource/walk_to_idle_table.py - generated, do not edit by hand). He stands in the concept's wide stance - the
     /// near leg forward with the knee eased, the far leg back and straight - and his arms and head sway gently.
     /// </summary>
     public static class HeroIdleCycle
     {
         /// <summary>Seconds for one loop of the 12 frames.</summary>
-        public const float Duration = 3.6f;
+        public const float Duration = 3.2f;
 
         public static readonly HeroPose[] Frames =
         {
@@ -86,7 +95,7 @@ namespace CrimsonVeil.Player
         }
     }
 }
-''' % "\n".join(rows)
+''' % (SOURCE, "\n".join(rows))
 out = os.path.join(ROOT, "Assets", "_CrimsonVeil", "Scripts", "Runtime", "Player", "HeroIdleCycle.cs")
 open(out, "w", encoding="utf-8").write(cs)
 print("wrote", out)

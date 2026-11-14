@@ -5,6 +5,25 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.16.2] – 2026-11-14
+Klidová smyčka z animačního sešitu.
+
+### Změněno
+- **Klidová smyčka je podle řádku „Idle“ z animačního sešitu** `ArtSource/ref/anim_sheet.png` (8 snímků, překryv 69–82 %).
+  - Přední noha je 18° vpřed s kolenem povoleným o 7,5°, zadní noha 22° vzad.
+  - Hrudník je mírně vypnutý, hlava kývne 3–11° dopředu.
+  - Zadní ruka visí za tělem pokrčená v lokti (asi 50°) a pohupuje se, bližší ruka visí asi 20° vpředu.
+  - Smyčka trvá 3,2 s.
+
+### Opraveno
+- **Znaménko páteře a hlavy při převodu z dohledaných póz.** U kostí mířících nahoru znamená kladný úhel předklon, minule byl převeden obráceně. Do páteře a stehen se teď započítává i natočení pánve, které hra nezná.
+
+### Přidáno
+- `ArtSource/hero_fit_anim.py`: rozřeže animační sešit na snímky (bez čar země) a pro každý dohledá úhly kloubů. Počítá s měřítkem řádku a zkouší prohozené nohy a ruce.
+- `ArtSource/hero_fit_cycle.py`: pokus o běh jako jeden parametrický cyklus.
+  - Pro běh, skok a útok zatím spolehlivé úhly nedává: siluety jsou malé (asi 130 px), nerozliší levou a pravou nohu a měřítko řádku se plete s přikrčením.
+  - Běh, skok a útok proto zůstávají beze změny.
+
 ## [0.16.1] – 2026-11-14
 Ruce a nohy podle sešitu chůze.
 

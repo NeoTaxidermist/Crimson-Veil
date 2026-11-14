@@ -45,3 +45,7 @@ Thumbs.db
 
 # Ad-hoc screenshots
 /Captures/
+
+# Python caches (Blender art scripts)
+__pycache__/
+*.pyc

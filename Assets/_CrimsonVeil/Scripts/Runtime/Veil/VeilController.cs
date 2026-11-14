@@ -9,7 +9,8 @@ namespace CrimsonVeil.Veil
     /// Owns the <see cref="VeilSimulation"/>, switches forms (toggle) and drives attacks.
     /// Transformations are choreographed: hardening runs neck → tip as a wave, shapes morph with a
     /// winding swirl, and turning around squashes the weapon through its profile instead of snapping.
-    /// Runs after the player has moved so the anchor is up to date.
+    /// Runs in LateUpdate after the hero is posed (<c>HeroAnimator</c>, order 0), so a weapon grows out of
+    /// the hand where it is drawn this frame — never a frame behind in a fast swing.
     /// </summary>
     [DefaultExecutionOrder(50)]
     public sealed class VeilController : MonoBehaviour
@@ -30,7 +31,6 @@ namespace CrimsonVeil.Veil
         [SerializeField] float arrowSpeed = 26f;
         [Tooltip("The hero's hand bone. When set, weapons grow out of the real hand instead of a fixed point.")]
         [SerializeField] Transform hand;
-        [SerializeField] float handFollowSharpness = 30f;
         [Tooltip("Forearm angle (degrees, facing space) at which the weapon shapes were designed.")]
         [SerializeField] float canonicalForearmAngle = -15f;
         [Tooltip("Extra blade turn while running at full speed (degrees, + = tip up). The blade leads in a forward guard.")]
@@ -401,7 +401,7 @@ namespace CrimsonVeil.Veil
             Charge.Tick(dt);
         }
 
-        void Update() => Tick(Time.deltaTime);
+        void LateUpdate() => Tick(Time.deltaTime);
 
         public void Tick(float dt)
         {
@@ -626,7 +626,7 @@ namespace CrimsonVeil.Veil
                 var lh = new Vector2((hand.position.x - a.x) / s, hand.position.y - a.y);
                 var wanted = lh - VeilFormLibrary.Hand;
                 if (wanted.sqrMagnitude > 1f) wanted = wanted.normalized; // guard against a bad first frame
-                handDelta = Vector2.Lerp(handDelta, wanted, 1f - Mathf.Exp(-handFollowSharpness * dt));
+                handDelta = wanted; // rigid in the hand: any smoothing here lags a fast swing
 
                 // The weapon is an extension of the forearm: it turns with it (swings, stance, running).
                 var forearm = hand.parent;
@@ -640,7 +640,7 @@ namespace CrimsonVeil.Veil
                         ? Mathf.Clamp01(Mathf.Abs(player.Velocity.x) / Mathf.Max(0.1f, player.Settings.maxRunSpeed)) : 0f;
                     carry = Mathf.Lerp(carry, IsAttacking ? 0f : run, 1f - Mathf.Exp(-6f * dt));
                     wantedTurn += carry * runGuardAngle * VeilWeaponPose.CarryFactor(ShapeForm);
-                    forearmTurn = Mathf.LerpAngle(forearmTurn, wantedTurn, 1f - Mathf.Exp(-handFollowSharpness * dt));
+                    forearmTurn = wantedTurn;
                 }
             }
             bool armDriven = hand != null && hand.parent != null;

@@ -308,5 +308,44 @@ namespace CrimsonVeil.Tests
             yield return Wait(0.7f);
             Assert.Greater(veil.Danger, 0.3f, "an enemy close by: the scarf bristles");
         }
+
+        /// <summary>Stands in for the hero's animator: swings the forearm fast, posed in LateUpdate.</summary>
+        [DefaultExecutionOrder(0)]
+        sealed class SwingingArm : MonoBehaviour
+        {
+            void LateUpdate() => transform.localRotation = Quaternion.Euler(0f, 0f, -15f + 70f * Mathf.Sin(Time.time * 24f));
+        }
+
+        [UnityTest]
+        public IEnumerator AWeaponStaysInTheHand_ThroughAFastSwing()
+        {
+            var forearm = new GameObject("LowerArm.R").transform;
+            forearm.SetParent(player.transform, false);
+            forearm.localPosition = new Vector3(0.15f, 1.3f, 0f);
+            forearm.gameObject.AddComponent<SwingingArm>();
+            var hand = new GameObject("Hand.R").transform;
+            hand.SetParent(forearm, false);
+            hand.localPosition = new Vector3(0.28f, 0f, 0f);
+            veil.Hand = hand;
+            yield return Wait(0.3f);
+
+            veil.SetForm(VeilForm.Sword);
+            yield return Wait(0.8f); // fully formed (while forming, the blade is still pouring out of the cloth)
+            Assert.IsTrue(veil.Attack());
+            float worst = 0f;
+            int frames = 0;
+            for (int k = 0; k < 40; k++)
+            {
+                yield return new WaitForEndOfFrame();
+                if (!veil.IsAttacking) continue;
+                var sim = veil.Simulation;
+                int hi = Mathf.Clamp(Mathf.CeilToInt(veil.HandFraction * (sim.Count - 1)), 0, sim.Count - 1);
+                Vector2 grip = sim.Targets[hi], h = hand.position;
+                worst = Mathf.Max(worst, Vector2.Distance(grip, h));
+                frames++;
+            }
+            Assert.Greater(frames, 10, "the sword formed and swung");
+            Assert.Less(worst, 0.12f, "the blade grows out of the hand this frame, not where it was a moment ago");
+        }
     }
 }

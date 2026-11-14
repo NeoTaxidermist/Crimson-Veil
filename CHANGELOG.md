@@ -5,6 +5,17 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.13.4] – 2026-11-14
+Zbraň drží v ruce a kamera po respawnu hned sedí.
+
+### Opraveno
+- **Zbraň už se při úderu neodtrhává od ruky.** Šála četla polohu ruky dřív, než ji animace v daném snímku napózovala, a navíc ji vyhlazovala. Při rychlém švihu proto čepel nebo bič zaostávaly až o půl metru a vycházely od hlavy. Teď se šála počítá až po animaci postavy (`LateUpdate`) a zbraň je v ruce pevně: za celý úder se úchop odchýlí od ruky o méně než 5 cm.
+- **Kamera po teleportu nebo respawnu do kamerové zóny hned převezme její záběr** a nedorovnává ho dodatečně. Totéž platí, když hra začíná uvnitř zóny.
+
+### Testy
+- `AWeaponStaysInTheHand_ThroughAFastSwing`: rychle švihaná ruka, úchop meče musí zůstat u ní.
+- `ArrivingInACameraZone_TakesItsFramingAtOnce`.
+
 ## [0.13.3] – 2026-11-14
 Klidná kamera, která drží postavu v záběru.
 

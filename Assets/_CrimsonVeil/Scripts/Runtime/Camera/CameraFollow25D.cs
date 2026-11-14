@@ -76,9 +76,9 @@ namespace CrimsonVeil.CameraSystem
         {
             if (target == null) target = FindFirstObjectByType<PlayerController>();
             zones = FindObjectsByType<CameraZone>(FindObjectsSortMode.None);
-            currentOffset = offset;
+            currentOffset = target != null ? DesiredOffset(target.transform.position.x) : offset;
             if (target != null) Focus.Reset(target.transform.position);
-            basePosition = target != null ? target.transform.position + offset : transform.position;
+            basePosition = target != null ? target.transform.position + currentOffset : transform.position;
             transform.position = basePosition;
         }
 
@@ -128,8 +128,6 @@ namespace CrimsonVeil.CameraSystem
             Vector3 tp = target.transform.position;
             var motor = target.Motor;
 
-            currentOffset = Vector3.Lerp(currentOffset, DesiredOffset(tp.x), 1f - Mathf.Exp(-2.5f * dt));
-
             // Where to look: the hero's floor line and where he is heading (not where he happens to face).
             var state = motor.State;
             bool supported = motor.IsGrounded || state == MotorState.LedgeHang || state == MotorState.Climbing || state == MotorState.Swinging;
@@ -137,6 +135,10 @@ namespace CrimsonVeil.CameraSystem
             var before = Focus.Focus;
             Vector2 focus = Focus.Step(dt, tp, target.Velocity, supported, motor.Settings.maxRunSpeed);
             bool snapped = (focus - before).sqrMagnitude > Focus.snapDistance * Focus.snapDistance;
+
+            // Walking into a camera zone eases into its framing; arriving in one (respawn, teleport) takes it at once.
+            currentOffset = snapped ? DesiredOffset(tp.x)
+                : Vector3.Lerp(currentOffset, DesiredOffset(tp.x), 1f - Mathf.Exp(-2.5f * dt));
 
             // Deliberate look up/down: hold W/S while standing still.
             float lookInput = 0f;

@@ -92,21 +92,22 @@ namespace CrimsonVeil.EditorTools
                 F.Column(new Vector3(x, x > 30f && x < 43f ? 7f : 0f, 1.7f), LevelLayer.Playfield, 5f, true, (int)x).transform.SetParent(deco, true);
 
             // ---------------------------------------------------------------- decoration: foreground
-            // Foreground grass grows on the ground under it (never hanging in the air over a pit),
-            // sunk a little so its foot hides the floor edge when the camera moves.
+            // Foreground grass grows on the ground under it (never hanging in the air over a pit) and is rooted
+            // in the front lip of that ground — the same depth as the rock — so it moves with the ground at any
+            // camera angle instead of sliding against it in parallax. Roots sink a little into the lip.
             Physics.SyncTransforms();
             for (int i = 0; i < 46; i++)
             {
                 float gx = -16f + i * 2.9f;
                 if (!GroundSpan(gx, 1.5f, out float gy, out float span)) continue;
-                F.Grass(new Vector3(gx, gy - 0.35f - (i % 3) * 0.15f, 0f), LevelLayer.Foreground, 100 + i, span, new Vector2(0.6f, 2.1f), Mathf.RoundToInt(40 * span / 3.4f), null, 0.07f).transform.SetParent(deco, true);
+                OnLip(F.Grass(new Vector3(gx, gy - 0.1f - (i % 3) * 0.08f, 0f), LevelLayer.Foreground, 100 + i, span, new Vector2(0.6f, 2.1f), Mathf.RoundToInt(40 * span / 3.4f), null, 0.07f), gx, deco);
                 if (i % 4 == 1 && GroundSpan(gx + 1f, 1f, out float fy, out _))
-                    F.Fern(new Vector3(gx + 1f, fy - 0.2f, 0f), LevelLayer.Foreground, 400 + i, 2.2f, 11).transform.SetParent(deco, true);
+                    OnLip(F.Fern(new Vector3(gx + 1f, fy - 0.1f, 0f), LevelLayer.Foreground, 400 + i, 2.2f, 11), gx + 1f, deco);
                 // Thorny brambles and dry seed-heads between the grass tufts (key art density).
                 string fgModel = i % 8 == 3 ? "Bramble" : "Weeds";
                 float fgScale = 1.1f + 0.15f * (i % 3);
                 if (i % 4 == 3 && Fits(fgModel, gx + 0.6f, fgScale, out float by))
-                    FgModel(fgModel, new Vector3(gx + 0.6f, by - 0.25f, 0f), LevelLayer.Foreground, deco, fgScale, i % 2 == 0);
+                    OnLip(FgModel(fgModel, new Vector3(gx + 0.6f, by - 0.08f, 0f), LevelLayer.Foreground, deco, fgScale, i % 2 == 0), gx + 0.6f, deco);
             }
             // The same weeds and brambles behind the play plane, at the feet of walls and on ledges.
             for (int i = 0; i < 30; i++)
@@ -193,6 +194,31 @@ namespace CrimsonVeil.EditorTools
             EditorBuildSettings.scenes = new[] { new EditorBuildSettingsScene(ScenePath, true) };
             AssetDatabase.SaveAssets();
             Debug.Log("[CrimsonVeil] Prototype scene built from the level kit: " + ScenePath);
+        }
+
+        /// <summary>
+        /// Depth of the front lip of the terrain under x (just behind its front face), or the play plane's
+        /// front edge when there is none. Foreground plants rooted here stay glued to the ground in parallax.
+        /// </summary>
+        public static float LipZ(float x)
+        {
+            float best = float.NaN, z = -1.9f;
+            foreach (var hit in Physics.RaycastAll(new Vector3(x, 60f, 0f), Vector3.down, 120f, ~0, QueryTriggerInteraction.Ignore))
+            {
+                var block = hit.collider.GetComponentInParent<TerrainBlock>();
+                if (block == null || (!float.IsNaN(best) && hit.point.y <= best)) continue;
+                best = hit.point.y;
+                z = block.transform.position.z - block.depth * 0.5f + 0.1f;
+            }
+            return z;
+        }
+
+        static GameObject OnLip(GameObject go, float x, Transform parent)
+        {
+            var p = go.transform.position;
+            go.transform.position = new Vector3(p.x, p.y, LipZ(x));
+            go.transform.SetParent(parent, true);
+            return go;
         }
 
         /// <summary>Half-width of a modelled plant at scale 1 (bramble canes spread ~1.5 m each way, weeds ~0.9 m).</summary>

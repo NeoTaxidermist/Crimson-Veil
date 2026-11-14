@@ -14,6 +14,8 @@ namespace CrimsonVeil.Combat
 
         Transform wingL, wingR;
         float fallVelocity;
+        int heading = 1;
+        CreatureTurn turn = new CreatureTurn(1);
 
         void Awake()
         {
@@ -52,12 +54,9 @@ namespace CrimsonVeil.Combat
             float flap = diving ? 60f + Mathf.Sin(Time.time * 6f + Phase) * 10f : 75f + Mathf.Sin(Time.time * 22f + Phase * 7f) * 75f;
             if (wingL != null) wingL.localRotation = Quaternion.Euler(-flap, 0f, 0f);
             if (wingR != null) wingR.localRotation = Quaternion.Euler(flap, 0f, 0f);
-            if (Mathf.Abs(Velocity.x) > 0.2f)
-            {
-                var s = transform.localScale;
-                s.x = Mathf.Abs(s.x) * Mathf.Sign(Velocity.x);
-                transform.localScale = s;
-            }
+            // Banks round in a quick 3D turn, not a mirrored flip; keep the last heading while hovering.
+            if (Mathf.Abs(Velocity.x) > 0.2f) heading = Velocity.x > 0f ? 1 : -1;
+            transform.localRotation = turn.Step(heading, dt, 0.18f);
         }
 
         public static void BuildVisual(Transform root, Material ink, Material accent)

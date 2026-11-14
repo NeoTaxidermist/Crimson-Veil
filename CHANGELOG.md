@@ -5,6 +5,21 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.10.1] – 2026-11-14
+Tráva drží na zemi, nepřátelé se otáčejí ve 3D.
+
+### Opraveno
+- **Tráva v popředí už neujíždí a nevznáší se.** Trsy trávy, kapradí, ostružiní a bylin v popředí stály v hloubce −3,2 m, před skálou (čelo terénu je v −2 m). Při pohybu kamery se proto posouvaly vůči zemi (paralaxa) a nad okrajem plošin visely ve vzduchu. Teď rostou přímo z přední hrany terénu pod nimi, takže se pohybují se zemí z jakéhokoli úhlu.
+- **Nepřátelé se otáčejí celým tělem, ne převrácením obrázku.**
+  - Mnich se štítem se otáčí pomalu a těžce (0,5 s), vrány rychle (0,18 s).
+  - Otočka je plynule zrychlená a zpomalená a v polovině je tvor natočený čelem ke kameře.
+  - Dřív se model zmáčkl přes nulovou šířku a zrcadlově převrátil.
+- **Stínový dvojník se konečně otáčí s hrdinou.** Dřív četl převrácení měřítka, které hrdina nepoužívá, a tak se neotáčel vůbec. Teď kopíruje hrdinovu rotaci.
+
+### Testy
+- Otočka je čistá rotace bez zmáčknutí, prochází pohledem do kamery, trvá svou dobu, je vyhlazená a zpět se vrací stejnou cestou.
+- Rostliny v popředí jsou ukotvené v přední hraně terénu.
+
 ## [0.10.0] – 2026-11-14
 Mnohem víc detailu ve všech objektech prostředí, podle key artu.
 

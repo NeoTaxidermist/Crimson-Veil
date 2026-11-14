@@ -25,6 +25,7 @@ namespace CrimsonVeil.Combat
 
         float home, stateTime, disarmTimer, turnTimer, fall;
         Transform shield, visual;
+        CreatureTurn turn = new CreatureTurn(1);
 
         protected override void Awake()
         {
@@ -123,9 +124,8 @@ namespace CrimsonVeil.Combat
         {
             if (visual != null)
             {
-                var s = visual.localScale;
-                s.x = Mathf.MoveTowards(s.x, Facing, dt * 4f);
-                visual.localScale = s;
+                // He turns his whole body round (heavy, slow), not a mirrored flip.
+                visual.localRotation = turn.Step(Facing, dt, 0.5f);
                 // A heavy, swaying gait.
                 visual.localPosition = new Vector3(0f, Mathf.Abs(Mathf.Sin(Time.time * 3f)) * 0.04f, 0f);
             }

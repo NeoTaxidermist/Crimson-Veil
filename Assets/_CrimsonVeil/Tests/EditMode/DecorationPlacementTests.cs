@@ -40,6 +40,14 @@ namespace CrimsonVeil.Tests
         }
 
         [Test]
+        public void ForegroundPlants_AreRootedInTheGroundsFrontLip()
+        {
+            // Rooted at the rock's own depth they move with it in parallax instead of sliding or floating.
+            float z = PrototypeSceneBuilder.LipZ(0f);
+            Assert.That(z, Is.InRange(-2f, -1.8f), "just behind the 4 m deep block's front face");
+        }
+
+        [Test]
         public void Bramble_FitsOnlyWhereItsCanesStayOnTheBlock()
         {
             Assert.IsTrue(PrototypeSceneBuilder.Fits("Bramble", 0f, 1f, out float y), "centre of a 6 m floor");

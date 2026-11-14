@@ -21,7 +21,9 @@ namespace CrimsonVeil.Combat
 
         struct Frame
         {
-            public float time, x, facing, bob;
+            public float time, x, bob;
+            /// <summary>The hero's body yaw (he turns round in 3D; the double follows the same turn).</summary>
+            public Quaternion turn;
             public Quaternion[] pose;
         }
 
@@ -100,9 +102,7 @@ namespace CrimsonVeil.Combat
             // Wear his pose of a moment ago.
             if (visual != null)
             {
-                var s = visual.localScale;
-                s.x = frame.facing;
-                visual.localScale = s;
+                visual.localRotation = frame.turn;
                 visual.localPosition = new Vector3(0f, frame.bob, 0f);
             }
             if (mine != null && frame.pose != null)
@@ -113,10 +113,10 @@ namespace CrimsonVeil.Combat
 
         void Record(Vector3 heroPos)
         {
-            var f = new Frame { time = clock, x = heroPos.x, facing = 1f, bob = 0f };
+            var f = new Frame { time = clock, x = heroPos.x, turn = Quaternion.Euler(0f, 90f, 0f), bob = 0f };
             if (heroVisual != null)
             {
-                f.facing = Mathf.Sign(heroVisual.localScale.x == 0f ? 1f : heroVisual.localScale.x);
+                f.turn = heroVisual.localRotation;
                 f.bob = heroVisual.localPosition.y;
             }
             if (his != null)

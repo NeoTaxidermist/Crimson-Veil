@@ -44,6 +44,33 @@ namespace CrimsonVeil.Tests
             Assert.AreSame(red, mats[1]);
         }
 
+        /// <summary>Heights (m above the soles) and sideways positions of the mesh's vertices (submesh or all).</summary>
+        static (float h, float x)[] Points(int submesh = -1)
+        {
+            var mesh = Hero().GetComponentInChildren<SkinnedMeshRenderer>().sharedMesh;
+            var b = mesh.bounds;
+            int up = b.size.y >= b.size.z ? 1 : 2;
+            var v = mesh.vertices;
+            var idx = submesh < 0 ? Enumerable.Range(0, v.Length) : mesh.GetIndices(submesh).Distinct();
+            return idx.Select(i => (v[i][up] - b.min[up], v[i].x)).ToArray();
+        }
+
+        [Test]
+        public void Tunic_HangsFromTheBelt_OverBothThighs()
+        {
+            var band = Points().Where(p => p.h > 0.64f && p.h < 0.74f).ToArray();
+            float width = band.Max(p => p.x) - band.Min(p => p.x);
+            Assert.Greater(width, 0.4f, "above the knees the tunic covers both legs (the legs alone are ~0.37 m across)");
+        }
+
+        [Test]
+        public void Belt_SitsAtTheWaist_WithTheCrimsonSashKnot()
+        {
+            var red = Points(1);
+            Assert.IsTrue(red.Any(p => p.h > 1.0f && p.h < 1.12f), "the buckle's inset and the sash knot at the waist");
+            Assert.IsFalse(red.Any(p => p.h > 1.18f && p.h < 1.32f), "no crimson ring round the chest any more");
+        }
+
         [Test]
         public void IsHeroSized()
         {

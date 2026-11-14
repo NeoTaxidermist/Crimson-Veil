@@ -5,6 +5,33 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.16.4] – 2026-11-14
+Trup, tunika a nohy vymodelované podle podkladů (walk sheet a koncept).
+
+### Změněno
+- **Pancíř na hrudi má tvar svalů.**
+  - Vpředu prsní svaly s ostrým spodním okrajem plátu, žlábek hrudní kosti, tři řady břišních plátů a šikmé svaly.
+  - Vzadu lopatky, široké zádové svaly a žlábek páteře.
+- **Nákrčník:** karmínová šála je omotaná v silných rolích kolem krku, vzadu nahrnutá a vpředu splývá na horní část hrudi.
+- **Opasek je v pase (1,04–1,10 m) jako na podkladech, ne na bocích.**
+  - Široký pás má vystouplé okraje a čtvercovou přezku s karmínovou vložkou.
+  - Na levém boku je karmínový uzel šerpy, jejíž dva konce visí přes tuniku.
+- **Tunika:** od opasku přiléhá k bokům, dolů se rozšiřuje a končí nad koleny.
+  - Od boků dolů je po stranách rozparek.
+  - Přední díl je o kousek delší.
+  - Má tloušťku a v kroku částečně sleduje stehno na své straně.
+- **Nohy:**
+  - stehna s hýžďovým a čtyřhlavým svalem;
+  - klenutý chránič kolena s lemem;
+  - vysoká bota s ohrnutou manžetou pod kolenem, výrazným lýtkem a páskem u kotníku;
+  - podrážka.
+- Karmínový proužek přes hruď nahradila karmínová páska na nadloktí, kde je na konceptu.
+- Model je hladce stínovaný, ostré hrany zůstávají jen na skutečných zlomech: okrajích plátů, lemu a rozparku.
+- Model má 33 tisíc vrcholů.
+
+### Opraveno
+- **Špička boty už netrčí jako tyčka.** Profil nohy končí u špičky, za ní byl jen řádek země.
+
 ## [0.16.3] – 2026-11-14
 Ruce s prsty, tvarované paže a chránič předloktí.
 

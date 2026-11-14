@@ -31,9 +31,10 @@ def frame(t):
     return u, t.cross(u).normalized()
 
 
-def loft(sections, weight, mat=INK, n=20, cap0=True, cap1=True, square=0.0):
+def loft(sections, weight, mat=INK, n=20, cap0=True, cap1=True, square=0.0, disp=None):
     """sections: [(centre, rx, ry, (optional) dict(dy=, front=))]. rx along the lateral axis, ry front/back.
-    square > 0 makes the cross-section boxier (armour). weight(point, s) -> {bone: w}."""
+    square > 0 makes the cross-section boxier (armour). weight(point, s) -> {bone: w}. disp(i, rel) -> metres to push
+    the point of section i (rel: from the section's centre) outwards - muscles, ridges, grooves."""
     rings = []
     m = len(sections)
     for i, sec in enumerate(sections):
@@ -54,6 +55,11 @@ def loft(sections, weight, mat=INK, n=20, cap0=True, cap1=True, square=0.0):
                 cy = math.copysign(abs(cy) ** e, cy)
             r_front = extra.get("front", 1.0) if cy < 0 else extra.get("back", 1.0)
             p = c + u * (rx * cx) + v * (ry * cy * r_front)
+            if disp is not None:
+                rel = p - c
+                rad = rel - t * rel.dot(t)
+                if rad.length > 1e-6:
+                    p = p + rad.normalized() * disp(i, rel)
             ring.append(add_vert(p, weight(p, i / max(m - 1, 1))))
         rings.append(ring)
     for i in range(m - 1):
@@ -326,9 +332,12 @@ def front_normal(dvec):
     return Vector((0.0, dvec.z, -dvec.y)).normalized() if abs(dvec.y) + abs(dvec.z) > 1e-6 else Vector((0, -1, 0))
 
 
-def loft_bone(bone, profile, lateral, weight, cap_r=None, mirror=None, n=18, head=None, tail=None, flip_front=False):
+def loft_bone(bone, profile, lateral, weight, cap_r=None, mirror=None, n=18, head=None, tail=None, flip_front=False,
+              bump=None, mat=INK):
     """Smooth loft along the rest bone with the drawing's profile: section centre shifted by (front - back) / 2,
-    depth (front + back) / 2, side half-width lateral(s, depth) (or lateral * depth). cap_r clamps the depth."""
+    depth (front + back) / 2, side half-width lateral(s, depth) (or lateral * depth). cap_r clamps the depth.
+    bump(s, lat, fr) -> metres outwards: the muscles and armour on the surface (lat: metres to the outer side - +x on
+    the unmirrored part; fr: cosine towards the front, -1 at the back)."""
     rh = head if head is not None else head_of(bone)
     rt = tail if tail is not None else tail_of(bone)
     L = (rt - rh).length
@@ -351,7 +360,11 @@ def loft_bone(bone, profile, lateral, weight, cap_r=None, mirror=None, n=18, hea
             w = weight
         else:
             w = (lambda p, s_, wf=weight, m=side_map: {m.get(k, k): v for k, v in wf(Vector((-p.x, p.y, p.z)), s_).items()})
-        loft(secs, w, n=n)
+        disp = None
+        if bump is not None:
+            sgn = 1.0 if side_map is None else -1.0
+            disp = (lambda i, rel, sgn=sgn: bump(profile[i][0], rel.x * sgn, rel.dot(nf) / max(rel.length, 1e-6)))
+        loft(secs, w, mat=mat, n=n, disp=disp)
 
 
 L2R = {"UpperLeg.L": "UpperLeg.R", "LowerLeg.L": "LowerLeg.R", "Foot.L": "Foot.R", "Hips": "Hips"}
@@ -460,6 +473,36 @@ def sheet_profile(bones, ext0, ext1, max_r, pct=35, step=0.012, line=None):
     return out
 
 
+def arm_profile(points, bone, step=0.012, smooth=0):
+    """Explicit profile [(t 0..1 along the bone, front, back)] -> loft_bone profile every `step` m (smoothstep; or,
+    with smooth > 0, linear and then `smooth` passes of 1-2-1 smoothing - no ripples at the points)."""
+    L = (tail_of(bone) - head_of(bone)).length
+    out = []
+    t = points[0][0]
+    while t <= points[-1][0] + 1e-6:
+        for (t0, f0, b0), (t1, f1, b1) in zip(points, points[1:]):
+            if t0 <= t <= t1:
+                u = (t - t0) / (t1 - t0)
+                if not smooth:
+                    u = u * u * (3 - 2 * u)
+                f, b = f0 + (f1 - f0) * u, b0 + (b1 - b0) * u
+                break
+        out.append([t * L, f, b])
+        t += step / L
+    for _ in range(smooth):
+        out = [[out[i][0]] + [(out[max(i - 1, 0)][j] + 2 * out[i][j] + out[min(i + 1, len(out) - 1)][j]) / 4
+                              for j in (1, 2)] for i in range(len(out))]
+    return out
+
+
+def _g(u):
+    return math.exp(-u * u)
+
+
+def _sig(u):
+    return 1.0 / (1.0 + math.exp(-max(-40.0, min(40.0, u))))
+
+
 # Torso: along the spine line, from below the belt to the base of the neck. Its side-to-side breadth (not in the side
 # view) keeps the earlier front-view table.
 T_TOP, T_BOT = POSED["Chest"][1], POSED["Hips"][0] - Vector((0, 0, 0.12))
@@ -474,29 +517,103 @@ for e in TORSO_PROFILE:
         e[1] = min(e[1], 0.118)
     if z < 1.0:
         e[2] = min(e[2], 0.15)
-    if 1.38 < z < 1.5:
+    if 1.38 < z < 1.47:
         e[1] = max(e[1], 0.1)
+    if z >= 1.47:  # the top of the chest tapers into the neck, under the cowl
+        e[1] = min(e[1], 0.1 - (z - 1.47) * 0.5)
+    if z < 1.04:  # under the belt only the hips, inside the tunic (the drawing's flare there is the tunic's)
+        e[1], e[2] = min(e[1], 0.112), min(e[2], 0.132)
 T_REST_TOP, T_REST_BOT = tail_of("Chest"), head_of("Hips") - Vector((0, 0, 0.12))
+# resample finer (every 6 mm) so the muscles read
+_tp = []
+for _i in range(len(TORSO_PROFILE) - 1):
+    (s0, f0, b0), (s1, f1, b1) = TORSO_PROFILE[_i], TORSO_PROFILE[_i + 1]
+    for _u in (0.0, 0.5):
+        _tp.append([s0 + (s1 - s0) * _u, f0 + (f1 - f0) * _u, b0 + (b1 - b0) * _u])
+_tp.append(list(TORSO_PROFILE[-1]))
+TORSO_PROFILE = _tp
+
+
+def torso_bump(s, lat, fr):
+    """The walk sheet's torso: a fitted breastplate shaped over the pectorals (a crisp lower edge), the sternum's
+    groove, three rows of abdominal plates and the obliques in front; the shoulder blades, the lats and the spine's
+    groove behind."""
+    z = T_REST_TOP.z - s
+    ax = abs(lat)
+    if fr > 0:
+        w = fr ** 1.5
+        pec = 0.017 * _g((ax - 0.072) / 0.05) * _g((z - 1.38) / 0.055) * _sig((z - 1.315) / 0.006)
+        stern = -0.007 * _g(ax / 0.012) * _g((z - 1.37) / 0.07)
+        abd = sum(0.011 * _g((ax - 0.034) / 0.02) * _g((z - zr) / 0.019) for zr in (1.15, 1.205, 1.26))
+        alba = -0.004 * _g(ax / 0.009) * _g((z - 1.2) / 0.07)
+        obl = 0.006 * _g((ax - 0.112) / 0.03) * _g((z - 1.2) / 0.05)
+        return w * (pec + stern + abd + alba + obl)
+    w = (-fr) ** 1.5
+    blade = 0.012 * _g((ax - 0.075) / 0.045) * _g((z - 1.39) / 0.06)
+    lats = 0.009 * _g((ax - 0.125) / 0.04) * _g((z - 1.27) / 0.07)
+    spine = -0.008 * _g(ax / 0.016) * _g((z - 1.3) / 0.15)
+    return w * (blade + lats + spine)
+
+
 loft_bone(None, TORSO_PROFILE, lambda s, dep, c: torso_at(c.z)[0], lambda p, s: torso_w(p, s), cap_r=0.17,
-          head=T_REST_TOP, tail=T_REST_BOT, n=28)
+          head=T_REST_TOP, tail=T_REST_BOT, n=48, bump=torso_bump)
 _tz = [(T_REST_TOP.z - s, f, bk) for s, f, bk in TORSO_PROFILE]
 
 # Legs (both legs of the walk sheet) - tunic, knee guard, calf, boot - and the foot (the concept's); mirrored.
 leg_l = lambda p, s: along(head_of("UpperLeg.L"), head_of("LowerLeg.L"), "UpperLeg.L", "LowerLeg.L", 0.85)(p, s) \
     if p.z < head_of("UpperLeg.L").z - 0.02 else {"Hips": 0.35, "UpperLeg.L": 0.65}
-# (the breeches stay narrow at the belt and balloon out below it, as drawn - side to side as well)
-loft_bone("UpperLeg.L", sheet_profile(["UpperLeg.L", "UpperLeg.R"], 0.06, 0.02, 0.13, pct=55),
-          lambda s, dep, c: dep * 0.85 * min(1.0, 0.55 + max(s + 0.06, 0.0) / 0.3), leg_l, cap_r=0.12, mirror=L2R)
-loft_bone("LowerLeg.L", sheet_profile(["LowerLeg.L", "LowerLeg.R"], 0.02, 0.0, 0.1, pct=55),
-          0.9, along(head_of("LowerLeg.L"), head_of("Foot.L"), "LowerLeg.L", "Foot.L", 0.9), cap_r=0.09, mirror=L2R)
+# Shaped after the walk sheet (its outline below the tunic: the thigh ~0.15 m deep above the knee, the boot's calf
+# ~0.14, the ankle ~0.08): under the tunic a trousered thigh - the glute behind, the quadriceps in front -, a rounded
+# knee guard, the tall boot with a rolled cuff under the knee, the calf, a strap at the ankle. (t, front, back)
+THIGH = [(-0.12, 0.068, 0.082), (0.0, 0.08, 0.094), (0.15, 0.086, 0.088), (0.35, 0.087, 0.075), (0.55, 0.082, 0.068),
+         (0.75, 0.075, 0.064), (0.9, 0.072, 0.066), (1.0, 0.075, 0.07), (1.05, 0.076, 0.072)]
+SHIN = [(-0.05, 0.074, 0.072), (0.0, 0.077, 0.072), (0.06, 0.076, 0.075), (0.12, 0.068, 0.084), (0.2, 0.058, 0.091),
+        (0.3, 0.05, 0.096), (0.42, 0.046, 0.094), (0.52, 0.037, 0.085), (0.62, 0.029, 0.074), (0.75, 0.024, 0.064),
+        (0.85, 0.021, 0.059), (0.92, 0.026, 0.061), (0.98, 0.034, 0.068), (1.03, 0.04, 0.07)]
+BOOT_CUFF = [(0.15, 0.06, 0.088), (0.17, 0.07, 0.097), (0.2, 0.074, 0.103), (0.26, 0.07, 0.106), (0.29, 0.06, 0.1)]
+ANKLE_STRAP = [(0.8, 0.025, 0.063), (0.82, 0.031, 0.069), (0.875, 0.032, 0.07), (0.895, 0.027, 0.066)]
+
+
+def thigh_bump(s, lat, fr):
+    t = s / (tail_of("UpperLeg.L") - head_of("UpperLeg.L")).length
+    inner = max(0.0, -lat) / 0.07  # the teardrop of the inner quadriceps over the knee
+    return max(fr, 0.0) * 0.006 * _g((t - 0.45) / 0.25) + 0.007 * inner * _g((t - 0.82) / 0.08) * max(fr + 0.3, 0.0)
+
+
+def knee_bump(s, lat, fr):
+    """The knee guard: a domed plate over the kneecap with a raised rim."""
+    t = s / (tail_of("LowerLeg.L") - head_of("LowerLeg.L")).length
+    if fr <= 0:
+        return 0.0
+    r = math.hypot(lat / 0.05, (t - 0.02) / 0.1)
+    plate = 0.02 * max(0.0, 1.0 - r * r) ** 0.5 + 0.004 * _g((r - 1.0) / 0.12)
+    return plate * fr ** 1.2
+
+
+loft_bone("UpperLeg.L", arm_profile(THIGH, "UpperLeg.L", smooth=4), 0.85, leg_l, mirror=L2R, n=24, bump=thigh_bump)
+_shin_w = along(head_of("LowerLeg.L"), head_of("Foot.L"), "LowerLeg.L", "Foot.L", 0.9)
+_knee_w = lambda p, s: ({"LowerLeg.L": 0.7, "UpperLeg.L": 0.3} if p.z > head_of("LowerLeg.L").z - 0.03
+                        else _shin_w(p, s))
+loft_bone("LowerLeg.L", arm_profile(SHIN, "LowerLeg.L", step=0.008, smooth=5), 0.9, _knee_w, mirror=L2R, n=24, bump=knee_bump)
+loft_bone("LowerLeg.L", arm_profile(BOOT_CUFF, "LowerLeg.L", step=0.006), 0.9, W("LowerLeg.L"), mirror=L2R, n=24)
+loft_bone("LowerLeg.L", arm_profile(ANKLE_STRAP, "LowerLeg.L", step=0.006), 0.92, _shin_w, mirror=L2R, n=24)
 # The foot stands flat in the drawing: read it along the ground, 4.5 cm up, from the heel (col 755) to the toe
 # (col 918) of the front boot; its top above that line, the sole below. It lies flat under the ankle at rest.
 _heel_y, _toe_y = px_to_model(0, 755)[0], px_to_model(0, 918)[0]
 FOOT_PROFILE = measure_profile(None, 0.0, 0.0, 0.08, step=0.01, head=Vector((0, _heel_y, 0.045)), tail=Vector((0, _toe_y, 0.045)))
+# (past the toe the reading is only the ground line: stop there)
+_last = max(i for i, e in enumerate(FOOT_PROFILE) if e[1] > 0.008)
+FOOT_PROFILE = FOOT_PROFILE[:_last + 1]
 _ank = head_of("Foot.L")
 _foot_len = _heel_y - _toe_y
 loft_bone("Foot.L", FOOT_PROFILE, 0.95, lambda p, s: {"Foot.L": 1.0}, cap_r=0.07, mirror=L2R,
           head=Vector((_ank.x, _ank.y + 0.075, 0.045)), tail=Vector((_ank.x, _ank.y + 0.075 - _foot_len, 0.045)))
+# The boot's sole: a flat slab a little wider than the foot, from the heel to the toe.
+_fd = {round(s, 3): (f + b) / 2 for s, f, b in FOOT_PROFILE}
+SOLE = [[s, -0.028, 0.047] for s, f, b in FOOT_PROFILE if f > 0.008]
+loft_bone("Foot.L", SOLE, lambda s, dep, c: 0.95 * _fd[round(s, 3)] + 0.006, lambda p, s: {"Foot.L": 1.0},
+          mirror=L2R, n=20, head=Vector((_ank.x, _ank.y + 0.075, 0.045)),
+          tail=Vector((_ank.x, _ank.y + 0.075 - _foot_len, 0.045)))
 
 # Arms, after the walk and animation sheets (the far arm swings clear behind the body there). Measured: the upper
 # arm ~0.12 m deep at the elbow and ~0.13 at the shoulder guard, the bracer 0.08-0.095 m tapering to ~0.066 at the
@@ -514,28 +631,16 @@ BRACER = [(0.3, 0.06, 0.056), (0.34, 0.058, 0.054), (0.38, 0.051, 0.048), (0.5, 
           (0.97, 0.044, 0.042)]
 
 
-def arm_profile(points, bone, step=0.012):
-    L = (tail_of(bone) - head_of(bone)).length
-    out = []
-    t = points[0][0]
-    while t <= points[-1][0] + 1e-6:
-        for (t0, f0, b0), (t1, f1, b1) in zip(points, points[1:]):
-            if t0 <= t <= t1:
-                u = (t - t0) / (t1 - t0)
-                u = u * u * (3 - 2 * u)
-                f, b = f0 + (f1 - f0) * u, b0 + (b1 - b0) * u
-                break
-        out.append([t * L, f, b])
-        t += step / L
-    return out
-
-
 loft_bone("UpperArm.R", arm_profile(UPPER_ARM, "UpperArm.R"), 0.95,
           along(head_of("UpperArm.R"), head_of("LowerArm.R"), "UpperArm.R", "LowerArm.R", 0.85), mirror=R2L, n=18)
 loft_bone("LowerArm.R", arm_profile(FOREARM, "LowerArm.R"), 0.9,
           along(head_of("LowerArm.R"), head_of("Hand.R"), "LowerArm.R", "Hand.R", 0.9), mirror=R2L, n=18)
 loft_bone("LowerArm.R", arm_profile(BRACER, "LowerArm.R", step=0.006), 0.92, lambda p, s: {"LowerArm.R": 1.0},
           mirror=R2L, n=18)
+# The concept's crimson band round the upper arm, under the shoulder guard.
+loft_bone("UpperArm.R", arm_profile([(0.27, 0.068, 0.07), (0.29, 0.072, 0.073), (0.33, 0.073, 0.072),
+                                     (0.35, 0.069, 0.068)], "UpperArm.R", step=0.006), 0.95,
+          lambda p, s: {"UpperArm.R": 1.0}, mirror=R2L, n=18, mat=CRIMSON)
 
 
 def build_hand(side):
@@ -600,26 +705,129 @@ def torso_at(z):
     return [_old_torso_at(z)[0], (f + bk) / 2, -(f - bk) / 2]
 
 
-# A crimson line across the chest (the stitched trim in the art).
-rx, ry, cy = torso_at(1.40)
-loft([((0, cy, 1.392), rx + 0.006, ry + 0.006), ((0, cy, 1.408), rx + 0.006, ry + 0.006)],
-     torso_w, mat=CRIMSON, n=28, cap0=False, cap1=False, square=0.25)
+# ---------------------------------------------------------------- tunic, belt, sash (after the walk sheet)
+# The belt sits at the waist, at the narrowest of the torso (concept and walk sheet: ~1.03-1.10 m). From under it a
+# tunic hangs to just above the knees: snug at the hips, flaring out, split at both sides below the hips so the legs
+# stride out of it, the front panel a little longer. It is a shell with a thickness; it follows the hips at the top
+# and, further down, the thigh on its own side.
+SKIRT = [(1.05, 0.152, 0.124, 0.142), (0.97, 0.172, 0.13, 0.15), (0.9, 0.19, 0.137, 0.155), (0.8, 0.203, 0.145, 0.157),
+         (0.7, 0.21, 0.152, 0.155), (0.56, 0.216, 0.16, 0.153)]  # z, half width, front, back
+SKIRT_CY = 0.008
+SLIT_TOP = 0.8
 
-# Belt (concept: z 0.89-0.93) with a crimson sash under it and a tail hanging at the left hip.
-rx, ry, cy = torso_at(0.91)
-loft([((0, cy, 0.875), rx + 0.008, ry + 0.008), ((0, cy, 0.905), rx + 0.01, ry + 0.01)], W("Hips"), mat=CRIMSON, n=28)
-loft([((0, cy, 0.9), rx + 0.012, ry + 0.012), ((0, cy, 0.94), rx + 0.012, ry + 0.012)], W("Hips"), n=28)
-box((0, cy - ry - 0.014, 0.92), (0.05, 0.012, 0.042), W("Hips"))  # buckle
-loft([((0.16, -0.02, 0.885), 0.03, 0.02), ((0.175, -0.005, 0.8), 0.022, 0.012), ((0.17, 0.01, 0.71), 0.03, 0.01)],
-     W("Hips"), mat=CRIMSON, n=10)  # sash tail
 
-# ---------------------------------------------------------------- neck, scarf, head
+def skirt_shape(z):
+    for (z0, *a), (z1, *b) in zip(SKIRT, SKIRT[1:]):
+        if z1 <= z <= z0:
+            u = (z0 - z) / (z0 - z1)
+            return [x + (y - x) * u for x, y in zip(a, b)]
+    return list(SKIRT[0][1:] if z > SKIRT[0][0] else SKIRT[-1][1:])
+
+
+def skirt_pt(th, z, off=0.0):
+    """Point of the tunic's outer surface at angle th (0 = his left, 90 deg = front) and height z, pushed out by off."""
+    rx, f, b = skirt_shape(z)
+    s, c = math.sin(th), math.cos(th)
+    ry = f if s > 0 else b
+    return Vector(((rx + off) * c, SKIRT_CY - (ry + off) * s, z))
+
+
+def skirt_hem(th):
+    s, c = math.sin(th), math.cos(th)
+    return 0.615 - 0.025 * max(s, 0.0) ** 2 + 0.03 * c * c
+
+
+def skirt_w(p, s):
+    u = max(0.0, min(1.0, (1.0 - p.z) / 0.4))
+    side = max(0.0, min(1.0, (p.x + 0.07) / 0.14))
+    side = side * side * (3 - 2 * side)
+    leg = 0.6 * u
+    w = {"Hips": 1.0 - leg}
+    if leg * side > 1e-4:
+        w["UpperLeg.L"] = leg * side
+    if leg * (1 - side) > 1e-4:
+        w["UpperLeg.R"] = leg * (1 - side)
+    return w
+
+
+def shell(th0, th1, closed, z_top, z_bot, off, nth, nv, weight, thick=0.008, mat=INK):
+    """A cloth shell over the tunic's surface between angles th0..th1, from z_top down to z_bot(th)."""
+    cols = nth if closed else nth + 1
+    outer, inner = [], []
+    for j in range(cols):
+        th = th0 + (th1 - th0) * j / nth
+        zb = z_bot(th)
+        ro, ri = [], []
+        for i in range(nv + 1):
+            z = z_top + (zb - z_top) * i / nv
+            po = skirt_pt(th, z, off)
+            pi = skirt_pt(th, z, off - thick)
+            ro.append(add_vert(po, weight(po, 0)))
+            ri.append(add_vert(pi, weight(pi, 0)))
+        outer.append(ro)
+        inner.append(ri)
+
+    def quad(a, b, c, d, outward):
+        n = (verts[b] - verts[a]).cross(verts[d] - verts[a])
+        if n.dot(outward) < 0:
+            a, b, c, d = d, c, b, a
+        faces.append((a, b, c, d)); fmat.append(mat)
+
+    def out_dir(vi):
+        p = verts[vi]
+        return Vector((p.x, p.y - SKIRT_CY, 0.0))
+
+    for j in range(cols if closed else cols - 1):
+        j1 = (j + 1) % cols
+        for i in range(nv):
+            quad(outer[j][i], outer[j1][i], outer[j1][i + 1], outer[j][i + 1], out_dir(outer[j][i]))
+            quad(inner[j][i], inner[j1][i], inner[j1][i + 1], inner[j][i + 1], -out_dir(inner[j][i]))
+        for i, dz in ((0, 1.0), (nv, -1.0)):  # top and hem rims
+            quad(outer[j][i], outer[j1][i], inner[j1][i], inner[j][i], Vector((0, 0, dz)))
+    if not closed:  # the slit edges
+        for j, sgn in ((0, -1.0), (cols - 1, 1.0)):
+            th = th0 if j == 0 else th1
+            tang = Vector((-math.sin(th), -math.cos(th), 0.0)) * sgn
+            for i in range(nv):
+                quad(outer[j][i], outer[j][i + 1], inner[j][i + 1], inner[j][i], tang)
+
+
+R = math.radians
+# hips to the top of the slits: a closed tube
+shell(0.0, 2 * math.pi, True, 1.055, lambda th: SLIT_TOP, 0.0, 72, 14, skirt_w)
+# below: the front and the back panel, split at the sides
+shell(R(7), R(173), False, SLIT_TOP + 0.02, skirt_hem, 0.004, 40, 14, skirt_w)
+shell(R(187), R(353), False, SLIT_TOP + 0.02, skirt_hem, 0.004, 40, 14, skirt_w)
+
+# The belt: a broad band with raised edges and a square buckle in front.
+rx, ry, cy = torso_at(1.072)
+loft([((0, cy, 1.044), rx + 0.014, ry + 0.014), ((0, cy, 1.049), rx + 0.019, ry + 0.019),
+      ((0, cy, 1.095), rx + 0.019, ry + 0.019), ((0, cy, 1.1), rx + 0.014, ry + 0.014)], W("Hips"), n=48, square=0.3)
+loft([((0, cy, 1.058), rx + 0.02, ry + 0.02), ((0, cy, 1.062), rx + 0.022, ry + 0.022),
+      ((0, cy, 1.082), rx + 0.022, ry + 0.022), ((0, cy, 1.086), rx + 0.02, ry + 0.02)], W("Hips"), n=48, square=0.3)
+_by = cy - ry - 0.026
+box((0, _by, 1.072), (0.062, 0.012, 0.06), W("Hips"))
+box((0, _by - 0.007, 1.072), (0.036, 0.006, 0.034), W("Hips"), mat=CRIMSON)  # the buckle's crimson inset
+# The crimson sash knotted at the front left of the belt, its two ends hanging over the tunic.
+_knot = skirt_pt(R(42), 1.072, 0.03)
+blob(_knot, (0.026, 0.018, 0.024), W("Hips"), mat=CRIMSON, seg=12, rings=8)
+for th, z_end, wd in ((R(38), 0.84, 0.017), (R(47), 0.79, 0.015)):
+    secs = []
+    for k in range(9):
+        z = 1.06 + (z_end - 1.06) * k / 8
+        secs.append((skirt_pt(th + R(4) * k / 8, z, 0.012), wd * (1 + 0.25 * k / 8), 0.004))
+    loft(secs, skirt_w, mat=CRIMSON, n=10)
+
+# ---------------------------------------------------------------- neck and cowl
 loft([((0, 0.0, 1.50), 0.05, 0.048), ((0, -0.025, 1.58), 0.042, 0.042), ((0, -0.05, 1.65), 0.044, 0.044)],
      blend_z([(1.53, "Chest"), (1.58, "Neck"), (1.62, "Neck"), (1.66, "Head")]), n=16)
-# Crimson scarf wound round the neck: two thick turns.
-for z, r, t, yc in ((1.545, 0.088, 0.03, -0.012), (1.585, 0.078, 0.026, -0.03)):
-    loft([((0, yc + 0.004, z - t), r - 0.012, r - 0.016), ((0, yc, z), r + 0.012, r + 0.006),
-          ((0, yc + 0.004, z + t), r - 0.012, r - 0.016)], blend_z([(1.53, "Chest"), (1.58, "Neck")]), mat=CRIMSON, n=20)
+# The crimson scarf wound into a thick cowl (walk sheet: it hugs the neck in heavy rolls and spreads over the top of
+# the chest and the shoulders, bunched up behind the neck).
+COWL = [(1.425, 0.0, 0.118, 0.112, 1.42), (1.448, 0.004, 0.13, 0.112, 1.34), (1.474, 0.002, 0.138, 0.119, 1.26),
+        (1.5, -0.004, 0.122, 0.104, 1.24), (1.524, -0.01, 0.119, 0.101, 1.16), (1.549, -0.016, 0.1, 0.088, 1.1),
+        (1.571, -0.022, 0.099, 0.088), (1.592, -0.028, 0.082, 0.074), (1.612, -0.034, 0.079, 0.071)]
+loft([((0, yc, z), rx, ry, {"back": 1.14, "front": e[0] if e else 1.0}) for z, yc, rx, ry, *e in COWL],
+     blend_z([(1.5, "Chest"), (1.6, "Neck")]), mat=CRIMSON, n=36)
 
 HEAD = W("Head")
 HF = -0.05  # the head juts forward on a long neck: the face is ahead of the chest line, as in the concept
@@ -770,6 +978,10 @@ if old is not None:
 me = bpy.data.meshes.new("Hero")
 me.from_pydata([tuple(v) for v in verts], [], faces)
 me.update()
+# Smooth shading, sharp only at real creases (plate edges, rims, the hem).
+me.shade_smooth()
+if hasattr(me, "set_sharp_from_angle"):
+    me.set_sharp_from_angle(angle=math.radians(48))
 ink = bpy.data.materials.get("HeroInk") or bpy.data.materials.new("HeroInk")
 crimson = bpy.data.materials.get("HeroCrimson") or bpy.data.materials.new("HeroCrimson")
 crimson.diffuse_color = (0.7, 0.02, 0.035, 1)

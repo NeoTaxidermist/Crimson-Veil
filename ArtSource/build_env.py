@@ -11,7 +11,8 @@ import creature_kit as K
 importlib.reload(K)
 
 SCRIPTS = {"Aqueduct": "aqueduct", "Castle": "castle", "CliffRuin": "cliff_ruin",
-           "Bramble": "vegetation", "Weeds": "vegetation", "Chain": "vegetation", "LeafPile": "vegetation"}
+           "Bramble": "vegetation", "Weeds": "vegetation", "Chain": "vegetation", "LeafPile": "vegetation",
+           "RuinWall": "ruin_pieces", "Tower": "ruin_pieces", "RuinStairs": "ruin_pieces"}
 exec(open(ROOT + "\\env\\" + SCRIPTS[NAME] + ".py").read(), {"__name__": "env", "VEG_PART": NAME})
 K.export(r"C:\Dev\CrimsonVeil\Assets\_CrimsonVeil\Art\Ruins" + "\\" + NAME + ".fbx")
 bpy.ops.wm.save_as_mainfile(filepath=ROOT + "\\env_" + NAME + ".blend")

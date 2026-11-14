@@ -114,7 +114,7 @@ namespace CrimsonVeil.World
         /// </summary>
         public static Mesh Arch(float span, float pillarWidth, float springHeight, float crown, float depth, float breakAmount, int seed, int segments = 16)
         {
-            var mesh = BuildArch(span, pillarWidth, springHeight, crown, depth, segments, out var builder);
+            var mesh = BuildArch(span, pillarWidth, springHeight, crown, depth, segments, out var builder, seed);
             if (breakAmount <= 0.001f) return mesh;
 
             float r = span * 0.5f, R = r + pillarWidth, H = springHeight + r + crown;
@@ -131,7 +131,7 @@ namespace CrimsonVeil.World
             return builder.ToMesh("ArchRuined");
         }
 
-        static Mesh BuildArch(float span, float pillarWidth, float springHeight, float crown, float depth, int segments, out Builder b)
+        static Mesh BuildArch(float span, float pillarWidth, float springHeight, float crown, float depth, int segments, out Builder b, int seed = 0)
         {
             float r = span * 0.5f;
             float R = r + pillarWidth;
@@ -224,7 +224,194 @@ namespace CrimsonVeil.World
 
             Face(-hz, Vector3.back);
             Face(hz, Vector3.forward);
+            ArchMasonry(b, r, pillarWidth, springHeight, H, hz, seed);
             return b.ToMesh("Arch");
+        }
+
+        /// <summary>
+        /// Carved detail on the camera side of an arch (key art): a ring of wedge voussoirs with a keystone,
+        /// impost cornices and plinths on the piers, staggered ashlar courses with recessed joints, a top
+        /// cornice and ivy hanging from the ring and the crown. All of it stands proud of the front face, so
+        /// the stone relief shading draws every block.
+        /// </summary>
+        static void ArchMasonry(Builder b, float r, float pillarWidth, float spring, float H, float hz, int seed)
+        {
+            var rnd = new System.Random(seed * 7919 + 13);
+            float Rn(float a, float c) => a + (float)rnd.NextDouble() * (c - a);
+            float u = pillarWidth / 0.8f;              // unit: 1 at Near scale
+            float R = r + pillarWidth;
+            float z = -hz;                             // front face
+            float ring = Mathf.Max(0.12f, Mathf.Min(Mathf.Min(pillarWidth * 0.8f, r * 0.45f), H - spring - r - 0.06f));
+
+            // Voussoirs: wedges between r and r + ring, small angular joints, the keystone taller and prouder.
+            int count = Mathf.Max(9, Mathf.RoundToInt(Mathf.PI * (r + ring * 0.5f) / (0.42f * u)) | 1);
+            float gap = 0.035f * u / (r + ring * 0.5f);
+            for (int k = 0; k < count; k++)
+            {
+                float a0 = Mathf.PI * k / count + gap, a1 = Mathf.PI * (k + 1) / count - gap;
+                bool key = k == count / 2;
+                float outer = Mathf.Min(r + ring * (key ? 1.35f : Rn(0.92f, 1.06f)), H - spring - 0.02f); // never above the wall
+                float proud = (key ? 0.16f : Rn(0.05f, 0.1f)) * u;
+                Wedge(b, spring, r, outer, Mathf.PI - a1, Mathf.PI - a0, z, proud);
+            }
+
+            // Piers: plinth, ashlar courses, impost cornice.
+            foreach (float side in new[] { -1f, 1f })
+            {
+                float x0 = side < 0 ? -R : r, x1 = side < 0 ? -r : R, cx = (x0 + x1) * 0.5f, w = x1 - x0;
+                Slab(b, cx, 0.25f * u, w + 0.22f * u, 0.5f * u, z, 0.14f * u);                          // plinth
+                Slab(b, cx, 0.58f * u, w + 0.12f * u, 0.12f * u, z, 0.09f * u);                          // plinth moulding
+                Slab(b, cx, spring - 0.05f * u, w + 0.3f * u, 0.18f * u, z, 0.16f * u);                  // impost
+                Slab(b, cx, spring - 0.22f * u, w + 0.14f * u, 0.12f * u, z, 0.1f * u);
+                Courses(b, rnd, x0, x1, 0.7f * u, spring - 0.3f * u, z, u);
+            }
+
+            // Spandrels above the ring: courses that stop at the voussoirs, then a top cornice.
+            float y = spring + 0.1f * u, ch = 0.42f * u;
+            int row = 0;
+            while (y + ch < H - 0.35f * u)
+            {
+                float yc = y + ch * 0.5f;
+                float dy = yc - spring;
+                float reach = dy < r + ring ? Mathf.Sqrt(Mathf.Max(0f, (r + ring) * (r + ring) - dy * dy)) + 0.06f * u : -1f;
+                if (reach < 0f) StoneRow(b, rnd, -R, R, y, ch, z, u, row);
+                else
+                {
+                    if (R - reach > 0.3f * u) StoneRow(b, rnd, -R, -reach, y, ch, z, u, row);
+                    if (R - reach > 0.3f * u) StoneRow(b, rnd, reach, R, y, ch, z, u, row);
+                }
+                y += ch; row++;
+            }
+            Slab(b, 0f, H - 0.12f * u, 2f * R + 0.3f * u, 0.24f * u, z, 0.18f * u);                      // cornice
+            for (float x = -R; x < R - 0.2f * u; x += 0.5f * u)                                           // dentils
+                Slab(b, x + 0.2f * u, H - 0.32f * u, 0.2f * u, 0.14f * u, z, 0.1f * u);
+
+            // Ivy: strands with leaves hanging from the ring and the cornice.
+            int strands = 3 + rnd.Next(4);
+            for (int s = 0; s < strands; s++)
+            {
+                bool fromRing = rnd.NextDouble() < 0.6;
+                float x = fromRing ? Rn(-r * 0.8f, r * 0.8f) : Rn(-R, R);
+                float top = fromRing ? spring + Mathf.Sqrt(Mathf.Max(0f, r * r - x * x)) : H - 0.2f * u;
+                float len = Rn(0.8f, fromRing ? 2.6f : 3.4f) * u;
+                Vine(b, rnd, new Vector3(x, top, z - 0.2f * u), len, u);
+            }
+        }
+
+        /// <summary>Wedge stone between radii r0..r1 and angles a0..a1 around (0, spring), standing proud by <paramref name="proud"/>.</summary>
+        static void Wedge(Builder b, float spring, float r0, float r1, float a0, float a1, float z, float proud)
+        {
+            Vector3 P(float rad, float a, float zz) => new Vector3(Mathf.Cos(a) * rad, spring + Mathf.Sin(a) * rad, zz);
+            float zf = z - proud;
+            Vector3 i0 = P(r0, a0, zf), i1 = P(r0, a1, zf), o1 = P(r1, a1, zf), o0 = P(r1, a0, zf);
+            b.Quad(i0, i1, o1, o0, Vector3.back, Vector2.zero, Vector2.right, Vector2.one, Vector2.up);
+            // Sides back to the wall, each facing away from the stone's centre.
+            var centre = (i0 + i1 + o1 + o0) * 0.25f;
+            void Side(Vector3 p, Vector3 q)
+            {
+                var pb = new Vector3(p.x, p.y, z); var qb = new Vector3(q.x, q.y, z);
+                var e = q - p;
+                var nrm = new Vector3(e.y, -e.x, 0f).normalized;
+                var outward = (p + q) * 0.5f - centre;
+                if (Vector3.Dot(nrm, new Vector3(outward.x, outward.y, 0f)) < 0f) nrm = -nrm;
+                b.Quad(p, q, qb, pb, nrm, Vector2.zero, Vector2.right, Vector2.one, Vector2.up);
+            }
+            Side(i0, i1); Side(i1, o1); Side(o1, o0); Side(o0, i0);
+        }
+
+        /// <summary>A box standing proud of the wall plane z, centred at (cx, cy).</summary>
+        static void Slab(Builder b, float cx, float cy, float w, float h, float z, float proud)
+            => b.Box(new Vector3(cx, cy, z - proud * 0.5f + 0.01f), new Vector3(w, h, proud + 0.02f), Quaternion.identity);
+
+        /// <summary>
+        /// A dressed stone standing proud of the wall plane z with chamfered front edges: the 45° chamfers face
+        /// the camera, so the top one catches the moon and the bottom/left ones fall into shade — each block
+        /// reads clearly inside a flat silhouette.
+        /// </summary>
+        static void Stone(Builder b, Vector2 c, float w, float h, float z, float proud, float bevel, float tiltDeg = 0f)
+        {
+            bevel = Mathf.Min(bevel, proud * 0.9f, w * 0.3f, h * 0.3f);
+            var rot = Quaternion.Euler(0f, 0f, tiltDeg);
+            Vector3 P(float x, float y, float zz) => new Vector3(c.x, c.y, 0f) + rot * new Vector3(x, y, 0f) + new Vector3(0f, 0f, zz);
+            float hx = w * 0.5f, hy = h * 0.5f, ix = hx - bevel, iy = hy - bevel;
+            float zf = z - proud, zb = zf + bevel, zw = z + 0.01f;
+            Vector3 f0 = P(-ix, -iy, zf), f1 = P(ix, -iy, zf), f2 = P(ix, iy, zf), f3 = P(-ix, iy, zf);
+            Vector3 o0 = P(-hx, -hy, zb), o1 = P(hx, -hy, zb), o2 = P(hx, hy, zb), o3 = P(-hx, hy, zb);
+            Vector3 w0 = P(-hx, -hy, zw), w1 = P(hx, -hy, zw), w2 = P(hx, hy, zw), w3 = P(-hx, hy, zw);
+            Vector2 U = Vector2.zero;
+            b.Quad(f0, f1, f2, f3, Vector3.back, U, U, U, U);
+            Vector3 up = rot * Vector3.up, right = rot * Vector3.right;
+            b.Quad(f3, f2, o2, o3, (up + Vector3.back).normalized, U, U, U, U);      // top chamfer
+            b.Quad(f0, f1, o1, o0, (-up + Vector3.back).normalized, U, U, U, U);     // bottom chamfer
+            b.Quad(f1, f2, o2, o1, (right + Vector3.back).normalized, U, U, U, U);   // right chamfer
+            b.Quad(f0, f3, o3, o0, (-right + Vector3.back).normalized, U, U, U, U);  // left chamfer
+            b.Quad(o3, o2, w2, w3, up, U, U, U, U);
+            b.Quad(o0, o1, w1, w0, -up, U, U, U, U);
+            b.Quad(o1, o2, w2, w1, right, U, U, U, U);
+            b.Quad(o0, o3, w3, w0, -right, U, U, U, U);
+        }
+
+        static void Courses(Builder b, System.Random rnd, float x0, float x1, float y0, float y1, float z, float u)
+        {
+            float ch = 0.42f * u;
+            int row = 0;
+            for (float y = y0; y + ch * 0.6f < y1; y += ch, row++)
+                StoneRow(b, rnd, x0, x1, y, Mathf.Min(ch, y1 - y), z, u, row);
+        }
+
+        /// <summary>One course of ashlar between x0..x1, joints staggered every other row, stones slightly uneven.</summary>
+        static void StoneRow(Builder b, System.Random rnd, float x0, float x1, float y, float ch, float z, float u, int row)
+        {
+            float joint = 0.04f * u;
+            float x = x0 + (row % 2 == 1 ? 0.3f * u : 0f);
+            if (x > x0 + 0.05f) Lay(x0, x);
+            while (x < x1 - 0.05f)
+            {
+                float w = (0.55f + (float)rnd.NextDouble() * 0.5f) * u;
+                float xe = Mathf.Min(x1, x + w);
+                if (x1 - xe < 0.25f * u) xe = x1;
+                Lay(x, xe);
+                x = xe;
+            }
+            void Lay(float a, float c)
+            {
+                if (c - a < joint * 2f) return;
+                if (rnd.NextDouble() < 0.07) return;   // a missing block
+                float proud = (0.06f + (float)rnd.NextDouble() * 0.05f) * u;
+                float sag = (float)rnd.NextDouble() * 0.03f * u;
+                Stone(b, new Vector2((a + c) * 0.5f, y + ch * 0.5f - sag), c - a - joint, ch - joint, z, proud, 0.07f * u,
+                    ((float)rnd.NextDouble() - 0.5f) * 2.5f);
+            }
+        }
+
+        /// <summary>Ivy strand hanging from <paramref name="top"/>: a thin swaying ribbon with alternating leaves.</summary>
+        static void Vine(Builder b, System.Random rnd, Vector3 top, float len, float u)
+        {
+            const int segs = 8;
+            float curl = ((float)rnd.NextDouble() - 0.5f) * 0.6f * u;
+            float w = 0.035f * u;
+            int pl = -1, pr = -1;
+            for (int s = 0; s <= segs; s++)
+            {
+                float t = (float)s / segs;
+                var c = top + new Vector3(curl * Mathf.Sin(t * 3f), -len * t, 0f);
+                float half = w * (1f - t * 0.7f);
+                int l = b.Vert(c + Vector3.left * half, Vector3.back, new Vector2(0f, t));
+                int rr = b.Vert(c + Vector3.right * half, Vector3.back, new Vector2(1f, t));
+                // Hanging downwards, so the winding is the reverse of an upright grass blade (front faces -z).
+                if (s > 0) { b.Tri(pl, rr, l); b.Tri(pl, pr, rr); }
+                pl = l; pr = rr;
+                if (s > 0 && s < segs)
+                {
+                    float dir = s % 2 == 0 ? 1f : -1f, leaf = (0.16f - 0.06f * t) * u;
+                    var a = b.Vert(c, Vector3.back, Vector2.zero);
+                    var p1 = b.Vert(c + new Vector3(dir * leaf * 0.5f, leaf * 0.45f, 0f), Vector3.back, Vector2.zero);
+                    var p2 = b.Vert(c + new Vector3(dir * leaf, -leaf * 0.1f, 0f), Vector3.back, Vector2.zero);
+                    var p3 = b.Vert(c + new Vector3(dir * leaf * 0.45f, -leaf * 0.4f, 0f), Vector3.back, Vector2.zero);
+                    if (dir > 0f) { b.Tri(a, p1, p2); b.Tri(a, p2, p3); }
+                    else { b.Tri(a, p2, p1); b.Tri(a, p3, p2); } // mirrored leaf: flip to keep facing the camera
+                }
+            }
         }
 
         // ------------------------------------------------------------------ Rubble & urns

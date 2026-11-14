@@ -5,6 +5,31 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.10.0] – 2026-11-14
+Mnohem víc detailu ve všech objektech prostředí, podle key artu.
+
+### Přidáno
+- **Reliéf kamene ve shaderu.** Plochy natočené ke kameře si drží tón vrstvy. Horní hrany a fazety kamenů chytají měsíc, spodní a levé boky jsou ve stínu. Díky tomu se uvnitř siluet čte zdivo, klenáky i vrstvy skály. Efekt je nejsilnější v hrací ploše a směrem do dálky slábne, popředí zůstává čistě černé.
+- **Procedurální oblouky jsou plně vyzděné:**
+  - věnec klínových kamenů s vystouplým klenákem;
+  - římsy a sokly na pilířích;
+  - kvádrové zdivo s vazbou na přeskáčku, kde občas chybí kámen;
+  - horní římsa se zubořezem;
+  - břečťan s lístky visící z oblouku a římsy.
+- **Čela bloků terénu:**
+  - skála má vystouplé, mírně nakloněné vrstvy (strata) s drobnými kameny;
+  - zřícenina má pravidelné kvádry se zkosenými hranami;
+  - vše zůstává uvnitř bloku a pod travou.
+- **Modely z Blenderu dostaly zdivo:**
+  - akvadukt, hrad a útes: každé pole oblouku má klínové kameny, římsy a kvádry na pilířích i nad obloukem; hrad má navíc bosovaný sokl;
+  - zeď s okny, věž a schody jsou postavené znovu a podrobněji: zeď má opěrák, zubořez a sutiny, věž gotická okna, nárožní kvádry a ulomenou korunu, schody nosy stupňů a sloupek zábradlí.
+
+### Testy
+- Reliéf materiálů slábne s hloubkou a popředí ho nemá.
+- Oblouk má vystouplé kameny se zkosenými hranami a břečťan. Těleso zdi nezasahuje do otvoru.
+- Vrstvy skály a kvádry zříceniny jsou uvnitř bloku a pod travou.
+- Zeď a věž mají přes 1 500 trojúhelníků.
+
 ## [0.9.1] – 2026-11-14
 Tráva navazuje na bloky.
 

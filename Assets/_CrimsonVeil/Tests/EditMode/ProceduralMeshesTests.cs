@@ -34,14 +34,17 @@ namespace CrimsonVeil.Tests
             AssertFinite(m);
             AssertWindingMatchesNormals(m);
             var b = m.bounds;
-            Assert.AreEqual(6f, b.size.x, 1e-3f);
+            // The wall body spans 6 m; carved imposts and the cornice may stand out a little on the camera side.
+            Assert.That(b.size.x, Is.InRange(6f - 1e-3f, 6.5f));
             Assert.AreEqual(3f + 2f + 0.5f, b.size.y, 1e-3f);
-            Assert.AreEqual(1f, b.size.z, 1e-3f);
+            Assert.AreEqual(0.5f, b.max.z, 0.03f, "the back face is plain");
+            Assert.LessOrEqual(b.min.z, -0.5f + 1e-3f);
             Assert.AreEqual(0f, b.min.y, 1e-3f);
 
-            // Nothing on the front face may lie inside the opening.
+            // Nothing of the wall body may lie inside the opening (only proud carving and hanging ivy).
             foreach (var p in m.vertices)
             {
+                if (p.z < -0.5f + 0.03f) continue; // plinths, imposts and ivy on the front face may overhang the jambs
                 var rel = new Vector2(p.x, Mathf.Max(0f, p.y - 3f));
                 bool insideOpening = Mathf.Abs(p.x) < 1.99f && (p.y < 3f || rel.magnitude < 1.99f);
                 Assert.IsFalse(insideOpening, $"vertex {p} inside arch opening");

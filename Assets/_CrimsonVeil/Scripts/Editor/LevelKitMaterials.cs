@@ -60,10 +60,12 @@ namespace CrimsonVeil.EditorTools
             {
                 inkFG = Ink("InkForeground", 0.025f, 0f, 0.3f, 0f),
                 // The walkable rock: dark grey stone with grain, cracks and a moonlit top edge (key art), not a black slab.
-                inkPlay = Edge(Ink("InkPlay", 0.075f, 0.55f, 0.5f, 0.55f), 0.16f),
-                inkNear = Edge(Ink("InkNear", 0.26f, 1.2f, 0.5f, 0.55f), 0.06f),
-                inkMid = Ink("InkMid", 0.46f, 1.2f, 0.45f, 0.45f),
-                inkFar = Ink("InkFar", 0.6f, 1.1f, 0.4f, 0.3f),
+                // Relief: carved stones, voussoirs and strata catch the moon on top and shade on their sides,
+                // strongest up close and fading into the mist with distance.
+                inkPlay = Relief(Edge(Ink("InkPlay", 0.075f, 0.55f, 0.5f, 0.55f), 0.16f), 1.1f),
+                inkNear = Relief(Edge(Ink("InkNear", 0.26f, 1.2f, 0.5f, 0.55f), 0.06f), 0.75f),
+                inkMid = Relief(Ink("InkMid", 0.46f, 1.2f, 0.45f, 0.45f), 0.45f),
+                inkFar = Relief(Ink("InkFar", 0.6f, 1.1f, 0.4f, 0.3f), 0.25f),
                 inkSky = Ink("InkSky", 0.7f, 0.6f, 0.3f, 0f),
                 grass = Wind(Sil("GrassInk", sil, new Color(0.02f, 0.02f, 0.022f), 0.4f, 0.2f), 1f, false),
                 banner = Wind(Sil("BannerCrimson", sil, new Color(0.62f, 0.015f, 0.03f), 0.3f, 0.6f), 1.6f, true),
@@ -137,6 +139,13 @@ namespace CrimsonVeil.EditorTools
         static Material Edge(Material m, float amount)
         {
             m.SetFloat("_EdgeLight", amount);
+            return m;
+        }
+
+        /// <summary>Stone relief: moonlit tops and shaded sides of carved detail; flat camera-facing faces unchanged.</summary>
+        static Material Relief(Material m, float amount)
+        {
+            m.SetFloat("_Relief", amount);
             return m;
         }
 

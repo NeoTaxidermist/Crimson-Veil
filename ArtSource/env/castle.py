@@ -30,8 +30,9 @@ def wall_with_windows(x0, x1, y0, rows, row_h, bay_w, pier, spring, z0, z1, poin
     return y
 
 
-# Plinth: a solid battered base.
+# Plinth: a solid battered base of big rusticated blocks.
 c.prism([(-9.5, 0), (9.5, 0), (9.1, 3.0), (-9.1, 3.0)], Z0 - 0.4, Z1 + 0.4)
+c.ashlar(-9.3, 9.3, 0.05, 2.95, Z0 - 0.4, course=0.6, proud=(0.08, 0.16), bevel=0.09, seed=77)
 # Main hall: three storeys of round-arched windows; the top storey crumbles.
 top = wall_with_windows(-8.6, 8.6, 3.0, 3, 3.6, 2.4, 0.55, 1.4, Z0, Z1, ragged_top=0.5, seed=1)
 c.crenellate(-8.6, 5.5, top, 0.6, 0.45, 0.6, Z0, Z0 + 0.6, seed=2, broken=0.3)

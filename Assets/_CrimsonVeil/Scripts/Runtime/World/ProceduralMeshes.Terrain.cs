@@ -111,7 +111,78 @@ namespace CrimsonVeil.World
                     else b.Tri(a, c2, c1);
                 }
             }
+            TerrainRelief(b, outline, width, height, -hz, style, roughness, seed);
             return b.ToMesh("Terrain");
+        }
+
+        /// <summary>
+        /// Carved front face: rock gets protruding strata slabs (tilted a little, moonlit on top), ruin
+        /// masonry gets staggered ashlar courses. Everything stays inside the outline and below the grass line.
+        /// </summary>
+        static void TerrainRelief(Builder b, List<Vector2> outline, float width, float height, float z, TerrainStyle style, float roughness, int seed)
+        {
+            var rnd = new System.Random(seed * 4241 + 7);
+            float R(float a, float c) => a + (float)rnd.NextDouble() * (c - a);
+            float hw = width * 0.5f;
+            float bottom = -height + 0.25f;
+            bool Inside(float x, float y) => PointInPolygon(new Vector2(x, y), outline);
+
+            if (style == TerrainStyle.Ruin)
+            {
+                float ch = 0.48f;
+                int row = 0;
+                for (float y = -0.4f; y - ch > bottom; y -= ch, row++)
+                {
+                    float x = -hw + (row % 2 == 1 ? 0.35f : 0f);
+                    while (x < hw)
+                    {
+                        float w = R(0.7f, 1.3f), xe = Mathf.Min(hw, x + w);
+                        float cx = (x + xe) * 0.5f, cy = y - ch * 0.5f, sw = xe - x - 0.06f, sh = ch - 0.06f;
+                        if (sw > 0.2f && rnd.NextDouble() > 0.08 && Inside(cx - sw * 0.5f, cy) && Inside(cx + sw * 0.5f, cy) && Inside(cx, cy - sh * 0.5f))
+                        {
+                            Stone(b, new Vector2(cx, cy), sw, sh, z, R(0.06f, 0.11f), 0.07f, R(-1.5f, 1.5f));
+                        }
+                        x = xe;
+                    }
+                }
+                return;
+            }
+
+            // Rock strata: slabs in rough bands, some missing, the band spacing varies.
+            float rough = Mathf.Clamp01(roughness);
+            for (float y = -0.38f; y > bottom; y -= R(0.42f, 0.75f))
+            {
+                float x = -hw + R(0f, 0.5f);
+                while (x < hw)
+                {
+                    float w = R(0.5f, 1.7f), h = R(0.16f, 0.4f);
+                    float cx = x + w * 0.5f, cy = y - h * 0.5f;
+                    x += w + R(0.04f, 0.3f);
+                    if (rnd.NextDouble() < 0.3) continue; // gap: the raw rock behind shows
+                    float tilt = R(-6f, 6f) * rough;
+                    var rot = Quaternion.Euler(0f, 0f, tilt);
+                    Vector3 ex = rot * new Vector3(w * 0.5f, 0f, 0f), ey = rot * new Vector3(0f, h * 0.5f, 0f);
+                    if (!Inside(cx - ex.x - ey.x, cy - ex.y - ey.y) || !Inside(cx + ex.x - ey.x, cy + ex.y - ey.y) ||
+                        !Inside(cx - ex.x + ey.x, cy - ex.y + ey.y) || !Inside(cx + ex.x + ey.x, cy + ex.y + ey.y)) continue;
+                    float proud = R(0.06f, 0.16f) * (0.5f + rough);
+                    Stone(b, new Vector2(cx, cy), w, h, z, proud, R(0.05f, 0.1f), tilt);
+                    // A chipped smaller stone sitting on some slabs.
+                    if (rnd.NextDouble() < 0.25 && Inside(cx, cy + h * 0.5f + 0.12f) && cy + h * 0.5f + 0.2f < -0.32f)
+                        b.Box(new Vector3(cx + R(-w, w) * 0.3f, cy + h * 0.5f + 0.08f, z - proud * 0.4f), new Vector3(R(0.15f, 0.35f), R(0.1f, 0.18f), proud * 0.8f), Quaternion.Euler(0f, 0f, R(-15f, 15f)));
+                }
+            }
+        }
+
+        public static bool PointInPolygon(Vector2 p, IReadOnlyList<Vector2> poly)
+        {
+            bool inside = false;
+            for (int i = 0, j = poly.Count - 1; i < poly.Count; j = i++)
+            {
+                Vector2 a = poly[i], c = poly[j];
+                if ((a.y > p.y) != (c.y > p.y) && p.x < (c.x - a.x) * (p.y - a.y) / (c.y - a.y) + a.x)
+                    inside = !inside;
+            }
+            return inside;
         }
 
         /// <summary>Ear-clipping triangulation of a simple polygon (any winding). Returns index triples.</summary>

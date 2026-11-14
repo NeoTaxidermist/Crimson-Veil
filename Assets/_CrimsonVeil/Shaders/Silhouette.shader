@@ -14,6 +14,7 @@ Shader "CrimsonVeil/Silhouette"
         _CrackScale ("Crack Scale", Float) = 1.2
         _EdgeLight ("Top Edge Light", Range(0, 1)) = 0.08
         _FormShade ("Form Shading (moonlight)", Range(0, 1)) = 0
+        _Relief ("Stone Relief (moonlit tops, shaded sides)", Range(0, 1.5)) = 0
         _RimLight ("Rim Light", Range(0, 1)) = 0
         _RimColor ("Rim Color", Color) = (0.62, 0.62, 0.66, 1)
         _RimWidth ("Rim Width", Range(0.5, 8)) = 3
@@ -47,6 +48,7 @@ Shader "CrimsonVeil/Silhouette"
             float _CrackScale;
             float _EdgeLight;
             float _FormShade;
+            float _Relief;
             float _RimLight;
             half4 _RimColor;
             float _RimWidth;
@@ -131,7 +133,9 @@ Shader "CrimsonVeil/Silhouette"
                     col = lerp(col, col * 0.55 + 0.035, crack * _Cracks);
                 }
 
-                col += saturate(i.normalWS.y) * _EdgeLight;
+                // Only (near-)level tops get the edge light; chamfers and slopes are left to _Relief.
+                float up = saturate(i.normalWS.y);
+                col += up * up * up * up * _EdgeLight;
 
                 // Creatures: modelled by the moon (from above, slightly behind the camera), darker towards the
                 // feet, and a pale rim along the outline so they never melt into a dark background.
@@ -141,6 +145,16 @@ Shader "CrimsonVeil/Silhouette"
                     float3 moon = normalize(float3(0.35, 0.85, -0.4));
                     float lit = saturate(dot(n, moon) * 0.5 + 0.5);
                     col *= lerp(1.0, lerp(0.55, 1.9, lit), _FormShade);
+                }
+                // Environment relief: faces towards the camera keep the layer's flat value; stone tops, ledges
+                // and the upper sides of carved blocks catch the moon, undersides and left sides fall into shade,
+                // so masonry joints, voussoirs and strata read inside the silhouette.
+                if (_Relief > 0.001)
+                {
+                    float3 moon = normalize(float3(0.35, 0.85, -0.4));
+                    float d = dot(n, moon) - dot(float3(0, 0, -1), moon);
+                    col *= 1.0 + _Relief * (d > 0 ? d * 1.1 : d * 0.75);
+                    col += _Relief * max(d, 0) * 0.07; // so carved tops still glint on near-black rock
                 }
                 if (_FootShade > 0.001)
                 {

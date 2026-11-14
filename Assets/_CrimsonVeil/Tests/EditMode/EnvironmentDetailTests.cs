@@ -37,6 +37,54 @@ namespace CrimsonVeil.Tests
         }
 
         [Test]
+        public void NearRuinPieces_AreRebuiltWithMasonry()
+        {
+            foreach (var model in new[] { "RuinWall", "Tower" })
+            {
+                var asset = AssetDatabase.LoadAssetAtPath<GameObject>(LevelKitFactory.RuinDir + model + ".fbx");
+                int tris = asset.GetComponentsInChildren<MeshFilter>().Sum(f => f.sharedMesh.triangles.Length / 3);
+                Assert.Greater(tris, 1500, model + " carries dressed stones, not a flat slab");
+            }
+        }
+
+        [Test]
+        public void EnvironmentRelief_FadesWithDepth()
+        {
+            var m = LevelKitMaterials.Get();
+            float fg = m.inkFG.GetFloat("_Relief"), play = m.inkPlay.GetFloat("_Relief"), near = m.inkNear.GetFloat("_Relief"),
+                  mid = m.inkMid.GetFloat("_Relief"), far = m.inkFar.GetFloat("_Relief");
+            Assert.AreEqual(0f, fg, 1e-4f, "the foreground stays pure ink");
+            Assert.Greater(play, 0.5f, "carved stone reads up close");
+            Assert.Greater(play, near);
+            Assert.Greater(near, mid);
+            Assert.Greater(mid, far);
+            Assert.Greater(far, 0f);
+        }
+
+        [Test]
+        public void Arch_HasCarvedMasonryAndIvy()
+        {
+            const float depth = 1.2f;
+            var plain = ProceduralMeshes.Arch(4f, 0.8f, 4.5f, 0.9f, depth, 0f, 3);
+            Assert.Less(plain.bounds.min.z, -depth * 0.5f - 0.04f, "stones stand proud of the front face");
+            int chamfers = plain.normals.Count(n => n.y > 0.6f && n.z < -0.6f);
+            Assert.Greater(chamfers, 40, "dressed stones with moonlit chamfers");
+            Assert.Greater(plain.vertexCount, 1500);
+        }
+
+        [Test]
+        public void TerrainFace_HasStrata_InsideTheBlockAndBelowTheGrass()
+        {
+            var mesh = ProceduralMeshes.Terrain(8f, 4f, 4f, TerrainStyle.Rock, 0.7f, 5);
+            var proud = mesh.vertices.Where(v => v.z < -2f - 0.02f).ToArray();
+            Assert.Greater(proud.Length, 50, "slabs stand out of the front face");
+            Assert.IsTrue(proud.All(v => v.y < -0.3f), "strata never reach the grass line");
+            Assert.IsTrue(proud.All(v => Mathf.Abs(v.x) < 4.3f), "strata stay on the block");
+            var ruin = ProceduralMeshes.Terrain(8f, 4f, 4f, TerrainStyle.Ruin, 0.7f, 5);
+            Assert.Greater(ruin.normals.Count(n => n.y > 0.6f && n.z < -0.6f), 20, "ruin blocks are dressed ashlar");
+        }
+
+        [Test]
         public void Ruin_TintsStoneByLayer_AndKeepsCrimsonSlots()
         {
             var m = LevelKitMaterials.Get();

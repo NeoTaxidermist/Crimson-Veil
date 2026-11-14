@@ -42,6 +42,7 @@ Material:
     - _GrainStrength: 0.25
     - _MistStrength: 0.15
     - _PinTop: 0
+    - _Relief: 0
     - _RimLight: 0.22
     - _RimWidth: 4
     - _Wind: 0

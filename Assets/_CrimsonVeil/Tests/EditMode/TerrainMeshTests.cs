@@ -51,7 +51,8 @@ namespace CrimsonVeil.Tests
         public void TerrainMesh_HasExpectedExtent()
         {
             var m = ProceduralMeshes.Terrain(6f, 2f, 4f, TerrainStyle.Rock, 0.7f, 3);
-            Assert.AreEqual(4f, m.bounds.size.z, 1e-3f);
+            Assert.AreEqual(2f, m.bounds.max.z, 0.03f, "plain back face");
+            Assert.That(m.bounds.size.z, Is.InRange(4f - 1e-3f, 4.3f), "only carved strata stand out at the front");
             Assert.AreEqual(6f, m.bounds.size.x, 0.6f);
             Assert.Less(m.bounds.max.y, 0.05f);
             Assert.Less(m.bounds.min.y, -1.9f);

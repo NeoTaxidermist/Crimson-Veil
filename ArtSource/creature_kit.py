@@ -156,7 +156,7 @@ class Part:
                     f.smooth = False
         return front, back
 
-    def bay(self, x0, x1, y0, top, pier, spring, z0, z1, mat=INK, segs=12, ragged=0.0, seed=0, pointed=False):
+    def bay(self, x0, x1, y0, top, pier, spring, z0, z1, mat=INK, segs=12, ragged=0.0, seed=0, pointed=False, masonry=True):
         """One bay of an arcade: an inverted U (two piers and the wall over an arched opening)
         between x0 and x1, from y0 up to `top`; the opening springs at y0 + spring.
         ragged > 0 breaks the top edge (crumbling masonry)."""
@@ -193,12 +193,112 @@ class Part:
                 out.append((cx + r * math.cos(a), ys + r * math.sin(a)))
         out += [(inner0, y0 + spring), (inner0, y0)]
         self.prism(out, z0, z1, mat=mat)
-        # Voussoirs: a raised ring of wedge stones around the arch.
-        ring = [(cx + (r + 0.05) * math.cos(math.pi * k / segs), y0 + spring + (r + 0.05) * math.sin(math.pi * k / segs), z0 - 0.04)
-                for k in range(segs + 1)] if not pointed else None
-        if ring:
-            self.tube(ring, min(0.08, r * 0.08), sides=5, mat=mat, cap=False, flat=0.6)
+        if not masonry:
+            return out
+        # Masonry on the camera face: wedge voussoirs (keystone proud), imposts, ashlar on piers and spandrels.
+        u = min(1.0, max(0.35, pier / 0.9))
+        ringw = min(pier * 0.85, r * 0.5, 0.75)
+        n = max(7, int(math.pi * (r + ringw / 2) / (0.5 * u)) | 1)
+        if pointed:
+            R = r * 1.6
+            cr, cl = inner1 - R, inner0 + R
+            tp = math.acos(max(-1.0, min(1.0, (cx - cr) / R)))
+
+            def arc(t, rad):  # t 0..1 from right springer over the apex to the left springer
+                if t <= 0.5:
+                    a = tp * (t / 0.5)
+                    return (cr + rad * math.cos(a), ys + rad * math.sin(a)) if rad == R else \
+                        (cr + (rad) * math.cos(a), ys + rad * math.sin(a))
+                a = math.pi - tp + tp * ((t - 0.5) / 0.5)
+                return (cl + rad * math.cos(a), ys + rad * math.sin(a))
+            inner = lambda t: arc(t, R)
+            outer = lambda t: arc(t, R + ringw)
+
+            def inside_ring(x, y):
+                return y > ys and math.hypot(x - cr, y - ys) < R + ringw + 0.05 and math.hypot(x - cl, y - ys) < R + ringw + 0.05
+        else:
+            inner = lambda t: (cx + r * math.cos(math.pi * t), ys + r * math.sin(math.pi * t))
+            outer = lambda t: (cx + (r + ringw) * math.cos(math.pi * t), ys + (r + ringw) * math.sin(math.pi * t))
+
+            def inside_ring(x, y):
+                return y > ys and math.hypot(x - cx, y - ys) < r + ringw + 0.05
+        gap = 0.025 / max(0.5, r)
+        for k in range(n):
+            t0, t1 = k / n + gap, (k + 1) / n - gap
+            key = k == n // 2
+            o = (lambda t: outer(t)) if not key else (lambda t: (lambda p, q: (p[0] + (q[0] - p[0]) * 1.3, p[1] + (q[1] - p[1]) * 1.3))(inner(t), outer(t)))
+            self.stone(0, 0, 1, 1, z0, (0.16 if key else rnd.uniform(0.07, 0.11)) * u, 0.05 * u, mat=mat,
+                       quad=[inner(t0), inner(t1), o(t1), o(t0)])
+        for px0, px1 in ((x0, inner0), (inner1, x1)):
+            self.box(px0 - 0.08 * u, ys - 0.22 * u, px1 + 0.08 * u, ys, z0 - 0.14 * u, z0 + 0.01, mat)       # impost
+        top_ok = top - (ragged * 2.5 if ragged else 0) - 0.15
+
+        def skip(sx, sy, w, h):
+            if sy + h / 2 > top_ok:
+                return True
+            return any(inside_ring(px, py) for px, py in ((sx - w / 2, sy + h / 2), (sx + w / 2, sy + h / 2), (sx, sy), (sx - w / 2, sy - h / 2), (sx + w / 2, sy - h / 2)))
+        kw = dict(course=0.45 * u, proud=(0.05 * u, 0.1 * u), bevel=0.06 * u, mat=mat)
+        # Piers up to the impost (each on its own, never reaching into the opening), then the spandrels.
+        self.ashlar(x0, inner0, y0 + 0.05, min(ys - 0.24 * u, top_ok), z0, seed=seed + 101, **kw)
+        self.ashlar(inner1, x1, y0 + 0.05, min(ys - 0.24 * u, top_ok), z0, seed=seed + 102, **kw)
+        if top_ok > ys + 0.3:
+            self.ashlar(x0, x1, ys + 0.02, top_ok, z0, seed=seed + 103, skip=skip, **kw)
         return out
+
+    def stone(self, cx, cy, w, h, z, proud, bevel=0.06, tilt=0.0, mat=INK, quad=None):
+        """A dressed stone standing proud of the wall plane z (towards the camera) with chamfered front
+        edges, flat-shaded so the game's relief shading draws a moonlit top and shaded sides.
+        quad: optional 4 corner points [(x, y)] (bl, br, tr, tl) for wedge-shaped voussoirs."""
+        bevel = min(bevel, proud * 0.9, w * 0.3, h * 0.3)
+        ca, sa = math.cos(math.radians(tilt)), math.sin(math.radians(tilt))
+        if quad is None:
+            hx, hy = w / 2, h / 2
+            quad = [(-hx, -hy), (hx, -hy), (hx, hy), (-hx, hy)]
+            quad = [(cx + x * ca - y * sa, cy + x * sa + y * ca) for x, y in quad]
+        mx, my = sum(p[0] for p in quad) / 4, sum(p[1] for p in quad) / 4
+
+        def shrink(p, d):
+            vx, vy = mx - p[0], my - p[1]
+            L = math.hypot(vx, vy) or 1.0
+            return (p[0] + vx / L * d * 1.41, p[1] + vy / L * d * 1.41)
+        zf, zb, zw = z - proud, z - proud + bevel, z + 0.01
+        front = [self._v((*shrink(p, bevel), zf)) for p in quad]
+        mid = [self._v((p[0], p[1], zb)) for p in quad]
+        wall = [self._v((p[0], p[1], zw)) for p in quad]
+        faces = [self._face(front, mat)]
+        for k in range(4):
+            j = (k + 1) % 4
+            faces.append(self._face([front[k], mid[k], mid[j], front[j]], mat))
+            faces.append(self._face([mid[k], wall[k], wall[j], mid[j]], mat))
+        for f in faces:
+            if f:
+                f.smooth = False
+
+    def ashlar(self, x0, x1, y0, y1, z, course=0.45, proud=(0.05, 0.1), bevel=0.06, seed=0, skip=None, missing=0.07, mat=INK):
+        """Staggered courses of dressed stones over the wall face x0..x1, y0..y1 at plane z.
+        skip(cx, cy, w, h) -> True leaves a stone out (openings, broken parts)."""
+        rnd = random.Random(seed)
+        joint = 0.04
+        row = 0
+        y = y0
+        while y + course * 0.6 < y1:
+            ch = min(course, y1 - y)
+            x = x0 + (course * 0.7 if row % 2 else 0.0)
+            segs = [(x0, x)] if x > x0 + 0.1 else []
+            while x < x1 - 0.05:
+                xe = min(x1, x + course * rnd.uniform(1.3, 2.4))
+                if x1 - xe < course * 0.6:
+                    xe = x1
+                segs.append((x, xe))
+                x = xe
+            for a, c in segs:
+                w, h = c - a - joint, ch - joint
+                cx, cy = (a + c) / 2, y + ch / 2 - rnd.uniform(0, 0.025)
+                if w < 0.12 or rnd.random() < missing or (skip and skip(cx, cy, w, h)):
+                    continue
+                self.stone(cx, cy, w, h, z, rnd.uniform(*proud), bevel, rnd.uniform(-1.2, 1.2), mat)
+            y += ch
+            row += 1
 
     def box(self, x0, y0, x1, y1, z0, z1, mat=INK):
         self.prism([(x0, y0), (x1, y0), (x1, y1), (x0, y1)], z0, z1, mat=mat)

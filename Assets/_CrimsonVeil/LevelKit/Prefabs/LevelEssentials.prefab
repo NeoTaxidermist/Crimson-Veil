@@ -339,11 +339,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: CrimsonVeil.Runtime::CrimsonVeil.CameraSystem.CameraFollow25D
   target: {fileID: 0}
   offset: {x: 0, y: 2, z: -15}
-  lookAhead: 3.4
-  lookAheadSmooth: 0.45
-  smoothX: 0.12
-  smoothYGrounded: 0.2
-  smoothYAir: 0.4
+  leadDistance: 2.2
+  followSmoothX: 0.18
+  followSmoothFloor: 0.3
+  followSmoothAir: 0.22
   dropProbeAhead: 4.5
   dropThreshold: 2.5
   maxDropLook: 3.5

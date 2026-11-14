@@ -6,8 +6,9 @@ namespace CrimsonVeil.CameraSystem
     /// <summary>
     /// Side-on follow camera that shows where you are going:
     /// <list type="bullet">
-    /// <item>look-ahead in the facing / moving direction,</item>
-    /// <item>looks down when there is a drop ahead or below, and leads the fall,</item>
+    /// <item>leads where the hero is heading and stays on the floor he stands on (<see cref="CameraFocus"/>):
+    /// jumps and quick turns do not shake the view; a real fall is led,</item>
+    /// <item>peeks down over an edge the hero stands at,</item>
     /// <item>hold up/down (W/S) while standing to look up or down,</item>
     /// <item>camera zones can override the framing (puzzles, shafts),</item>
     /// <item>trauma-based shake (unscaled time, keeps rumbling through hit-stop).</item>
@@ -18,11 +19,10 @@ namespace CrimsonVeil.CameraSystem
     {
         [SerializeField] PlayerController target;
         [SerializeField] Vector3 offset = new Vector3(0f, 2f, -15f);
-        [SerializeField] float lookAhead = 3.4f;
-        [SerializeField] float lookAheadSmooth = 0.45f;
-        [SerializeField] float smoothX = 0.12f;
-        [SerializeField] float smoothYGrounded = 0.2f;
-        [SerializeField] float smoothYAir = 0.4f;
+        [SerializeField] float leadDistance = 2.2f;
+        [SerializeField] float followSmoothX = 0.18f;
+        [SerializeField] float followSmoothFloor = 0.3f;
+        [SerializeField] float followSmoothAir = 0.22f;
 
         [Header("Seeing what's below")]
         [Tooltip("How far ahead (m) to probe for a drop.")]
@@ -47,7 +47,6 @@ namespace CrimsonVeil.CameraSystem
 
         static CameraFollow25D instance;
 
-        float lookAheadCurrent, lookAheadVel;
         float velX, velY;
         Vector3 basePosition;
         float trauma;
@@ -78,6 +77,7 @@ namespace CrimsonVeil.CameraSystem
             if (target == null) target = FindFirstObjectByType<PlayerController>();
             zones = FindObjectsByType<CameraZone>(FindObjectsSortMode.None);
             currentOffset = offset;
+            if (target != null) Focus.Reset(target.transform.position);
             basePosition = target != null ? target.transform.position + offset : transform.position;
             transform.position = basePosition;
         }
@@ -117,18 +117,26 @@ namespace CrimsonVeil.CameraSystem
             return worst;
         }
 
+        /// <summary>Platformer framing: lead from movement, floor-locked height (see <see cref="CameraFocus"/>).</summary>
+        public CameraFocus Focus { get; } = new CameraFocus();
+
         void LateUpdate()
         {
             if (target == null) return;
             float dt = Time.deltaTime;
+            if (dt <= 0f) return;
             Vector3 tp = target.transform.position;
             var motor = target.Motor;
 
             currentOffset = Vector3.Lerp(currentOffset, DesiredOffset(tp.x), 1f - Mathf.Exp(-2.5f * dt));
 
-            float moving = Mathf.Abs(target.Velocity.x) > 1f ? 1f : 0.5f;
-            float desiredLook = motor.Facing * lookAhead * moving;
-            lookAheadCurrent = Mathf.SmoothDamp(lookAheadCurrent, desiredLook, ref lookAheadVel, lookAheadSmooth, Mathf.Infinity, dt);
+            // Where to look: the hero's floor line and where he is heading (not where he happens to face).
+            var state = motor.State;
+            bool supported = motor.IsGrounded || state == MotorState.LedgeHang || state == MotorState.Climbing || state == MotorState.Swinging;
+            Focus.lookAhead = leadDistance;
+            var before = Focus.Focus;
+            Vector2 focus = Focus.Step(dt, tp, target.Velocity, supported, motor.Settings.maxRunSpeed);
+            bool snapped = (focus - before).sqrMagnitude > Focus.snapDistance * Focus.snapDistance;
 
             // Deliberate look up/down: hold W/S while standing still.
             float lookInput = 0f;
@@ -140,16 +148,25 @@ namespace CrimsonVeil.CameraSystem
             }
             else lookHeld = 0f;
 
-            float drop = ProbeDrop(tp, motor.Facing);
-            float wantedBias = ComputeVerticalBias(motor.IsGrounded, target.Velocity.y, drop, lookInput,
-                dropThreshold, maxDropLook, fallLead, maxFallLead, lookDistance);
-            verticalBias = Mathf.SmoothDamp(verticalBias, wantedBias, ref verticalBiasVel, 0.35f, Mathf.Infinity, dt);
+            // Peek down over an edge only while standing at it (running past ledges must not bob the view).
+            bool standing = motor.IsGrounded && Mathf.Abs(target.Velocity.x) < 0.5f;
+            float drop = standing ? ProbeDrop(tp, motor.Facing) : 0f;
+            float wantedBias = ComputeVerticalBias(true, 0f, drop, lookInput, dropThreshold, maxDropLook, fallLead, maxFallLead, lookDistance);
+            verticalBias = Mathf.SmoothDamp(verticalBias, wantedBias, ref verticalBiasVel, 0.45f, Mathf.Infinity, dt);
 
+            Vector3 goal = new Vector3(focus.x + currentOffset.x, focus.y + currentOffset.y + verticalBias, tp.z + currentOffset.z);
             Vector3 p = basePosition;
-            float smoothY = target.IsGrounded || target.Velocity.y < -8f ? smoothYGrounded : smoothYAir;
-            p.x = Mathf.SmoothDamp(p.x, tp.x + currentOffset.x + lookAheadCurrent, ref velX, smoothX, Mathf.Infinity, dt);
-            p.y = Mathf.SmoothDamp(p.y, tp.y + currentOffset.y + verticalBias, ref velY, smoothY, Mathf.Infinity, dt);
-            p.z = tp.z + currentOffset.z;
+            if (snapped)
+            {
+                p = goal;
+                velX = velY = 0f;
+            }
+            else
+            {
+                p.x = Mathf.SmoothDamp(p.x, goal.x, ref velX, followSmoothX, Mathf.Infinity, dt);
+                p.y = Mathf.SmoothDamp(p.y, goal.y, ref velY, supported ? followSmoothFloor : followSmoothAir, Mathf.Infinity, dt);
+                p.z = goal.z;
+            }
             basePosition = p;
 
             trauma = Mathf.Max(0f, trauma - traumaDecay * Time.unscaledDeltaTime);

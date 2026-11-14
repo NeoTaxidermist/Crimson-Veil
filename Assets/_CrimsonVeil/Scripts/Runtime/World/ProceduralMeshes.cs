@@ -16,6 +16,10 @@ namespace CrimsonVeil.World
             public readonly List<Vector2> uv = new List<Vector2>();
             /// <summary>uv2.y is the wind weight read by the Silhouette shader (defaults to uv).</summary>
             public readonly List<Vector2> uv2 = new List<Vector2>();
+            /// <summary>Per-vertex tone (masonry: stones vary, mortar is dark), read by the Silhouette shader.</summary>
+            public readonly List<Color> col = new List<Color>();
+            /// <summary>Tone given to vertices added from now on.</summary>
+            public Color tint = Color.white;
             public readonly List<int>[] tris;
 
             public Builder(int submeshes)
@@ -28,7 +32,7 @@ namespace CrimsonVeil.World
 
             public int Vert(Vector3 p, Vector3 normal, Vector2 texcoord, Vector2 wind)
             {
-                v.Add(p); n.Add(normal); uv.Add(texcoord); uv2.Add(wind);
+                v.Add(p); n.Add(normal); uv.Add(texcoord); uv2.Add(wind); col.Add(tint);
                 return v.Count - 1;
             }
 
@@ -92,6 +96,7 @@ namespace CrimsonVeil.World
                 mesh.SetNormals(n);
                 mesh.SetUVs(0, uv);
                 mesh.SetUVs(1, uv2);
+                mesh.SetColors(col);
                 mesh.subMeshCount = tris.Length;
                 for (int i = 0; i < tris.Length; i++) mesh.SetTriangles(tris[i], i);
                 mesh.RecalculateBounds();
@@ -222,9 +227,13 @@ namespace CrimsonVeil.World
                 return new Vector2(c * t, springHeight + s * t);
             }
 
+            // The front face is the mortar bed the dressed stones sit in: darker, so every joint reads.
+            b.tint = Mortar;
             Face(-hz, Vector3.back);
+            b.tint = Color.white;
             Face(hz, Vector3.forward);
             ArchMasonry(b, r, pillarWidth, springHeight, H, hz, seed);
+            b.tint = Color.white;
             return b.ToMesh("Arch");
         }
 
@@ -251,9 +260,14 @@ namespace CrimsonVeil.World
                 float a0 = Mathf.PI * k / count + gap, a1 = Mathf.PI * (k + 1) / count - gap;
                 bool key = k == count / 2;
                 float outer = Mathf.Min(r + ring * (key ? 1.35f : Rn(0.92f, 1.06f)), H - spring - 0.02f); // never above the wall
-                float proud = (key ? 0.16f : Rn(0.05f, 0.1f)) * u;
-                Wedge(b, spring, r, outer, Mathf.PI - a1, Mathf.PI - a0, z, proud);
+                float proud = (key ? 0.16f : Rn(0.06f, 0.1f)) * u;
+                // A dressed wedge with chamfered edges, like every other stone of the arch.
+                Vector2 P(float rad, float a) => new Vector2(Mathf.Cos(a) * rad, spring + Mathf.Sin(a) * rad);
+                float b0 = Mathf.PI - a1, b1 = Mathf.PI - a0;
+                b.tint = StoneTone(rnd, key ? 1.12f : 1f);
+                StoneQuad(b, new[] { P(r, b0), P(r, b1), P(outer, b1), P(outer, b0) }, z, proud, 0.06f * u);
             }
+            b.tint = StoneTone(rnd, 1.05f);
 
             // Piers: plinth, ashlar courses, impost cornice.
             foreach (float side in new[] { -1f, 1f })
@@ -286,7 +300,8 @@ namespace CrimsonVeil.World
             for (float x = -R; x < R - 0.2f * u; x += 0.5f * u)                                           // dentils
                 Slab(b, x + 0.2f * u, H - 0.32f * u, 0.2f * u, 0.14f * u, z, 0.1f * u);
 
-            // Ivy: strands with leaves hanging from the ring and the cornice.
+            // Ivy: strands with leaves hanging from the ring and the cornice (darker than the stone).
+            b.tint = new Color(0.5f, 0.5f, 0.5f, 1f);
             int strands = 3 + rnd.Next(4);
             for (int s = 0; s < strands; s++)
             {
@@ -330,25 +345,53 @@ namespace CrimsonVeil.World
         /// </summary>
         static void Stone(Builder b, Vector2 c, float w, float h, float z, float proud, float bevel, float tiltDeg = 0f)
         {
-            bevel = Mathf.Min(bevel, proud * 0.9f, w * 0.3f, h * 0.3f);
             var rot = Quaternion.Euler(0f, 0f, tiltDeg);
-            Vector3 P(float x, float y, float zz) => new Vector3(c.x, c.y, 0f) + rot * new Vector3(x, y, 0f) + new Vector3(0f, 0f, zz);
-            float hx = w * 0.5f, hy = h * 0.5f, ix = hx - bevel, iy = hy - bevel;
+            Vector2 R(float x, float y) { var p = rot * new Vector3(x, y, 0f); return c + new Vector2(p.x, p.y); }
+            float hx = w * 0.5f, hy = h * 0.5f;
+            StoneQuad(b, new[] { R(-hx, -hy), R(hx, -hy), R(hx, hy), R(-hx, hy) }, z, proud, Mathf.Min(bevel, w * 0.3f, h * 0.3f));
+        }
+
+        /// <summary>Mortar between the stones: dark, so the joints read.</summary>
+        static readonly Color Mortar = new Color(0.55f, 0.55f, 0.56f, 1f);
+
+        /// <summary>Each dressed stone a slightly different shade (weathering), around <paramref name="bias"/>.</summary>
+        static Color StoneTone(System.Random rnd, float bias)
+        {
+            float v = bias * (0.88f + (float)rnd.NextDouble() * 0.24f);
+            return new Color(v, v, v * 1.01f, 1f);
+        }
+
+        /// <summary>
+        /// A dressed stone over any convex quad (bl, br, tr, tl) standing proud of the wall plane z, its front
+        /// edges chamfered towards the camera (moonlit top chamfer, shaded bottom and sides).
+        /// </summary>
+        static void StoneQuad(Builder b, Vector2[] q, float z, float proud, float bevel)
+        {
+            bevel = Mathf.Min(bevel, proud * 0.9f);
+            Vector2 centre = (q[0] + q[1] + q[2] + q[3]) * 0.25f;
             float zf = z - proud, zb = zf + bevel, zw = z + 0.01f;
-            Vector3 f0 = P(-ix, -iy, zf), f1 = P(ix, -iy, zf), f2 = P(ix, iy, zf), f3 = P(-ix, iy, zf);
-            Vector3 o0 = P(-hx, -hy, zb), o1 = P(hx, -hy, zb), o2 = P(hx, hy, zb), o3 = P(-hx, hy, zb);
-            Vector3 w0 = P(-hx, -hy, zw), w1 = P(hx, -hy, zw), w2 = P(hx, hy, zw), w3 = P(-hx, hy, zw);
+            var f = new Vector3[4]; var o = new Vector3[4]; var w = new Vector3[4];
+            for (int i = 0; i < 4; i++)
+            {
+                Vector2 inward = centre - q[i];
+                float d = inward.magnitude;
+                Vector2 fi = d > 1e-5f ? q[i] + inward / d * Mathf.Min(bevel * 1.41f, d * 0.45f) : q[i];
+                f[i] = new Vector3(fi.x, fi.y, zf);
+                o[i] = new Vector3(q[i].x, q[i].y, zb);
+                w[i] = new Vector3(q[i].x, q[i].y, zw);
+            }
             Vector2 U = Vector2.zero;
-            b.Quad(f0, f1, f2, f3, Vector3.back, U, U, U, U);
-            Vector3 up = rot * Vector3.up, right = rot * Vector3.right;
-            b.Quad(f3, f2, o2, o3, (up + Vector3.back).normalized, U, U, U, U);      // top chamfer
-            b.Quad(f0, f1, o1, o0, (-up + Vector3.back).normalized, U, U, U, U);     // bottom chamfer
-            b.Quad(f1, f2, o2, o1, (right + Vector3.back).normalized, U, U, U, U);   // right chamfer
-            b.Quad(f0, f3, o3, o0, (-right + Vector3.back).normalized, U, U, U, U);  // left chamfer
-            b.Quad(o3, o2, w2, w3, up, U, U, U, U);
-            b.Quad(o0, o1, w1, w0, -up, U, U, U, U);
-            b.Quad(o1, o2, w2, w1, right, U, U, U, U);
-            b.Quad(o0, o3, w3, w0, -right, U, U, U, U);
+            b.Quad(f[0], f[1], f[2], f[3], Vector3.back, U, U, U, U);
+            for (int i = 0; i < 4; i++)
+            {
+                int j = (i + 1) % 4;
+                Vector2 e = q[j] - q[i];
+                var outward2 = new Vector2(e.y, -e.x).normalized;
+                if (Vector2.Dot(outward2, (q[i] + q[j]) * 0.5f - centre) < 0f) outward2 = -outward2;
+                var outward = new Vector3(outward2.x, outward2.y, 0f);
+                b.Quad(f[i], f[j], o[j], o[i], (outward + Vector3.back).normalized, U, U, U, U);  // chamfer
+                b.Quad(o[i], o[j], w[j], w[i], outward, U, U, U, U);                             // side down to the wall
+            }
         }
 
         static void Courses(Builder b, System.Random rnd, float x0, float x1, float y0, float y1, float z, float u)
@@ -376,11 +419,13 @@ namespace CrimsonVeil.World
             void Lay(float a, float c)
             {
                 if (c - a < joint * 2f) return;
-                if (rnd.NextDouble() < 0.07) return;   // a missing block
                 float proud = (0.06f + (float)rnd.NextDouble() * 0.05f) * u;
-                float sag = (float)rnd.NextDouble() * 0.03f * u;
+                float sag = (float)rnd.NextDouble() * 0.02f * u;
+                var keep = b.tint;
+                b.tint = StoneTone(rnd, 1f);
                 Stone(b, new Vector2((a + c) * 0.5f, y + ch * 0.5f - sag), c - a - joint, ch - joint, z, proud, 0.07f * u,
-                    ((float)rnd.NextDouble() - 0.5f) * 2.5f);
+                    ((float)rnd.NextDouble() - 0.5f) * 1.6f);
+                b.tint = keep;
             }
         }
 
@@ -438,6 +483,18 @@ namespace CrimsonVeil.World
         public static Mesh Lathe(IReadOnlyList<Vector2> profile, int sides = 16, string name = "Lathe")
         {
             var b = new Builder(1);
+            LatheInto(b, profile, sides, null);
+            return b.ToMesh(name);
+        }
+
+        /// <summary>
+        /// Lathe into a builder. <paramref name="radiusScale"/>(angle, ring) may carve the surface (column flutes,
+        /// gadrooned urns): faces then take their real normals, so the relief shading draws every groove.
+        /// </summary>
+        static void LatheInto(Builder b, IReadOnlyList<Vector2> profile, int sides, System.Func<float, int, float> radiusScale)
+        {
+            Vector3 D(float a) => new Vector3(Mathf.Cos(a), 0f, Mathf.Sin(a));
+            float S(float a, int ring) => radiusScale != null ? radiusScale(a, ring) : 1f;
             for (int i = 0; i < profile.Count - 1; i++)
             {
                 Vector2 p = profile[i], q = profile[i + 1];
@@ -446,29 +503,40 @@ namespace CrimsonVeil.World
                 for (int k = 0; k < sides; k++)
                 {
                     float a0 = Mathf.PI * 2f * k / sides, a1 = Mathf.PI * 2f * (k + 1) / sides;
-                    Vector3 D(float a) => new Vector3(Mathf.Cos(a), 0f, Mathf.Sin(a));
-                    Vector3 v0 = D(a0) * p.x + Vector3.up * p.y, v1 = D(a1) * p.x + Vector3.up * p.y;
-                    Vector3 v2 = D(a1) * q.x + Vector3.up * q.y, v3 = D(a0) * q.x + Vector3.up * q.y;
-                    Vector3 normal = (D((a0 + a1) * 0.5f) * n2.x + Vector3.up * n2.y).normalized;
+                    Vector3 v0 = D(a0) * p.x * S(a0, i) + Vector3.up * p.y, v1 = D(a1) * p.x * S(a1, i) + Vector3.up * p.y;
+                    Vector3 v2 = D(a1) * q.x * S(a1, i + 1) + Vector3.up * q.y, v3 = D(a0) * q.x * S(a0, i + 1) + Vector3.up * q.y;
+                    Vector3 analytic = (D((a0 + a1) * 0.5f) * n2.x + Vector3.up * n2.y).normalized;
+                    Vector3 normal = analytic;
+                    if (radiusScale != null)
+                    {
+                        var real = Vector3.Cross(v3 - v0, v1 - v0);
+                        if (real.sqrMagnitude > 1e-10f) normal = Vector3.Dot(real, analytic) >= 0f ? real.normalized : -real.normalized;
+                    }
                     b.Quad(v0, v1, v2, v3, normal, new Vector2(0, p.y), new Vector2(1, p.y), new Vector2(1, q.y), new Vector2(0, q.y));
                 }
             }
-            return b.ToMesh(name);
         }
 
         public static Mesh Urn(int seed, float height = 0.8f)
         {
             var rnd = new System.Random(seed);
             float w = 0.85f + (float)rnd.NextDouble() * 0.4f;
+            // Foot ring, gadrooned belly, a raised band at the shoulder, a rolled lip.
             var profile = new List<Vector2>
             {
-                new Vector2(0f, 0f), new Vector2(0.16f, 0f), new Vector2(0.24f, 0.12f), new Vector2(0.27f, 0.32f),
-                new Vector2(0.21f, 0.52f), new Vector2(0.11f, 0.62f), new Vector2(0.1f, 0.7f), new Vector2(0.15f, 0.76f),
-                new Vector2(0.13f, 0.8f), new Vector2(0f, 0.8f),
+                new Vector2(0f, 0f), new Vector2(0.15f, 0f), new Vector2(0.155f, 0.035f), new Vector2(0.135f, 0.05f),
+                new Vector2(0.2f, 0.1f), new Vector2(0.25f, 0.18f), new Vector2(0.27f, 0.3f), new Vector2(0.255f, 0.4f),
+                new Vector2(0.235f, 0.45f), new Vector2(0.255f, 0.465f), new Vector2(0.255f, 0.49f), new Vector2(0.215f, 0.505f),
+                new Vector2(0.16f, 0.56f), new Vector2(0.11f, 0.62f), new Vector2(0.1f, 0.7f), new Vector2(0.15f, 0.755f),
+                new Vector2(0.155f, 0.78f), new Vector2(0.13f, 0.8f), new Vector2(0f, 0.8f),
             };
             for (int i = 0; i < profile.Count; i++)
                 profile[i] = new Vector2(profile[i].x * w, profile[i].y) * (height / 0.8f);
-            return Lathe(profile, 14, "Urn");
+            int lobes = 10 + rnd.Next(5);
+            var b = new Builder(1);
+            // Gadroons: vertical lobes swelling the belly (rings 4..7), worn smooth towards the shoulder.
+            LatheInto(b, profile, 40, (a, ring) => ring >= 4 && ring <= 7 ? 1f + 0.045f * Mathf.Abs(Mathf.Sin(a * lobes * 0.5f)) * (ring == 7 ? 0.4f : 1f) : 1f);
+            return b.ToMesh("Urn");
         }
 
         // ------------------------------------------------------------------ Grass

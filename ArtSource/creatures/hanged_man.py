@@ -70,5 +70,27 @@ for k in range(6):  # neat coils around the standing part
     coil = [knot + Vector((math.cos(2 * math.pi * j / 12) * 0.032, 0.028 * k, math.sin(2 * math.pi * j / 12) * 0.032)) for j in range(13)]
     b.tube(coil, 0.012, sides=5, mat=K.CRIMSON, cap=False)
 b.tube([knot, knot + Vector((0.0, 0.42, -0.01))], 0.018, sides=6, mat=K.CRIMSON)
+# Rags of the shirt hanging from its torn hem, swaying with him.
+for s, (x, l, z) in enumerate([(-0.1, 0.22, -0.08), (0.02, 0.3, -0.11), (0.12, 0.18, -0.06), (-0.02, 0.16, 0.1)]):
+    pts = [(x + 0.02 * math.sin(t * 5 + s), 0.95 - l * t, z) for t in [j / 6 for j in range(7)]]
+    b.tube(pts, [0.03 * (1 - 0.7 * j / 6) + 0.004 for j in range(7)], sides=5, flat=0.3, seed=s)
+# Buttons down the shirt front (most torn off: three left).
+for y in (1.45, 1.32, 1.2):
+    b.blob((0.02, y, -0.105), (0.014, 0.014, 0.008), segs=8, rings=5)
+# An iron shackle on one ankle, its broken chain dangling.
+ank = Vector((-0.06, 0.18, -0.07))
+cuff = [ank + Vector((math.cos(2 * math.pi * k / 16) * 0.06, 0.012 * math.sin(4 * math.pi * k / 16), math.sin(2 * math.pi * k / 16) * 0.05)) for k in range(17)]
+b.tube(cuff, 0.014, sides=5, cap=False)
+y = 0.12
+for k in range(4):
+    Ln, W = 0.04, 0.02
+    link = [(ank.x - 0.05 + (math.cos(2 * math.pi * j / 10) * W if k % 2 == 0 else 0), y - Ln + math.sin(2 * math.pi * j / 10) * Ln,
+             ank.z - 0.02 + (0 if k % 2 == 0 else math.cos(2 * math.pi * j / 10) * W)) for j in range(11)]
+    b.tube(link, 0.006, sides=4, cap=False)
+    y -= Ln * 1.5
+# A rope belt cinching the trousers, knotted at the hip.
+belt = [(math.cos(2 * math.pi * k / 20) * 0.165, 0.97, math.sin(2 * math.pi * k / 20) * 0.165 * 0.7) for k in range(21)]
+b.tube(belt, 0.012, sides=5, cap=False)
+b.blob((0.12, 0.96, -0.1), (0.025, 0.022, 0.02), segs=8, rings=5, bumps=0.3, seed=9)
 b.displace(0.008, scale=8.0, seed=4)
 b.build()

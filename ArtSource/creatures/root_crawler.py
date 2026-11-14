@@ -23,6 +23,17 @@ for (x, y, z, r) in [(0.17, 0.05, -0.12, 0.045), (0.2, 0.0, -0.05, 0.04), (0.15,
 for k in range(5):
     x = 0.12 + 0.03 * k
     core.tube([(x, -0.12, -0.12), (x + 0.01, -0.2, -0.14)], [0.012, 0.002], sides=5)
+# Thorns bristling from the knot, pale bracket fungus growing on it, more small eyes waking up.
+for i in range(16):
+    a = rnd.uniform(0, 2 * math.pi)
+    b2 = rnd.uniform(-1.0, 1.0)
+    d = Vector((math.cos(a) * math.cos(b2), math.sin(b2), math.sin(a) * math.cos(b2) * 0.8))
+    base = Vector((d.x * 0.22, d.y * 0.18, d.z * 0.18))
+    core.tube([base, base + d * rnd.uniform(0.06, 0.12)], [0.014, 0.001], sides=4)
+for (x, y, z) in [(-0.15, 0.12, -0.1), (-0.2, 0.0, -0.06), (-0.08, 0.17, -0.08)]:
+    core.lathe([(0.0, 0.0), (0.05, 0.0), (0.045, 0.015), (0.0, 0.02)], sides=10, center=(x, y, z), sz=0.6)
+for (x, y, z, r) in [(0.08, 0.14, -0.13, 0.014), (0.21, 0.08, 0.02, 0.012), (0.06, -0.02, -0.19, 0.012), (0.18, -0.08, -0.08, 0.01)]:
+    core.blob((x, y, z), (r, r, r * 0.6), segs=8, rings=5, mat=K.CRIMSON)
 core.build()
 
 lengths = [0.55, 0.72, 0.5, 0.8, 0.62, 0.7, 0.48, 0.75, 0.6]

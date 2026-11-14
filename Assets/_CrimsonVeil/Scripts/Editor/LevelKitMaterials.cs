@@ -146,6 +146,7 @@ namespace CrimsonVeil.EditorTools
         static Material Relief(Material m, float amount)
         {
             m.SetFloat("_Relief", amount);
+            m.SetFloat("_VertexTint", 1f); // masonry: stone shades and dark mortar come from the mesh
             return m;
         }
 

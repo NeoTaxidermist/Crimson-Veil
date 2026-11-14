@@ -29,6 +29,23 @@ L.lathe([(0.0, 0.18), (0.16, 0.18), (0.17, 0.2), (0.12, 0.25), (0.07, 0.31), (0.
 L.blob((0, 0.4, 0), (0.025, 0.03, 0.025), segs=8, rings=6)
 ring = [(math.cos(2 * math.pi * k / 16) * 0.035, 0.46 + math.sin(2 * math.pi * k / 16) * 0.04, 0) for k in range(17)]
 L.tube(ring, 0.008, sides=5, cap=False)
+# Rivets along the roof's rim, a stub of broken chain on the hanging ring, a crimson rune plate on the door.
+for k in range(12):
+    a = 2 * math.pi * k / 12
+    L.blob((math.cos(a) * 0.165, 0.19, math.sin(a) * 0.165), (0.008, 0.008, 0.008), segs=6, rings=4)
+y = 0.5
+for k in range(2):
+    link = [(math.cos(2 * math.pi * j / 10) * 0.012 if k % 2 == 0 else 0, y + 0.03 + math.sin(2 * math.pi * j / 10) * 0.03,
+             0 if k % 2 == 0 else math.cos(2 * math.pi * j / 10) * 0.012) for j in range(11)]
+    L.tube(link, 0.005, sides=4, cap=False)
+    y += 0.05
+L.prism([(-0.04, -0.12), (0.04, -0.12), (0.04, -0.07), (0.0, -0.05), (-0.04, -0.07)], -0.14, -0.13, mat=K.CRIMSON)
+L.tube([(0.0, -0.115, -0.142), (0.0, -0.065, -0.142)], 0.004, sides=3)                       # the rune: a stroke
+L.tube([(-0.025, -0.095, -0.142), (0.025, -0.085, -0.142)], 0.004, sides=3)                  # and a cross-stroke
+# Wax drips frozen down the posts.
+for k in range(3):
+    a = 2 * math.pi * k / 3 + 0.4
+    L.tube([(math.cos(a) * 0.12, -0.16, math.sin(a) * 0.12), (math.cos(a) * 0.125, -0.21 - 0.02 * k, math.sin(a) * 0.125)], [0.01, 0.004], sides=4)
 L.build()
 
 F = K.Part("Flame")

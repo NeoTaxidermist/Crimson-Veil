@@ -76,6 +76,32 @@ def wing(name, z, spot_z):
     w.tube(ring, 0.022, sides=6, mat=K.CRIMSON, cap=False, flat=0.4)
     w.blob(c + Vector((0, 0, -0.002)), (0.04, 0.045, 0.006), segs=12, rings=6, mat=K.CRIMSON)
     w.blob(c + Vector((0.01, 0.01, -0.006)), (0.018, 0.02, 0.004), segs=10, rings=5)
+    # Ash bands across the forewing (like a burnt page's tide lines) and scattered soot specks — kept inside it.
+    poly = lead[:-1] + margin + inner
+
+    def inside(x, y, m=0.03):
+        hit = False
+        for i in range(len(poly)):
+            (ax, ay), (bx, by) = poly[i], poly[i - 1]
+            if (ay > y) != (by > y) and x < (bx - ax) * (y - ay) / (by - ay) + ax:
+                hit = not hit
+        return hit and all(math.hypot(x - px, y - py) > m for px, py in poly)
+    for rr in (0.3, 0.45, 0.58):
+        arc = [(math.cos(a) * rr * 0.75 - 0.02, math.sin(a) * rr) for a in [0.5 + 2.2 * j / 30 for j in range(31)]]
+        run = []
+        for (x, y) in arc + [(99, 99)]:
+            if inside(x, y):
+                run.append((x, y, -0.0085))
+            elif len(run) > 2:
+                w.tube(run, 0.006, sides=3, flat=0.4)
+                run = []
+            else:
+                run = []
+    rs = random.Random(31 + int(z * 100))
+    for k in range(40):
+        x, y = rs.uniform(-0.34, 0.17), rs.uniform(0.05, 0.7)
+        if inside(x, y):
+            w.blob((x, y, -0.009), (0.008, 0.008, 0.002), segs=6, rings=3)
     w.build()
 
 

@@ -36,6 +36,16 @@ class Part:
         self.name = name
         self.pivot = Vector(pivot)
         self.bm = bmesh.new()
+        # Per-corner tone exported as vertex colour: dressed stones vary in shade, mortar behind them is dark.
+        self.col = self.bm.loops.layers.float_color.new("Col")
+        self.tones = {}
+
+    def paint(self, faces, value):
+        for f in faces:
+            if f is not None:
+                self.tones[f] = value
+
+    MORTAR = 0.5
 
     # --- primitives (all coordinates in game space, relative to the pivot) -------------------------
 
@@ -192,9 +202,16 @@ class Part:
                 a = math.pi * k / segs
                 out.append((cx + r * math.cos(a), ys + r * math.sin(a)))
         out += [(inner0, y0 + spring), (inner0, y0)]
+        before = set(self.bm.faces)
         self.prism(out, z0, z1, mat=mat)
         if not masonry:
             return out
+        # The bay's camera face is the mortar bed under its stones: darker, so every joint reads.
+        front_y = -z0  # game z -> Blender -y
+        for f in set(self.bm.faces) - before:
+            c = f.calc_center_median()
+            if abs(c.y - front_y) < 1e-3 and all(abs(v.co.y - front_y) < 1e-3 for v in f.verts):
+                self.tones[f] = Part.MORTAR
         # Masonry on the camera face: wedge voussoirs (keystone proud), imposts, ashlar on piers and spandrels.
         u = min(1.0, max(0.35, pier / 0.9))
         ringw = min(pier * 0.85, r * 0.5, 0.75)
@@ -245,7 +262,7 @@ class Part:
             self.ashlar(x0, x1, ys + 0.02, top_ok, z0, seed=seed + 103, skip=skip, **kw)
         return out
 
-    def stone(self, cx, cy, w, h, z, proud, bevel=0.06, tilt=0.0, mat=INK, quad=None):
+    def stone(self, cx, cy, w, h, z, proud, bevel=0.06, tilt=0.0, mat=INK, quad=None, tone=None):
         """A dressed stone standing proud of the wall plane z (towards the camera) with chamfered front
         edges, flat-shaded so the game's relief shading draws a moonlit top and shaded sides.
         quad: optional 4 corner points [(x, y)] (bl, br, tr, tl) for wedge-shaped voussoirs."""
@@ -273,6 +290,9 @@ class Part:
         for f in faces:
             if f:
                 f.smooth = False
+        if tone is None:  # deterministic shade per stone (vertex colours cannot exceed 1: stones 0.8..1, mortar darker)
+            tone = random.Random(int((mx * 31.7 + my * 17.3 + z * 7.1) * 1000)).uniform(0.8, 1.0)
+        self.paint(faces, tone)
 
     def ashlar(self, x0, x1, y0, y1, z, course=0.45, proud=(0.05, 0.1), bevel=0.06, seed=0, skip=None, missing=0.07, mat=INK):
         """Staggered courses of dressed stones over the wall face x0..x1, y0..y1 at plane z.
@@ -327,6 +347,11 @@ class Part:
 
     def build(self, parent=None):
         bmesh.ops.recalc_face_normals(self.bm, faces=self.bm.faces)
+        for f in self.bm.faces:
+            t = self.tones.get(f, 1.0)
+            for loop in f.loops:
+                t = min(1.0, t)
+                loop[self.col] = (t, t, t, 1.0)
         me = bpy.data.meshes.new(self.name)
         self.bm.to_mesh(me)
         self.bm.free()
@@ -348,7 +373,8 @@ def export(path):
         o.select_set(True)
     bpy.ops.export_scene.fbx(filepath=path, use_selection=True, apply_scale_options='FBX_SCALE_ALL',
                              axis_forward='-Z', axis_up='Y', bake_space_transform=True,
-                             object_types={'EMPTY', 'MESH'}, mesh_smooth_type='FACE', use_mesh_modifiers=True)
+                             object_types={'EMPTY', 'MESH'}, mesh_smooth_type='FACE', use_mesh_modifiers=True,
+                             colors_type='LINEAR')
 
 
 def preview(path, center=(0, 1, 0), size=2.5, angle=0.0):

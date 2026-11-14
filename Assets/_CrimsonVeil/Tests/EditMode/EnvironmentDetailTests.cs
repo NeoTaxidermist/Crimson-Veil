@@ -73,6 +73,59 @@ namespace CrimsonVeil.Tests
         }
 
         [Test]
+        public void Column_IsFluted_WithAbacus_AndBrokenOnesShatter()
+        {
+            var whole = ProceduralMeshes.Column(6f, 0.38f, false, 1);
+            // Flutes: the shaft's radius rises and falls round its circumference.
+            float minR = float.MaxValue, maxR = 0f;
+            foreach (var v in whole.vertices)
+                if (v.y > 2.5f && v.y < 3.5f) { float r = new Vector2(v.x, v.z).magnitude; minR = Mathf.Min(minR, r); maxR = Mathf.Max(maxR, r); }
+            Assert.Greater(maxR - minR, 0.015f, "fluted, not a smooth cylinder");
+            Assert.AreEqual(6f, whole.bounds.max.y, 0.02f, "the abacus caps it at its full height");
+            var broken = ProceduralMeshes.Column(6f, 0.38f, true, 1);
+            Assert.Greater(broken.bounds.size.x, 0.38f * 2f * 1.45f + 0.3f, "fallen pieces lie beside the stump");
+        }
+
+        [Test]
+        public void Masonry_HasDarkMortar_AndStonesOfVaryingShade()
+        {
+            var arch = ProceduralMeshes.Arch(4f, 0.8f, 4.5f, 0.9f, 1.2f, 0f, 2);
+            var tones = new System.Collections.Generic.HashSet<int>(arch.colors.Select(c => Mathf.RoundToInt(c.r * 100f)));
+            Assert.Greater(arch.colors.Length, 0, "the arch carries per-vertex tones");
+            Assert.IsTrue(arch.colors.Any(c => c.r < 0.6f), "a dark mortar bed behind the stones");
+            Assert.Greater(tones.Count(t => t >= 85), 8, "each stone its own shade");
+
+            var wall = AssetDatabase.LoadAssetAtPath<GameObject>(LevelKitFactory.RuinDir + "Castle.fbx");
+            var cols = wall.GetComponentsInChildren<MeshFilter>().SelectMany(f => f.sharedMesh.colors).ToArray();
+            Assert.Greater(cols.Length, 0, "Blender masonry exports its tones too");
+            Assert.IsTrue(cols.Any(c => c.r < 0.6f) && cols.Any(c => c.r > 0.75f && c.r < 0.99f));
+            Assert.AreEqual(1f, LevelKitMaterials.Get().inkNear.GetFloat("_VertexTint"), 1e-4f, "the stone materials use them");
+        }
+
+        [Test]
+        public void Urn_IsGadrooned()
+        {
+            var urn = ProceduralMeshes.Urn(3, 0.8f);
+            float minR = float.MaxValue, maxR = 0f;
+            foreach (var v in urn.vertices)
+                if (v.y > 0.15f && v.y < 0.42f) { float r = new Vector2(v.x, v.z).magnitude; minR = Mathf.Min(minR, r); maxR = Mathf.Max(maxR, r); }
+            Assert.Greater(maxR - minR, 0.006f, "lobed belly");
+        }
+
+        [Test]
+        public void Enemies_AreRichlyModelled()
+        {
+            foreach (var (model, min) in new[] { ("ShieldMonk", 3500), ("HangedMan", 2000), ("RootCrawler", 2000), ("Crow", 900),
+                                                  ("AshMoth", 2500), ("LanternWisp", 1200), ("PaperKite", 450) })
+            {
+                var asset = AssetDatabase.LoadAssetAtPath<GameObject>(LevelKitMaterials.Root + "/Art/Enemy/" + model + ".fbx");
+                Assert.IsNotNull(asset, model);
+                int tris = asset.GetComponentsInChildren<MeshFilter>().Sum(f => f.sharedMesh.triangles.Length / 3);
+                Assert.Greater(tris, min, model);
+            }
+        }
+
+        [Test]
         public void TerrainFace_HasStrata_InsideTheBlockAndBelowTheGrass()
         {
             var mesh = ProceduralMeshes.Terrain(8f, 4f, 4f, TerrainStyle.Rock, 0.7f, 5);

@@ -45,6 +45,7 @@ Material:
     - _Relief: 0.45
     - _RimLight: 0
     - _RimWidth: 3
+    - _VertexTint: 1
     - _Wind: 0
     - _WindWeight: 1
     m_Colors:

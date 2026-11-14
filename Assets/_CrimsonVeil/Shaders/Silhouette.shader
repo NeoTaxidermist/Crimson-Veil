@@ -15,6 +15,7 @@ Shader "CrimsonVeil/Silhouette"
         _EdgeLight ("Top Edge Light", Range(0, 1)) = 0.08
         _FormShade ("Form Shading (moonlight)", Range(0, 1)) = 0
         _Relief ("Stone Relief (moonlit tops, shaded sides)", Range(0, 1.5)) = 0
+        _VertexTint ("Vertex Tone (stones / mortar)", Range(0, 1)) = 0
         _RimLight ("Rim Light", Range(0, 1)) = 0
         _RimColor ("Rim Color", Color) = (0.62, 0.62, 0.66, 1)
         _RimWidth ("Rim Width", Range(0.5, 8)) = 3
@@ -49,6 +50,7 @@ Shader "CrimsonVeil/Silhouette"
             float _EdgeLight;
             float _FormShade;
             float _Relief;
+            float _VertexTint;
             float _RimLight;
             half4 _RimColor;
             float _RimWidth;
@@ -67,6 +69,7 @@ Shader "CrimsonVeil/Silhouette"
             float3 normalOS : NORMAL;
             float2 uv : TEXCOORD0;
             float2 uv2 : TEXCOORD1;
+            float4 color : COLOR;
         };
 
         float3 DisplaceWS(Attributes v)
@@ -104,6 +107,7 @@ Shader "CrimsonVeil/Silhouette"
                 float3 normalWS : TEXCOORD1;
                 float fogFactor : TEXCOORD2;
                 float2 uv : TEXCOORD3;
+                float4 tint : TEXCOORD4;
             };
 
             Varyings vert(Attributes v)
@@ -114,6 +118,7 @@ Shader "CrimsonVeil/Silhouette"
                 o.normalWS = TransformObjectToWorldNormal(v.normalOS);
                 o.fogFactor = ComputeFogFactor(o.positionCS.z);
                 o.uv = v.uv;
+                o.tint = v.color;
                 return o;
             }
 
@@ -123,6 +128,9 @@ Shader "CrimsonVeil/Silhouette"
                 float2 p = i.positionWS.xy * _GrainScale + i.positionWS.z * 0.37;
                 float grain = CV_Fbm(p) + 0.35 * CV_Fbm(p * 6.0);
                 half3 col = _BaseColor.rgb * (1.0 + (grain - 0.65) * _GrainStrength * 2.0);
+                // Per-vertex tone (masonry): each dressed stone its own shade, the mortar behind them darker.
+                // Meshes without vertex colours read as white here, i.e. unchanged.
+                col *= lerp(1.0, i.tint.rgb, _VertexTint);
 
                 if (_Cracks > 0.001)
                 {

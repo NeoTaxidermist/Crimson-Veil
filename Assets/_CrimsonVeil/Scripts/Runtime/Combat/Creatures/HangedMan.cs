@@ -87,12 +87,20 @@ namespace CrimsonVeil.Combat
             CombatFx.Shake(0.15f);
         }
 
+        BoxCollider corpse;
+
         void FallDown(float dt)
         {
-            if (landed) return;
+            if (landed)
+            {
+                // Lying where the hero stands, the body stays passable until he steps out — never pins him.
+                if (corpse != null && corpse.isTrigger && !OverlapsHero()) corpse.isTrigger = false;
+                return;
+            }
             var pos = transform.position;
             fallVelocity -= 25f * dt;
-            float g = GroundBelow(pos + Vector3.up * 0.5f, 0.5f - fallVelocity * dt + 0.1f);
+            // The body falls through the hero (it lands on the ground, not on his head).
+            float g = SolidGroundBelow(pos + Vector3.up * 0.5f, 0.5f - fallVelocity * dt + 0.1f);
             if (!float.IsNaN(g) && pos.y + fallVelocity * dt <= g)
             {
                 pos.y = g;
@@ -103,6 +111,10 @@ namespace CrimsonVeil.Combat
                 var box = gameObject.AddComponent<BoxCollider>();
                 box.center = new Vector3(0f, 0.3f, 0f);
                 box.size = new Vector3(1.6f, 0.6f, 0.8f);
+                corpse = box;
+                transform.position = pos;
+                Physics.SyncTransforms();
+                box.isTrigger = OverlapsHero();
                 if (visual != null) visual.localRotation = Quaternion.Euler(0f, 0f, 90f);
                 if (visual != null) visual.localPosition = new Vector3(0.85f, 0.2f, 0f); // lying across the box
                 CombatFx.Burst(pos + Vector3.up * 0.3f, Vector2.up, CombatFx.Ink, 20, 3f);
@@ -110,6 +122,29 @@ namespace CrimsonVeil.Combat
             }
             else pos.y += fallVelocity * dt;
             transform.position = pos;
+        }
+
+        /// <summary>Ground under <paramref name="from"/>, ignoring the hero, triggers and the body itself.</summary>
+        float SolidGroundBelow(Vector3 from, float maxDistance)
+        {
+            float best = float.NaN;
+            foreach (var hit in Physics.RaycastAll(from, Vector3.down, maxDistance, ~0, QueryTriggerInteraction.Ignore))
+            {
+                if (hit.collider.transform.IsChildOf(transform)) continue;
+                if (hit.collider is CharacterController || hit.collider.GetComponentInParent<CrimsonVeil.Player.PlayerController>() != null) continue;
+                if (float.IsNaN(best) || hit.point.y > best) best = hit.point.y;
+            }
+            return best;
+        }
+
+        /// <summary>Does the lying body overlap the hero?</summary>
+        bool OverlapsHero()
+        {
+            if (corpse == null) return false;
+            var b = corpse.bounds;
+            foreach (var c in Physics.OverlapBox(b.center, b.extents, Quaternion.identity, ~0, QueryTriggerInteraction.Ignore))
+                if (c is CharacterController || c.GetComponentInParent<CrimsonVeil.Player.PlayerController>() != null) return true;
+            return false;
         }
 
         public static void BuildVisual(Transform root, Material ink, Material accent, Material ropeMaterial)

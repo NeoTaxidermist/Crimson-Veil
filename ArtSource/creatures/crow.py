@@ -30,6 +30,15 @@ for z in (-0.03, 0.03):
     b.tube([(0.02, -0.06, z), (0.0, -0.13, z), (0.04, -0.15, z)], [0.01, 0.008, 0.005], sides=5)
     for t in range(3):
         b.tube([(0.04, -0.15, z), (0.07 - 0.02 * t, -0.18, z + (t - 1) * 0.01)], [0.004, 0.002], sides=4)
+# Feather scales layered along the back and flanks (they break the smooth body into plumage).
+for k in range(12):
+    x = 0.17 - 0.03 * k
+    yb = 0.06 + 0.015 * math.sin(k)
+    sc = [(0.0, 0.0), (-0.045, 0.012), (-0.06, -0.008), (-0.03, -0.022)]
+    b.prism(sc, -0.07 + 0.012 * (k % 3), -0.064 + 0.012 * (k % 3), xform=lambda p, x=x, yb=yb: p + Vector((x, yb - 0.03 * (k % 2), 0)))
+# Ruffled nape feathers sticking out behind the head.
+for k in range(4):
+    b.tube([(0.22 - 0.02 * k, 0.09, -0.02 + 0.013 * k), (0.17 - 0.03 * k, 0.12 + 0.01 * (k % 2), -0.02 + 0.013 * k)], [0.008, 0.001], sides=3)
 b.displace(0.004, scale=12.0, seed=1)
 b.build()
 
@@ -47,6 +56,16 @@ def wing(name, z):
     w.prism(out, -0.008, 0.008)
     # Coverts: a ridge of small feathers along the leading edge.
     w.tube([(0.03, 0.01, 0), (0.03, 0.15, 0), (0.0, 0.3, 0), (-0.05, 0.36, 0)], [0.025, 0.022, 0.015, 0.008], sides=6, flat=0.6)
+    # Rows of covert feathers over the wing, each a little proud of the one below.
+    for row in range(2):
+        for k in range(5):
+            bx, by = -0.02 - k * 0.055 - row * 0.03, 0.26 - k * 0.035 - row * 0.09
+            fe = [(0.0, 0.0), (0.03, 0.04), (-0.05, 0.02), (-0.07, -0.03), (-0.02, -0.025)]
+            w.prism(fe, -0.012 - 0.003 * row, -0.009 - 0.003 * row, xform=lambda p, bx=bx, by=by: p + Vector((bx, by, 0)))
+    # Shafts of the long flight feathers.
+    for k in range(6):
+        tip = (-0.05 - k * 0.055, 0.46 - k * 0.04)
+        w.tube([(-0.03 - k * 0.04, 0.3 - k * 0.04, -0.01), (tip[0], tip[1] - 0.02, -0.01)], 0.003, sides=3)
     w.build()
 
 

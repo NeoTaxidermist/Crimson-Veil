@@ -102,7 +102,10 @@ namespace CrimsonVeil.World
             foreach (var (z, normal) in new[] { (-hz, Vector3.back), (hz, Vector3.forward) })
             {
                 int start = b.v.Count;
+                // Masonry's front face is the mortar bed between the blocks: darker, so the joints read.
+                b.tint = z < 0f && style == TerrainStyle.Ruin ? Mortar : Color.white;
                 foreach (var p in outline) b.Vert(new Vector3(p.x, p.y, z), normal, UV(p));
+                b.tint = Color.white;
                 for (int i = 0; i < tris.Count; i += 3)
                 {
                     int a = start + tris[i], c1 = start + tris[i + 1], c2 = start + tris[i + 2];
@@ -112,6 +115,7 @@ namespace CrimsonVeil.World
                 }
             }
             TerrainRelief(b, outline, width, height, -hz, style, roughness, seed);
+            b.tint = Color.white;
             return b.ToMesh("Terrain");
         }
 
@@ -138,9 +142,10 @@ namespace CrimsonVeil.World
                     {
                         float w = R(0.7f, 1.3f), xe = Mathf.Min(hw, x + w);
                         float cx = (x + xe) * 0.5f, cy = y - ch * 0.5f, sw = xe - x - 0.06f, sh = ch - 0.06f;
-                        if (sw > 0.2f && rnd.NextDouble() > 0.08 && Inside(cx - sw * 0.5f, cy) && Inside(cx + sw * 0.5f, cy) && Inside(cx, cy - sh * 0.5f))
+                        if (sw > 0.2f && Inside(cx - sw * 0.5f, cy) && Inside(cx + sw * 0.5f, cy) && Inside(cx, cy - sh * 0.5f))
                         {
-                            Stone(b, new Vector2(cx, cy), sw, sh, z, R(0.06f, 0.11f), 0.07f, R(-1.5f, 1.5f));
+                            b.tint = StoneTone(rnd, 1f);
+                            Stone(b, new Vector2(cx, cy), sw, sh, z, R(0.06f, 0.11f), 0.07f, R(-1f, 1f));
                         }
                         x = xe;
                     }
@@ -165,6 +170,7 @@ namespace CrimsonVeil.World
                     if (!Inside(cx - ex.x - ey.x, cy - ex.y - ey.y) || !Inside(cx + ex.x - ey.x, cy + ex.y - ey.y) ||
                         !Inside(cx - ex.x + ey.x, cy - ex.y + ey.y) || !Inside(cx + ex.x + ey.x, cy + ex.y + ey.y)) continue;
                     float proud = R(0.06f, 0.16f) * (0.5f + rough);
+                    b.tint = StoneTone(rnd, 1.05f);
                     Stone(b, new Vector2(cx, cy), w, h, z, proud, R(0.05f, 0.1f), tilt);
                     // A chipped smaller stone sitting on some slabs.
                     if (rnd.NextDouble() < 0.25 && Inside(cx, cy + h * 0.5f + 0.12f) && cy + h * 0.5f + 0.2f < -0.32f)
@@ -326,22 +332,65 @@ namespace CrimsonVeil.World
         public static Mesh Column(float height, float radius, bool broken, int seed)
         {
             var rnd = new System.Random(seed);
+            float R(float a, float c) => a + (float)rnd.NextDouble() * (c - a);
             float top = broken ? height * (0.45f + 0.35f * (float)rnd.NextDouble()) : height;
+            float abacus = broken ? 0f : radius * 0.26f;
+            float capTop = top - abacus;
+            // Plinth, torus mouldings, then a fluted shaft built of drums (a faint joint between each), capital.
             var profile = new List<Vector2>
             {
                 new Vector2(0f, 0f), new Vector2(radius * 1.45f, 0f), new Vector2(radius * 1.45f, radius * 0.35f),
                 new Vector2(radius * 1.2f, radius * 0.5f), new Vector2(radius * 1.05f, radius * 0.7f),
-                new Vector2(radius, radius * 0.9f), new Vector2(radius * 0.88f, top - radius * 0.9f),
+                new Vector2(radius, radius * 0.9f),
             };
+            int shaftFrom = profile.Count;
+            float y0 = radius * 1.0f, y1 = (broken ? top : capTop - radius * 0.9f);
+            int drums = Mathf.Max(1, Mathf.RoundToInt((y1 - y0) / (radius * 2.6f)));
+            for (int d = 0; d <= drums; d++)
+            {
+                float y = Mathf.Lerp(y0, y1, (float)d / drums);
+                float r = Mathf.Lerp(radius * 0.99f, radius * 0.88f, (y - y0) / Mathf.Max(0.01f, y1 - y0)); // entasis taper
+                if (d > 0 && d < drums)
+                {
+                    profile.Add(new Vector2(r, y - radius * 0.03f));
+                    profile.Add(new Vector2(r * 0.955f, y));           // the joint between two drums
+                    profile.Add(new Vector2(r, y + radius * 0.03f));
+                }
+                else profile.Add(new Vector2(r, y));
+            }
+            int shaftTo = profile.Count - 1;
             if (!broken)
             {
-                profile.Add(new Vector2(radius * 1.05f, top - radius * 0.6f));
-                profile.Add(new Vector2(radius * 1.5f, top - radius * 0.35f));
-                profile.Add(new Vector2(radius * 1.6f, top));
+                profile.Add(new Vector2(radius * 0.9f, capTop - radius * 0.75f));   // necking ring
+                profile.Add(new Vector2(radius * 0.95f, capTop - radius * 0.68f));
+                profile.Add(new Vector2(radius * 1.05f, capTop - radius * 0.55f));
+                profile.Add(new Vector2(radius * 1.5f, capTop - radius * 0.2f));    // echinus
+                profile.Add(new Vector2(radius * 1.6f, capTop));
             }
             else profile.Add(new Vector2(radius * 0.8f, top));
-            profile.Add(new Vector2(0f, top));
-            return Lathe(profile, 12, broken ? "ColumnBroken" : "Column");
+            profile.Add(new Vector2(0f, capTop));
+            var b = new Builder(1);
+            // 20 flutes along the shaft.
+            LatheInto(b, profile, 40, (a, ring) => ring >= shaftFrom && ring <= shaftTo
+                ? 1f - 0.075f * Mathf.Pow(Mathf.Abs(Mathf.Sin(a * 10f)), 0.6f) : 1f);
+            if (!broken)
+                b.Box(new Vector3(0f, capTop + abacus * 0.5f, 0f), new Vector3(radius * 3.4f, abacus, radius * 3.4f), Quaternion.identity); // abacus
+            else
+            {
+                // A jagged break: shards still standing on the stump, and pieces fallen at its foot.
+                for (int k = 0; k < 5; k++)
+                {
+                    float a = R(0f, Mathf.PI * 2f), d = R(0f, radius * 0.5f);
+                    var size = new Vector3(R(0.4f, 0.9f) * radius, R(0.25f, 0.9f) * radius, R(0.4f, 0.8f) * radius);
+                    b.Box(new Vector3(Mathf.Cos(a) * d, top + size.y * 0.3f, Mathf.Sin(a) * d), size, Quaternion.Euler(R(-15f, 15f), R(0f, 90f), R(-20f, 20f)));
+                }
+                for (int k = 0; k < 3; k++)
+                {
+                    float side = k % 2 == 0 ? 1f : -1f, s = R(0.5f, 1f) * radius;
+                    b.Box(new Vector3(side * R(1.7f, 2.6f) * radius, s * 0.4f, R(-0.4f, 0.4f) * radius), new Vector3(s * 1.3f, s * 0.8f, s), Quaternion.Euler(0f, R(0f, 90f), R(-25f, 25f)));
+                }
+            }
+            return b.ToMesh(broken ? "ColumnBroken" : "Column");
         }
     }
 }

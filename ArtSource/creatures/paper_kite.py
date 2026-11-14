@@ -46,7 +46,18 @@ for i in range(10, -1, -1):
     x = -0.24 + 0.48 * t
     grin.append((x, -0.15 - 0.1 * math.sin(t * math.pi) - (0.03 if i % 2 else 0.0)))
 k.prism(grin, -0.012, -0.006, mat=K.CRIMSON)
-# Paper tassels hanging from the side corners.
+# Patches of fresh paper glued over old tears, and brushed prayer characters running down the sail.
+for (x, y, w, h, a) in [(-0.1, -0.3, 0.12, 0.09, 0.3), (0.1, 0.3, 0.1, 0.08, -0.4)]:
+    ca, sa = math.cos(a), math.sin(a)
+    quad = [(x + px * ca - py * sa, y + px * sa + py * ca) for px, py in [(-w / 2, -h / 2), (w / 2, -h / 2), (w / 2, h / 2), (-w / 2, h / 2)]]
+    k.prism(quad, -0.01, -0.007)
+for col, x in enumerate((-0.12, 0.12)):
+    for j in range(5):
+        y = 0.42 - j * 0.1 if col == 0 else -0.3 - j * 0.06
+        if col == 1 and j > 2:
+            break
+        k.prism([(x - 0.03, y), (x + 0.02, y + 0.01), (x + 0.025, y - 0.008), (x - 0.025, y - 0.015)], -0.011, -0.007)
+        k.prism([(x - 0.004, y + 0.02), (x + 0.006, y + 0.02), (x + 0.004, y - 0.04), (x - 0.006, y - 0.035)], -0.011, -0.007)# Paper tassels hanging from the side corners.
 for sx in (-1, 1):
     for j in range(3):
         x0 = sx * (0.42 - 0.02 * j)

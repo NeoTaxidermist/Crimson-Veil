@@ -5,6 +5,50 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.13.0] – 2026-11-14
+Poctivé zdivo, víc detailu v pozadí, objektech i nepřátelích. Oprava mrtvoly oběšence.
+
+### Opraveno
+- **Přeseknutý oběšenec už hrdinu nepřimáčkne.**
+  - Padající tělo hledalo zem paprskem, který narazil na hrdinu. Přistálo mu tak na hlavě a vytvořilo pevný blok, ve kterém hrdina uvízl.
+  - Teď tělo hrdinu při pádu ignoruje a dopadne na zem.
+  - Když leží přes hrdinu, zůstane průchozí, dokud hrdina neodejde. Pak se z něj zase stane pevný schod.
+
+### Změněno
+- **Zdivo už není odbyté:**
+  - **Tmavá malta:** zeď za kameny je tmavší, takže je vidět každá spára.
+  - **Tón kamenů:** každý kámen má trochu jiný odstín (zvětralost).
+  - **Klenáky:** jsou zkosené jako ostatní kameny, místo plochých klínů s bílými čárkami.
+  - **Plné řady:** na neporušené zdi už náhodně nechybějí kameny.
+- Platí to pro procedurální oblouky, zděné bloky terénu i pro všechny modely z Blenderu (akvadukt, hrad, útes, zeď, věž, schody, podstavec sochy). Ty teď exportují tóny jako barvy vrcholů.
+- **Sloupy:**
+  - dřík je skládaný z bubnů se spárami, má 20 kanelur a mírné zúžení (entazi);
+  - nahoře je krk a deska hlavice;
+  - zlomené sloupy mají zubatý lom a úlomky u paty.
+- **Urny** mají vroubkované břicho, patku, obruč a vyhrnutý okraj.
+
+### Přidáno
+- **Nové modely pozadí z Blenderu** (v Level Editoru v Dekoracích):
+  - **Suchý strom:** pokroucený kmen s kůrou, rozložité větve, kořeny.
+  - **Socha:** zahalená postava se zlomeným mečem nad hlavou a ulomenou rukou, roztržená kápě a rudý hadr na meči, na zděném podstavci s vybledlým nápisem.
+  - **Visací klec:** klec s kostmi a rukou trčící ven, rudý cár, řetěz.
+  - **Věže na obzoru:** silueta katedrály s věžemi, fiálami, opěrnými oblouky a rozetou.
+- Ukázková scéna je má ve všech hloubkách: věže na obzoru, suché stromy, sochy v blízké a střední vrstvě a klece pod oblouky.
+- **Detailnější nepřátelé:**
+  - **Mnich:** záplaty se stehy, šev, papírové talismany u pasu s rudou pečetí.
+  - **Oběšenec:** cáry košile, knoflíky, okov s přetrženým řetězem, provazový opasek.
+  - **Kořenový lezec:** trny, houby, další malá oka.
+  - **Vrána:** šupiny peří na hřbetě a krovky na křídlech.
+  - **Můra:** popelavé pruhy a tečky sazí na křídlech.
+  - **Lucerna:** nýty, řetízek, rudá runová destička, kapky vosku.
+  - **Papírový drak:** záplaty a tahy štětcem.
+
+### Testy
+- Oběšenec přeseknutý nad hrdinou dopadne na zem, hrdina odejde a tělo pak zpevní.
+- Zdivo má tmavou maltu a kameny různých tónů, i v modelech z Blenderu.
+- Sloupy mají kanelury a desku hlavice, zlomené sloupy úlomky, urny vroubkování.
+- Nepřátelé mají minimální počet trojúhelníků, nové modely pozadí existují.
+
 ## [0.12.1] – 2026-11-14
 Ukazatel životů v levém horním rohu.
 

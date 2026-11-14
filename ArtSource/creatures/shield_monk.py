@@ -99,6 +99,22 @@ for dx, dz in [(0.0, 0.0), (0.05, 0.03)]:
         body.tube([(0.23 + dx * 2, 0.58, -0.22 + dz), (0.21 + dx * 2 + s * 0.02, 0.5, -0.22 + dz)], 0.006, sides=4)
 # Toes peeking out under the hem.
 body.blob((0.33, 0.03, -0.1), (0.09, 0.04, 0.05), segs=10, rings=6)
+# Patches sewn onto the robe (standing proud on the camera side), with coarse stitches round them.
+for (x, y, w, h) in [(0.05, 0.45, 0.12, 0.1), (-0.12, 0.7, 0.1, 0.12), (0.12, 0.25, 0.09, 0.08), (-0.05, 1.05, 0.1, 0.08)]:
+    zf = -0.72 * (0.39 - 0.07 * y) - 0.012
+    body.box(x - w / 2, y - h / 2, x + w / 2, y + h / 2, zf - 0.012, zf + 0.02)
+    for k in range(5):
+        sx = x - w / 2 + w * k / 4
+        body.tube([(sx, y + h / 2 + 0.012, zf - 0.016), (sx + 0.01, y + h / 2 - 0.012, zf - 0.016)], 0.004, sides=3)
+# A seam running down the front of the robe.
+body.tube([(0.02 + 0.01 * math.sin(k), 0.95 - 0.09 * k, -0.72 * (0.33 + 0.007 * k) - 0.01) for k in range(10)], 0.005, sides=3)
+# Paper talismans tied to the belt, each sealed with a crimson stamp.
+for k, (x, l) in enumerate([(-0.14, 0.32), (-0.04, 0.42), (0.06, 0.28)]):
+    zf = -0.24 - 0.02 * k
+    body.prism([(x - 0.03, 0.94), (x + 0.03, 0.94), (x + 0.035, 0.94 - l), (x + 0.01, 0.94 - l - 0.03), (x - 0.03, 0.94 - l + 0.01)], zf - 0.004, zf + 0.004)
+    body.blob((x, 0.94 - l * 0.45, zf - 0.008), (0.018, 0.018, 0.005), segs=8, rings=4, mat=K.CRIMSON)
+    for j in range(3):  # brushed glyph strokes
+        body.box(x - 0.015, 0.9 - l * (0.15 + 0.12 * j), x + 0.012, 0.9 - l * (0.15 + 0.12 * j) + 0.008, zf - 0.009, zf - 0.005)
 body.displace(0.012, scale=6.0, seed=2)
 # Hunched: the upper body leans forward over the shield.
 for v in body.bm.verts:

@@ -185,6 +185,15 @@ namespace CrimsonVeil.EditorTools
             castle.transform.SetParent(deco, true);
             F.Ruin("Aqueduct", new Vector3(-10f, -12f, 0f), LevelLayer.Far).transform.SetParent(deco, true);
             F.Ruin("CliffRuin", new Vector3(118f, -14f, 0f), LevelLayer.Far).transform.SetParent(deco, true);
+            // A gothic skyline on the horizon, dead trees and statues through the depths, cages hanging from the arches.
+            F.Ruin("Spires", new Vector3(25f, -16f, 0f), LevelLayer.Sky).transform.SetParent(deco, true);
+            F.Ruin("Spires", new Vector3(105f, -15f, 0f), LevelLayer.Far).transform.SetParent(deco, true);
+            foreach (var (x, y, l) in new[] { (-24f, -2f, LevelLayer.Mid), (49f, -2f, LevelLayer.Mid), (93f, -2f, LevelLayer.Mid), (6f, -12f, LevelLayer.Far), (72f, -12f, LevelLayer.Far), (32f, -1f, LevelLayer.Near) })
+                F.Ruin("DeadTree", new Vector3(x, y, 0f), l).transform.SetParent(deco, true);
+            foreach (var (x, y, l) in new[] { (11f, -1f, LevelLayer.Near), (82f, -1f, LevelLayer.Near), (-8f, -2f, LevelLayer.Mid), (66f, -2f, LevelLayer.Mid) })
+                F.Ruin("Statue", new Vector3(x, y, 0f), l).transform.SetParent(deco, true);
+            foreach (var (x, y) in new[] { (-11.5f, 9.6f), (40f, 9.3f), (98f, 9.4f) })
+                F.Ruin("Cage", new Vector3(x, y, 0f), LevelLayer.Near).transform.SetParent(deco, true);
             foreach (var (x, y) in new[] { (8f, -2f), (58f, -2f), (98f, -2f) })
                 F.Ruin("Tower", new Vector3(x, y, 0f), LevelLayer.Mid).transform.SetParent(deco, true);
             foreach (var (x, y) in new[] { (-30f, -2f), (25f, -2f), (80f, -2f), (115f, -2f) })

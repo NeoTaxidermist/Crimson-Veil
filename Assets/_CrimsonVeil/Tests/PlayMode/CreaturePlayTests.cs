@@ -82,6 +82,39 @@ namespace CrimsonVeil.Tests
         }
 
         [UnityTest]
+        public IEnumerator HangedMan_CutOverTheHero_FallsPastHim_AndNeverPinsHim()
+        {
+            var hero = new GameObject("Hero");
+            hero.SetActive(false);
+            hero.transform.position = new Vector3(0f, 0.05f, 0f);
+            var cc = hero.AddComponent<CharacterController>();
+            cc.height = 1.8f; cc.radius = 0.28f; cc.center = new Vector3(0f, 0.9f, 0f);
+            var input = hero.AddComponent<ScriptedInput>();
+            var pc = hero.AddComponent<CrimsonVeil.Player.PlayerController>();
+            hero.SetActive(true);
+            var go = new GameObject("Hanged");
+            go.transform.position = new Vector3(0f, 2.2f, 0f);
+            go.AddComponent<CapsuleCollider>();
+            HangedMan.BuildVisual(go.transform, null, null, null);
+            var man = go.AddComponent<HangedMan>();
+            try
+            {
+                yield return Wait(0.2f);
+                go.GetComponentInChildren<CreatureThread>().ReceiveHit(HitFrom(2f, DamageKind.Arrow));
+                yield return Wait(1.2f);
+                Assert.IsTrue(man.Fallen);
+                Assert.AreEqual(0f, go.transform.position.y, 0.2f, "on the ground, not on the hero's head");
+                float start = hero.transform.position.x;
+                input.moveX = 1f;
+                yield return Wait(0.8f);
+                Assert.Greater(hero.transform.position.x, start + 2f, "the hero walks out from under the body");
+                yield return Wait(0.3f);
+                Assert.IsFalse(go.GetComponent<BoxCollider>().isTrigger, "once he is clear, the body is solid again");
+            }
+            finally { Object.Destroy(hero); }
+        }
+
+        [UnityTest]
         public IEnumerator CrowSwarm_EveryCrowIsATarget_AndTheSwarmEndsWithTheLast()
         {
             var go = new GameObject("Swarm");

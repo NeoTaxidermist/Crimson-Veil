@@ -610,7 +610,8 @@ namespace CrimsonVeil.EditorTools
 
         /// <summary>Names of all modelled set pieces in Art/Ruins (Blender), for the catalog and tests.</summary>
         public static readonly string[] RuinModels =
-            { "RuinWall", "Tower", "RuinStairs", "Aqueduct", "Castle", "CliffRuin", "Bramble", "Weeds", "Chain", "LeafPile" };
+            { "RuinWall", "Tower", "RuinStairs", "Aqueduct", "Castle", "CliffRuin", "Bramble", "Weeds", "Chain", "LeafPile",
+              "DeadTree", "Statue", "Cage", "Spires" };
 
         public static GameObject Fern(Vector3 pos, LevelLayer layer, int seed = 1, float size = 1.6f, int fronds = 9)
         {

@@ -252,22 +252,34 @@ namespace CrimsonVeil.World
             float z = -hz;                             // front face
             float ring = Mathf.Max(0.12f, Mathf.Min(Mathf.Min(pillarWidth * 0.8f, r * 0.45f), H - spring - r - 0.06f));
 
-            // Voussoirs: wedges between r and r + ring, small angular joints, the keystone taller and prouder.
+            // Voussoirs: an odd number of equal wedges set tight, every joint radial (pointing at the arch's centre),
+            // the same thin joint as the coursed stone; the keystone at the crown a little longer and prouder.
+            float joint = 0.04f * u;
             int count = Mathf.Max(9, Mathf.RoundToInt(Mathf.PI * (r + ring * 0.5f) / (0.42f * u)) | 1);
-            float gap = 0.035f * u / (r + ring * 0.5f);
+            float gap = joint * 0.5f / (r + ring * 0.5f);   // half a joint (radians) at each side of a wedge
+            float extr = Mathf.Min(r + ring, H - spring - 0.02f);
+            float keyOuter = Mathf.Min(r + ring * 1.3f, H - spring - 0.02f);
+            float keyHalf = keyOuter * Mathf.Sin(Mathf.PI / count * 0.5f) + joint;
             for (int k = 0; k < count; k++)
             {
                 float a0 = Mathf.PI * k / count + gap, a1 = Mathf.PI * (k + 1) / count - gap;
                 bool key = k == count / 2;
-                float outer = Mathf.Min(r + ring * (key ? 1.35f : Rn(0.92f, 1.06f)), H - spring - 0.02f); // never above the wall
-                float proud = (key ? 0.16f : Rn(0.06f, 0.1f)) * u;
-                // A dressed wedge with chamfered edges, like every other stone of the arch.
+                float outer = key ? keyOuter : extr;
+                float proud = (key ? 0.14f : Rn(0.07f, 0.09f)) * u;
                 Vector2 P(float rad, float a) => new Vector2(Mathf.Cos(a) * rad, spring + Mathf.Sin(a) * rad);
                 float b0 = Mathf.PI - a1, b1 = Mathf.PI - a0;
-                b.tint = StoneTone(rnd, key ? 1.12f : 1f);
-                StoneQuad(b, new[] { P(r, b0), P(r, b1), P(outer, b1), P(outer, b0) }, z, proud, 0.06f * u);
+                b.tint = StoneTone(rnd, key ? 1.1f : 1f);
+                StoneQuad(b, new[] { P(r, b0), P(r, b1), P(outer, b1), P(outer, b0) }, z, proud, 0.025f * u);
             }
             b.tint = StoneTone(rnd, 1.05f);
+            // The extrados (the arch's outer curve, with the keystone standing up out of it): spandrel stones are cut to it.
+            float Extrados(float x)
+            {
+                float re = extr + joint;
+                float y = Mathf.Abs(x) < re ? spring + Mathf.Sqrt(re * re - x * x) : float.NegativeInfinity;
+                if (Mathf.Abs(x) < keyHalf) y = Mathf.Max(y, spring + keyOuter + joint);
+                return y;
+            }
 
             // Piers: plinth, ashlar courses, impost cornice.
             foreach (float side in new[] { -1f, 1f })
@@ -280,20 +292,13 @@ namespace CrimsonVeil.World
                 Courses(b, rnd, x0, x1, 0.7f * u, spring - 0.3f * u, z, u);
             }
 
-            // Spandrels above the ring: courses that stop at the voussoirs, then a top cornice.
-            float y = spring + 0.1f * u, ch = 0.42f * u;
+            // Spandrels: full courses right across, each stone that meets the arch cut to its extrados, so the
+            // coursing closes onto the voussoirs with an ordinary joint — no voids round the arch.
+            float y = spring + 0.02f * u, ch = 0.42f * u;
             int row = 0;
             while (y + ch < H - 0.35f * u)
             {
-                float yc = y + ch * 0.5f;
-                float dy = yc - spring;
-                float reach = dy < r + ring ? Mathf.Sqrt(Mathf.Max(0f, (r + ring) * (r + ring) - dy * dy)) + 0.06f * u : -1f;
-                if (reach < 0f) StoneRow(b, rnd, -R, R, y, ch, z, u, row);
-                else
-                {
-                    if (R - reach > 0.3f * u) StoneRow(b, rnd, -R, -reach, y, ch, z, u, row);
-                    if (R - reach > 0.3f * u) StoneRow(b, rnd, reach, R, y, ch, z, u, row);
-                }
+                StoneRow(b, rnd, -R, R, y, Mathf.Min(ch, H - 0.35f * u - y), z, u, row, Extrados);
                 y += ch; row++;
             }
             Slab(b, 0f, H - 0.12f * u, 2f * R + 0.3f * u, 0.24f * u, z, 0.18f * u);                      // cornice
@@ -365,13 +370,52 @@ namespace CrimsonVeil.World
         /// A dressed stone over any convex quad (bl, br, tr, tl) standing proud of the wall plane z, its front
         /// edges chamfered towards the camera (moonlit top chamfer, shaded bottom and sides).
         /// </summary>
-        static void StoneQuad(Builder b, Vector2[] q, float z, float proud, float bevel)
+        static void StoneQuad(Builder b, Vector2[] q, float z, float proud, float bevel) => StonePoly(b, q, z, proud, bevel);
+
+        /// <summary>
+        /// A stone of course height cut to an arch's extrados: the part of the rectangle (centre, w × h) below
+        /// the curve is trimmed away along it. Null when the stone does not meet the arch (lay it plain);
+        /// an empty list when too little of it is left to be worth laying.
+        /// </summary>
+        public static List<Vector2> CutToExtrados(Vector2 c, float w, float h, System.Func<float, float> extrados)
         {
+            float x0 = c.x - w * 0.5f, x1 = c.x + w * 0.5f, y0 = c.y - h * 0.5f, y1 = c.y + h * 0.5f;
+            bool touches = false;
+            for (int i = 0; i <= 8 && !touches; i++) touches = extrados(Mathf.Lerp(x0, x1, i / 8f)) > y0;
+            if (!touches) return null;
+            var pts = new List<Vector2>();
+            const int n = 10;
+            for (int i = 0; i < n; i++) pts.Add(new Vector2(Mathf.Lerp(x0, x1, (float)i / n), y0));   // bottom, left → right
+            for (int i = 0; i < 3; i++) pts.Add(new Vector2(x1, Mathf.Lerp(y0, y1, (float)i / 3)));  // right side up
+            pts.Add(new Vector2(x1, y1)); pts.Add(new Vector2(x0, y1));                             // top
+            for (int i = 2; i >= 1; i--) pts.Add(new Vector2(x0, Mathf.Lerp(y0, y1, (float)i / 3)));  // left side down
+            var cut = new List<Vector2>();
+            foreach (var p in pts)
+            {
+                float e = extrados(p.x);
+                var q = p.y < e ? new Vector2(p.x, Mathf.Min(e, y1)) : p;
+                if (cut.Count == 0 || (cut[cut.Count - 1] - q).sqrMagnitude > 1e-6f) cut.Add(q);
+            }
+            if (cut.Count > 2 && (cut[0] - cut[cut.Count - 1]).sqrMagnitude < 1e-6f) cut.RemoveAt(cut.Count - 1);
+            float area = 0f;
+            for (int i = 0; i < cut.Count; i++) { var p = cut[i]; var q = cut[(i + 1) % cut.Count]; area += p.x * q.y - q.x * p.y; }
+            return Mathf.Abs(area) * 0.5f < w * h * 0.3f ? new List<Vector2>() : cut;
+        }
+
+        /// <summary>
+        /// A dressed stone over a polygon (a quad, a wedge, a stone cut to an arch) standing proud of the wall
+        /// plane z, its front edges chamfered towards the camera (moonlit top chamfer, shaded bottom and sides).
+        /// </summary>
+        static void StonePoly(Builder b, IList<Vector2> q, float z, float proud, float bevel)
+        {
+            int count = q.Count;
             bevel = Mathf.Min(bevel, proud * 0.9f);
-            Vector2 centre = (q[0] + q[1] + q[2] + q[3]) * 0.25f;
+            Vector2 centre = Vector2.zero;
+            foreach (var p in q) centre += p;
+            centre /= count;
             float zf = z - proud, zb = zf + bevel, zw = z + 0.01f;
-            var f = new Vector3[4]; var o = new Vector3[4]; var w = new Vector3[4];
-            for (int i = 0; i < 4; i++)
+            var f = new Vector3[count]; var o = new Vector3[count]; var w = new Vector3[count];
+            for (int i = 0; i < count; i++)
             {
                 Vector2 inward = centre - q[i];
                 float d = inward.magnitude;
@@ -381,10 +425,23 @@ namespace CrimsonVeil.World
                 w[i] = new Vector3(q[i].x, q[i].y, zw);
             }
             Vector2 U = Vector2.zero;
-            b.Quad(f[0], f[1], f[2], f[3], Vector3.back, U, U, U, U);
-            for (int i = 0; i < 4; i++)
+            if (count == 4) b.Quad(f[0], f[1], f[2], f[3], Vector3.back, U, U, U, U);
+            else
             {
-                int j = (i + 1) % 4;
+                // Front face as a fan round the centre (the outline may curve inwards along an arch).
+                int cIdx = b.Vert(new Vector3(centre.x, centre.y, zf), Vector3.back, U);
+                int first = b.v.Count;
+                for (int i = 0; i < count; i++) b.Vert(f[i], Vector3.back, U);
+                for (int i = 0; i < count; i++)
+                {
+                    int i0 = first + i, i1 = first + (i + 1) % count;
+                    var face = Vector3.Cross(b.v[i0] - b.v[cIdx], b.v[i1] - b.v[cIdx]);
+                    if (Vector3.Dot(face, Vector3.back) >= 0f) b.Tri(cIdx, i0, i1); else b.Tri(cIdx, i1, i0);
+                }
+            }
+            for (int i = 0; i < count; i++)
+            {
+                int j = (i + 1) % count;
                 Vector2 e = q[j] - q[i];
                 var outward2 = new Vector2(e.y, -e.x).normalized;
                 if (Vector2.Dot(outward2, (q[i] + q[j]) * 0.5f - centre) < 0f) outward2 = -outward2;
@@ -403,7 +460,8 @@ namespace CrimsonVeil.World
         }
 
         /// <summary>One course of ashlar between x0..x1, joints staggered every other row, stones slightly uneven.</summary>
-        static void StoneRow(Builder b, System.Random rnd, float x0, float x1, float y, float ch, float z, float u, int row)
+        static void StoneRow(Builder b, System.Random rnd, float x0, float x1, float y, float ch, float z, float u, int row,
+                             System.Func<float, float> extrados = null)
         {
             float joint = 0.04f * u;
             float x = x0 + (row % 2 == 1 ? 0.3f * u : 0f);
@@ -423,8 +481,14 @@ namespace CrimsonVeil.World
                 float sag = (float)rnd.NextDouble() * 0.02f * u;
                 var keep = b.tint;
                 b.tint = StoneTone(rnd, 1f);
-                Stone(b, new Vector2((a + c) * 0.5f, y + ch * 0.5f - sag), c - a - joint, ch - joint, z, proud, 0.07f * u,
-                    ((float)rnd.NextDouble() - 0.5f) * 1.6f);
+                float tilt = ((float)rnd.NextDouble() - 0.5f) * 1.6f;
+                var c0 = new Vector2((a + c) * 0.5f, y + ch * 0.5f - sag);
+                float w = c - a - joint, h = ch - joint;
+                if (extrados != null && CutToExtrados(c0, w, h, extrados) is List<Vector2> cut)
+                {
+                    if (cut.Count >= 3) StonePoly(b, cut, z, proud, 0.035f * u);
+                }
+                else Stone(b, c0, w, h, z, proud, 0.035f * u, tilt);
                 b.tint = keep;
             }
         }

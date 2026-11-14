@@ -5,6 +5,23 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.13.1] – 2026-11-14
+Klenby postavené jako skutečné klenby.
+
+### Opraveno
+- **Klenáky jsou těsně u sebe.**
+  - Spára mezi nimi se omylem počítala v úhlu násobeném poloměrem, takže v Blenderových modelech měla kolem 15 cm. Teď mají všechny stejnou tenkou spáru (4 cm) jako řádkové zdivo a míří do středu oblouku.
+  - Všechny klenáky mají stejnou délku a klenák uprostřed je trochu delší.
+  - Zkosení hran je menší, takže kámen nevypadá jako ostrůvek v širokém tmavém pásu.
+- **Zdivo nad obloukem navazuje.**
+  - Dřív se kameny kolem oblouku vynechávaly celé a zůstávaly tam trojúhelníkové díry.
+  - Teď jdou řady přes celou šíři zdi a kameny, které narazí na oblouk, se přitešou podle jeho vnějšího obrysu (extradosu, včetně klenáku). Řady tak dosednou na klenáky běžnou spárou, jak se to u skutečných kleneb dělá.
+- **Žádné náhodně chybějící kameny** v neporušeném zdivu ani v modelech z Blenderu.
+- Platí pro procedurální oblouky i pro modely z Blenderu (zeď s okny, věž, akvadukt, hrad, útes).
+
+### Testy
+- Kámen ve cviklu se ořízne podle oblouku. Kámen mimo oblouk zůstane celý a uvnitř otvoru žádný kámen není.
+
 ## [0.13.0] – 2026-11-14
 Poctivé zdivo, víc detailu v pozadí, objektech i nepřátelích. Oprava mrtvoly oběšence.
 

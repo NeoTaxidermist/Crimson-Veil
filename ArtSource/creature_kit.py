@@ -230,36 +230,50 @@ class Part:
                 return (cl + rad * math.cos(a), ys + rad * math.sin(a))
             inner = lambda t: arc(t, R)
             outer = lambda t: arc(t, R + ringw)
-
-            def inside_ring(x, y):
-                return y > ys and math.hypot(x - cr, y - ys) < R + ringw + 0.05 and math.hypot(x - cl, y - ys) < R + ringw + 0.05
+            arc_len = 2 * tp * (R + ringw / 2)
         else:
             inner = lambda t: (cx + r * math.cos(math.pi * t), ys + r * math.sin(math.pi * t))
             outer = lambda t: (cx + (r + ringw) * math.cos(math.pi * t), ys + (r + ringw) * math.sin(math.pi * t))
-
-            def inside_ring(x, y):
-                return y > ys and math.hypot(x - cx, y - ys) < r + ringw + 0.05
-        gap = 0.025 / max(0.5, r)
+            arc_len = math.pi * (r + ringw / 2)
+        # Voussoirs: equal wedges set tight with the same thin joint as the coursed stone, every joint radial;
+        # the keystone at the crown a little longer.
+        joint = 0.04 * u
+        gap = joint * 0.5 / arc_len
+        key_k = n // 2
         for k in range(n):
             t0, t1 = k / n + gap, (k + 1) / n - gap
-            key = k == n // 2
+            key = k == key_k
             o = (lambda t: outer(t)) if not key else (lambda t: (lambda p, q: (p[0] + (q[0] - p[0]) * 1.3, p[1] + (q[1] - p[1]) * 1.3))(inner(t), outer(t)))
-            self.stone(0, 0, 1, 1, z0, (0.16 if key else rnd.uniform(0.07, 0.11)) * u, 0.05 * u, mat=mat,
+            self.stone(0, 0, 1, 1, z0, (0.14 if key else rnd.uniform(0.07, 0.09)) * u, 0.025 * u, mat=mat,
                        quad=[inner(t0), inner(t1), o(t1), o(t0)])
         for px0, px1 in ((x0, inner0), (inner1, x1)):
             self.box(px0 - 0.08 * u, ys - 0.22 * u, px1 + 0.08 * u, ys, z0 - 0.14 * u, z0 + 0.01, mat)       # impost
         top_ok = top - (ragged * 2.5 if ragged else 0) - 0.15
 
+        # The extrados (outer curve of the ring, the keystone standing up out of it): spandrel stones are cut to it.
+        kp0, kp1 = inner(key_k / n), outer((key_k + 0.5) / n)
+        key_half = abs(outer(key_k / n)[0] - outer((key_k + 1) / n)[0]) * 0.5 + joint
+        key_top = kp1[1] + (kp1[1] - inner((key_k + 0.5) / n)[1]) * 0.3 + joint
+
+        def extrados(x):
+            if pointed:
+                c = cr if x >= cx else cl
+                re = R + ringw + joint
+            else:
+                c, re = cx, r + ringw + joint
+            y = ys + math.sqrt(re * re - (x - c) ** 2) if abs(x - c) < re else -1e9
+            if abs(x - cx) < key_half:
+                y = max(y, key_top)
+            return y
+
         def skip(sx, sy, w, h):
-            if sy + h / 2 > top_ok:
-                return True
-            return any(inside_ring(px, py) for px, py in ((sx - w / 2, sy + h / 2), (sx + w / 2, sy + h / 2), (sx, sy), (sx - w / 2, sy - h / 2), (sx + w / 2, sy - h / 2)))
-        kw = dict(course=0.45 * u, proud=(0.05 * u, 0.1 * u), bevel=0.06 * u, mat=mat)
+            return sy + h / 2 > top_ok
+        kw = dict(course=0.45 * u, proud=(0.05 * u, 0.1 * u), bevel=0.035 * u, mat=mat)
         # Piers up to the impost (each on its own, never reaching into the opening), then the spandrels.
         self.ashlar(x0, inner0, y0 + 0.05, min(ys - 0.24 * u, top_ok), z0, seed=seed + 101, **kw)
         self.ashlar(inner1, x1, y0 + 0.05, min(ys - 0.24 * u, top_ok), z0, seed=seed + 102, **kw)
         if top_ok > ys + 0.3:
-            self.ashlar(x0, x1, ys + 0.02, top_ok, z0, seed=seed + 103, skip=skip, **kw)
+            self.ashlar(x0, x1, ys + 0.02, top_ok, z0, seed=seed + 103, skip=skip, cut=extrados, **kw)
         return out
 
     def stone(self, cx, cy, w, h, z, proud, bevel=0.06, tilt=0.0, mat=INK, quad=None, tone=None):
@@ -272,7 +286,8 @@ class Part:
             hx, hy = w / 2, h / 2
             quad = [(-hx, -hy), (hx, -hy), (hx, hy), (-hx, hy)]
             quad = [(cx + x * ca - y * sa, cy + x * sa + y * ca) for x, y in quad]
-        mx, my = sum(p[0] for p in quad) / 4, sum(p[1] for p in quad) / 4
+        nq = len(quad)
+        mx, my = sum(p[0] for p in quad) / nq, sum(p[1] for p in quad) / nq
 
         def shrink(p, d):
             vx, vy = mx - p[0], my - p[1]
@@ -283,8 +298,8 @@ class Part:
         mid = [self._v((p[0], p[1], zb)) for p in quad]
         wall = [self._v((p[0], p[1], zw)) for p in quad]
         faces = [self._face(front, mat)]
-        for k in range(4):
-            j = (k + 1) % 4
+        for k in range(nq):
+            j = (k + 1) % nq
             faces.append(self._face([front[k], mid[k], mid[j], front[j]], mat))
             faces.append(self._face([mid[k], wall[k], wall[j], mid[j]], mat))
         for f in faces:
@@ -294,9 +309,30 @@ class Part:
             tone = random.Random(int((mx * 31.7 + my * 17.3 + z * 7.1) * 1000)).uniform(0.8, 1.0)
         self.paint(faces, tone)
 
-    def ashlar(self, x0, x1, y0, y1, z, course=0.45, proud=(0.05, 0.1), bevel=0.06, seed=0, skip=None, missing=0.07, mat=INK):
+    @staticmethod
+    def cut_to(cx, cy, w, h, cut):
+        """The stone (cx, cy, w, h) trimmed along the curve y = cut(x) (an arch's extrados): None when it does
+        not meet it, [] when too little would be left, else the outline."""
+        x0, x1, y0, y1 = cx - w / 2, cx + w / 2, cy - h / 2, cy + h / 2
+        if all(cut(x0 + (x1 - x0) * i / 8) <= y0 for i in range(9)):
+            return None
+        pts = [(x0 + (x1 - x0) * i / 10, y0) for i in range(10)] + [(x1, y0 + (y1 - y0) * i / 3) for i in range(3)]
+        pts += [(x1, y1), (x0, y1)] + [(x0, y0 + (y1 - y0) * i / 3) for i in (2, 1)]
+        out = []
+        for (x, y) in pts:
+            e = cut(x)
+            q = (x, min(e, y1)) if y < e else (x, y)
+            if not out or (out[-1][0] - q[0]) ** 2 + (out[-1][1] - q[1]) ** 2 > 1e-6:
+                out.append(q)
+        if len(out) > 2 and (out[0][0] - out[-1][0]) ** 2 + (out[0][1] - out[-1][1]) ** 2 < 1e-6:
+            out.pop()
+        area = abs(sum(out[i][0] * out[(i + 1) % len(out)][1] - out[(i + 1) % len(out)][0] * out[i][1] for i in range(len(out)))) / 2
+        return [] if len(out) < 3 or area < w * h * 0.3 else out
+
+    def ashlar(self, x0, x1, y0, y1, z, course=0.45, proud=(0.05, 0.1), bevel=0.06, seed=0, skip=None, missing=0.0, mat=INK, cut=None):
         """Staggered courses of dressed stones over the wall face x0..x1, y0..y1 at plane z.
-        skip(cx, cy, w, h) -> True leaves a stone out (openings, broken parts)."""
+        skip(cx, cy, w, h) -> True leaves a stone out (openings, broken parts);
+        cut(x) -> y trims the stones meeting an arch along its extrados, so the coursing closes onto it."""
         rnd = random.Random(seed)
         joint = 0.04
         row = 0
@@ -316,7 +352,11 @@ class Part:
                 cx, cy = (a + c) / 2, y + ch / 2 - rnd.uniform(0, 0.025)
                 if w < 0.12 or rnd.random() < missing or (skip and skip(cx, cy, w, h)):
                     continue
-                self.stone(cx, cy, w, h, z, rnd.uniform(*proud), bevel, rnd.uniform(-1.2, 1.2), mat)
+                trimmed = Part.cut_to(cx, cy, w, h, cut) if cut else None
+                if trimmed is None:
+                    self.stone(cx, cy, w, h, z, rnd.uniform(*proud), bevel, rnd.uniform(-1.2, 1.2), mat)
+                elif trimmed:
+                    self.stone(0, 0, w, h, z, rnd.uniform(*proud), bevel, mat=mat, quad=trimmed)
             y += ch
             row += 1
 

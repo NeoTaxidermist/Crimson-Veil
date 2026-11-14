@@ -103,6 +103,19 @@ namespace CrimsonVeil.Tests
         }
 
         [Test]
+        public void SpandrelStones_AreCutToTheArch_NotLeftOut()
+        {
+            // An arch of radius 2 about (0, 3): a course stone straddling it is trimmed along the curve.
+            System.Func<float, float> extrados = x => Mathf.Abs(x) < 2f ? 3f + Mathf.Sqrt(4f - x * x) : float.NegativeInfinity;
+            var cut = ProceduralMeshes.CutToExtrados(new Vector2(1.7f, 3.8f), 0.8f, 0.4f, extrados);
+            Assert.IsNotNull(cut, "it meets the arch");
+            Assert.Greater(cut.Count, 4, "its lower edge follows the curve");
+            foreach (var p in cut) Assert.GreaterOrEqual(p.y + 1e-4f, Mathf.Min(extrados(p.x), 4.0f), "nothing of it inside the arch");
+            Assert.IsNull(ProceduralMeshes.CutToExtrados(new Vector2(3.5f, 3.8f), 0.8f, 0.4f, extrados), "clear of the arch: a plain stone");
+            Assert.AreEqual(0, ProceduralMeshes.CutToExtrados(new Vector2(0f, 3.5f), 0.8f, 0.4f, extrados).Count, "inside the opening: no stone");
+        }
+
+        [Test]
         public void Urn_IsGadrooned()
         {
             var urn = ProceduralMeshes.Urn(3, 0.8f);

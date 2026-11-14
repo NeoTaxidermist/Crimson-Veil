@@ -50,6 +50,9 @@ namespace CrimsonVeil.Player
         public bool hanging;
         public bool climbing;
         public float climbProgress;
+        /// <summary>Hanging from the whip; <see cref="swingSpeed"/> is the angular velocity (rad/s, + = towards facing).</summary>
+        public bool swinging;
+        public float swingSpeed;
         /// <summary>0..1 how much a veil weapon is formed — the arm rises to hold it.</summary>
         public float weaponHeld;
     }
@@ -119,6 +122,7 @@ namespace CrimsonVeil.Player
 
             HeroPose target;
             if (s.climbing) target = ClimbPose(s.climbProgress);
+            else if (s.swinging) target = SwingPose(s.swingSpeed, time);
             else if (s.hanging) target = HangPose(time);
             else if (s.wallSliding) target = WallSlidePose(time);
             else if (s.dashing) target = DashPose();
@@ -137,7 +141,7 @@ namespace CrimsonVeil.Player
                 target.armL += 15f * k; target.armR += 15f * k;
             }
 
-            if (s.weaponHeld > 0f && !s.hanging && !s.climbing)
+            if (s.weaponHeld > 0f && !s.hanging && !s.climbing && !s.swinging)
             {
                 // Hold the weapon where the veil's grip is (forward and a little below the chest).
                 // Ready stance: blade held forward-low when standing; when running the arm stays up in a
@@ -150,7 +154,7 @@ namespace CrimsonVeil.Player
                 target.elbowR = Mathf.Lerp(target.elbowR, holdElbow, w);
             }
 
-            bool attacking = s.attacking && s.attackT >= 0f && !s.hanging && !s.climbing;
+            bool attacking = s.attacking && s.attackT >= 0f && !s.hanging && !s.climbing && !s.swinging;
             if (attacking)
                 target = HeroAttackChoreography.Apply(target, s.attackForm, s.attackT, run);
 
@@ -232,6 +236,23 @@ namespace CrimsonVeil.Player
                 thighL = 8f + swing, kneeL = 18f, footL = -15f,
                 thighR = -4f + swing, kneeR = 28f, footR = -20f,
                 armL = 172f, elbowL = 8f, armR = 168f, elbowR = 12f,
+            };
+        }
+
+        /// <summary>
+        /// On the whip: both hands high on it (whip hand above), the body a pendulum. Swinging forward the legs
+        /// trail and then kick ahead at the far end; swinging back they tuck — the pumping motion.
+        /// </summary>
+        public static HeroPose SwingPose(float swingSpeed, float time)
+        {
+            float k = Mathf.Clamp(swingSpeed / 2.2f, -1f, 1f);
+            float idle = Mathf.Sin(time * 2.4f) * 4f * (1f - Mathf.Abs(k));
+            return new HeroPose
+            {
+                spine = -4f + 10f * k, chest = -6f + 4f * k, head = 8f - 6f * k, bob = 0f,
+                thighL = 14f + 40f * k + idle, kneeL = 20f + 35f * Mathf.Max(0f, -k), footL = -12f,
+                thighR = -2f + 26f * k - idle, kneeR = 34f + 30f * Mathf.Max(0f, -k), footR = -18f,
+                armL = 165f, elbowL = 14f, armR = 176f, elbowR = 6f,
             };
         }
 

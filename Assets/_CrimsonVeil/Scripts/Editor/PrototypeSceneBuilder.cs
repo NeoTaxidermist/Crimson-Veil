@@ -52,6 +52,7 @@ namespace CrimsonVeil.EditorTools
             T(terrain, 103f, 0f, 24f, 12f, TerrainStyle.Rock, 12);           // far side    (91 .. 115)
             T(terrain, 116f, 14f, 2f, 18f, TerrainStyle.Ruin, 13, false);   // end wall
             T(terrain, 98.5f, 4.6f, 4.5f, 1f, TerrainStyle.Ruin, 14, false); // overhang (a root crawler hangs under it)
+            T(terrain, -11f, 6f, 4f, 1f, TerrainStyle.Ruin, 15, false);     // high perch (-13 .. -9): only the whip swing reaches it
 
             // ---------------------------------------------------------------- gameplay
             Place("PlayerSpawn", new Vector3(-7f, 0.05f, 0f), LevelLayer.Playfield, play);
@@ -64,6 +65,11 @@ namespace CrimsonVeil.EditorTools
             Place("Checkpoint", new Vector3(60f, 0f, 0f), LevelLayer.Playfield, play);
             Place("Checkpoint", new Vector3(93f, 0f, 0f), LevelLayer.Playfield, play);
             Place("RopeBridge", new Vector3(80.2f, 0f, 0f), LevelLayer.Playfield, play);
+            // Whip rings: swing up to the high perch by the start (an urn waits there), and across the chasm
+            // before the far side — the other way over besides cutting the bridge down.
+            Place("GrapplePoint", new Vector3(-1f, 7.8f, 0f), LevelLayer.Playfield, play);
+            Place("Urn", new Vector3(-11.5f, 6f, 0f), LevelLayer.Playfield, play);
+            Place("GrapplePoint", new Vector3(86.5f, 7.5f, 0f), LevelLayer.Playfield, play);
 
             // Bestiary: each creature where it teaches something.
             Place("ShieldMonk", new Vector3(9f, 0f, 0f), LevelLayer.Playfield, play);       // climb the ledge block to get behind him
@@ -78,7 +84,7 @@ namespace CrimsonVeil.EditorTools
             shaftZone.minX = -5f; shaftZone.maxX = 5f; shaftZone.offset = new Vector3(0f, 4.5f, -17f);
 
             // ---------------------------------------------------------------- decoration: playfield
-            Deco("Gallows", new Vector3(-10f, 0f, 0f), LevelLayer.Playfield, deco);
+            Deco("Gallows", new Vector3(-7.5f, 0f, 0f), LevelLayer.Playfield, deco); // clear of the high perch above
             var tree = Deco("CrimsonTree", new Vector3(66f, 0f, 0f), LevelLayer.Playfield, deco);
             Deco("FallingLeaves", new Vector3(66f, 11f, 0f), LevelLayer.Playfield, deco);
             Deco("FallingLeaves", new Vector3(10f, 11f, 0f), LevelLayer.Playfield, deco);

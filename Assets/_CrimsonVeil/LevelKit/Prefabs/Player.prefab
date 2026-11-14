@@ -153,6 +153,16 @@ MonoBehaviour:
     wallCoyoteTime: 0.1
     climbDuration: 0.34
     ledgeRegrabDelay: 0.3
+    swingGravityFactor: 0.55
+    swingPump: 15
+    swingReelSpeed: 3
+    swingMinLength: 1.6
+    swingMaxLength: 7.5
+    swingMaxAngle: 100
+    swingReleaseBoost: 1.15
+    swingReleaseLift: 5
+    swingCarryDrag: 3
+    swingCarryTime: 0.7
   visualRoot: {fileID: 8104905997885049269}
   turnSharpness: 22
   squashRecover: 12
@@ -163,6 +173,7 @@ MonoBehaviour:
   hangDrop: 1.95
   minLedgeHeight: 1.2
   maxLedgeHeight: 2.1
+  gripHeight: 2.05
 --- !u!114 &4233667051544647546
 MonoBehaviour:
   m_ObjectHideFlags: 0

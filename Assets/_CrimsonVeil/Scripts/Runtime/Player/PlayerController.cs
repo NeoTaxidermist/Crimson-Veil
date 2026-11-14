@@ -24,6 +24,16 @@ namespace CrimsonVeil.Player
         [SerializeField] float minLedgeHeight = 1.2f;
         [SerializeField] float maxLedgeHeight = 2.1f;
 
+        [Header("Whip swing")]
+        [Tooltip("Height of the hands holding the whip above the feet while hanging (arms up).")]
+        [SerializeField] float gripHeight = 2.05f;
+
+        /// <summary>Where the hands hold the whip (world).</summary>
+        public Vector3 GripPosition => transform.position + Vector3.up * gripHeight;
+
+        /// <summary>Latches the whip onto <paramref name="anchor"/> and starts swinging. False if out of reach.</summary>
+        public bool TryGrapple(Vector3 anchor) => Motor.BeginSwing(anchor, GripPosition);
+
         public MotorLogic Motor { get; private set; }
         public IPlayerInput InputSource { get; set; }
         public Vector3 Velocity => new Vector3(Motor.Velocity.x, Motor.Velocity.y, 0f);
@@ -36,6 +46,8 @@ namespace CrimsonVeil.Player
         Vector3 spawnPoint;
         Vector3 squash = Vector3.one;
         float yaw = 90f;
+        float roll;
+        Vector3 visualRest;
 
         // Ledge bookkeeping
         float probedLedgeTop, probedWallX;
@@ -49,6 +61,8 @@ namespace CrimsonVeil.Player
             planeZ = transform.position.z;
             spawnPoint = transform.position;
             if (InputSource == null) InputSource = GetComponent<IPlayerInput>();
+            if (visualRoot != null) visualRest = visualRoot.localPosition;
+            Motor.SwingReleased += () => squash = new Vector3(0.84f, 1.18f, 0.84f);
 
             Motor.Jumped += () => squash = new Vector3(0.82f, 1.2f, 0.82f);
             Motor.WallJumped += () => squash = new Vector3(0.8f, 1.22f, 0.8f);
@@ -77,7 +91,7 @@ namespace CrimsonVeil.Player
             }
 
             var state = Motor.State;
-            bool attached = state == MotorState.LedgeHang || state == MotorState.Climbing;
+            bool attached = state == MotorState.LedgeHang || state == MotorState.Climbing || state == MotorState.Swinging;
             int wall = attached ? 0 : ProbeWall(input.moveX);
             int ledge = 0;
             if (!attached && !controller.isGrounded && Motor.Velocity.y <= 2f)
@@ -89,10 +103,11 @@ namespace CrimsonVeil.Player
 
             var contacts = new MotorContacts
             {
-                grounded = !attached && controller.isGrounded,
+                grounded = (!attached || state == MotorState.Swinging) && controller.isGrounded,
                 ceiling = (lastFlags & CollisionFlags.Above) != 0,
                 wallSide = wall,
                 ledgeSide = ledge,
+                gripPosition = GripPosition,
             };
 
             Vector2 v = Motor.Tick(dt, input, contacts);
@@ -215,7 +230,13 @@ namespace CrimsonVeil.Player
             if (visualRoot == null) return;
             float targetYaw = Motor.Facing > 0 ? 90f : -90f;
             yaw = Mathf.LerpAngle(yaw, targetYaw, MovementMath.Damp(turnSharpness, dt));
-            visualRoot.localRotation = Quaternion.Euler(0f, yaw, 0f);
+            // On the whip the whole body hangs along it, pivoting round the hands.
+            float targetRoll = Motor.IsSwinging ? Motor.SwingAngle * Mathf.Rad2Deg : 0f;
+            roll = Mathf.LerpAngle(roll, targetRoll, MovementMath.Damp(Motor.IsSwinging ? 20f : 10f, dt));
+            var tilt = Quaternion.AngleAxis(roll, Vector3.forward);
+            visualRoot.localRotation = tilt * Quaternion.Euler(0f, yaw, 0f);
+            var grip = Vector3.up * gripHeight;
+            visualRoot.localPosition = visualRest + grip - tilt * grip;
 
             squash = Vector3.Lerp(squash, Vector3.one, MovementMath.Damp(squashRecover, dt));
             visualRoot.localScale = squash;

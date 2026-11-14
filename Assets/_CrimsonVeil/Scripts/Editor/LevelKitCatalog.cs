@@ -70,6 +70,8 @@ namespace CrimsonVeil.EditorTools
                 build = () => LevelKitFactory.Urn(Vector3.zero, 2) },
             new Entry { id = "RopeBridge", label = "Most s provazem", hint = "Prkno na hraně propasti; přestřel rudý provaz a spadne doprava jako most (11 m).", category = Category.Hra, previewSize = new Vector2(11f, 11f),
                 build = () => LevelKitFactory.RopeBridge(Vector3.zero) },
+            new Entry { id = "GrapplePoint", label = "Úchyt pro bič", hint = "Železný kruh s rudou stuhou. S bičem v ruce zaútoč v dosahu (7,5 m, kruh musí být nad tebou): bič se omotá a hrdina se houpe. ←/→ rozhoupat, ↑/↓ šplhat po biči, skok = pustit se a vyletět. Pokládej nad propasti nebo pod vysoké římsy.", category = Category.Hra, previewSize = new Vector2(2.6f, 4f),
+                build = () => LevelKitFactory.GrapplePoint(Vector3.zero) },
             new Entry { id = "CameraZone", label = "Zóna kamery", hint = "V této oblasti kamera oddálí a zvedne pohled.", category = Category.Hra, previewSize = new Vector2(20f, 6f),
                 build = () => LevelKitFactory.CameraZone(Vector3.zero) },
 

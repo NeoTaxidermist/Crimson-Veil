@@ -5,6 +5,36 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.11.0] – 2026-11-14
+Houpání na biči.
+
+### Přidáno
+- **Úchyt pro bič** (Level Editor ▸ Hratelnost ▸ „Úchyt pro bič“). Je to železný kruh na řetězu pod zlomeným trámem s rudou stuhou, aby byl v šedém světě vidět. Model je z Blenderu.
+- **Ovládání:**
+  - **Chycení:** když má hrdina v ruce bič a kruh je v dosahu (7,5 m, nad rukama, ne za zdí), kruh se rudě rozzáří. Útok pak bičem nešvihne, ale omotá ho kolem kruhu a hrdina se začne houpat.
+  - **←/→** rozhoupávají: přikláněním se ve směru švihu nabírá rychlost.
+  - **↑/↓** šplhá po biči nahoru a dolů (1,6–7,5 m). Když hrdina stojí na zemi, bič ho sám vytáhne do vzduchu. **↓** na zemi ho pustí.
+  - **Skok** = pustit se. Hrdina vyletí rychlostí švihu (navíc +15 % a výskok nahoru). Dokud drží šipku ve směru letu, rychlost se drží. Po puštění šipky normálně zpomalí, takže se dá trefit na římsu.
+  - **Zásah nepřítele** shodí hrdinu z biče. Když šálu přepneš na jinou zbraň, bič se rozplyne a hrdina spadne.
+- **Fyzika:** bič je kyvadlo s pevnou délkou a jemnějším „houpavým“ gravitačním zrychlením. Když hrdina skáče ke kruhu, zachová si směr letu. Náraz do zdi švih utlumí.
+- **Vzhled:**
+  - Šála se natáhne od ruky ke kruhu a konec se kolem něj omotá. Uprostřed vede ostré rudé jádro biče.
+  - Tělo visí podél biče a otáčí se kolem rukou. Obě ruce jsou nahoře, nohy se při švihu natahují a krčí.
+- **V ukázkové scéně:**
+  - U startu je kruh a nad ním vysoká římsa (6 m) s urnou, kam se dostaneš jen rozhoupáním. Šibenice se kvůli ní posunula.
+  - Nad propastí před mostem (11 m) visí další kruh, takže tam vede druhá cesta vedle přestřelení mostu.
+- V Scene view je vidět dosah kruhu (po výběru) a jeho bod.
+
+### Testy
+- **Motor:** zachování hybnosti při chycení, kyvadlo s pevnou délkou, rozhoupání zvětší rozkmit, šplhání po biči v mezích, výskok s rychlostí a zdvihem, setrvačnost letu, zásah shodí z biče.
+- **Úchyt:** dosah (nad rukama, ve vzdálenosti) a výběr kruhu před hrdinou.
+- **Level kit:** model, záře, rudá stuha a položka v katalogu.
+- **Hrací testy:**
+  - 13m mezeru obyčejný skok nepřeskočí, houpáním ano.
+  - Kyvadlo se drží pod kruhem a bič se nenatahuje.
+  - Rozhoupáním se hrdina dostane na římsu 6 m vysoko, výš než obyčejný skok.
+  - Útok bičem v dosahu se chytí místo švihnutí a skok ho pustí.
+
 ## [0.10.2] – 2026-11-14
 Rostliny se v Level Editoru samy přichytí k zemi.
 

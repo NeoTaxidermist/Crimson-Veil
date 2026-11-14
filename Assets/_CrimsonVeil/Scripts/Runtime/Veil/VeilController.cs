@@ -58,6 +58,14 @@ namespace CrimsonVeil.Veil
 
         /// <summary>Fired when the whip's loop reaches the tip and it cracks.</summary>
         public event Action WhipCracked;
+        /// <summary>Fired when the whip lashes round a grapple ring and the hero starts to swing.</summary>
+        public event Action<CrimsonVeil.World.GrapplePoint> WhipLatched;
+
+        /// <summary>The ring the whip is wrapped round (null when not swinging).</summary>
+        public CrimsonVeil.World.GrapplePoint Latched { get; private set; }
+        /// <summary>The ring an attack would catch right now (lit), or null.</summary>
+        public CrimsonVeil.World.GrapplePoint GrappleCandidate { get; private set; }
+        LineRenderer whipRope;
 
         void RecordTurn(float at, float turn)
         {
@@ -159,6 +167,7 @@ namespace CrimsonVeil.Veil
         public void SetForm(VeilForm form)
         {
             if (form == Form) return;
+            if (Latched != null && player != null) player.Motor.ReleaseSwing(); // the whip melts: the hero drops
             if (form == VeilForm.Flow && TransformProgress > 0.05f) releaseTime = 0f; // start exhaling
             Form = form;
             if (form != VeilForm.Flow)
@@ -194,6 +203,16 @@ namespace CrimsonVeil.Veil
         public bool Attack()
         {
             if (Form == VeilForm.Flow || Hardness < 0.5f * VeilFormLibrary.Hardness(Form)) return false;
+            if (Latched != null) return false;
+            // The whip lashes round a ring in reach instead of cracking.
+            if (Form == VeilForm.Whip && GrappleCandidate != null && player != null && player.TryGrapple(GrappleCandidate.transform.position))
+            {
+                Latched = GrappleCandidate;
+                whipOpen = 1f;
+                attackTime = -1f;
+                WhipLatched?.Invoke(Latched);
+                return true;
+            }
             attackTime = 0f;
             arrowFired = false;
             lunged = false;
@@ -210,6 +229,7 @@ namespace CrimsonVeil.Veil
             if (dt <= 0f) return;
             time += dt;
 
+            UpdateGrapple();
             if (input != null)
             {
                 var request = input.FormRequested;
@@ -241,6 +261,46 @@ namespace CrimsonVeil.Veil
             Simulation.DriftDirection = -Facing;
             Simulation.Step(dt, a);
             UpdateBowString();
+            UpdateWhipRope();
+        }
+
+        /// <summary>Lights the ring the whip would catch; lets go of the ring when the swing has ended.</summary>
+        void UpdateGrapple()
+        {
+            if (Latched != null && (player == null || !player.Motor.IsSwinging)) Latched = null;
+            CrimsonVeil.World.GrapplePoint candidate = null;
+            if (Latched == null && player != null && Form == VeilForm.Whip && Hardness >= 0.5f * VeilFormLibrary.Hardness(VeilForm.Whip))
+                candidate = CrimsonVeil.World.GrapplePoint.FindBest(player.GripPosition, Facing, ~0);
+            if (candidate != GrappleCandidate)
+            {
+                if (GrappleCandidate != null) GrappleCandidate.SetHighlighted(false);
+                if (candidate != null) candidate.SetHighlighted(true);
+                GrappleCandidate = candidate;
+            }
+        }
+
+        /// <summary>A taut crimson core from the hand to the ring while swinging (the cloth follows it).</summary>
+        void UpdateWhipRope()
+        {
+            if (Latched == null)
+            {
+                if (whipRope != null) whipRope.enabled = false;
+                return;
+            }
+            if (whipRope == null)
+            {
+                var go = new GameObject("WhipRope");
+                go.transform.SetParent(transform, false);
+                whipRope = go.AddComponent<LineRenderer>();
+                whipRope.positionCount = 2;
+                whipRope.widthMultiplier = 0.045f;
+                whipRope.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                whipRope.sharedMaterial = stringMaterial;
+                whipRope.startColor = whipRope.endColor = new Color(0.9f, 0.05f, 0.08f, 0.95f);
+            }
+            whipRope.enabled = true;
+            whipRope.SetPosition(0, hand != null ? hand.position : player.GripPosition);
+            whipRope.SetPosition(1, Latched.transform.position);
         }
 
         /// <summary>A thin crimson string between the bow tips, pulled back by the drawing hand.</summary>
@@ -349,12 +409,13 @@ namespace CrimsonVeil.Veil
             var targets = Simulation.Targets;
             int n = Simulation.Count;
             if (restBuf == null || restBuf.Length != n) { restBuf = new Vector2[n]; whipBuf = new Vector2[n]; }
-            bool whip = ShapeForm == VeilForm.Whip && armDriven;
+            bool whip = ShapeForm == VeilForm.Whip && armDriven && Latched == null;
             // The whip hangs coiled in the hand; it pays out during the wind-up and coils back after the blow.
             if (ShapeForm == VeilForm.Whip)
             {
                 if (whipCoil == null || whipCoil.Length != n) { whipCoil = new Vector2[n]; VeilFormLibrary.BuildWhipCoil(whipCoil); }
-                whipOpen = t >= 0f ? Mathf.Max(whipOpen, VeilWeaponPose.WhipUncoil(t)) : Mathf.MoveTowards(whipOpen, 0f, dt / WhipCoilTime);
+                whipOpen = Latched != null ? 1f
+                    : t >= 0f ? Mathf.Max(whipOpen, VeilWeaponPose.WhipUncoil(t)) : Mathf.MoveTowards(whipOpen, 0f, dt / WhipCoilTime);
             }
             for (int i = 0; i < n; i++)
             {
@@ -372,6 +433,31 @@ namespace CrimsonVeil.Veil
                 rest += weapon ? handDelta : handDelta * (HandFraction > 0f ? f / HandFraction : 1f);
                 if (weapon && armDriven && !whip) rest = VeilWeaponPose.Rotate(rest, grip, forearmTurn);
                 restBuf[i] = rest;
+            }
+            if (Latched != null)
+            {
+                // Wrapped round the ring: the whip runs taut from the hand to it, sagging a touch, with a
+                // short loop of slack beyond the ring where the tip has wound round it.
+                float sx = Mathf.Abs(facingScale) < 0.3f ? Facing : facingScale;
+                Vector3 r = Latched.transform.position;
+                var ring = new Vector2((r.x - a.x) / sx, r.y - a.y);
+                Vector2 grip0 = grip;
+                Vector2 span = ring - grip0;
+                var side = new Vector2(span.y, -span.x).normalized;
+                for (int i = 0; i < n; i++)
+                {
+                    float f = (float)i / (n - 1);
+                    if (f < HandFraction) continue;
+                    float along = (f - HandFraction) / Mathf.Max(1e-3f, 1f - HandFraction);
+                    float u = Mathf.Min(1f, along / 0.85f);
+                    Vector2 p = grip0 + span * u + side * Mathf.Sin(u * Mathf.PI) * 0.12f;
+                    if (along > 0.85f)
+                    {
+                        float w = (along - 0.85f) / 0.15f * Mathf.PI * 1.6f; // the tip wound round the ring
+                        p = ring + new Vector2(Mathf.Sin(w), -Mathf.Cos(w) + 1f) * 0.16f - new Vector2(0f, 0.16f);
+                    }
+                    restBuf[i] = p;
+                }
             }
             if (whip)
             {

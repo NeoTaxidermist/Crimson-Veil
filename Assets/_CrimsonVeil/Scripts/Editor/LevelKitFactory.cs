@@ -372,6 +372,27 @@ namespace CrimsonVeil.EditorTools
         }
 
         /// <summary>Plank standing at <paramref name="hinge"/> that falls to the right when its crimson rope is cut.</summary>
+        /// <summary>
+        /// Grapple ring for the whip (pivot = the ring, where the whip wraps): iron ring on a chain under a broken
+        /// beam, a crimson rag to read it by, and a crimson glint that lights when the whip would catch it.
+        /// </summary>
+        public static GameObject GrapplePoint(Vector3 ring)
+        {
+            var root = new GameObject("GrapplePoint");
+            root.transform.position = new Vector3(ring.x, ring.y, 0f);
+            var model = Ruin("GrappleRing", Vector3.zero, LevelLayer.Playfield);
+            model.transform.SetParent(root.transform, false);
+            model.transform.localPosition = Vector3.zero;
+            model.transform.localScale = Vector3.one;
+            Object.DestroyImmediate(model.GetComponent<DepthLayer>());
+            if (model.transform.childCount == 0 && model.GetComponent<Renderer>() == null)
+                Block(model.transform, "RingFallback", Vector3.zero, new Vector3(0.7f, 0.7f, 0.1f), M.inkPlay, false);
+            var glint = Card(root.transform, "Glint", new Vector3(0f, 0f, -0.3f), new Vector2(1.4f, 1.4f), M.burst);
+            glint.SetActive(false);
+            root.AddComponent<CrimsonVeil.World.GrapplePoint>();
+            return root;
+        }
+
         public static GameObject RopeBridge(Vector3 hinge, float length = 11f)
         {
             var root = new GameObject("RopeBridge");

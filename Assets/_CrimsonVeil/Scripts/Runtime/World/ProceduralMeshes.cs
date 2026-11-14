@@ -655,15 +655,36 @@ namespace CrimsonVeil.World
         // ------------------------------------------------------------------ Banner
 
         /// <summary>Hanging cloth with a torn bottom edge. Top edge at y = 0, uv.y = 1 at the top (pinned).</summary>
-        public static Mesh Banner(int seed, float width, float height, int columns = 8, int rows = 10)
+        public static Mesh Banner(int seed, float width, float height, int columns = 16, int rows = 22)
         {
             var rnd = new System.Random(seed);
             var b = new Builder(1);
+            // Torn hem: each strip of cloth a different length, the middle a long point.
             var lengths = new float[columns + 1];
+            float baseLen = 0.62f;
             for (int c = 0; c <= columns; c++)
             {
-                lengths[c] = height * (0.62f + 0.38f * (float)rnd.NextDouble());
-                if (c == columns / 2) lengths[c] = height; // pointed middle
+                float u = (float)c / columns;
+                float point = 1f - Mathf.Abs(u - 0.5f) * 2f;                       // longer towards the middle
+                lengths[c] = height * Mathf.Clamp01(baseLen + 0.3f * point + 0.14f * ((float)rnd.NextDouble() - 0.4f));
+                if (c == columns / 2) lengths[c] = height;
+            }
+            float foldPhase = (float)rnd.NextDouble() * 6.3f, stainX = (float)rnd.NextDouble() * 10f;
+
+            // The cloth: worn crimson with vertical folds, a dark hem and a woven border at the top, darker selvedges,
+            // stains, and a scorched, frayed lower edge. (Tones are vertex colours read by the Silhouette shader.)
+            Color Cloth(float u, float y, float len)
+            {
+                float fold = 0.5f + 0.5f * Mathf.Sin(u * Mathf.PI * 6f + foldPhase + Mathf.Sin(y * 3f) * 0.6f);
+                float v = Mathf.Lerp(0.72f, 1.18f, fold);
+                if (y < height * 0.05f) v *= 0.55f;                                          // the hem round the rod
+                float border = Mathf.Abs(y - height * 0.11f);
+                if (border < height * 0.018f) v *= 0.45f;                                    // a woven band
+                v *= Mathf.Lerp(0.7f, 1f, Mathf.SmoothStep(0f, 1f, Mathf.Min(u, 1f - u) / 0.08f)); // selvedges
+                v *= 0.86f + 0.14f * Mathf.PerlinNoise(u * 3.1f + stainX, y / height * 3.7f);     // stains
+                float burn = Mathf.SmoothStep(0f, 1f, (y / Mathf.Max(0.01f, len) - 0.72f) / 0.28f);
+                v *= Mathf.Lerp(1f, 0.35f, burn);                                            // scorched, frayed end
+                return new Color(v, v, v, 1f);
             }
 
             var idx = new int[columns + 1, rows + 1];
@@ -672,8 +693,10 @@ namespace CrimsonVeil.World
             {
                 float u = (float)c / columns;
                 float t = (float)r / rows;
-                var p = new Vector3((u - 0.5f) * width * (1f - 0.12f * t), -lengths[c] * t, 0f);
-                idx[c, r] = b.Vert(p, Vector3.back, new Vector2(u, 1f - t * lengths[c] / height));
+                float y = lengths[c] * t;
+                var p = new Vector3((u - 0.5f) * width * (1f - 0.12f * y / height), -y, 0f);
+                b.tint = Cloth(u, y, lengths[c]);
+                idx[c, r] = b.Vert(p, Vector3.back, new Vector2(u, 1f - y / height));
             }
             for (int c = 0; c < columns; c++)
             for (int r = 0; r < rows; r++)
@@ -681,6 +704,57 @@ namespace CrimsonVeil.World
                 b.Tri(idx[c, r], idx[c + 1, r], idx[c + 1, r + 1]);
                 b.Tri(idx[c, r], idx[c + 1, r + 1], idx[c, r + 1]);
             }
+
+            // The emblem: a dark ink sigil on the cloth (a ring round the veil's flame, a blade pointing down,
+            // two diamonds), laid just in front of the cloth with the same wind weights so it sways with it.
+            float S = width * 0.3f, cy = height * 0.36f;
+            b.tint = new Color(0.1f, 0.1f, 0.1f, 1f);
+            void Poly(IReadOnlyList<Vector2> outline)
+            {
+                var tri = Triangulate(outline);
+                int start = b.v.Count;
+                foreach (var e in outline)
+                {
+                    float y = cy - e.y * S, x = e.x * S * (1f - 0.12f * y / height);
+                    b.Vert(new Vector3(x, -y, -0.006f), Vector3.back, new Vector2(0.5f + x / width, 1f - y / height));
+                }
+                for (int i = 0; i < tri.Count; i += 3)
+                {
+                    var face = Vector3.Cross(b.v[start + tri[i + 1]] - b.v[start + tri[i]], b.v[start + tri[i + 2]] - b.v[start + tri[i]]);
+                    if (Vector3.Dot(face, Vector3.back) >= 0f) b.Tri(start + tri[i], start + tri[i + 1], start + tri[i + 2]);
+                    else b.Tri(start + tri[i], start + tri[i + 2], start + tri[i + 1]);
+                }
+            }
+            // Ring, as a strip of small quads.
+            const int seg = 28;
+            for (int k = 0; k < seg; k++)
+            {
+                float a0 = Mathf.PI * 2f * k / seg, a1 = Mathf.PI * 2f * (k + 1) / seg;
+                Poly(new[] { new Vector2(Mathf.Cos(a0), Mathf.Sin(a0)) * 0.8f, new Vector2(Mathf.Cos(a1), Mathf.Sin(a1)) * 0.8f,
+                             new Vector2(Mathf.Cos(a1), Mathf.Sin(a1)) * 0.95f, new Vector2(Mathf.Cos(a0), Mathf.Sin(a0)) * 0.95f });
+            }
+            // The flame of the veil: three tongues rising from a round body.
+            var flame = new List<Vector2>();
+            for (int k = 0; k <= 10; k++) { float a = Mathf.PI * (1f + k / 10f); flame.Add(new Vector2(Mathf.Cos(a) * 0.32f, -0.12f + Mathf.Sin(a) * 0.3f)); }
+            flame.AddRange(new[] { new Vector2(0.3f, 0.02f), new Vector2(0.26f, 0.3f), new Vector2(0.14f, 0.1f), new Vector2(0.05f, 0.62f),
+                                   new Vector2(-0.07f, 0.12f), new Vector2(-0.22f, 0.36f), new Vector2(-0.28f, 0.0f) });
+            Poly(flame);
+            // A blade pointing down from the ring, with a cross-guard.
+            Poly(new[] { new Vector2(-0.07f, -0.95f), new Vector2(0.07f, -0.95f), new Vector2(0.0f, -1.75f) });
+            Poly(new[] { new Vector2(-0.3f, -0.95f), new Vector2(0.3f, -0.95f), new Vector2(0.3f, -0.85f), new Vector2(-0.3f, -0.85f) });
+            // Two diamonds beside the ring.
+            foreach (float sx in new[] { -1.25f, 1.25f })
+                Poly(new[] { new Vector2(sx, 0.2f), new Vector2(sx + 0.13f, 0f), new Vector2(sx, -0.2f), new Vector2(sx - 0.13f, 0f) });
+
+            // The rod it hangs from, with knobbed ends (it does not sway: wind weight 0 at the top).
+            b.tint = new Color(0.12f, 0.12f, 0.12f, 1f);
+            float half = width * 0.62f;
+            int rodStart = b.v.Count;
+            b.Box(new Vector3(0f, 0.02f, -0.01f), new Vector3(half * 2f, 0.07f, 0.07f), Quaternion.identity);
+            foreach (float sx in new[] { -half, half })
+                b.Box(new Vector3(sx, 0.02f, -0.01f), new Vector3(0.12f, 0.12f, 0.12f), Quaternion.Euler(0f, 0f, 45f));
+            for (int i = rodStart; i < b.v.Count; i++) { b.uv[i] = new Vector2(0.5f, 1f); b.uv2[i] = new Vector2(0.5f, 1f); } // rigid
+            b.tint = Color.white;
             return b.ToMesh("Banner");
         }
 

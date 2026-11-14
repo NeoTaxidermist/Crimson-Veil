@@ -68,7 +68,8 @@ namespace CrimsonVeil.EditorTools
                 inkFar = Relief(Ink("InkFar", 0.6f, 1.1f, 0.4f, 0.3f), 0.25f),
                 inkSky = Ink("InkSky", 0.7f, 0.6f, 0.3f, 0f),
                 grass = Wind(Sil("GrassInk", sil, new Color(0.02f, 0.02f, 0.022f), 0.4f, 0.2f), 1f, false),
-                banner = Wind(Sil("BannerCrimson", sil, new Color(0.62f, 0.015f, 0.03f), 0.3f, 0.6f), 1.6f, true),
+                // Cloth tones (folds, hem, woven band, scorched end) and the ink emblem come from the mesh.
+                banner = Tinted(Wind(Sil("BannerCrimson", sil, new Color(0.66f, 0.015f, 0.03f), 0.3f, 0.6f), 1.6f, true)),
                 crimson = Sil("RuinCrimson", sil, new Color(0.7f, 0.02f, 0.035f), 0.25f, 0.6f),
                 leaf = Clip(Wind(Sil("LeafCrimson", sil, new Color(0.78f, 0.02f, 0.035f), 0.2f, 0.7f), 0.6f, false), maple),
                 hero = Sil("HeroInk", sil, new Color(0.012f, 0.012f, 0.014f), 0.12f, 0.15f),
@@ -147,6 +148,12 @@ namespace CrimsonVeil.EditorTools
         {
             m.SetFloat("_Relief", amount);
             m.SetFloat("_VertexTint", 1f); // masonry: stone shades and dark mortar come from the mesh
+            return m;
+        }
+
+        static Material Tinted(Material m)
+        {
+            m.SetFloat("_VertexTint", 1f);
             return m;
         }
 

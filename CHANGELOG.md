@@ -5,6 +5,26 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.13.2] – 2026-11-14
+Prapory se znakem.
+
+### Změněno
+- **Prapory už nejsou jednobarevné.** Látka má:
+  - svislé záhyby se světlejšími hřbety a tmavšími údolími;
+  - tmavý lem nahoře a tkaný pruh pod ním;
+  - ztmavlé okraje, skvrny;
+  - opálený, roztřepený spodek, delší uprostřed.
+- Látka je jemnější (16×22 místo 8×10), takže víc a plynuleji vlaje.
+
+### Přidáno
+- **Znak na praporu.** Je tmavý jako inkoust a vlaje spolu s látkou: kruh s plamenem šály uprostřed, pod ním čepel s příčkou mířící dolů a po stranách dva kosočtverce.
+- **Tyč nahoře** s kosočtverečnými koncovkami. Je pevná a ve větru se nehýbe.
+- Platí pro všechny prapory: na šibenici, pod oblouky i ty, které položíš v Level Editoru.
+
+### Testy
+- Látka má rozsah tónů (ne jednu barvu) a nese tmavý znak.
+- Horní okraj a tyč se ve větru nehýbou.
+
 ## [0.13.1] – 2026-11-14
 Klenby postavené jako skutečné klenby.
 

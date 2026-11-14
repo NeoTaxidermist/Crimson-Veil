@@ -92,12 +92,35 @@ namespace CrimsonVeil.Tests
         {
             var m = ProceduralMeshes.Banner(2, 1f, 3f);
             AssertFinite(m);
-            Assert.AreEqual(0f, m.bounds.max.y, 1e-4f);
+            Assert.Less(m.bounds.max.y, 0.15f, "only the rod rises above the top of the cloth");
             Assert.AreEqual(-3f, m.bounds.min.y, 1e-4f, "middle point reaches full length");
             var verts = m.vertices;
             var uvs = m.uv;
+            var uv2 = new System.Collections.Generic.List<Vector2>();
+            m.GetUVs(1, uv2);
             for (int i = 0; i < verts.Length; i++)
-                if (Mathf.Abs(verts[i].y) < 1e-5f) Assert.AreEqual(1f, uvs[i].y, 1e-5f);
+                if (verts[i].y > -1e-5f)
+                {
+                    Assert.AreEqual(1f, uvs[i].y, 1e-5f);
+                    Assert.AreEqual(1f, uv2[i].y, 1e-5f, "the top and the rod do not sway");
+                }
+        }
+
+        [Test]
+        public void Banner_IsToned_AndCarriesAnEmblem()
+        {
+            var m = ProceduralMeshes.Banner(2, 1f, 3f);
+            var cols = m.colors;
+            Assert.AreEqual(m.vertexCount, cols.Length);
+            float min = 9f, max = 0f;
+            int ink = 0;
+            for (int i = 0; i < cols.Length; i++)
+            {
+                if (m.vertices[i].z < -0.004f && m.vertices[i].y < -0.3f && cols[i].r < 0.15f) ink++;
+                else { min = Mathf.Min(min, cols[i].r); max = Mathf.Max(max, cols[i].r); }
+            }
+            Assert.Greater(max - min, 0.5f, "folds, hem and scorched end: not one flat colour");
+            Assert.Greater(ink, 40, "a dark emblem laid on the cloth");
         }
 
         [Test]

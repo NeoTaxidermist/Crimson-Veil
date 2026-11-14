@@ -5,6 +5,17 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.16.3] – 2026-11-14
+Ruce s prsty, tvarované paže a chránič předloktí.
+
+### Změněno
+- **Ruce mají dlaň, prsty a palec.**
+  - Dlaň je široká, každý ze čtyř prstů má tři články a palec dva.
+  - Prsty jsou mírně roztažené a pokrčené k dlani jako uvolněná ruka v sešitech, takže jsou vidět i v boční siluetě.
+- **Paže už nejsou válec:** mají ramenní sval, vpředu biceps, vzadu triceps, výrazný loket a zesílené předloktí u lokte.
+- **Chránič předloktí je samostatný pancíř** s rozšířenou manžetou u lokte, dvěma žebry a lemem u zápěstí.
+- Model má 21 tisíc vrcholů.
+
 ## [0.16.2] – 2026-11-14
 Klidová smyčka z animačního sešitu.
 

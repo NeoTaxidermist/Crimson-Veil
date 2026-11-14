@@ -498,14 +498,20 @@ _foot_len = _heel_y - _toe_y
 loft_bone("Foot.L", FOOT_PROFILE, 0.95, lambda p, s: {"Foot.L": 1.0}, cap_r=0.07, mirror=L2R,
           head=Vector((_ank.x, _ank.y + 0.075, 0.045)), tail=Vector((_ank.x, _ank.y + 0.075 - _foot_len, 0.045)))
 
-# Arms, after the walk sheet, where the far arm swings clear behind the body in every frame. Measured there: the upper
+# Arms, after the walk and animation sheets (the far arm swings clear behind the body there). Measured: the upper
 # arm ~0.12 m deep at the elbow and ~0.13 at the shoulder guard, the bracer 0.08-0.095 m tapering to ~0.066 at the
-# wrist, the open hand ~0.08 m. Its
-# top half is lost in the shoulder in the side view, so the shoulder end is completed to taper smoothly into it.
-# (t: 0..1 along the bone; depth in metres)
-UPPER_ARM = [(-0.1, 0.1), (0.0, 0.128), (0.2, 0.134), (0.5, 0.122), (0.8, 0.112), (1.0, 0.102), (1.06, 0.098)]  # (the guard at the shoulder)
-FOREARM = [(-0.06, 0.098), (0.0, 0.096), (0.15, 0.092), (0.25, 0.09), (0.6, 0.082), (0.85, 0.074), (1.0, 0.066), (1.04, 0.063)]
-HAND = [(-0.12, 0.062), (0.15, 0.076), (0.5, 0.082), (0.85, 0.074), (1.2, 0.045)]  # (the sheet's hands are open, broad)
+# wrist, the open hand ~0.08 m. Shaped like the drawings, not a tube: the deltoid at the shoulder, the biceps in
+# front and the triceps behind, the point of the elbow, the forearm's muscle near the elbow; over the forearm an
+# armoured bracer with flared cuffs and two ridges; an open hand with a palm, four three-jointed fingers and a thumb.
+# (t: 0..1 along the bone; front and back half-depths in metres)
+UPPER_ARM = [(-0.1, 0.045, 0.05), (0.0, 0.06, 0.065), (0.2, 0.063, 0.069), (0.4, 0.067, 0.058), (0.55, 0.064, 0.06),
+             (0.75, 0.054, 0.059), (0.92, 0.047, 0.056), (1.0, 0.045, 0.059), (1.06, 0.044, 0.052)]
+FOREARM = [(-0.06, 0.046, 0.052), (0.0, 0.048, 0.05), (0.15, 0.053, 0.045), (0.3, 0.046, 0.042), (0.6, 0.04, 0.038),
+           (0.85, 0.035, 0.033), (1.0, 0.032, 0.03), (1.04, 0.031, 0.029)]
+# The bracer (a shell over the forearm, t 0.3-0.97): flared cuff at the elbow end, two ridges, a lip at the wrist.
+BRACER = [(0.3, 0.06, 0.056), (0.34, 0.058, 0.054), (0.38, 0.051, 0.048), (0.5, 0.049, 0.046), (0.52, 0.053, 0.05),
+          (0.54, 0.048, 0.045), (0.72, 0.044, 0.042), (0.74, 0.048, 0.046), (0.76, 0.043, 0.041), (0.92, 0.04, 0.038),
+          (0.97, 0.044, 0.042)]
 
 
 def arm_profile(points, bone, step=0.012):
@@ -513,22 +519,70 @@ def arm_profile(points, bone, step=0.012):
     out = []
     t = points[0][0]
     while t <= points[-1][0] + 1e-6:
-        for (t0, d0), (t1, d1) in zip(points, points[1:]):
+        for (t0, f0, b0), (t1, f1, b1) in zip(points, points[1:]):
             if t0 <= t <= t1:
                 u = (t - t0) / (t1 - t0)
                 u = u * u * (3 - 2 * u)
-                dep = d0 + (d1 - d0) * u
+                f, b = f0 + (f1 - f0) * u, b0 + (b1 - b0) * u
                 break
-        out.append([t * L, dep / 2, dep / 2])
+        out.append([t * L, f, b])
         t += step / L
     return out
 
 
 loft_bone("UpperArm.R", arm_profile(UPPER_ARM, "UpperArm.R"), 0.95,
-          along(head_of("UpperArm.R"), head_of("LowerArm.R"), "UpperArm.R", "LowerArm.R", 0.85), mirror=R2L, n=16)
+          along(head_of("UpperArm.R"), head_of("LowerArm.R"), "UpperArm.R", "LowerArm.R", 0.85), mirror=R2L, n=18)
 loft_bone("LowerArm.R", arm_profile(FOREARM, "LowerArm.R"), 0.9,
-          along(head_of("LowerArm.R"), head_of("Hand.R"), "LowerArm.R", "Hand.R", 0.9), mirror=R2L, n=16)
-loft_bone("Hand.R", arm_profile(HAND, "Hand.R", step=0.01), 0.8, lambda p, s: {"Hand.R": 1.0}, mirror=R2L, n=14)
+          along(head_of("LowerArm.R"), head_of("Hand.R"), "LowerArm.R", "Hand.R", 0.9), mirror=R2L, n=18)
+loft_bone("LowerArm.R", arm_profile(BRACER, "LowerArm.R", step=0.006), 0.92, lambda p, s: {"LowerArm.R": 1.0},
+          mirror=R2L, n=18)
+
+
+def build_hand(side):
+    """An open, relaxed hand on Hand.<side>: palm, four three-jointed fingers spread front to back (so they read in
+    the side view) and curled a little toward the palm, and a thumb reaching forward."""
+    sx = 1.0 if side == "L" else -1.0
+    bone = "Hand." + side
+    wrist = head_of(bone)
+    d = (tail_of(bone) - wrist).normalized()        # down the hand
+    fwd = front_normal(d)                            # towards the hero's front
+    lat = fwd.cross(d).normalized()
+    if (lat.x > 0) != (sx > 0):
+        lat = -lat                                   # outwards (away from the body)
+    palm_in = -lat                                   # the palm faces the thigh
+    w = lambda p, s: {bone: 1.0}
+    # palm: wide front-to-back, thin side to side
+    loft([(wrist - d * 0.005, 0.019, 0.031), (wrist + d * 0.03, 0.022, 0.042), (wrist + d * 0.065, 0.021, 0.046),
+          (wrist + d * 0.095, 0.017, 0.045)], w, n=14)
+
+    def finger(base, direction, lengths, r0):
+        pts, rads = [base], [r0]
+        dirn = direction.normalized()
+        for k, ln in enumerate(lengths):
+            # each joint curls toward the palm and a little forward
+            dirn = (dirn + palm_in * math.tan(math.radians(18 + 10 * k)) + fwd * math.tan(math.radians(5))).normalized()
+            pts.append(pts[-1] + dirn * ln)
+            rads.append(r0 * (0.86 - 0.12 * k))
+        secs = []
+        for k in range(len(lengths)):
+            a, b = pts[k], pts[k + 1]
+            for u in (0.0, 0.5, 1.0) if k == 0 else (0.5, 1.0):
+                r = rads[k] + (rads[k + 1] - rads[k]) * u
+                knuckle = 1.08 if u == 0.0 else 1.0
+                secs.append((a.lerp(b, u), r * knuckle, r * knuckle))
+        loft(secs, w, n=8)
+
+    knuckles = wrist + d * 0.09
+    for off, lens, r0, spread in ((0.03, (0.035, 0.022, 0.018), 0.0105, 8), (0.01, (0.04, 0.025, 0.02), 0.011, 2),
+                                  (-0.01, (0.037, 0.024, 0.019), 0.0105, -3), (-0.029, (0.029, 0.019, 0.016), 0.0095, -9)):
+        direction = d + fwd * math.tan(math.radians(spread))
+        finger(knuckles + fwd * off, direction, lens, r0)
+    # thumb: from the front of the palm, forward and down, towards the palm side
+    finger(wrist + d * 0.03 + fwd * 0.03 + palm_in * 0.008, d * 0.6 + fwd * 0.75 + palm_in * 0.25, (0.034, 0.027), 0.013)
+
+
+build_hand("L")
+build_hand("R")
 
 # Back to the rest pose.
 for pb in rig.pose.bones:

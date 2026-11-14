@@ -439,6 +439,14 @@ namespace CrimsonVeil.Veil
             Vector2 flow = new Vector2(-facing, 0f) * idleDriftSpeed;
             if (Form == VeilForm.Flow && HintPull > 0f) flow = Vector2.Lerp(flow, HintDirection * idleDriftSpeed * 2.4f, Mathf.SmoothStep(0f, 1f, HintPull));
             Simulation.AmbientFlow = flow;
+            // The somersault: the scarf is swept round with the body and winds about it, then unwinds.
+            float wrap = player != null ? player.FlipWrap : 0f;
+            Simulation.SwirlWeight = wrap;
+            if (wrap > 0f)
+            {
+                Simulation.SwirlCenter = (Vector2)player.transform.position + Vector2.up * Somersault.Pivot;
+                Simulation.SwirlSpeed = -player.FlipFacing * (2f * Mathf.PI / Somersault.Duration) * 1.2f;
+            }
 
             UpdateNodeHardness();
             if (TransformProgress > 0f && ShapeForm != VeilForm.Flow) UpdateTargets(a, dt);
@@ -671,7 +679,9 @@ namespace CrimsonVeil.Veil
                 // Pose around the canonical grip, move onto the real hand, turn with the forearm.
                 Vector2 rest = VeilWeaponPose.Idle(ShapeForm, basePoint, weapon, time);
                 rest = VeilWeaponPose.Apply(ShapeForm, rest, weapon, t, armDriven);
-                rest += weapon ? handDelta : handDelta * (HandFraction > 0f ? f / HandFraction : 1f);
+                // The shield bubble sits round the body: only its root follows the hand.
+                float follow = weapon && ShapeForm == VeilForm.Shield ? 1f - VeilFormLibrary.BubbleWeight(basePoint) : 1f;
+                rest += weapon ? handDelta * follow : handDelta * (HandFraction > 0f ? f / HandFraction : 1f);
                 if (weapon && armDriven && !whip) rest = VeilWeaponPose.Rotate(rest, grip, forearmTurn);
                 // Aim: the bow follows up/down, the spear turns straight down for a thrust from the air.
                 if (weapon && !whip && Mathf.Abs(aimTilt) > 0.01f) rest = VeilWeaponPose.Rotate(rest, grip, aimTilt);

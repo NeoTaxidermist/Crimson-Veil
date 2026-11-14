@@ -55,6 +55,8 @@ namespace CrimsonVeil.Player
         public float swingSpeed;
         /// <summary>0..1 how much a veil weapon is formed — the arm rises to hold it.</summary>
         public float weaponHeld;
+        /// <summary>0..1 through the double jump's somersault, -1 when not flipping (the body tucks).</summary>
+        public float somersault;
     }
 
     /// <summary>
@@ -129,6 +131,10 @@ namespace CrimsonVeil.Player
             else if (!s.grounded) target = AirPose(s.verticalVelocity);
             else target = GroundPose(run);
 
+            // Somersault: knees pulled to the chest, arms hugging the shins, then opening out to land.
+            bool flipping = !s.grounded && !s.hanging && !s.climbing && !s.swinging && Somersault.Active(s.somersault);
+            if (flipping) target = HeroPose.Lerp(target, TuckPose, Somersault.Tuck(s.somersault));
+
             // Landing absorbs into the knees.
             float land = LandWeight;
             if (land > 0f)
@@ -166,7 +172,7 @@ namespace CrimsonVeil.Player
             else
             {
                 // Attacks need snap: follow the choreography much more tightly than locomotion.
-                float sharp = attacking ? sharpness * 2.6f : (s.grounded ? sharpness : sharpness * 0.6f);
+                float sharp = attacking || flipping ? sharpness * 2.6f : (s.grounded ? sharpness : sharpness * 0.6f);
                 Current = HeroPose.Lerp(Current, target, MovementMath.Damp(sharp, dt));
             }
             return Current;
@@ -205,6 +211,15 @@ namespace CrimsonVeil.Player
             p.footR = -0.35f * p.thighR + 0.15f * p.kneeR * Mathf.Max(0f, cosB);
             return p;
         }
+
+        /// <summary>The tuck of a somersault: curled into a ball round the hips.</summary>
+        public static readonly HeroPose TuckPose = new HeroPose
+        {
+            spine = 34f, chest = 18f, head = 22f, bob = 0f,
+            thighL = 118f, kneeL = 135f, footL = 15f,
+            thighR = 112f, kneeR = 140f, footR = 15f,
+            armL = 55f, elbowL = 95f, armR = 50f, elbowR = 100f,
+        };
 
         static HeroPose AirPose(float vy)
         {

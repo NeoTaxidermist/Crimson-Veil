@@ -47,20 +47,41 @@ namespace CrimsonVeil.Tests
         }
 
         [Test]
-        public void Shield_IsAVortexAroundItsCentre()
+        public void Shield_IsABubbleRoundTheWholeHero()
         {
             var pts = new Vector2[48];
             float hf = VeilFormLibrary.BuildShape(VeilForm.Shield, pts);
             var c = VeilFormLibrary.ShieldCenter;
-            float swept = 0f;
-            int start = Mathf.CeilToInt(hf * (pts.Length - 1)) + 2;
+            Assert.Less(c.magnitude, 0.8f, "centred on the body (the anchor is at the neck)");
+            float swept = 0f, minY = 9f, maxY = -9f;
+            int start = Mathf.CeilToInt(hf * (pts.Length - 1)) + 6;
             for (int i = start; i < pts.Length; i++)
             {
-                Assert.Less(Vector2.Distance(pts[i], c), 0.7f, "stays within the shield radius");
+                float r = Vector2.Distance(pts[i], c);
+                Assert.That(r, Is.InRange(0.85f, 1.15f), "out on the bubble");
                 if (i > start) swept += Vector2.SignedAngle(pts[i - 1] - c, pts[i] - c);
+                minY = Mathf.Min(minY, pts[i].y); maxY = Mathf.Max(maxY, pts[i].y);
             }
-            Assert.Greater(Mathf.Abs(swept), 360f, "winds more than one full turn");
-            Assert.Less(Vector2.Distance(pts[pts.Length - 1], c), 0.3f, "spirals inwards");
+            Assert.Greater(Mathf.Abs(swept), 360f, "runs all the way round");
+            Assert.Greater(maxY, 0.15f, "over the head");
+            Assert.Less(minY, -1.4f, "down to the feet");
+        }
+
+        [Test]
+        public void Sword_IsAStraightBlade()
+        {
+            var pts = VeilFormLibrary.ControlPoints(VeilForm.Sword, out int start);
+            Vector2 a = pts[start], b = pts[pts.Count - 1];
+            for (int i = start; i < pts.Count; i++)
+                Assert.Less(LineDistance(a, b, pts[i]), 1e-4f, "every point of the blade on one line");
+            Assert.AreEqual(VeilFormLibrary.SwordLength, Vector2.Distance(a, b), 1e-3f);
+        }
+
+        static float LineDistance(Vector2 a, Vector2 b, Vector2 p)
+        {
+            Vector2 ab = b - a;
+            float t = Mathf.Clamp01(Vector2.Dot(p - a, ab) / ab.sqrMagnitude);
+            return Vector2.Distance(a + ab * t, p);
         }
 
         [Test]

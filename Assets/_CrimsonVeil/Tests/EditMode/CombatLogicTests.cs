@@ -199,10 +199,10 @@ namespace CrimsonVeil.Tests
         }
 
         [Test]
-        public void Shield_BlocksOnlyFromTheFront()
+        public void ShieldBubble_BlocksFromBothSides()
         {
             Assert.IsTrue(VeilCombatProfile.ShieldBlocks(VeilForm.Shield, 1f, facing: 1, heroX: 0f, attackerX: 2f));
-            Assert.IsFalse(VeilCombatProfile.ShieldBlocks(VeilForm.Shield, 1f, facing: 1, heroX: 0f, attackerX: -2f));
+            Assert.IsTrue(VeilCombatProfile.ShieldBlocks(VeilForm.Shield, 1f, facing: 1, heroX: 0f, attackerX: -2f), "the bubble surrounds him");
             Assert.IsFalse(VeilCombatProfile.ShieldBlocks(VeilForm.Shield, 0.3f, facing: 1, heroX: 0f, attackerX: 2f), "not hardened yet");
             Assert.IsFalse(VeilCombatProfile.ShieldBlocks(VeilForm.Sword, 1f, facing: 1, heroX: 0f, attackerX: 2f));
         }

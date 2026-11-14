@@ -55,6 +55,14 @@ namespace CrimsonVeil.Player
         public bool IsGrounded => Motor.IsGrounded;
         public MotorSettings Settings => settings;
 
+        /// <summary>0..1 through the double jump's somersault, -1 when not flipping.</summary>
+        public float FlipProgress => flipTime < 0f ? -1f : Mathf.Clamp01(flipTime / Somersault.Duration);
+        /// <summary>0..1 how strongly the scarf is wound round the body by the somersault.</summary>
+        public float FlipWrap => Somersault.Wrap(FlipProgress, sinceFlip);
+        /// <summary>Which way the somersault turns (the facing when it began).</summary>
+        public int FlipFacing { get; private set; } = 1;
+        float flipTime = -1f, sinceFlip = -1f;
+
         CharacterController controller;
         CollisionFlags lastFlags;
         float planeZ;
@@ -80,6 +88,13 @@ namespace CrimsonVeil.Player
             Motor.SwingReleased += () => squash = new Vector3(0.84f, 1.18f, 0.84f);
 
             Motor.Jumped += () => squash = new Vector3(0.82f, 1.2f, 0.82f);
+            Motor.AirJumped += () =>
+            {
+                flipTime = 0f;
+                sinceFlip = -1f;
+                FlipFacing = Motor.Facing;
+                squash = new Vector3(0.9f, 1.1f, 0.9f);
+            };
             Motor.WallJumped += () => squash = new Vector3(0.8f, 1.22f, 0.8f);
             Motor.Landed += () => squash = new Vector3(1.18f, 0.84f, 1.18f);
             Motor.Dashed += () => squash = new Vector3(1.25f, 0.85f, 1f);
@@ -156,6 +171,7 @@ namespace CrimsonVeil.Player
             }
             if (p.y < killY) Respawn();
 
+            UpdateFlip(dt);
             UpdateVisual(dt);
         }
 
@@ -271,6 +287,26 @@ namespace CrimsonVeil.Player
 
         public void SetSpawnPoint(Vector3 point) => spawnPoint = point;
 
+        void UpdateFlip(float dt)
+        {
+            if (flipTime >= 0f)
+            {
+                flipTime += dt;
+                // Done, or cut short: landing, grabbing a ledge, a wall, the whip, a dash.
+                bool interrupted = Motor.IsGrounded || Motor.State != MotorState.Normal || Motor.IsDashing;
+                if (flipTime >= Somersault.Duration || interrupted)
+                {
+                    flipTime = -1f;
+                    sinceFlip = 0f;
+                }
+            }
+            else if (sinceFlip >= 0f)
+            {
+                sinceFlip += dt;
+                if (sinceFlip > 1f) sinceFlip = -1f;
+            }
+        }
+
         void UpdateVisual(float dt)
         {
             if (visualRoot == null) return;
@@ -283,6 +319,16 @@ namespace CrimsonVeil.Player
             visualRoot.localRotation = tilt * Quaternion.Euler(0f, yaw, 0f);
             var grip = Vector3.up * gripHeight;
             visualRoot.localPosition = visualRest + grip - tilt * grip;
+
+            // The somersault turns the whole body round its hips.
+            float flip = Somersault.Angle(FlipProgress, FlipFacing);
+            if (flip != 0f)
+            {
+                var turn = Quaternion.AngleAxis(flip, Vector3.forward);
+                var hips = Vector3.up * Somersault.Pivot;
+                visualRoot.localPosition = hips + turn * (visualRoot.localPosition - hips);
+                visualRoot.localRotation = turn * visualRoot.localRotation;
+            }
 
             squash = Vector3.Lerp(squash, Vector3.one, MovementMath.Damp(squashRecover, dt));
             visualRoot.localScale = squash;

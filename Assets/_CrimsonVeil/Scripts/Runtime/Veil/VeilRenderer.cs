@@ -202,7 +202,8 @@ namespace CrimsonVeil.Veil
             centre[samples - 1] = p[n - 1];
             hardAt[samples - 1] = Mathf.Clamp01((sim.UseNodeHardness ? sim.NodeHardness[n - 1] : sim.Hardness) / formHardness);
 
-            float flowW = VeilFormLibrary.Width(VeilForm.Flow);
+            // Wound round the body in a somersault, the cloth draws in to a slim band (no crumpled blob).
+            float flowW = VeilFormLibrary.Width(VeilForm.Flow) * (1f - 0.4f * sim.SwirlWeight);
             float formW = VeilFormLibrary.Width(veil.ShapeForm);
             float hf = veil.HandFraction;
             float time = Time.time;
@@ -347,7 +348,8 @@ namespace CrimsonVeil.Veil
             // Loose cloth stays behind the hero: when he stops, the swinging band and its layers must not sweep
             // out in front of the body. Anything past the chest line is softly folded back (not cut).
             // Only once the hero faces one way — while turning round the scarf swings freely across.
-            float settle = Mathf.InverseLerp(0.85f, 1f, Mathf.Abs(veil.FacingBlend));
+            // (Not while it is wound round the body in a somersault: there it must go round the front too.)
+            float settle = Mathf.InverseLerp(0.85f, 1f, Mathf.Abs(veil.FacingBlend)) * (1f - sim.SwirlWeight);
             if (settle > 0f)
             {
                 float ax = p[0].x;

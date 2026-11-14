@@ -28,6 +28,9 @@ namespace CrimsonVeil.Player
         public float coyoteTime = 0.1f;
         public float jumpBufferTime = 0.13f;
         public float groundStickVelocity = 2f;
+        [Tooltip("Jumps in the air before touching ground, a ledge or a wall again (the double jump with a somersault).")]
+        public int airJumps = 1;
+        public float airJumpHeight = 2.4f;
 
         [Header("Dash")]
         public float dashSpeed = 19f;
@@ -70,6 +73,7 @@ namespace CrimsonVeil.Player
         public float Gravity => MovementMath.GravityForJump(jumpHeight, timeToApex);
         public float JumpVelocity => MovementMath.JumpVelocity(jumpHeight, timeToApex);
         public float WallJumpVelocity => Mathf.Sqrt(2f * Gravity * wallJumpHeight);
+        public float AirJumpVelocity => Mathf.Sqrt(2f * Gravity * airJumpHeight);
     }
 
     public enum MotorState
@@ -138,6 +142,7 @@ namespace CrimsonVeil.Player
             IsJumping = true;
             IsGrounded = false;
             airDashAvailable = true;
+            airJumpsUsed = 0;
             glideLatched = false;
             Jumped?.Invoke();
         }
@@ -149,6 +154,10 @@ namespace CrimsonVeil.Player
         public float ClimbProgress { get; private set; }
 
         public event Action Jumped;
+        /// <summary>The second jump, in the air (the hero somersaults).</summary>
+        public event Action AirJumped;
+        /// <summary>Air jumps still available before landing.</summary>
+        public int AirJumpsLeft => Mathf.Max(0, Settings.airJumps - airJumpsUsed);
         public event Action Landed;
         public event Action Dashed;
         public event Action WallJumped;
@@ -203,6 +212,7 @@ namespace CrimsonVeil.Player
             IsJumping = false;
             dashTimer = 0f;
             airDashAvailable = true;
+            airJumpsUsed = 0;
             lastWallJumpSide = 0;
             SwingStarted?.Invoke();
             return true;
@@ -292,6 +302,7 @@ namespace CrimsonVeil.Player
         float inputLockTimer;
         float regrabTimer;
         bool airDashAvailable = true;
+        int airJumpsUsed;
 
         public MotorLogic(MotorSettings settings)
         {
@@ -360,6 +371,7 @@ namespace CrimsonVeil.Player
             {
                 Velocity = Vector2.zero;
                 airDashAvailable = true;
+                airJumpsUsed = 0;
                 lastWallJumpSide = 0;
                 bool jump = bufferTimer > 0f;
                 if (jump && inputSide == -AttachSide)
@@ -391,6 +403,7 @@ namespace CrimsonVeil.Player
             {
                 coyoteTimer = s.coyoteTime;
                 airDashAvailable = true;
+                airJumpsUsed = 0;
                 wallCoyoteTimer = 0f;
                 lastWallJumpSide = 0;
                 if (!wasGrounded && Velocity.y <= 0f)
@@ -443,6 +456,11 @@ namespace CrimsonVeil.Player
             // from the other side (or after touching ground / grabbing a ledge).
             bool canWallJump = !canJump && bufferTimer > 0f && !IsGrounded && (sliding || wallCoyoteTimer > 0f)
                                && jumpWall != 0 && jumpWall != lastWallJumpSide;
+            // Double jump: a fresh press in the air (a buffered one does not fire it late). Once it is spent, a
+            // press just before landing is buffered into a ground jump. A wall slide refreshes it like the ground.
+            if (sliding) airJumpsUsed = 0;
+            bool canAirJump = !canJump && !canWallJump && input.jumpPressed && !IsGrounded && !sliding
+                              && airJumpsUsed < s.airJumps && !IsStunned;
 
             // --- Dash (from a wall it always launches away from it) ------------------------
             if (input.dashPressed && !IsDashing && dashCooldownTimer <= 0f && (IsGrounded || airDashAvailable))
@@ -460,7 +478,7 @@ namespace CrimsonVeil.Player
 
             if (IsDashing)
             {
-                if (canJump || canWallJump)
+                if (canJump || canWallJump || canAirJump)
                 {
                     dashTimer = 0f; // dash-jump keeps the momentum
                 }
@@ -530,6 +548,15 @@ namespace CrimsonVeil.Player
                 bufferTimer = 0f;
                 WallJump(jumpWall);
             }
+            else if (canAirJump)
+            {
+                Velocity.y = s.AirJumpVelocity;
+                airJumpsUsed++;
+                IsJumping = true;
+                bufferTimer = 0f;
+                glideLatched = false;
+                AirJumped?.Invoke();
+            }
             else if (IsGrounded && Velocity.y <= 0f)
             {
                 Velocity.y = -s.groundStickVelocity;
@@ -590,6 +617,7 @@ namespace CrimsonVeil.Player
             lastWallJumpSide = 0;
             ClimbProgress = 0f;
             airDashAvailable = true;
+            airJumpsUsed = 0;
             carryTimer = 0f;
             SwingAngularVelocity = 0f;
         }

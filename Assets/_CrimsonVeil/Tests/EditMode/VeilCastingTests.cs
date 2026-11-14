@@ -84,15 +84,41 @@ namespace CrimsonVeil.Tests
         }
 
         [Test]
-        public void PressingJumpAgainWhileFalling_GlidesOnTheScarf()
+        public void PressingJumpAgainWhileFalling_GlidesOnTheScarf_OnceTheDoubleJumpIsSpent()
         {
             var m = Airborne(out var air);
             for (int i = 0; i < 40; i++) m.Tick(1f / 60f, new MotorInput(), air);
             Assert.Less(m.Velocity.y, 0f);
             m.Tick(1f / 60f, new MotorInput { jumpPressed = true, jumpHeld = true }, air);
+            Assert.Greater(m.Velocity.y, 0f, "the first press in the air is the double jump");
+            for (int i = 0; i < 60; i++) m.Tick(1f / 60f, new MotorInput(), air);
+            Assert.Less(m.Velocity.y, 0f);
+            m.Tick(1f / 60f, new MotorInput { jumpPressed = true, jumpHeld = true }, air);
             for (int i = 0; i < 40; i++) m.Tick(1f / 60f, new MotorInput { jumpHeld = true }, air);
             Assert.IsTrue(m.IsGliding);
             Assert.AreEqual(-MotorLogic.GlideFallSpeed, m.Velocity.y, 0.3f);
+        }
+
+        [Test]
+        public void DoubleJump_OnceInTheAir_RefreshedOnLanding()
+        {
+            var m = Airborne(out var air);
+            int flips = 0;
+            m.AirJumped += () => flips++;
+            for (int i = 0; i < 30; i++) m.Tick(1f / 60f, new MotorInput(), air);
+            float before = m.Velocity.y;
+            m.Tick(1f / 60f, new MotorInput { jumpPressed = true, jumpHeld = true }, air);
+            Assert.AreEqual(1, flips);
+            Assert.AreEqual(m.Settings.AirJumpVelocity, m.Velocity.y, 0.5f, "a fresh upward kick");
+            Assert.Greater(m.Velocity.y, before);
+            Assert.AreEqual(0, m.AirJumpsLeft);
+
+            for (int i = 0; i < 10; i++) m.Tick(1f / 60f, new MotorInput(), air);
+            m.Tick(1f / 60f, new MotorInput { jumpPressed = true }, air);
+            Assert.AreEqual(1, flips, "only one jump in the air");
+
+            m.Tick(1f / 60f, new MotorInput(), new MotorContacts { grounded = true });
+            Assert.AreEqual(1, m.AirJumpsLeft, "landing gives it back");
         }
 
         [Test]

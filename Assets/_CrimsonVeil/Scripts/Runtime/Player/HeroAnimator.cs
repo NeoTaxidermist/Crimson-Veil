@@ -101,7 +101,9 @@ namespace CrimsonVeil.Player
                 climbProgress = player.Motor.ClimbProgress,
                 swinging = player.Motor.IsSwinging,
                 swingSpeed = player.Motor.SwingAngularVelocity * player.Motor.Facing,
-                weaponHeld = veil != null && veil.Form != VeilForm.Flow ? veil.TransformProgress : 0f,            };
+                weaponHeld = veil != null && veil.Form != VeilForm.Flow ? veil.TransformProgress : 0f,
+                somersault = player.FlipProgress,
+            };
             var p = Solver.Step(Time.deltaTime, s);
             Apply(p);
 

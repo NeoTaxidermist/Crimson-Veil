@@ -29,7 +29,7 @@ namespace CrimsonVeil.Veil
             switch (form)
             {
                 case VeilForm.Whip: return 0.75f; // firm enough to show the rolling loop, still supple
-                case VeilForm.Sword: return 0.92f;
+                case VeilForm.Sword: return 0.96f; // a straight, stiff blade
                 case VeilForm.Spear: return 0.95f;
                 case VeilForm.Shield: return 0.88f;
                 case VeilForm.Bow: return 0.9f;
@@ -86,16 +86,10 @@ namespace CrimsonVeil.Veil
                     break;
                 case VeilForm.Sword:
                 {
-                    // A gently curved blade: steep at the hilt, flattening towards the tip.
-                    Vector2 p = Hand;
+                    // A straight blade from the fist.
+                    var dir = new Vector2(Mathf.Cos(SwordAngle * Mathf.Deg2Rad), Mathf.Sin(SwordAngle * Mathf.Deg2Rad));
                     const int steps = 8;
-                    for (int i = 1; i <= steps; i++)
-                    {
-                        float t = (float)i / steps;
-                        float a = Mathf.Lerp(48f, 26f, t) * Mathf.Deg2Rad;
-                        p += new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * (1.5f / steps);
-                        pts.Add(p);
-                    }
+                    for (int i = 1; i <= steps; i++) pts.Add(Hand + dir * (SwordLength * i / steps));
                     break;
                 }
                 case VeilForm.Spear:
@@ -108,7 +102,7 @@ namespace CrimsonVeil.Veil
                     pts.Add(Hand + new Vector2(SpearReach, 0f));
                     break;
                 case VeilForm.Shield:
-                    AddSpiral(pts, ShieldCenter, 0.62f, 0.2f, 1.5f, 40);
+                    AddBubble(pts, ShieldCenter, ShieldRadius, 1.35f, 44);
                     break;
                 case VeilForm.Bow:
                     AddBow(pts, out _, out _);
@@ -276,26 +270,37 @@ namespace CrimsonVeil.Veil
             }
         }
 
-        /// <summary>Centre of the vortex shield, in front of the hand.</summary>
-        public static readonly Vector2 ShieldCenter = Hand + new Vector2(0.38f, 0.32f);
+        /// <summary>The blade: its angle above the forearm's line (degrees) and length (m).</summary>
+        public const float SwordAngle = 36f, SwordLength = 1.5f;
+
+        /// <summary>Centre of the shield bubble: the middle of the body (the veil anchor is at the neck).</summary>
+        public static readonly Vector2 ShieldCenter = new Vector2(0f, -0.58f);
+        /// <summary>Radius of the shield bubble round the hero.</summary>
+        public const float ShieldRadius = 1.0f;
 
         /// <summary>
-        /// The shield is the veil wound into a vortex: from the hand it sweeps out and spirals inward,
-        /// a living Kármán eddy held in front of the hero.
+        /// The shield is the veil whirled into a bubble round the whole hero: from the hand it sweeps out onto
+        /// the ring and runs round it more than once, in bands that breathe in and out, so it reads as a vortex.
         /// </summary>
-        static void AddSpiral(List<Vector2> pts, Vector2 center, float outer, float inner, float turns, int samples)
+        static void AddBubble(List<Vector2> pts, Vector2 center, float radius, float turns, int samples)
         {
             Vector2 fromHand = pts[pts.Count - 1] - center;
             float a0 = Mathf.Atan2(fromHand.y, fromHand.x);
+            float r0 = fromHand.magnitude;
             for (int i = 1; i <= samples; i++)
             {
                 float t = (float)i / samples;
                 float a = a0 + t * turns * Mathf.PI * 2f;
-                float r = Mathf.Lerp(outer, inner, Mathf.SmoothStep(0f, 1f, t));
-                if (i < 4) r = Mathf.Lerp(fromHand.magnitude, r, i / 4f); // ease out of the grip
-                pts.Add(center + new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * r);
+                float r = radius * (1f + 0.07f * Mathf.Sin(a * 3f + t * 4f)); // swirling bands
+                float ease = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(t / 0.15f)); // out of the grip onto the ring
+                pts.Add(center + new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * Mathf.Lerp(r0, r, ease));
             }
         }
+
+        /// <summary>0 for the part of the shield at the hand, 1 out on the bubble (which spins round the body).</summary>
+        public static float BubbleWeight(Vector2 local)
+            => Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.55f, 0.9f, Vector2.Distance(local, ShieldCenter) / ShieldRadius));
+
 
         static void AddArc(List<Vector2> pts, Vector2 center, float radius, float fromDeg, float toDeg, int segments, float squashX)
         {
@@ -376,9 +381,13 @@ namespace CrimsonVeil.Veil
                 case VeilForm.Spear:
                     return local + new Vector2(Curve(t, 0.2f, -0.35f, 0.45f, 1.1f), 0f);
                 case VeilForm.Shield:
-                    // Bash: the vortex surges forward and spins up.
-                    return Rotate(local, VeilFormLibrary.ShieldCenter, Curve(t, 0.15f, 25f, 0.6f, -160f))
-                        + new Vector2(Mathf.Sin(Mathf.Clamp01(t) * Mathf.PI) * 0.5f, 0f);
+                {
+                    // Bash: the bubble bursts outwards all round the hero and whirls on.
+                    Vector2 c = VeilFormLibrary.ShieldCenter;
+                    float w = VeilFormLibrary.BubbleWeight(local);
+                    float swell = 1f + 0.45f * Mathf.Sin(Mathf.Clamp01(t) * Mathf.PI) * w;
+                    return Rotate(c + (local - c) * swell, c, Curve(t, 0.15f, 15f, 0.6f, -50f) * w);
+                }
                 case VeilForm.Bow:
                     return local + new Vector2(Curve(t, 0.25f, -0.15f, 0.4f, 0.05f), 0f);
                 default:
@@ -388,7 +397,7 @@ namespace CrimsonVeil.Veil
 
         /// <summary>
         /// Living rest pose: weapons breathe instead of freezing — the sword sways, the spear bobs,
-        /// the whip ripples and the shield vortex slowly turns and pulses.
+        /// the whip ripples and the shield bubble whirls and pulses.
         /// </summary>
         public static Vector2 Idle(VeilForm form, Vector2 local, bool isWeaponPart, float time)
         {
@@ -405,9 +414,13 @@ namespace CrimsonVeil.Veil
                     return local + new Vector2(0f, Mathf.Sin(time * 3f - dist * 2.2f) * 0.07f * dist);
                 case VeilForm.Shield:
                 {
+                    // Bands of the bubble race round the hero (a whirl), and it breathes.
                     Vector2 c = VeilFormLibrary.ShieldCenter;
-                    Vector2 p = c + (local - c) * (1f + Mathf.Sin(time * 2f) * 0.04f);
-                    return Rotate(p, c, Mathf.Sin(time * 0.9f) * 10f);
+                    Vector2 d = local - c;
+                    float w = VeilFormLibrary.BubbleWeight(local);
+                    float a = Mathf.Atan2(d.y, d.x);
+                    float band = 0.06f * Mathf.Sin(a * 3f + time * 9f) + 0.03f * Mathf.Sin(time * 2f);
+                    return c + d * (1f + band * w);
                 }
                 default:
                     return local;
@@ -422,7 +435,7 @@ namespace CrimsonVeil.Veil
                 case VeilForm.Sword: return 1f;
                 case VeilForm.Spear: return 0f;  // a spear stays level: it is aimed, the arm only pushes it
                 case VeilForm.Whip: return 1f;   // the handle is the forearm; the rest lags behind (WhipChain)
-                case VeilForm.Shield: return 0.35f;
+                case VeilForm.Shield: return 0f; // the bubble surrounds the body, it does not swing with the arm
                 case VeilForm.Bow: return 0f;    // a bow stays upright
                 default: return 0f;
             }

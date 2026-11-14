@@ -88,12 +88,8 @@ namespace CrimsonVeil.Combat
             return Mathf.Abs(dx) < 0.05f || Mathf.Sign(dx) == facing;
         }
 
-        /// <summary>A shield blocks hits coming from the side the hero is facing.</summary>
+        /// <summary>The shield is a bubble round the whole hero: once formed it blocks hits from either side.</summary>
         public static bool ShieldBlocks(VeilForm form, float hardness, int facing, float heroX, float attackerX)
-        {
-            if (form != VeilForm.Shield || hardness < 0.7f) return false;
-            float dx = attackerX - heroX;
-            return Mathf.Abs(dx) < 0.05f || Mathf.Sign(dx) == facing;
-        }
+            => form == VeilForm.Shield && hardness >= 0.7f;
     }
 }

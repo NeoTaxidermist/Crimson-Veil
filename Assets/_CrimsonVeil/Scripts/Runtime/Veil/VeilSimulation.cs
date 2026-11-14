@@ -115,6 +115,27 @@ namespace CrimsonVeil.Veil
         public Vector2 Breath { get; set; }
         /// <summary>Which way (-1/+1 in x) the magical breeze blows; 0 = no breeze. Set to minus the hero's facing.</summary>
         public float DriftDirection { get; set; }
+        /// <summary>
+        /// A whirl of air round a point (the somersault): the loose cloth is carried round <see cref="SwirlCenter"/>
+        /// at <see cref="SwirlSpeed"/> (rad/s, + = anticlockwise) and drawn onto a ring of <see cref="SwirlRadius"/>,
+        /// so it winds round the body. <see cref="SwirlWeight"/> 0..1 fades it in and out.
+        /// </summary>
+        public Vector2 SwirlCenter { get; set; }
+        public float SwirlSpeed { get; set; }
+        public float SwirlRadius { get; set; } = 0.75f;
+        public float SwirlWeight { get; set; }
+
+        /// <summary>Air velocity of the swirl at <paramref name="p"/> relative to the moving centre.</summary>
+        public static Vector2 SwirlVelocity(Vector2 p, Vector2 center, float speed, float radius)
+        {
+            Vector2 d = p - center;
+            float r = d.magnitude;
+            if (r < 1e-4f) return Vector2.zero;
+            Vector2 dir = d / r;
+            var tangent = new Vector2(-dir.y, dir.x);
+            // Round the ring at its speed (not faster further out, which would fling the tail off) and pulled onto it.
+            return tangent * (speed * radius) - dir * ((r - radius) * 22f);
+        }
         public IReadOnlyList<Vortex> Vortices => vortices;
         public int ShedCount { get; private set; }
 
@@ -239,7 +260,11 @@ namespace CrimsonVeil.Veil
                 // The veil floats on its own breeze: it streams behind the hero even standing still.
                 if (DriftDirection != 0f)
                     airV += new Vector2(DriftDirection * s.drift, s.driftLift) * (loose * Mathf.SmoothStep(0f, 1f, f * 4f));
-                Vector3 acc = new Vector3((airV.x - vel.x) * s.airDrag, (airV.y - vel.y) * s.airDrag, 0f) + g;
+                if (SwirlWeight > 0f)
+                    airV = Vector2.Lerp(airV, bodyVel + SwirlVelocity(p, SwirlCenter, SwirlSpeed, SwirlRadius), loose * SwirlWeight);
+                // In the whirl the cloth is gripped by the air far harder: it winds round within the turn.
+                float drag = s.airDrag * (1f + 5f * SwirlWeight * loose);
+                Vector3 acc = new Vector3((airV.x - vel.x) * drag, (airV.y - vel.y) * drag, 0f) + g;
 
                 if (loose > 0.001f)
                 {
@@ -266,6 +291,7 @@ namespace CrimsonVeil.Veil
                     Vector3 relV = (next - p) / h - anchorVel;
                     // A breath (weapon melting back) may lift it faster than the normal limit.
                     float limit = relV.y > 0f ? s.maxRelativeFall + Mathf.Max(0f, Breath.y) * 0.25f : s.maxRelativeFall;
+                    limit += SwirlWeight * 40f; // winding round the body needs to move up and down freely
                     if (Mathf.Abs(relV.y) > limit)
                     {
                         relV.y = Mathf.Lerp(relV.y, Mathf.Sign(relV.y) * limit, loose);

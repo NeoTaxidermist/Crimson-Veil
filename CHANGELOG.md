@@ -5,6 +5,27 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.14.0] – 2026-11-14
+Dvojskok se saltem, štít jako bublina, rovný meč.
+
+### Přidáno
+- **Dvojskok se saltem.** Druhé zmáčknutí skoku ve vzduchu znovu vyhodí hrdinu nahoru (asi o 2,4 m).
+  - Hrdina přitáhne kolena k hrudi a udělá jedno salto vpřed kolem boků, s dopadem zase na nohy.
+  - Šálu strhne vír kolem těla, takže se kolem hrdiny obtočí a po saltu se zase rozvine.
+  - Dvojskok je jeden na každý skok. Obnoví se dopadem na zem, chycením římsy, klouzáním po zdi, odrazem kopím nebo houpáním na biči.
+- **Plachtění na šále teď přijde až po dvojskoku:** první zmáčknutí ve vzduchu je dvojskok, další zmáčknutí a podržení je plachtění.
+
+### Změněno
+- **Štít je bublina ze šály kolem celé postavy** (průměr asi 2 m, od hlavy k patám). Po bublině dokola běží vířící pruhy.
+  - Blokuje údery z obou stran, ne jen zepředu.
+  - Úder štítem bublinu prudce nafoukne a roztočí.
+- **Meč je rovný.** Čepel z pěsti vede v přímé linii místo dřívějšího zahnutí a je tužší, takže se v pohybu neprohýbá.
+
+### Testy
+- Nové EditMode testy pro dvojskok, salto, obtočení šály, tvar bubliny a rovnost čepele.
+- Upravené testy štítu (blok z obou stran) a plachtění (až po dvojskoku).
+- Nový PlayMode test `DoubleJump_RisesAgainWithASomersault`.
+
 ## [0.13.4] – 2026-11-14
 Zbraň drží v ruce a kamera po respawnu hned sedí.
 

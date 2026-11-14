@@ -74,6 +74,7 @@ namespace CrimsonVeil.Tests
         [Test]
         public void CoyoteTime_ExpiresAfterWindow()
         {
+            settings.airJumps = 0; // (with the double jump, a late press is a double jump instead)
             motor.Tick(Dt, new MotorInput(), Ground);
             Run(12, new MotorInput(), Air); // 200 ms
             motor.Tick(Dt, new MotorInput { jumpPressed = true, jumpHeld = true }, Air);
@@ -83,6 +84,7 @@ namespace CrimsonVeil.Tests
         [Test]
         public void JumpBuffer_JumpsOnLandingWhenPressedJustBefore()
         {
+            settings.airJumps = 0; // the double jump spent: a press just before landing is buffered
             Run(30, new MotorInput(), Air);
             motor.Tick(Dt, new MotorInput { jumpPressed = true, jumpHeld = true }, Air);
             Run(3, new MotorInput { jumpHeld = true }, Air);

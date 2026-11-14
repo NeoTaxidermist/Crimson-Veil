@@ -130,6 +130,12 @@ namespace CrimsonVeil.Combat
             CreatureParts.Part(v, PrimitiveType.Cube, "StrutH", new Vector3(0f, 0.12f, -0.02f), new Vector3(0.9f, 0.03f, 0.02f), accent);
             CreatureParts.Part(v, PrimitiveType.Sphere, "EyeL", new Vector3(-0.12f, 0.2f, -0.03f), Vector3.one * 0.08f, accent);
             CreatureParts.Part(v, PrimitiveType.Sphere, "EyeR", new Vector3(0.12f, 0.2f, -0.03f), Vector3.one * 0.08f, accent);
+            BuildStrings(root, threadMaterial);
+        }
+
+        /// <summary>The fluttering tail and the cuttable thread (works with any visual, e.g. the Blender model).</summary>
+        public static void BuildStrings(Transform root, Material threadMaterial)
+        {
             var tail = CreatureParts.Line(root, "TailLine", threadMaterial, 0.05f, 6);
             tail.startColor = new Color(0.05f, 0.05f, 0.05f, 1f);
             tail.endColor = new Color(0.05f, 0.05f, 0.05f, 0f);

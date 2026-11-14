@@ -123,7 +123,12 @@ namespace CrimsonVeil.Combat
             CreatureParts.Part(v, PrimitiveType.Capsule, "LegL", new Vector3(0.08f, 0.36f, 0f), new Vector3(0.13f, 0.38f, 0.13f), ink, new Vector3(0f, 0f, 3f));
             CreatureParts.Part(v, PrimitiveType.Capsule, "LegR", new Vector3(-0.08f, 0.38f, 0f), new Vector3(0.13f, 0.38f, 0.13f), ink, new Vector3(0f, 0f, -5f));
             CreatureParts.Part(v, PrimitiveType.Cylinder, "Noose", new Vector3(0f, 1.52f, 0f), new Vector3(0.26f, 0.03f, 0.26f), accent);
+            BuildRope(root, ropeMaterial);
+        }
 
+        /// <summary>The cuttable crimson rope (works with any visual, e.g. the Blender model).</summary>
+        public static void BuildRope(Transform root, Material ropeMaterial)
+        {
             var rope = new GameObject("Rope");
             rope.transform.SetParent(root, false);
             rope.AddComponent<CapsuleCollider>();

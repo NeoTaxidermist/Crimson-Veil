@@ -232,11 +232,38 @@ namespace CrimsonVeil.EditorTools
             return c;
         }
 
+        public const string CreatureArt = LevelKitMaterials.Root + "/Art/Enemy/";
+
+        /// <summary>
+        /// Instantiates a creature model from Blender (Art/Enemy/&lt;fbx&gt;.fbx) under <paramref name="parent"/> as
+        /// <paramref name="name"/>, painting "Crimson" material slots with the crimson accent and the rest with ink.
+        /// Returns null when the model is missing (the caller falls back to the primitive silhouette).
+        /// </summary>
+        public static Transform CreatureModel(Transform parent, string fbx, string name)
+        {
+            var asset = AssetDatabase.LoadAssetAtPath<GameObject>(CreatureArt + fbx + ".fbx");
+            if (asset == null) return null;
+            var model = (GameObject)PrefabUtility.InstantiatePrefab(asset);
+            model.name = name;
+            model.transform.SetParent(parent, false);
+            foreach (var r in model.GetComponentsInChildren<Renderer>(true))
+            {
+                var mats = r.sharedMaterials;
+                for (int i = 0; i < mats.Length; i++)
+                    mats[i] = mats[i] != null && mats[i].name.Contains("Crimson") ? M.wraithEyes : M.wraith;
+                r.sharedMaterials = mats;
+                r.shadowCastingMode = ShadowCastingMode.Off;
+                r.receiveShadows = false;
+            }
+            return model.transform;
+        }
+
         public static GameObject ShieldMonk(Vector3 pos)
         {
             var go = Creature("ShieldMonk", pos);
             Capsule(go, new Vector3(0f, 1f, 0f), 2f, 0.45f);
-            CrimsonVeil.Combat.ShieldMonk.BuildVisual(go.transform, M.wraith, M.wraithEyes);
+            if (CreatureModel(go.transform, "ShieldMonk", "Visual") == null)
+                CrimsonVeil.Combat.ShieldMonk.BuildVisual(go.transform, M.wraith, M.wraithEyes);
             go.AddComponent<CrimsonVeil.Combat.ShieldMonk>();
             return go;
         }
@@ -245,7 +272,8 @@ namespace CrimsonVeil.EditorTools
         {
             var go = Creature("RootCrawler", pos);
             Sphere(go, 0.4f);
-            CrimsonVeil.Combat.RootCrawler.BuildVisual(go.transform, M.wraith, M.wraithEyes);
+            if (CreatureModel(go.transform, "RootCrawler", "Visual") == null)
+                CrimsonVeil.Combat.RootCrawler.BuildVisual(go.transform, M.wraith, M.wraithEyes);
             go.AddComponent<CrimsonVeil.Combat.RootCrawler>();
             return go;
         }
@@ -254,7 +282,8 @@ namespace CrimsonVeil.EditorTools
         {
             var go = Creature("HangedMan", pos);
             Capsule(go, new Vector3(0f, 0.85f, 0f), 1.7f, 0.3f);
-            CrimsonVeil.Combat.HangedMan.BuildVisual(go.transform, M.wraith, M.wraithEyes, M.rope);
+            if (CreatureModel(go.transform, "HangedMan", "Visual") != null) CrimsonVeil.Combat.HangedMan.BuildRope(go.transform, M.rope);
+            else CrimsonVeil.Combat.HangedMan.BuildVisual(go.transform, M.wraith, M.wraithEyes, M.rope);
             go.AddComponent<CrimsonVeil.Combat.HangedMan>();
             return go;
         }
@@ -285,7 +314,8 @@ namespace CrimsonVeil.EditorTools
         public static GameObject CrowSwarm(Vector3 pos)
         {
             var go = Creature("CrowSwarm", pos);
-            CrimsonVeil.Combat.CrowSwarm.BuildVisual(go.transform, M.wraith, M.wraithEyes);
+            bool model = AssetDatabase.LoadAssetAtPath<GameObject>(CreatureArt + "Crow.fbx") != null;
+            CrimsonVeil.Combat.CrowSwarm.BuildVisual(go.transform, M.wraith, M.wraithEyes, 8, model ? t => CreatureModel(t, "Crow", "Model") : (System.Action<Transform>)null);
             go.AddComponent<CrimsonVeil.Combat.CrowSwarm>();
             return go;
         }
@@ -294,7 +324,8 @@ namespace CrimsonVeil.EditorTools
         {
             var go = Creature("AshMoth", pos);
             Sphere(go, 0.6f);
-            CrimsonVeil.Combat.AshMoth.BuildVisual(go.transform, M.wraith, M.wraithEyes);
+            if (CreatureModel(go.transform, "AshMoth", "Visual") == null)
+                CrimsonVeil.Combat.AshMoth.BuildVisual(go.transform, M.wraith, M.wraithEyes);
             go.AddComponent<CrimsonVeil.Combat.AshMoth>();
             return go;
         }
@@ -303,7 +334,9 @@ namespace CrimsonVeil.EditorTools
         {
             var go = Creature("LanternWisp", pos);
             Sphere(go, 0.35f);
-            CrimsonVeil.Combat.LanternWisp.BuildVisual(go.transform, M.wraith, M.wraithEyes);
+            var lantern = CreatureModel(go.transform, "LanternWisp", "Visual");
+            if (lantern != null) CrimsonVeil.Combat.LanternWisp.BuildLight(lantern);
+            else CrimsonVeil.Combat.LanternWisp.BuildVisual(go.transform, M.wraith, M.wraithEyes);
             go.AddComponent<CrimsonVeil.Combat.LanternWisp>();
             return go;
         }
@@ -313,7 +346,8 @@ namespace CrimsonVeil.EditorTools
             var go = Creature("PaperKite", pos);
             var box = go.AddComponent<BoxCollider>();
             box.isTrigger = true; box.size = new Vector3(0.9f, 0.9f, 0.4f);
-            CrimsonVeil.Combat.PaperKite.BuildVisual(go.transform, M.wraith, M.wraithEyes, M.rope);
+            if (CreatureModel(go.transform, "PaperKite", "Visual") != null) CrimsonVeil.Combat.PaperKite.BuildStrings(go.transform, M.rope);
+            else CrimsonVeil.Combat.PaperKite.BuildVisual(go.transform, M.wraith, M.wraithEyes, M.rope);
             go.AddComponent<CrimsonVeil.Combat.PaperKite>();
             return go;
         }

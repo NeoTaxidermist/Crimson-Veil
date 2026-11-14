@@ -35,7 +35,10 @@ namespace CrimsonVeil.Combat
             home = transform.position.x;
             visual = CreatureParts.Find(transform, "Visual");
             shield = CreatureParts.Find(transform, "Shield");
+            if (shield != null) shieldRest = shield.localRotation;
         }
+
+        Quaternion shieldRest = Quaternion.identity;
 
         protected override void Tick(float dt)
         {
@@ -131,8 +134,9 @@ namespace CrimsonVeil.Combat
             Vector3 up = new Vector3(0.55f, 1.05f, -0.15f), raised = new Vector3(0.75f, 1.3f, -0.15f), down = new Vector3(-0.1f, 0.35f, 0.25f);
             Vector3 targetPos = !ShieldUp ? down : Current == State.Windup ? Vector3.Lerp(up, raised, stateTime / windupTime) : Current == State.Bash ? up + Vector3.right * 0.3f : up;
             shield.localPosition = Vector3.Lerp(shield.localPosition, targetPos, 1f - Mathf.Exp(-12f * dt));
+            // Torn away, it tips over; otherwise it keeps the angle it was modelled (or built) with.
             float tilt = ShieldUp ? 0f : 70f;
-            shield.localRotation = Quaternion.Slerp(shield.localRotation, Quaternion.Euler(0f, 0f, 90f + tilt), 1f - Mathf.Exp(-10f * dt));
+            shield.localRotation = Quaternion.Slerp(shield.localRotation, Quaternion.Euler(0f, 0f, tilt) * shieldRest, 1f - Mathf.Exp(-10f * dt));
         }
 
         /// <summary>Builds the monk's silhouette under <paramref name="root"/>.</summary>

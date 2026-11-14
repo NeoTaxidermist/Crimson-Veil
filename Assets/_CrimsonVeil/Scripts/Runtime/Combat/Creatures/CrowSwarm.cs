@@ -115,7 +115,8 @@ namespace CrimsonVeil.Combat
             }
         }
 
-        public static void BuildVisual(Transform root, Material ink, Material accent, int count = 8)
+        /// <param name="crowVisual">Builds one crow's look under its transform (default: primitive silhouette).</param>
+        public static void BuildVisual(Transform root, Material ink, Material accent, int count = 8, System.Action<Transform> crowVisual = null)
         {
             for (int i = 0; i < count; i++)
             {
@@ -126,7 +127,8 @@ namespace CrimsonVeil.Combat
                 col.isTrigger = true;
                 col.radius = 0.28f;
                 go.AddComponent<Crow>();
-                Crow.BuildVisual(go.transform, ink, accent);
+                if (crowVisual != null) crowVisual(go.transform);
+                else Crow.BuildVisual(go.transform, ink, accent);
             }
         }
     }

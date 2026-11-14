@@ -5,6 +5,24 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.8.1] – 2026-11-14
+Detailní modely nepřátel z Blenderu.
+
+### Přidáno
+- **Modely sedmi nepřátel z Blenderu** místo jednoduchých tvarů. Detail je hlavně v siluetě, protože ve hře se čtou obrysy:
+  - **Mnich se štítem:** hábit se záhyby a roztřepaným lemem, shrbená záda, dlouhá špičatá kapuce s rudýma očima, pelerína, rukávy do zvonu, provazový pás s uzlem. V natažené ruce drží rudý růženec s přívěskem. Štít má okovaný okraj, nýty, ulomený roh a rudou runu plačícího oka.
+  - **Kořenolez:** hrbolaté klubko kořenů s kořínky, čtyři rudé oči jako pavouk a trnité zuby. Devět pokroucených kořenů s větvičkami a zahnutými drápy se samostatně vlní.
+  - **Oběšenec:** vychrtlé tělo v roztrhané košili, otrhané kalhoty, bosé nohy s prsty dolů, svěšené ruce s dlouhými prsty, hlava bradou na hrudi a splihlé vlasy. Rudá oprátka má uzel se závity.
+  - **Havran:** tělo s hrudí, těžký zobák, rudé oko, vějíř ocasních per, pařáty a křídla s jednotlivými letkami.
+  - **Popelavá můra:** článkovaný zadeček, chlupatá hruď, hřebenovitá tykadla a šest nohou. Křídla mají roztřepený okraj jako ohořelý papír, žilky a rudé oko na předním křídle.
+  - **Bludička:** kovaná šestiboká lucerna s kudrlinkami, špičatou stříškou, kroužkem a nožkami, uvnitř rudý plamen, pod ní kouřové pramínky.
+  - **Papírový drak:** roztrhaný kosočtverečný papír na bambusových vzpěrách svázaných rudou šňůrou, namalovaný obličej se šikmýma očima a zubatým úsměvem, papírové třásně.
+- Modely mají oddělené pohyblivé díly (štít, křídla, kořeny, plamen), takže fungují všechny animace. Rudá barva je jen tam, kam ji model namaloval.
+- Zdrojové skripty modelů jsou v `ArtSource/creatures/` a dají se znovu sestavit v Blenderu. Když model chybí, použije se záloha z jednoduchých tvarů.
+
+### Testy
+- Každý nepřítel z palety má model z Blenderu, dost detailu a díly, které hra animuje. Rudá je jen na detailech.
+
 ## [0.8.0] – 2026-11-13
 Bestiář: osm nových nepřátel, z toho čtyři létající.
 

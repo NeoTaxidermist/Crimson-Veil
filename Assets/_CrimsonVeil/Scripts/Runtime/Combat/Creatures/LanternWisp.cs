@@ -80,6 +80,12 @@ namespace CrimsonVeil.Combat
             CreatureParts.Part(v, PrimitiveType.Cube, "BarL", new Vector3(-0.12f, 0f, 0f), new Vector3(0.025f, 0.4f, 0.025f), ink);
             CreatureParts.Part(v, PrimitiveType.Cube, "BarR", new Vector3(0.12f, 0f, 0f), new Vector3(0.025f, 0.4f, 0.025f), ink);
             CreatureParts.Part(v, PrimitiveType.Cube, "Ring", new Vector3(0f, 0.29f, 0f), new Vector3(0.1f, 0.12f, 0.02f), ink);
+            BuildLight(v);
+        }
+
+        /// <summary>The lantern's glow (works with any visual, e.g. the Blender model).</summary>
+        public static void BuildLight(Transform v)
+        {
             var lightGo = new GameObject("Glow");
             lightGo.transform.SetParent(v, false);
             var light = lightGo.AddComponent<Light>();

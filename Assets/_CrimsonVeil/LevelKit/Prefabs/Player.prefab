@@ -277,8 +277,8 @@ MonoBehaviour:
   maxWisps: 60
   trailPoints: 24
   sampleInterval: 0.025
-  baseRate: 1.2
-  speedRate: 0.6
+  baseRate: 0
+  speedRate: 0
   weaponRate: 5
   swingRate: 16
   lifetime: 1.9

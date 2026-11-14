@@ -50,7 +50,9 @@ namespace CrimsonVeil.Tests
             Assert.That(VeilRenderer.ScarfWidth(0f), Is.InRange(0.12f, 0.2f), "slim where it leaves the neck");
             Assert.That(VeilRenderer.ScarfWidth(1f), Is.InRange(0.28f, 0.36f));
             Assert.That(VeilRenderer.ScarfWidth(2f), Is.InRange(0.34f, 0.42f), "widest along the middle");
-            Assert.Less(VeilRenderer.ScarfWidth(3.2f), VeilRenderer.ScarfWidth(2f), "narrows into the whorls");
+            Assert.Greater(VeilRenderer.ScarfWidth(3.2f), VeilRenderer.ScarfWidth(2f), "opens out into the whorls");
+            foreach (var st in VeilRenderer.Strands)
+                Assert.GreaterOrEqual(VeilRenderer.LooseEnd(st), 0.9f, "every loose layer runs on into the whorls at the end");
         }
 
         [Test]
@@ -118,6 +120,24 @@ namespace CrimsonVeil.Tests
             }
             Assert.Greater(m.GetColor("_ClothLight").r, m.GetColor("_ClothMid").r - 1e-3f);
             Assert.Less(m.GetColor("_ClothDeep").r, m.GetColor("_ClothMid").r);
+        }
+
+        [Test]
+        public void BroadStroke_DoesNotFoldOverItselfInATightTurn()
+        {
+            // a 0.4 m wide stroke turning 90 degrees within 0.1 m: its inner edge would cross over (a stray triangle)
+            var c = new[] { new Vector3(0f, 0f, 0f), new Vector3(0.1f, 0f, 0f), new Vector3(0.1f, 0.1f, 0f) };
+            var n = new[] { Vector3.up, new Vector3(-0.7071f, 0.7071f, 0f), Vector3.left };
+            var verts = new Vector3[6];
+            for (int i = 0; i < 3; i++) { verts[i * 2] = c[i] + n[i] * 0.2f; verts[i * 2 + 1] = c[i] - n[i] * 0.2f; }
+            VeilRenderer.ClampFolds(verts, new Vector2[6], 0, 3);
+            float half = (verts[2] - verts[3]).magnitude * 0.5f;
+            Assert.Less(half, 0.1f, "narrowed to within the radius of the turn");
+            var hardData = new Vector2[6];
+            for (int i = 0; i < 6; i++) hardData[i] = new Vector2(1f, 0f);
+            for (int i = 0; i < 3; i++) { verts[i * 2] = c[i] + n[i] * 0.2f; verts[i * 2 + 1] = c[i] - n[i] * 0.2f; }
+            VeilRenderer.ClampFolds(verts, hardData, 0, 3);
+            Assert.AreEqual(0.2f, (verts[2] - verts[3]).magnitude * 0.5f, 1e-4f, "a weapon keeps its shape");
         }
 
         [Test]

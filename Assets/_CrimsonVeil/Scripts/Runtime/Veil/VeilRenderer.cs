@@ -81,14 +81,14 @@ namespace CrimsonVeil.Veil
         /// <summary>
         /// Width (m) of the loose scarf <paramref name="d"/> metres from the neck, measured on its animation sheet
         /// (ArtSource/ref/scarf_anim_sheet.png, the hero 170 px = 1.9 m): slim where it leaves the wrap at the neck
-        /// (~0.16 m), ~0.32 m a metre back, ~0.38 m along the middle, ~0.3 m where it winds into its whorls.
+        /// (~0.16 m), ~0.32 m a metre back, ~0.38 m along the middle, opening to ~0.48 m into its whorls.
         /// </summary>
         public static float ScarfWidth(float d)
         {
             if (d < 0f) d = 0f;
             if (d < 1f) return Mathf.Lerp(0.16f, 0.32f, Mathf.SmoothStep(0f, 1f, d));
             if (d < 2f) return Mathf.Lerp(0.32f, 0.38f, Mathf.SmoothStep(0f, 1f, d - 1f));
-            return Mathf.Lerp(0.38f, 0.3f, Mathf.SmoothStep(0f, 1f, (d - 2f) / 1.2f));
+            return Mathf.Lerp(0.38f, 0.48f, Mathf.SmoothStep(0f, 1f, (d - 2f) / 1.2f));
         }
 
         /// <summary>
@@ -373,7 +373,7 @@ namespace CrimsonVeil.Veil
                     Vector3 ov = nrm * off;
                     // The band itself is kept from rising over the head; the tongues further back fan as in the key
                     // art - the upper one climbs into its hook, the lower ones stay close under the band.
-                    if (ov.y > 0f) ov.y *= branch ? Mathf.Lerp(0.85f, 0.5f, hard) : 0.5f;
+                    if (ov.y > 0f) ov.y *= branch ? Mathf.Lerp(0.55f, 0.5f, hard) : 0.5f;
                     else if (branch) ov.y *= Mathf.Lerp(0.55f, 1f, hard);
                     c += ov + new Vector3(0f, -w * HangBelowNeck * loose * Mathf.SmoothStep(0f, 1f, f * 4f), (s - 1) * 0.012f);
 
@@ -393,13 +393,16 @@ namespace CrimsonVeil.Veil
                     // Tendrils emerge from the ribbon: thin where they split, then full.
                     float sw = w * Mathf.Lerp(st.width, main ? 1f : 0.3f, hard) * burn;
                     if (!main) sw *= (1f + 1.6f * set) * (1f - 0.7f * lick); // bold tongues, each narrowing to its tip
-                    if (branch) sw *= Mathf.Lerp(Mathf.Lerp(0.38f, 0.25f, hard), Mathf.Lerp(0.95f, 0.51f, hard), Mathf.SmoothStep(0f, 1f, u))
+                    if (branch) sw *= Mathf.Lerp(Mathf.Lerp(0.45f, 0.25f, hard), Mathf.Lerp(1.2f, 0.51f, hard), Mathf.SmoothStep(0f, 1f, u))
                                       * Mathf.Lerp(1f - 0.15f * Mathf.SmoothStep(0.6f, 1f, u), 1f, hard); // a broad stroke into its whorl
+                    // a tongue grows out of the band from nothing (no square-cut start where it branches off)
+                    if (branch) sw *= Mathf.Lerp(Mathf.SmoothStep(0f, 1f, u / 0.22f), 1f, hard);
                     float alpha = a * Mathf.Lerp(st.alpha, main ? 1f : 0.7f, hard);
                     // Loose, it is one band of cloth near the neck (the concept); the tongues of smoke come out
                     // further back (the key art), and all of them as it hardens into a weapon.
                     alpha *= Mathf.Lerp(LooseLayerAlpha(s, f), 1f, hard);
                     if (branch) alpha *= Mathf.SmoothStep(0f, 1f, u * 5f) * Mathf.Lerp(1f, 0.12f, coiled);
+                    if (!main) alpha = Mathf.Lerp(Mathf.Min(1f, alpha * 1.2f), alpha, hard); // fuller tongues (the sheet)
 
                     float shade = Mathf.Lerp(shadeAt[i0], shadeAt[i0 + 1], fr);
                     WriteVertex(baseV + i * 2, c, nrm, sw, alpha, st, hard, vit, front, shade);
@@ -432,11 +435,12 @@ namespace CrimsonVeil.Veil
                     Vector3 d = curl[Mathf.Min(k + 1, curlPoints)] - curl[k - 1];
                     d.z = 0f;
                     Vector3 nrm = d.sqrMagnitude > 1e-10f ? new Vector3(-d.y, d.x, 0f).normalized : Vector3.up;
-                    // A brush stroke: broad as it winds round its whorl (the sheet), thinning to a fine end at the centre.
-                    float sw = lastW * Mathf.Lerp(1f, Mathf.Lerp(0.06f, 0.03f, lastHard), Mathf.Pow(u, Mathf.Lerp(1.05f, 0.6f, lastHard)));
+                    // A brush stroke: broad as it winds round its whorl (the sheet), thinning only near its centre.
+                    float sw = lastW * Mathf.Lerp(1f, Mathf.Lerp(0.14f, 0.03f, lastHard), Mathf.Pow(u, Mathf.Lerp(1.7f, 0.6f, lastHard)));
                     float alpha = lastA * Mathf.Lerp(1f, 0.55f, u);
                     WriteVertex(baseV + (samples - 1 + k) * 2, curl[k], nrm, sw, alpha, st, lastHard, vit, lastFront, lastShade);
                 }
+                ClampFolds(vertices, uv2, baseV, perStrand);
             }
 
             // Loose cloth stays behind the hero: when he stops, the swinging band and its layers must not sweep
@@ -550,10 +554,45 @@ namespace CrimsonVeil.Veil
         /// weapon in front of the hand (<paramref name="gripFraction"/>).
         /// </summary>
         public static float StrandEnd(Strand st, bool main, bool bow, float weaponness, float gripFraction)
-            => Mathf.Lerp(st.end, main || bow ? 1f : WeaponStrandEnd(st, gripFraction), weaponness);
+            => Mathf.Lerp(LooseEnd(st), main || bow ? 1f : WeaponStrandEnd(st, gripFraction), weaponness);
+
+        /// <summary>Where a layer of the loose scarf ends: every layer runs on into the whorls at the end (the sheet
+        /// has curls only there - a layer ending mid-band curled up into a stray scrap on top of it).</summary>
+        public static float LooseEnd(Strand st) => Mathf.Max(st.end, LooseLayersEnd);
+
+        public const float LooseLayersEnd = 0.93f;
 
         /// <summary>Length (m) of the flame tongue at a weapon strand's end.</summary>
         public static float FlameTongueLength(bool main) => main ? 0.22f : 0.34f;
+
+        /// <summary>
+        /// A broad stroke must not fold over itself where its centre line bends tighter than its half width (a sharp
+        /// turn into a curl drew a stray triangle): at every point the half width is limited to 0.9 of the local
+        /// radius of the bend - on the loose cloth (hardness in <paramref name="data"/>.x below 0.5). Works on the strand's
+        /// vertex pairs in place (left = v, right = v + 1).
+        /// </summary>
+        public static void ClampFolds(Vector3[] verts, Vector2[] data, int baseV, int count)
+        {
+            for (int k = 1; k < count - 1; k++)
+            {
+                int v = baseV + k * 2;
+                if (data != null && data[v].x > 0.5f) continue; // a weapon keeps its own shape
+                Vector3 c0 = (verts[v - 2] + verts[v - 1]) * 0.5f, c1 = (verts[v] + verts[v + 1]) * 0.5f, c2 = (verts[v + 2] + verts[v + 3]) * 0.5f;
+                Vector3 a = c1 - c0, b = c2 - c1;
+                a.z = 0f; b.z = 0f;
+                float la = a.magnitude, lb = b.magnitude;
+                if (la < 1e-5f || lb < 1e-5f) continue;
+                float turn = Vector3.Angle(a, b) * Mathf.Deg2Rad;
+                if (turn < 1e-3f) continue;
+                float radius = 0.5f * (la + lb) / turn;
+                Vector3 half = (verts[v] - verts[v + 1]) * 0.5f;
+                float hl = half.magnitude, limit = 0.9f * radius;
+                if (hl <= limit) continue;
+                half *= limit / hl;
+                verts[v] = c1 + half;
+                verts[v + 1] = c1 - half;
+            }
+        }
 
         void WriteVertex(int v, Vector3 c, Vector3 nrm, float width, float alpha, Strand st, float hard, float vit, float glow = 0f, float shade = 1f)
         {

@@ -15,8 +15,8 @@ namespace CrimsonVeil.Veil
         [SerializeField] int maxWisps = 60;
         [SerializeField] int trailPoints = 24;
         [SerializeField] float sampleInterval = 0.025f;
-        [SerializeField] float baseRate = 1.2f; // a few fine hairline strokes round the scarf (its sheet)
-        [SerializeField] float speedRate = 0.6f;
+        [SerializeField] float baseRate = 0f; // the loose scarf sheds none (its sheet: one sheaf of strands); weapons do
+        [SerializeField] float speedRate = 0f;
         [SerializeField] float weaponRate = 5f;
         [SerializeField] float swingRate = 16f;
         [SerializeField] float lifetime = 1.9f;

@@ -5,6 +5,22 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.16.11] – 2026-11-14
+Objemné víry na konci šály a čisté tahy bez úlomků.
+
+### Změněno
+- **Víry na konci jsou ze širokých tahů s objemem, jako v sešitu.**
+  - Pás se ke konci rozšiřuje na 0,48 m.
+  - Jazyky jsou širší a plnější a víc kryjí.
+  - Tah se ve víru zužuje až u středu.
+- **Horní jazyky jsou nižší a hustší.** Nad pás stoupají jen málo, celek zůstává ve vodorovném pásu.
+- **Všechny vrstvy volné šály doběhnou až do vírů na konci.** Vrstva, která končila uprostřed pásu, se tam stáčela do zbloudilého úlomku.
+- **Jazyk vyrůstá z pásu od nulové šířky**, už nezačíná rovně useknutým obdélníčkem.
+- Volná šála už nepouští dýmové nitky (v sešitu nejsou, jejich lomené čáry rušily). Zbraně je mají dál.
+
+### Opraveno
+- **Široký tah se v ostrém ohybu nepřeloží přes sebe.** V každém bodě se jeho šířka omezí na 0,9 poloměru ohybu, takže zmizely trojúhelníkové střípky u vírů. Na zbraně se to neuplatňuje.
+
 ## [0.16.10] – 2026-11-14
 Barvy a víry šály podle animačního sešitu.
 

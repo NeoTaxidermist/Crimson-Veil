@@ -5,6 +5,20 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.13.3] – 2026-11-14
+Klidná kamera, která drží postavu v záběru.
+
+### Opraveno
+- **Kamera se při otočení nepřehazuje.** Dřív předsazovala záběr podle toho, kam se hrdina dívá, takže každé otočení k úderu přehodilo pohled o ~7 m. Teď předsazuje podle toho, kam hrdina **jde** (vyhlazená rychlost). Krátké ťuknutí ani otočení na místě záběr nerozhoupe; když hrdina stojí, kamera se vrací na střed.
+- **Skok kamerou nehoupe.** Kamera drží výšku podlahy, na které hrdina stojí. Při skoku na místě se pohne jen o ~0,3 m, i když hrdina vyskočí přes 3 m. Na novou výšku se přerámuje, až když hrdina dopadne výš nebo níž, nebo vyleze či spadne mimo okno kolem podlahy.
+- **Skutečný pád je vidět dopředu.** Při dlouhém pádu kamera jde s hrdinou a mírně (nejvýš 3 m) předbíhá dolů, aby bylo vidět, kam dopadne. Dřív předbíhala až o 5 m při každém skoku.
+- **Pohled přes hranu jen ve stoje.** Kamera se podívá dolů do propasti, jen když u hrany stojíš, ne pokaždé, když kolem hrany běžíš.
+- **Teleport a respawn kamera skočí, místo aby dlouze přejížděla.**
+
+### Změněno
+- Nová třída `CameraFocus` (logika zaostření, pokrytá testy).
+- Ladicí pole kamery jsou přejmenovaná (`leadDistance`, `followSmoothX`, `followSmoothFloor`, `followSmoothAir`), aby staré uložené hodnoty ve scénách nepřebily nové výchozí.
+
 ## [0.13.2] – 2026-11-14
 Prapory se znakem.
 

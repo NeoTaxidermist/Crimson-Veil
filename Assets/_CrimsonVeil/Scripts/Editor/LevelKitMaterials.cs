@@ -84,7 +84,7 @@ namespace CrimsonVeil.EditorTools
                 shaft = MistMat("LightShaft", mist, "_MODE_SHAFT", 1, Color.white, 0.16f, new Vector2(2f, 4f), new Vector2(0.01f, -0.02f), new Vector2(0.35f, 0.3f)),
                 moon = Mat("Moon", unlit, new Color(3.4f, 3.4f, 3.3f)),
 
-                veil = VeilMat("Veil", 0.45f, 0.75f, 0.6f),
+                veil = VeilMat("Veil", 0.45f, 0.75f, 0.6f, cloth: true),
                 wisp = VeilMat("VeilSmoke", 0.9f, 0.95f, 0.5f),
                 burst = Transparent(Mat("InkBurst", particles, new Color(1.1f, 0.05f, 0.06f, 1f))),
                 rope = Transparent(Mat("Rope", particles, new Color(1.1f, 0.04f, 0.05f, 1f))),
@@ -123,15 +123,21 @@ namespace CrimsonVeil.EditorTools
             return m;
         }
 
-        static Material VeilMat(string name, float edgeSoftness, float erosion, float flowSpeed)
+        static Material VeilMat(string name, float edgeSoftness, float erosion, float flowSpeed, bool cloth = false)
         {
             var m = Mat(name, Shader.Find("CrimsonVeil/Veil"), Color.white);
-            m.SetColor("_Deep", new Color(0.34f, 0.0f, 0.025f));
+            m.SetColor("_Deep", cloth ? new Color(0.34f, 0.0f, 0.025f) : new Color(0.6f, 0.02f, 0.04f)); // smoke: wine red, never grey
             m.SetColor("_Mid", new Color(0.78f, 0.02f, 0.04f));
             m.SetColor("_Glow", new Color(1.45f, 0.1f, 0.07f));
             m.SetFloat("_EdgeSoftness", edgeSoftness);
             m.SetFloat("_Erosion", erosion);
             m.SetFloat("_FlowSpeed", flowSpeed);
+            // The loose scarf as in the key art: a ribbon in red ink (crimson, a lighter sheen, deep wine reverse);
+            // the smoke threads keep the fire look.
+            m.SetFloat("_Cloth", cloth ? 1f : 0f);
+            m.SetColor("_ClothDeep", new Color(0.42f, 0.03f, 0.04f));
+            m.SetColor("_ClothMid", new Color(0.85f, 0.06f, 0.06f));
+            m.SetColor("_ClothLight", new Color(1f, 0.3f, 0.25f));
             m.renderQueue = (int)RenderQueue.Transparent;
             return m;
         }

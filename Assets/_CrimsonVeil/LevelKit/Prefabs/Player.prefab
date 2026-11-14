@@ -257,8 +257,8 @@ MonoBehaviour:
   smoothing: 3
   flutterTwist: 0.35
   curlPoints: 22
-  curlScale: 1.3
-  tendrilSpread: 0.42
+  curlScale: 2
+  tendrilSpread: 0.75
 --- !u!114 &5389534785771705521
 MonoBehaviour:
   m_ObjectHideFlags: 0

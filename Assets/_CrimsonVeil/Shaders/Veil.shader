@@ -12,6 +12,10 @@ Shader "CrimsonVeil/Veil"
         _FlowSpeed ("Flow Speed", Float) = 1.4
         _EdgeSoftness ("Edge Softness", Range(0.05, 1)) = 0.45
         _Erosion ("Tail Erosion", Range(0, 1)) = 0.75
+        _Cloth ("Cloth Look (loose scarf as in the concept)", Range(0, 1)) = 0
+        _ClothDeep ("Cloth Wine", Color) = (0.42, 0.03, 0.04, 1)
+        _ClothMid ("Cloth Crimson", Color) = (0.85, 0.06, 0.06, 1)
+        _ClothLight ("Cloth Light", Color) = (1.0, 0.3, 0.25, 1)
     }
     SubShader
     {
@@ -38,6 +42,10 @@ Shader "CrimsonVeil/Veil"
                 float _FlowSpeed;
                 float _EdgeSoftness;
                 float _Erosion;
+                float _Cloth;
+                half4 _ClothDeep;
+                half4 _ClothMid;
+                half4 _ClothLight;
             CBUFFER_END
 
             struct Attributes
@@ -110,8 +118,39 @@ Shader "CrimsonVeil/Veil"
                 // A weapon glows more evenly along its blade.
                 col = lerp(col, lerp(_Mid.rgb, _Glow.rgb, core * 0.6 * (0.6 + streak * 0.6)), hard * 0.4);
 
-                col *= i.color.rgb;
-                return half4(col, saturate(alpha * i.color.a));
+                // The loose scarf as in the key art (_Cloth): a ribbon painted in red ink - saturated crimson with a
+                // lighter sheen along it and darker wine where the layers of the wash overlap; firm dry-brush edges
+                // (streaks running along the stroke), nearly opaque in the body, thinning to a translucent wash and
+                // fine strokes in the curls at the end. No grey smoke. Weapons (hard) keep the fire look.
+                float cloth = _Cloth * loose;
+                if (cloth > 0.0)
+                {
+                    float brush = CV_ValueNoise(float2(across * 14.0 + seed * 3.0, along * 2.0 - t * 0.15));
+                    float rag = CV_Fbm(float2(along * 7.0 - t * 0.3, seed + across * 0.3));
+                    float clothAlpha = smoothstep(0.0, 0.12, edge - (rag - 0.5) * 0.3 - (brush - 0.5) * 0.25 * (1.0 - core));
+                    // the wash: opaque body, translucent overlapping layers towards the curls
+                    float wash = lerp(1.0, 0.7, smoothstep(0.45, 0.9, along));
+                    clothAlpha *= wash * lerp(0.82, 1.0, smoothstep(0.3, 0.6, streak));
+                    clothAlpha *= 1.0 - smoothstep(0.86, 0.9, along + (rag - 0.5) * 0.1);   // stroke ends in a point
+                    float sheen = CV_Fbm(float2(across * 2.4 + warp * 0.5 + seed, along * 1.5 - t * 0.25));
+                    half3 cc = lerp(_ClothDeep.rgb, _ClothMid.rgb, smoothstep(0.18, 0.42, sheen));
+                    cc = lerp(cc, _ClothLight.rgb, smoothstep(0.62, 0.85, sheen) * (0.35 + core * 0.65));
+                    cc *= lerp(0.72, 1.0, smoothstep(0.0, 0.3, edge));               // brush edges a shade deeper
+                    col = lerp(col, cc, cloth);
+                    alpha = lerp(alpha, clothAlpha, cloth);
+                }
+
+                // On the cloth the vertex shade (the ribbon's dark reverse, the darker layers) blends towards the deep
+                // wine instead of darkening to black, and a thin wash turns a lighter, clear red - watercolour on
+                // paper, never grey.
+                float clothV = _Cloth * loose;
+                float shadeV = saturate(max(i.color.r, max(i.color.g, i.color.b)));
+                half3 clothCol = lerp(_ClothDeep.rgb, col, smoothstep(0.25, 1.0, shadeV));
+                clothCol = lerp(_ClothMid.rgb, clothCol, smoothstep(0.1, 0.4, alpha * i.color.a));
+                col = lerp(col * i.color.rgb, clothCol * max(1.0, i.color.r), clothV);
+                // the ribbon is painted, not smoke: the layers' soft vertex alpha is lifted on the cloth
+                float va = lerp(i.color.a, saturate(i.color.a * 1.6), clothV);
+                return half4(col, saturate(alpha * va));
             }
             ENDHLSL
         }

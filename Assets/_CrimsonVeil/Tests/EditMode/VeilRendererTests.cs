@@ -44,6 +44,43 @@ namespace CrimsonVeil.Tests
         }
 
         [Test]
+        public void LooseScarf_HasTheKeyArtsWidths()
+        {
+            // measured on the key art (hero 213 px = ~1.9 m): ~0.3 m at the neck, 0.45 m a metre back, 0.55 m at the curls
+            Assert.That(VeilRenderer.ScarfWidth(0f), Is.InRange(0.25f, 0.35f), "a broad band from the neck");
+            Assert.That(VeilRenderer.ScarfWidth(1f), Is.InRange(0.4f, 0.5f));
+            Assert.That(VeilRenderer.ScarfWidth(1.8f), Is.InRange(0.5f, 0.6f), "widest where it comes apart");
+            Assert.Less(VeilRenderer.ScarfWidth(2.7f), VeilRenderer.ScarfWidth(1.8f));
+        }
+
+        [Test]
+        public void LooseScarf_TwistsShowingItsDarkReverse()
+        {
+            float minW = 1f, minShade = 1f, maxShade = 0f;
+            for (float t = 0f; t <= 1f; t += 0.01f)
+            {
+                float tw = VeilRenderer.Twist(t, 0f);
+                minW = Mathf.Min(minW, VeilRenderer.TwistWidth(tw));
+                float sh = VeilRenderer.TwistShade(tw);
+                minShade = Mathf.Min(minShade, sh); maxShade = Mathf.Max(maxShade, sh);
+            }
+            Assert.Less(minW, 0.5f, "pinches where it turns edge-on");
+            Assert.AreEqual(1f, maxShade, 1e-3f, "the bright crimson face");
+            Assert.Less(minShade, 0.5f, "and the deep wine reverse (key art)");
+        }
+
+        [Test]
+        public void LooseScarf_IsClothAtTheNeck_SmokeTonguesOnlyFurtherBack()
+        {
+            for (int s = 0; s < VeilRenderer.Strands.Length; s++)
+            {
+                float near = VeilRenderer.LooseLayerAlpha(s, 0.15f), far = VeilRenderer.LooseLayerAlpha(s, 0.8f);
+                Assert.AreEqual(1f, far, 1e-4f, "the key art's tongues of smoke at the back");
+                if (s > 1) Assert.AreEqual(0f, near, 1e-4f, "near the neck one band of cloth (the concept)");
+            }
+        }
+
+        [Test]
         public void Scarf_HangsFromTheNeck_NotCentredOnIt()
         {
             // Centred on the neck, half of the broad band (and its upper layers) rose over the head when running.

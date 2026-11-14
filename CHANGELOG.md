@@ -5,6 +5,26 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.16.8] – 2026-11-14
+Šála podle key artu.
+
+### Změněno
+- **Volná šála je stuha namalovaná rudou tuší jako na key artu, ne šedý dým.**
+  - Od omotávky u krku vede široký pás: 0,3 m u krku, 0,45 m o metr dál, 0,55 m tam, kde se rozpadá. Šířky jsou změřené na key artu, kde postava měří 213 px.
+  - Konec se rozpadá do jazyků, které se stáčejí do velkých otevřených spirál (dvakrát větších než dřív) a víc se rozbíhají.
+- **Stuha se přetáčí a ukazuje rub.**
+  - Od krku je plná a zářivá, zhruba v polovině se přetočí a v místě přetočení se zúží.
+  - Zadní část ukazuje tmavě vínový rub, u spirál se vrací zářivá strana.
+  - Přetočení se v letu mírně posouvá.
+- **Barvy:**
+  - sytá karmínová (sRGB 0,85/0,06/0,06), světlejší lesk (1,0/0,30/0,25) a vínový rub (0,42/0,03/0,04);
+  - okraje jako tah štětce na sucho;
+  - pás je skoro neprůhledný a ke spirálám přechází v průsvitnou lazuru;
+  - průsvitná místa jsou světlejší červená, ne šedá;
+  - spodní vrstva a dýmové nitky jsou vínově červené místo šedé.
+- Zbraně si nechávají plamenný vzhled.
+- Nový přepínač materiálu `_Cloth` zapíná vzhled látky jen pro šálu, ne pro dýmové nitky.
+
 ## [0.16.7] – 2026-11-14
 Delší prameny vlasů.
 

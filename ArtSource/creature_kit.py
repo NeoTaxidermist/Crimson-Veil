@@ -156,6 +156,63 @@ class Part:
                     f.smooth = False
         return front, back
 
+    def bay(self, x0, x1, y0, top, pier, spring, z0, z1, mat=INK, segs=12, ragged=0.0, seed=0, pointed=False):
+        """One bay of an arcade: an inverted U (two piers and the wall over an arched opening)
+        between x0 and x1, from y0 up to `top`; the opening springs at y0 + spring.
+        ragged > 0 breaks the top edge (crumbling masonry)."""
+        rnd = random.Random(seed)
+        inner0, inner1 = x0 + pier, x1 - pier
+        r = (inner1 - inner0) / 2
+        cx = (inner0 + inner1) / 2
+        out = [(x0, y0)]
+        # top edge, possibly crumbling
+        n = max(2, int((x1 - x0) / 0.35))
+        tops = []
+        for k in range(n + 1):
+            x = x0 + (x1 - x0) * k / n
+            y = top - (abs(rnd.gauss(0, ragged)) if ragged > 0 and 0 < k < n else 0.0)
+            tops.append((x, y))
+        out += tops
+        out += [(x1, y0), (inner1, y0), (inner1, y0 + spring)]
+        ys = y0 + spring
+        if pointed:
+            # Gothic arch: each half is an arc centred on the opposite springing line (radius 1.6 r).
+            R = r * 1.6
+            cr, cl = inner1 - R, inner0 + R
+            tp = math.acos(max(-1.0, min(1.0, (cx - cr) / R)))
+            half = max(2, segs // 2)
+            for k in range(1, half + 1):
+                t = tp * k / half
+                out.append((cr + R * math.cos(t), ys + R * math.sin(t)))
+            for k in range(1, half):
+                t = math.pi - tp + tp * k / half
+                out.append((cl + R * math.cos(t), ys + R * math.sin(t)))
+        else:
+            for k in range(1, segs):
+                a = math.pi * k / segs
+                out.append((cx + r * math.cos(a), ys + r * math.sin(a)))
+        out += [(inner0, y0 + spring), (inner0, y0)]
+        self.prism(out, z0, z1, mat=mat)
+        # Voussoirs: a raised ring of wedge stones around the arch.
+        ring = [(cx + (r + 0.05) * math.cos(math.pi * k / segs), y0 + spring + (r + 0.05) * math.sin(math.pi * k / segs), z0 - 0.04)
+                for k in range(segs + 1)] if not pointed else None
+        if ring:
+            self.tube(ring, min(0.08, r * 0.08), sides=5, mat=mat, cap=False, flat=0.6)
+        return out
+
+    def box(self, x0, y0, x1, y1, z0, z1, mat=INK):
+        self.prism([(x0, y0), (x1, y0), (x1, y1), (x0, y1)], z0, z1, mat=mat)
+
+    def crenellate(self, x0, x1, y, merlon=0.5, gap=0.35, h=0.45, z0=0.0, z1=0.5, mat=INK, seed=0, broken=0.2):
+        """Battlements along the top of a wall."""
+        rnd = random.Random(seed)
+        x = x0
+        while x + merlon <= x1 + 1e-4:
+            if rnd.random() > broken:
+                hh = h * (1 - 0.6 * rnd.random() * (rnd.random() < broken))
+                self.box(x, y, x + merlon, y + hh, z0, z1, mat)
+            x += merlon + gap
+
     def displace(self, amount, scale=3.0, seed=0, where=None):
         """Organic irregularity: push vertices along noise."""
         off = Vector((seed * 1.7, seed * 0.3, seed * 2.1))

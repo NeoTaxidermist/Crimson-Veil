@@ -102,6 +102,17 @@ namespace CrimsonVeil.EditorTools
                 F.Grass(new Vector3(gx, gy - 0.35f - (i % 3) * 0.15f, 0f), LevelLayer.Foreground, 100 + i, span, new Vector2(0.6f, 2.1f), Mathf.RoundToInt(40 * span / 3.4f), null, 0.07f).transform.SetParent(deco, true);
                 if (i % 4 == 1 && GroundSpan(gx + 1f, 1f, out float fy, out _))
                     F.Fern(new Vector3(gx + 1f, fy - 0.2f, 0f), LevelLayer.Foreground, 400 + i, 2.2f, 11).transform.SetParent(deco, true);
+                // Thorny brambles and dry seed-heads between the grass tufts (key art density).
+                if (i % 4 == 3 && GroundSpan(gx + 0.6f, 1f, out float by, out _))
+                    FgModel(i % 8 == 3 ? "Bramble" : "Weeds", new Vector3(gx + 0.6f, by - 0.25f, 0f), LevelLayer.Foreground, deco, 1.1f + 0.15f * (i % 3), i % 2 == 0);
+            }
+            // The same weeds and brambles behind the play plane, at the feet of walls and on ledges.
+            for (int i = 0; i < 30; i++)
+            {
+                float gx = -14f + i * 4.4f + (i % 3) * 0.7f;
+                if (!GroundSpan(gx, 1f, out float gy, out _)) continue;
+                var m = FgModel(i % 3 == 0 ? "Bramble" : "Weeds", new Vector3(gx, gy - 0.05f, 0f), LevelLayer.Playfield, deco, 0.8f + 0.1f * (i % 4), i % 2 == 1);
+                m.transform.position += new Vector3(0f, 0f, 1.3f + 0.2f * (i % 3));
             }
             // Ferns behind the play plane, at the foot of walls and ledges.
             foreach (var (x, y) in new[] { (-12f, 0f), (11f, 0f), (17.5f, 0.6f), (30f, -1.2f), (57f, 0f), (79f, 0f), (91.5f, 0f), (114f, 0f) })
@@ -121,6 +132,9 @@ namespace CrimsonVeil.EditorTools
                 F.Arch(new Vector3(x, -1f, 0f), LevelLayer.Near, 3.6f + (i % 3) * 0.6f, 4.5f + (i % 2), nearBreak[i], i).transform.SetParent(deco, true);
                 F.Rubble(new Vector3(x + 3.5f, -1f, 0f), LevelLayer.Near, 200 + i, 3.5f, 1.2f).transform.SetParent(deco, true);
                 if (i % 3 == 1) F.Column(new Vector3(x + 5.2f, -1f, 0f), LevelLayer.Near, 7f, i % 2 == 0, i).transform.SetParent(deco, true);
+                FgModel(i % 2 == 0 ? "Bramble" : "Weeds", new Vector3(x + 1.5f, -1f, 0f), LevelLayer.Near, deco, 1.3f, i % 3 == 0);
+                if (i % 4 == 2) // a chain swinging from the broken arch
+                    FgModel("Chain", new Vector3(x + 2f, 3.6f, 0f), LevelLayer.Near, deco, 1f, false);
             }
             foreach (var x in new[] { -9f, 37f, 70f, 105f })
                 F.Ruin("RuinWall", new Vector3(x, -1f, 0f), LevelLayer.Near).transform.SetParent(deco, true);
@@ -131,19 +145,28 @@ namespace CrimsonVeil.EditorTools
             F.Waterfall(new Vector3(27.5f, 14f, 0f), LevelLayer.Near, 2.4f, 16f).transform.SetParent(deco, true);
 
             // ---------------------------------------------------------------- decoration: mid
-            for (int i = 0; i < 9; i++)
-                F.Arch(new Vector3(-30f + i * 9.6f, -2f, 0f), LevelLayer.Mid, 3.75f, 5f, i == 3 ? 0.5f : 0f, i).transform.SetParent(deco, true);
+            // The two-tier aqueduct (key art) runs behind the start; a cliff with a village pours a waterfall.
+            F.Ruin("Aqueduct", new Vector3(-32f, -2f, 0f), LevelLayer.Mid).transform.SetParent(deco, true);
+            F.Ruin("CliffRuin", new Vector3(34f, -2f, 0f), LevelLayer.Mid).transform.SetParent(deco, true);
+            F.Waterfall(new Vector3(44.6f, 21f, 0f), LevelLayer.Mid, 3.2f, 23f).transform.SetParent(deco, true);
             for (int i = 0; i < 6; i++)
                 F.Arch(new Vector3(62f + i * 11f, -2f + (i % 2) * 1.5f, 0f), LevelLayer.Mid, 3.75f, 4.5f + (i % 3) * 0.5f, 0.3f + 0.15f * (i % 3), i + 1).transform.SetParent(deco, true);
-            F.Block(deco, "MidCliff", new Vector3(52f, 4f, 26f), new Vector3(14f, 22f, 6f), LevelKitMaterials.Get().inkMid, false);
-            F.Waterfall(new Vector3(44.5f, 14f, 0f), LevelLayer.Mid, 3.2f, 22f).transform.SetParent(deco, true);
+            F.Ruin("Aqueduct", new Vector3(128f, -2f, 0f), LevelLayer.Mid).transform.SetParent(deco, true);
+            for (int i = 0; i < 12; i++) // brambles and weeds along the mid ground
+                FgModel(i % 2 == 0 ? "Weeds" : "Bramble", new Vector3(-30f + i * 13f, -2f, 0f), LevelLayer.Mid, deco, 1.6f, i % 3 == 0);
 
             // ---------------------------------------------------------------- decoration: far & sky
             float[] farBreak = { 0f, 0.3f, 0f, 0f, 0.6f, 0f, 0.2f, 0f, 0f, 0.45f, 0f, 0.7f, 0f, 0.25f, 0f };
             for (int i = 0; i < 15; i++)
                 F.Arch(new Vector3(-60f + i * 13f, -12f + (i % 3) * 1.5f, 0f), LevelLayer.Far, 3.4f, 5.8f, farBreak[i], i).transform.SetParent(deco, true);
-            foreach (var (x, y) in new[] { (-22f, -12f), (40f, -10f), (86f, -12f), (130f, -11f) })
+            foreach (var (x, y) in new[] { (-22f, -12f), (130f, -11f) })
                 F.Ruin("Tower", new Vector3(x, y, 0f), LevelLayer.Far).transform.SetParent(deco, true);
+            // The castle on the horizon and a second aqueduct crossing the far valley.
+            var castle = F.Ruin("Castle", new Vector3(66f, -12f, 0f), LevelLayer.Far);
+            castle.transform.localScale = Vector3.one * 1.7f;
+            castle.transform.SetParent(deco, true);
+            F.Ruin("Aqueduct", new Vector3(-10f, -12f, 0f), LevelLayer.Far).transform.SetParent(deco, true);
+            F.Ruin("CliffRuin", new Vector3(118f, -14f, 0f), LevelLayer.Far).transform.SetParent(deco, true);
             foreach (var (x, y) in new[] { (8f, -2f), (58f, -2f), (98f, -2f) })
                 F.Ruin("Tower", new Vector3(x, y, 0f), LevelLayer.Mid).transform.SetParent(deco, true);
             foreach (var (x, y) in new[] { (-30f, -2f), (25f, -2f), (80f, -2f), (115f, -2f) })
@@ -166,6 +189,16 @@ namespace CrimsonVeil.EditorTools
             EditorBuildSettings.scenes = new[] { new EditorBuildSettingsScene(ScenePath, true) };
             AssetDatabase.SaveAssets();
             Debug.Log("[CrimsonVeil] Prototype scene built from the level kit: " + ScenePath);
+        }
+
+        /// <summary>A modelled prop (bramble, weeds, chain…) on a layer, scaled and optionally mirrored for variety.</summary>
+        static GameObject FgModel(string model, Vector3 pos, LevelLayer layer, Transform parent, float scale, bool mirror)
+        {
+            var go = F.Ruin(model, pos, layer);
+            go.transform.localScale *= scale;
+            if (mirror) go.transform.rotation = Quaternion.Euler(0f, 180f, 0f); // turned round, not negatively scaled (keeps winding)
+            go.transform.SetParent(parent, true);
+            return go;
         }
 
         static Transform Group(Transform parent, string name)

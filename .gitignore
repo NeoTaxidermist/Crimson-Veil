@@ -49,3 +49,6 @@ Thumbs.db
 # Python caches (Blender art scripts)
 __pycache__/
 *.pyc
+
+/Assets/Screenshots/
+/Assets/Screenshots.meta

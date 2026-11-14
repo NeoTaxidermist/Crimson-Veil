@@ -14,6 +14,8 @@ namespace CrimsonVeil.EditorTools
         public const string MatDir = Root + "/Materials";
 
         public Material inkFG, inkPlay, inkNear, inkMid, inkFar, inkSky, grass, banner, leaf, hero, wraith, wraithEyes;
+        /// <summary>Solid crimson for the "Crimson" slot of modelled set pieces (fallen leaves, cloth on ruins).</summary>
+        public Material crimson;
         /// <summary>Pure ink for the hero's shadow double (the creatures themselves are shaded grey: <see cref="wraith"/>).</summary>
         public Material shadowInk;
         public Material mistBand, mistLow, waterfall, shaft, moon;
@@ -56,14 +58,16 @@ namespace CrimsonVeil.EditorTools
             var maple = SpriteTexture("Maple", 128, MapleLeaf);
             var m = new LevelKitMaterials
             {
-                inkFG = Ink("InkForeground", 0.015f, 0f, 0.2f, 0f),
-                inkPlay = Ink("InkPlay", 0.03f, 0.55f, 0.35f, 0.25f),
-                inkNear = Ink("InkNear", 0.2f, 1.2f, 0.45f, 0.5f),
-                inkMid = Ink("InkMid", 0.36f, 1.2f, 0.45f, 0.45f),
-                inkFar = Ink("InkFar", 0.5f, 1.1f, 0.4f, 0.3f),
-                inkSky = Ink("InkSky", 0.62f, 0.6f, 0.3f, 0f),
+                inkFG = Ink("InkForeground", 0.025f, 0f, 0.3f, 0f),
+                // The walkable rock: dark grey stone with grain, cracks and a moonlit top edge (key art), not a black slab.
+                inkPlay = Edge(Ink("InkPlay", 0.075f, 0.55f, 0.5f, 0.55f), 0.16f),
+                inkNear = Edge(Ink("InkNear", 0.26f, 1.2f, 0.5f, 0.55f), 0.06f),
+                inkMid = Ink("InkMid", 0.46f, 1.2f, 0.45f, 0.45f),
+                inkFar = Ink("InkFar", 0.6f, 1.1f, 0.4f, 0.3f),
+                inkSky = Ink("InkSky", 0.7f, 0.6f, 0.3f, 0f),
                 grass = Wind(Sil("GrassInk", sil, new Color(0.02f, 0.02f, 0.022f), 0.4f, 0.2f), 1f, false),
                 banner = Wind(Sil("BannerCrimson", sil, new Color(0.62f, 0.015f, 0.03f), 0.3f, 0.6f), 1.6f, true),
+                crimson = Sil("RuinCrimson", sil, new Color(0.7f, 0.02f, 0.035f), 0.25f, 0.6f),
                 leaf = Clip(Wind(Sil("LeafCrimson", sil, new Color(0.78f, 0.02f, 0.035f), 0.2f, 0.7f), 0.6f, false), maple),
                 hero = Sil("HeroInk", sil, new Color(0.012f, 0.012f, 0.014f), 0.12f, 0.15f),
                 // Creatures: dark grey, modelled by the moonlight, with a pale rim so they read on any background.
@@ -126,6 +130,13 @@ namespace CrimsonVeil.EditorTools
             m.SetFloat("_Erosion", erosion);
             m.SetFloat("_FlowSpeed", flowSpeed);
             m.renderQueue = (int)RenderQueue.Transparent;
+            return m;
+        }
+
+        /// <summary>Moonlight catching the upper surfaces (cliff tops, ledges, cornices).</summary>
+        static Material Edge(Material m, float amount)
+        {
+            m.SetFloat("_EdgeLight", amount);
             return m;
         }
 

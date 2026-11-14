@@ -5,6 +5,35 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.9.0] – 2026-11-14
+Světlejší a mnohem detailnější prostředí podle key artu.
+
+### Přidáno
+- **Nové modely prostředí z Blenderu** (složka `Art/Ruins`):
+  - **Akvadukt**: dvě patra oblouků. Dolní řada má poslední oblouk zřícený, v horní jeden oblouk chybí. Má rozpadlou římsu a popínavé rostliny s lístky.
+  - **Hrad**: palác se třemi patry oken a dvěma věžemi s gotickými okny a kuželovými střechami (jedna je proražená). Dál cimbuří, zazděná okna, zřícený roh se zubatým pahýlem zdi, sutiny a břečťan.
+  - **Útes s vesnicí**: vrstevnatá skála s římsami, balvany a zářezem pro vodopád. Nahoře jsou domky, zvonice, suché stromy na hraně a visící kořeny.
+  - **Ostružiní** (trnité šlahouny), **suché byliny** (okolíky, klasy, převislá stébla), **řetěz s hákem** a **hromádka rudého spadaného listí**.
+- Všechny nové díly jsou v Level Editoru v kategorii Dekorace. Mají české názvy a dají se umístit do libovolné vrstvy.
+
+### Změněno
+- **Prostředí je světlejší.** Kámen pod nohama je tmavě šedý s texturou a nasvícenou horní hranou, ne černý. Vzdálenější vrstvy postupně světlají do mlhy.
+- **Ukázková scéna je mnohem hustší.**
+  - Ve střední vrstvě stojí akvadukt a útes s vesnicí, ze kterého padá vodopád.
+  - Na obzoru je hrad, druhý akvadukt a další útes.
+  - V popředí a u paty zdí roste ostružiní a byliny.
+  - Z rozbitých oblouků visí řetězy.
+- Šibenice má místo tyčky skutečný řetěz s hákem.
+- Rudý javor má hustší korunu a pod ní leží hromádka spadaného listí.
+- Rudé části modelů (listí) zůstávají rudé v každé vrstvě, kámen se tónuje podle hloubky.
+
+### Testy
+- Všechny modely prostředí existují. Velké dominanty (akvadukt, hrad, útes) mají přes 1 500 trojúhelníků.
+- Kámen se tónuje podle vrstvy, rudé sloty zůstávají rudé, škála odpovídá vrstvě.
+- Šibenice má modelovaný řetěz, strom má spadané listí a hustou korunu.
+- Katalog nabízí nové díly s českými popisky.
+- Vrstvy směrem dozadu světlají a hrací plocha není černá.
+
 ## [0.8.2] – 2026-11-14
 Nepřátelé v odstínech šedi.
 

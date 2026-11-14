@@ -462,7 +462,11 @@ namespace CrimsonVeil.EditorTools
             Block(root.transform, "Beam", Vector3.zero, new Vector3(3.2f, 0.3f, 0.3f), mat, false).transform.localPosition = new Vector3(1.3f, 5.4f, 0f);
             Block(root.transform, "Brace", Vector3.zero, new Vector3(0.18f, 1.4f, 0.18f), mat, false).transform.localPosition = new Vector3(0.45f, 4.75f, 0f);
             root.transform.Find("Brace").localRotation = Quaternion.Euler(0f, 0f, -45f);
-            Block(root.transform, "Chain", Vector3.zero, new Vector3(0.04f, 2f, 0.04f), mat, false).transform.localPosition = new Vector3(2.4f, 4.4f, 0f);
+            var chain = Ruin("Chain", Vector3.zero, layer);
+            chain.transform.SetParent(root.transform, false);
+            chain.transform.localPosition = new Vector3(2.4f, 5.25f, 0f);
+            chain.transform.localScale = Vector3.one;
+            Object.DestroyImmediate(chain.GetComponent<DepthLayer>()); // the gallows root carries the layer
             var b1 = Banner(Vector3.zero, layer, 0.9f, 2.8f, 3); b1.transform.SetParent(root.transform, false); b1.transform.localPosition = new Vector3(0.5f, 5.25f, -0.2f);
             var b2 = Banner(Vector3.zero, layer, 0.7f, 2.0f, 4); b2.transform.SetParent(root.transform, false); b2.transform.localPosition = new Vector3(1.6f, 5.25f, -0.2f);
             Tag(root, layer);
@@ -472,8 +476,14 @@ namespace CrimsonVeil.EditorTools
         public static GameObject CrimsonTree(Vector3 foot, LevelLayer layer = LevelLayer.Playfield, int seed = 21, float height = 11f)
         {
             var t = Prop<TreeProp>(null, "CrimsonTree", Layered(foot, layer) + new Vector3(0f, 0f, layer == LevelLayer.Playfield ? 1.8f : 0f), seed, new[] { M.ForLayer(layer), M.leaf });
-            t.height = height; t.trunkRadius = 0.55f * height / 11f; t.depth = 6; t.leavesPerTip = 16; t.leafSize = 0.3f;
+            t.height = height; t.trunkRadius = 0.55f * height / 11f; t.depth = 6; t.leavesPerTip = 26; t.leafSize = 0.32f;
             t.Rebuild();
+            // A modelled drift of fallen maple leaves under the crown.
+            var pile = Ruin("LeafPile", Vector3.zero, layer);
+            pile.transform.SetParent(t.transform, false);
+            pile.transform.localPosition = new Vector3(0.4f, 0f, -0.6f);
+            pile.transform.localScale = new Vector3(2.2f, 1.4f, 1f);
+            Object.DestroyImmediate(pile.GetComponent<DepthLayer>()); // the tree carries the layer
             // A carpet of fallen leaves around the roots.
             for (int i = 0; i < 6; i++)
             {
@@ -511,12 +521,20 @@ namespace CrimsonVeil.EditorTools
             go.transform.localScale = Vector3.one * LayerScale(layer);
             foreach (var r in go.GetComponentsInChildren<Renderer>())
             {
-                r.sharedMaterial = M.ForLayer(layer);
+                // Stone takes the layer's ink; the modelled "Crimson" slot (leaves, cloth) stays crimson.
+                var mats = r.sharedMaterials;
+                for (int i = 0; i < mats.Length; i++)
+                    mats[i] = mats[i] != null && mats[i].name.Contains("Crimson") ? M.crimson : M.ForLayer(layer);
+                r.sharedMaterials = mats;
                 r.shadowCastingMode = ShadowCastingMode.Off;
             }
             Tag(go, layer);
             return go;
         }
+
+        /// <summary>Names of all modelled set pieces in Art/Ruins (Blender), for the catalog and tests.</summary>
+        public static readonly string[] RuinModels =
+            { "RuinWall", "Tower", "RuinStairs", "Aqueduct", "Castle", "CliffRuin", "Bramble", "Weeds", "Chain", "LeafPile" };
 
         public static GameObject Fern(Vector3 pos, LevelLayer layer, int seed = 1, float size = 1.6f, int fronds = 9)
         {

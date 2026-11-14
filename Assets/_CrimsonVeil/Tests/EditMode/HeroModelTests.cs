@@ -26,7 +26,7 @@ namespace CrimsonVeil.Tests
         public void WindsweptHair_IsMadeOfSpringChains()
         {
             var chains = Hero().GetComponentsInChildren<Transform>(true).Count(t => t.name.StartsWith("Hair.") && t.name.EndsWith(".0"));
-            Assert.GreaterOrEqual(chains, 16, "a shaggy mop of locks, each swinging on its own");
+            Assert.GreaterOrEqual(chains, 8, "the mop's spikes (traced from the concept) each swing on their own");
         }
 
         [Test]

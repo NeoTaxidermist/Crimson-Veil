@@ -236,12 +236,6 @@ for z, r, t, yc in ((1.545, 0.088, 0.03, -0.012), (1.585, 0.078, 0.026, -0.03)):
 
 HEAD = W("Head")
 HF = -0.05  # the head juts forward on a long neck: the face is ahead of the chest line, as in the concept
-blob((0, 0.005 + HF, 1.725), (0.08, 0.09, 0.102), HEAD, seg=20, rings=12)  # skull
-blob((0, -0.04 + HF, 1.655), (0.052, 0.048, 0.044), HEAD)  # jaw and chin
-blob((0, -0.055 + HF, 1.64), (0.028, 0.03, 0.025), HEAD)  # chin point (strong profile)
-box((0, -0.086 + HF, 1.7), (0.016, 0.024, 0.034), HEAD, rot=Matrix.Rotation(math.radians(-25), 3, 'X'))  # nose
-for sx in (-1, 1):
-    blob((sx * 0.08, 0.01 + HF, 1.71), (0.012, 0.025, 0.03), HEAD, seg=10, rings=6)  # ears
 
 # ---------------------------------------------------------------- arms and legs
 # Measured from the concept art (side view, ~1.66 mm/px at the rig's 1.84 m to the crown). Values are half
@@ -296,7 +290,75 @@ for side, sx in (("L", 1), ("R", -1)):
          n=12)
     box(an + Vector((0, -0.075, -0.083)), (0.085, 0.27, 0.018), W(ft))  # sole
 
-# ---------------------------------------------------------------- hair: rebuilt chains, swept back by the wind
+# ---------------------------------------------------------------- head and hair, traced from the concept
+# The head and its mop of hair are built from the concept's side silhouette itself (ArtSource/ref/hero_concept.jpg):
+# the outline is traced at 3.3 mm and "inflated" into a rounded solid (the half-width grows with the distance from
+# the outline, up to HEAD_HALF), so seen from the side - as the game sees him - it is exactly the drawing. The spikes
+# of hair get spring chains (Hair.N.0..2) found at the outline's tips, so they still sway.
+import numpy as np
+REF = ROOT + r"\ArtSource\ref\hero_concept.jpg"
+K = 0.00166                       # metres per concept pixel (crown at the rig's 1.84 m)
+GROUND_ROW, AXIS_COL = 1875, 720  # concept pixel row of the ground; column of the neck's axis
+NECK_Y = HF                       # model y of that axis (the neck top leans forward)
+HEAD_HALF = 0.085                 # half-width of the head and hair (side to side)
+STEP = 2                          # trace every 2nd pixel
+
+
+def concept_mask():
+    im = bpy.data.images.load(REF, check_existing=True)
+    w, h = im.size
+    px = np.array(im.pixels[:], dtype=np.float32).reshape(h, w, 4)[::-1]
+    r, g, b = px[..., 0], px[..., 1], px[..., 2]
+    red = (r > g * 1.8) & (r > 0.25)
+    return ((0.3 * r + 0.59 * g + 0.11 * b) < 0.12) & ~red
+
+
+def to_model(row, col, x=0.0):
+    return Vector((x, NECK_Y - (col - AXIS_COL) * K, (GROUND_ROW - row) * K))
+
+
+mask = concept_mask()
+R0, R1, C0, C1 = HEAD_BOX = (705, 909, 560, 860)  # the head in the concept (the jaw ends at row ~905)
+sub = mask[R0:R1:STEP, C0:C1:STEP].copy()
+sub[(885 - R0) // STEP:, :(700 - C0) // STEP] = False  # the scarf behind the nape is not the head
+nr, nc = sub.shape
+# keep only the head: the blob connected to the middle of the skull
+seed = ((770 - R0) // STEP, (720 - C0) // STEP)
+inside = np.zeros_like(sub)
+stack = [seed]
+while stack:
+    i, j = stack.pop()
+    if 0 <= i < nr and 0 <= j < nc and sub[i, j] and not inside[i, j]:
+        inside[i, j] = True
+        stack += [(i + 1, j), (i - 1, j), (i, j + 1), (i, j - 1)]
+pad = np.pad(inside, 1)
+edge = inside & ~(pad[:-2, 1:-1] & pad[2:, 1:-1] & pad[1:-1, :-2] & pad[1:-1, 2:])
+ii, jj = np.nonzero(inside)
+ei, ej = np.nonzero(edge)
+oi, oj = [a.astype(np.float32) for a in np.nonzero(~inside)]
+# distance (m) of every inside node to the nearest outside node
+dist = np.zeros(inside.shape)
+for n in range(0, len(ii), 512):
+    a_i, a_j = ii[n:n + 512, None].astype(np.float32), jj[n:n + 512, None].astype(np.float32)
+    d2 = (a_i - oi[None]) ** 2 + (a_j - oj[None]) ** 2
+    dist[ii[n:n + 512], jj[n:n + 512]] = np.sqrt(d2.min(1)) * STEP * K
+dist[edge] = 0.0
+
+# Spring chains for the hair: the outline's tips far from the skull's middle, one per direction.
+pts_m = {(i, j): to_model(R0 + i * STEP, C0 + j * STEP) for i, j in zip(ii, jj)}
+centre = sum(pts_m.values(), Vector()) / len(pts_m)
+centre = Vector((0, centre.y + 0.01, centre.z + 0.005))
+SKULL_R = 0.1
+bins = {}
+for i, j in zip(ei, ej):
+    p = pts_m[(i, j)]
+    rel = p - centre
+    ang = math.degrees(math.atan2(rel.z, -rel.y))  # 0 = forward, 90 = up, 180 = back
+    if -150 < ang < -20:  # the face and the jaw: no hair there
+        continue
+    key = int((ang + 360) % 360 // 16)
+    if rel.length > SKULL_R + 0.03 and (key not in bins or rel.length > bins[key][1]):
+        bins[key] = (p, rel.length, ang)
 bpy.context.view_layer.objects.active = rig
 rig.select_set(True)
 _win = bpy.context.window_manager.windows[0]
@@ -304,70 +366,57 @@ _ctx = dict(window=_win, screen=_win.screen, active_object=rig, object=rig, sele
 with bpy.context.temp_override(**_ctx):
     bpy.ops.object.mode_set(mode='EDIT')
 eb = rig.data.edit_bones
-for b in [b for b in eb if b.name.startswith("Hair.")]:
-    eb.remove(b)
-head_bone = eb["Head"]
-SK = Vector((0, 0.005 + HF, 1.725))
-SKR = (0.08, 0.09, 0.102)
-# (azimuth deg: 0 = straight back, + towards his left; elevation deg on the skull; length; width; rise deg; spread)
-LOCKS = [  # a shaggy mop blown back: short jagged spikes, the longest streaming behind
-    (0, 80, 0.17, 0.06, 32, 0.0), (28, 74, 0.16, 0.055, 26, 0.3), (-28, 74, 0.16, 0.055, 26, -0.3),
-    (0, 62, 0.22, 0.065, 12, 0.0), (40, 58, 0.19, 0.055, 10, 0.5), (-40, 58, 0.19, 0.055, 10, -0.5),
-    (12, 42, 0.24, 0.06, 0, 0.15), (-12, 42, 0.24, 0.06, 0, -0.15), (30, 30, 0.2, 0.05, -8, 0.35), (-30, 30, 0.2, 0.05, -8, -0.35),
-    (0, 22, 0.17, 0.06, -22, 0.0), (65, 38, 0.15, 0.045, 0, 0.7), (-65, 38, 0.15, 0.045, 0, -0.7),
-    (95, 50, 0.13, 0.04, 8, 0.8), (-95, 50, 0.13, 0.04, 8, -0.8), (100, 25, 0.11, 0.035, -30, 0.6), (-100, 25, 0.11, 0.035, -30, -0.6),
-    (150, 66, 0.16, 0.05, 40, 0.2, 1), (-150, 66, 0.16, 0.05, 40, -0.2, 1), (172, 58, 0.15, 0.045, 30, 0.08, 1), (-172, 58, 0.15, 0.045, 30, -0.08, 1),
-    (125, 78, 0.16, 0.05, 40, 0.35), (-125, 78, 0.16, 0.05, 40, -0.35), (60, 82, 0.15, 0.05, 34, 0.4), (-60, 82, 0.15, 0.05, 34, -0.4),
-]
-HAIR_LEN = 0.62  # the concept's mop is compact: tips ~5 cm behind the skull, ~3 cm above it
-rnd = random.Random(7)
-chains = []
-for i, (az, el, length, width, rise, spread, *fwd) in enumerate(LOCKS):
-    a, e = math.radians(az), math.radians(el)
-    root = SK + Vector((math.sin(a) * math.cos(e) * SKR[0], math.cos(a) * math.cos(e) * SKR[1], math.sin(e) * SKR[2])) * 0.9
-    length *= HAIR_LEN
-    pts = [root]
-    heading = Vector((spread, -1.0 if fwd else 1.0, 0)).normalized()  # streaming back (+y), fanned; the fringe juts forward
-    pitch = math.radians(rise)
+for bn in [bn for bn in eb if bn.name.startswith("Hair.")]:
+    eb.remove(bn)
+chains = []  # (angle, root radius, tip radius, [bone names])
+for n, (key, (tip, r_tip, ang)) in enumerate(sorted(bins.items())):
+    d = (tip - centre).normalized()
+    root = centre + d * (SKULL_R * 0.8)
+    parent, names = eb["Head"], []
     for k in range(3):
-        pitch += math.radians(rnd.uniform(2, 9))  # the wind lifts the ends
-        d = Vector((heading.x * math.cos(pitch), heading.y * math.cos(pitch), math.sin(pitch)))
-        pts.append(pts[-1] + d * (length / 3) * (1.0 - 0.08 * k))
-    parent = head_bone
-    names = []
-    for k in range(3):
-        b = eb.new("Hair.%d.%d" % (i, k))
-        b.head, b.tail = pts[k], pts[k + 1]
-        b.parent = parent
-        b.use_connect = k > 0
-        parent = b
-        names.append(b.name)
-    chains.append((pts, width, names))
+        bn = eb.new("Hair.%d.%d" % (n, k))
+        bn.head, bn.tail = root.lerp(tip, k / 3), root.lerp(tip, (k + 1) / 3)
+        bn.parent, bn.use_connect = parent, k > 0
+        parent = bn
+        names.append(bn.name)
+    chains.append((ang, SKULL_R * 0.8, r_tip, names))
 with bpy.context.temp_override(**_ctx):
     bpy.ops.object.mode_set(mode='OBJECT')
 
-# A cap of hair over the skull (the locks grow out of it), slightly ragged at the back.
-blob(SK + Vector((0, 0.014, 0.014)), (0.088, 0.102, 0.102), HEAD, seg=20, rings=12)
-for pts, width, names in chains:
-    def hair_w(p, s, pts=pts, names=names):
-        best, bk = 1e9, 0
-        for k in range(3):
-            a, b = pts[k], pts[k + 1]
-            d = b - a
-            t = max(0.0, min(1.0, (p - a).dot(d) / d.length_squared))
-            dist = (a + d * t - p).length
-            if dist < best:
-                best, bk = dist, k
-        return {names[bk]: 1.0}
-    secs = []
-    for j in range(9):
-        t = j / 8
-        seg = min(int(t * 3), 2)
-        lt = t * 3 - seg
-        p = pts[seg].lerp(pts[seg + 1], lt)
-        taper = (1 - t) ** 0.8
-        secs.append((p, max(width * taper, 0.002), max(width * 0.55 * taper, 0.0015)))
-    loft(secs, hair_w, n=8)
+
+def head_hair_w(p, s):
+    rel = p - centre
+    rel.x = 0
+    r = rel.length
+    if r < SKULL_R or not chains:
+        return {"Head": 1.0}
+    ang = math.degrees(math.atan2(rel.z, -rel.y))
+    best = min(chains, key=lambda c: abs((ang - c[0] + 180) % 360 - 180))
+    if abs((ang - best[0] + 180) % 360 - 180) > 24:
+        return {"Head": 1.0}
+    t = max(0.0, min(0.999, (r - best[1]) / max(best[2] - best[1], 1e-3)))
+    w = max(0.0, min(1.0, (r - SKULL_R) / 0.03))
+    bone = best[3][int(t * 3)]
+    return {bone: 1.0} if w >= 1 else {"Head": 1 - w, bone: w}
+
+
+# The solid: a front and a back surface over the traced nodes, meeting along the outline.
+front, back = {}, {}
+for i, j in zip(ii, jj):
+    d = min(dist[i, j], HEAD_HALF)
+    hw = HEAD_HALF * math.sqrt(max(0.0, 1 - (1 - d / HEAD_HALF) ** 2))
+    p = pts_m[(i, j)]
+    if hw < 1e-4:
+        front[(i, j)] = back[(i, j)] = add_vert(p, head_hair_w(p, 0))
+    else:
+        q0, q1 = p + Vector((hw, 0, 0)), p - Vector((hw, 0, 0))
+        front[(i, j)] = add_vert(q0, head_hair_w(q0, 0))
+        back[(i, j)] = add_vert(q1, head_hair_w(q1, 0))
+for i, j in zip(ii, jj):
+    quad = [(i, j), (i, j + 1), (i + 1, j + 1), (i + 1, j)]
+    if all(q in front for q in quad):
+        faces.append(tuple(front[q] for q in quad)); fmat.append(INK)
+        faces.append(tuple(back[q] for q in reversed(quad))); fmat.append(INK)
 
 # ---------------------------------------------------------------- mesh object
 old = bpy.data.objects.get("Hero")

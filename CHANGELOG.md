@@ -5,6 +5,21 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.15.2] – 2026-11-14
+Hlava a vlasy přímo z obrysu návrhu, porovnání v póze návrhu.
+
+### Změněno
+- **Hlava a vlasy jsou postavené přímo z boční siluety návrhu.**
+  - Obrys hlavy s rozcuchanou kštící, ofinou trčící dopředu, prameny vzadu, profilem obličeje a bradou je obtažený po 3,3 mm.
+  - Obrys je „nafouknutý“ do zakulaceného tělesa (do stran až 8,5 cm), takže z boku, jak hrdinu vidí hra, odpovídá kresbě.
+  - Konce pramenů, které z obrysu trčí, mají vlastní pružné řetězy kostí (9), takže se dál houpou.
+
+### Přidáno
+- `ArtSource/ref/hero_concept.jpg`: návrh postavy, ze kterého se model staví.
+- `ArtSource/hero_fit_pose.py`: postaví kostru do pózy návrhu.
+  - Úhly páteře, krku, kyčlí, kolen, chodidel, ramen a loktů dohledá tak, aby se boční silueta modelu co nejvíc kryla s návrhem (meč a šálu z návrhu nepočítá).
+  - Výsledná póza se ukládá do `ArtSource/ref/concept_pose.json`. Silueta se teď s návrhem kryje ze 68 %.
+
 ## [0.15.1] – 2026-11-14
 Hrdina přesně podle změřeného návrhu.
 

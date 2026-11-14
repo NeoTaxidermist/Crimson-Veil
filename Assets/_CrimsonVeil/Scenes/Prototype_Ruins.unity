@@ -12407,6 +12407,10 @@ PrefabInstance:
       propertyPath: m_Mesh
       value: 
       objectReference: {fileID: 0}
+    - target: {fileID: 2462200487560333330, guid: 638896ef6864eac42b3ab170e315fda4, type: 3}
+      propertyPath: m_Mesh
+      value: 
+      objectReference: {fileID: 0}
     - target: {fileID: 3250309178363311102, guid: 638896ef6864eac42b3ab170e315fda4, type: 3}
       propertyPath: m_Mesh
       value: 
@@ -12423,6 +12427,10 @@ PrefabInstance:
       propertyPath: m_Mesh
       value: 
       objectReference: {fileID: 0}
+    - target: {fileID: 5721253653602106202, guid: 638896ef6864eac42b3ab170e315fda4, type: 3}
+      propertyPath: m_Mesh
+      value: 
+      objectReference: {fileID: 0}
     - target: {fileID: 5794817552759441668, guid: 638896ef6864eac42b3ab170e315fda4, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
@@ -12431,7 +12439,15 @@ PrefabInstance:
       propertyPath: m_Mesh
       value: 
       objectReference: {fileID: 0}
+    - target: {fileID: 6200430440399892849, guid: 638896ef6864eac42b3ab170e315fda4, type: 3}
+      propertyPath: m_Mesh
+      value: 
+      objectReference: {fileID: 0}
     - target: {fileID: 6586254293827339084, guid: 638896ef6864eac42b3ab170e315fda4, type: 3}
+      propertyPath: m_Mesh
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 7363583338141670493, guid: 638896ef6864eac42b3ab170e315fda4, type: 3}
       propertyPath: m_Mesh
       value: 
       objectReference: {fileID: 0}
@@ -12482,6 +12498,10 @@ PrefabInstance:
     - target: {fileID: 7508015897455626792, guid: 638896ef6864eac42b3ab170e315fda4, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7563027347611374007, guid: 638896ef6864eac42b3ab170e315fda4, type: 3}
+      propertyPath: m_Mesh
+      value: 
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -14657,8 +14677,45 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 3976572688350127512, guid: f5c7bcfd67ebc6448bd6af1d1e90b337, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1115129514}
   m_SourcePrefab: {fileID: 100100000, guid: f5c7bcfd67ebc6448bd6af1d1e90b337, type: 3}
+--- !u!1 &1115129513 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 3976572688350127512, guid: f5c7bcfd67ebc6448bd6af1d1e90b337, type: 3}
+  m_PrefabInstance: {fileID: 1115129512}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1115129514
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1115129513}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 474bcb49853aa07438625e644c072ee6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Runtime::UnityEngine.Rendering.Universal.UniversalAdditionalLightData
+  m_UsePipelineSettings: 1
+  m_AdditionalLightsShadowResolutionTier: 2
+  m_CustomShadowLayers: 0
+  m_LightCookieSize: {x: 1, y: 1}
+  m_LightCookieOffset: {x: 0, y: 0}
+  m_SoftShadowQuality: 0
+  m_RenderingLayersMask:
+    serializedVersion: 0
+    m_Bits: 1
+  m_ShadowRenderingLayersMask:
+    serializedVersion: 0
+    m_Bits: 1
+  m_Version: 4
+  m_LightLayerMask: 1
+  m_ShadowLayerMask: 1
+  m_RenderingLayers: 1
+  m_ShadowRenderingLayers: 1
 --- !u!1 &1120775143
 GameObject:
   m_ObjectHideFlags: 0
@@ -23102,6 +23159,10 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: 683bb02e10c43964dbafaf11babc7c15, type: 2}
+    - target: {fileID: 4901913173660511753, guid: 2f36eb3ca370baa448ff5e6ad48279c3, type: 3}
+      propertyPath: m_Mesh
+      value: 
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

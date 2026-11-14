@@ -5,6 +5,26 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.15.0] – 2026-11-14
+Nový model hrdiny podle koncept artu.
+
+### Změněno
+- **Hrdina je přemodelovaný podle obrázku:** štíhlý mladý válečník v lehké vrstvené zbroji.
+  - Atletické tělo: hluboký hrudník, úzký pas, silnější paže a nohy.
+  - Pancíř s vrstvenými pláty přes břicho a vystouplým okrajem na hrudi.
+  - Nárameníky ze tří překrývajících se plátů a chrániče předloktí s rozšířenou manžetou.
+  - Opasek s přezkou a karmínovou šerpou, jejíž cíp visí u boku.
+  - Krátké kalhoty nad koleno, chrániče kolen, vysoké boty.
+  - **Vlasy** jsou rozcuchaná kštice odvátá dozadu: 25 pramenů, každý se houpe na vlastním řetězu kostí.
+  - **Karmínová šála** je dvakrát omotaná kolem krku (šála-zbraň z ní vychází) a **karmínový lem** vede přes hruď.
+- Model má dva materiály: inkoustové tělo a karmínové akcenty. Stínový dvojník zůstává celý v inkoustu.
+- Kostra zůstala stejná (jen vlasové řetězy jsou nové), takže animace, zbraně v ruce i salto fungují beze změny.
+
+### Přidáno
+- `ArtSource/hero_build.py`: skript, který model hrdiny postaví v Blenderu na kostru a vyexportuje do hry. Úpravy postavy jdou teď zopakovat.
+- `ArtSource/hero_preview.py`: náhledy postavy z boku, zepředu a ze tří čtvrtin.
+- Testy `HeroModelTests`: kosti pro animace, vlasové řetězy, karmínové akcenty a výška.
+
 ## [0.14.3] – 2026-11-14
 Štít hoří.
 

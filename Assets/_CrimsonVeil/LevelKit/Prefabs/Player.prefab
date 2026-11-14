@@ -142,6 +142,8 @@ MonoBehaviour:
     coyoteTime: 0.1
     jumpBufferTime: 0.13
     groundStickVelocity: 2
+    airJumps: 1
+    airJumpHeight: 2.4
     dashSpeed: 19
     dashDuration: 0.16
     dashCooldown: 0.35
@@ -233,7 +235,6 @@ MonoBehaviour:
   arrowMaterial: {fileID: 2100000, guid: d5091d161340156418c7df6be668e41a, type: 2}
   arrowSpeed: 26
   hand: {fileID: 3538522687630678429}
-  handFollowSharpness: 30
   canonicalForearmAngle: -15
   runGuardAngle: -25
   whipLag: 0.16
@@ -450,6 +451,10 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: 1ecf69995d1d81b478ae955c0b349b0b, type: 2}
+    - target: {fileID: 7219867370428330978, guid: 9e1b4aec7f13a0846b4f0cff868ddf28, type: 3}
+      propertyPath: 'm_Materials.Array.data[1]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 9b71815def1108249b5247dec234e921, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

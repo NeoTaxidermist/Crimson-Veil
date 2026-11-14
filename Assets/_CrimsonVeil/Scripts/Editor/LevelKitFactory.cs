@@ -91,6 +91,15 @@ namespace CrimsonVeil.EditorTools
 
         // ================================================================== gameplay
 
+        /// <summary>The hero mesh's material slots: submesh 0 is the ink body, submesh 1 the crimson scarf and trim.</summary>
+        public static Material[] HeroMaterials(SkinnedMeshRenderer smr, Material ink, Material crimson)
+        {
+            int n = smr.sharedMesh != null ? Mathf.Max(1, smr.sharedMesh.subMeshCount) : 1;
+            var mats = new Material[n];
+            for (int i = 0; i < n; i++) mats[i] = i == 1 ? crimson : ink;
+            return mats;
+        }
+
         public static GameObject Player(Vector3 pos)
         {
             var player = new GameObject("Player");
@@ -126,7 +135,7 @@ namespace CrimsonVeil.EditorTools
                 hero.transform.SetParent(visual, false);
                 foreach (var smr in hero.GetComponentsInChildren<SkinnedMeshRenderer>())
                 {
-                    smr.sharedMaterial = M.hero;
+                    smr.sharedMaterials = HeroMaterials(smr, M.hero, M.crimson); // ink body, crimson scarf and trim
                     smr.updateWhenOffscreen = true;
                     smr.shadowCastingMode = ShadowCastingMode.Off;
                 }
@@ -303,7 +312,7 @@ namespace CrimsonVeil.EditorTools
                 model.transform.SetParent(visual, false);
                 foreach (var smr in model.GetComponentsInChildren<SkinnedMeshRenderer>())
                 {
-                    smr.sharedMaterial = M.shadowInk; // pure ink: the hero's own shadow
+                    smr.sharedMaterials = HeroMaterials(smr, M.shadowInk, M.shadowInk); // pure ink: the hero's own shadow
                     smr.updateWhenOffscreen = true;
                     smr.shadowCastingMode = ShadowCastingMode.Off;
                 }

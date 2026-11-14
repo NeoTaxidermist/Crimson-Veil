@@ -85,7 +85,7 @@ namespace CrimsonVeil.EditorTools
                 moon = Mat("Moon", unlit, new Color(3.4f, 3.4f, 3.3f)),
 
                 veil = VeilMat("Veil", 0.45f, 0.75f, 0.6f, cloth: true),
-                wisp = VeilMat("VeilSmoke", 0.9f, 0.95f, 0.5f),
+                wisp = VeilMat("VeilSmoke", 0.9f, 0.95f, 0.5f, cloth: true), // red brush filaments, not grey smoke
                 burst = Transparent(Mat("InkBurst", particles, new Color(1.1f, 0.05f, 0.06f, 1f))),
                 rope = Transparent(Mat("Rope", particles, new Color(1.1f, 0.04f, 0.05f, 1f))),
                 leafParticle = Transparent(Mat("Leaf", particles, new Color(0.9f, 0.03f, 0.05f, 1f))),
@@ -135,7 +135,7 @@ namespace CrimsonVeil.EditorTools
             // The loose scarf as in the key art: a ribbon in red ink (crimson, a lighter sheen, deep wine reverse);
             // the smoke threads keep the fire look.
             m.SetFloat("_Cloth", cloth ? 1f : 0f);
-            m.SetColor("_ClothDeep", new Color(0.42f, 0.03f, 0.04f));
+            m.SetColor("_ClothDeep", new Color(0.55f, 0.04f, 0.05f));
             m.SetColor("_ClothMid", new Color(0.85f, 0.06f, 0.06f));
             m.SetColor("_ClothLight", new Color(1f, 0.3f, 0.25f));
             m.renderQueue = (int)RenderQueue.Transparent;

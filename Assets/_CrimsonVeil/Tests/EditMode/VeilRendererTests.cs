@@ -30,27 +30,27 @@ namespace CrimsonVeil.Tests
                 if (st.curlSign == VeilRenderer.Strands[1].curlSign) sameWay++;
             }
             Assert.GreaterOrEqual(ends, 5, "the veil splits into many ends like the key art");
-            Assert.GreaterOrEqual(sameWay, ends - 1, "the ends roll the same way: one swirling flame, not separate tentacles");
+            Assert.GreaterOrEqual(sameWay, ends / 2, "most ends roll down and under into the lower whorl, the upper tongues into the upper one (the sheet)");
         }
 
         [Test]
-        public void Scarf_HasKeyArtProportions_RobustNotThinAndLong()
+        public void Scarf_HasTheSheetsProportions()
         {
             const float heroHeight = 2f; // Hero.fbx with hair
             float length = new VeilSettings().length;
             float width = VeilFormLibrary.Width(VeilForm.Flow);
-            Assert.LessOrEqual(length, heroHeight * 1.4f, "not needlessly long next to the hero");
+            Assert.That(length, Is.InRange(heroHeight * 1.4f, heroHeight * 1.8f), "as long as in its animation sheet (~3.2 m behind a 1.9 m hero)");
             Assert.GreaterOrEqual(width, heroHeight * 0.3f, "a robust band, about a third of the hero's height");
         }
 
         [Test]
-        public void LooseScarf_HasTheKeyArtsWidths()
+        public void LooseScarf_HasTheSheetsWidths()
         {
-            // measured on the key art (hero 213 px = ~1.9 m): ~0.3 m at the neck, 0.45 m a metre back, 0.55 m at the curls
-            Assert.That(VeilRenderer.ScarfWidth(0f), Is.InRange(0.25f, 0.35f), "a broad band from the neck");
-            Assert.That(VeilRenderer.ScarfWidth(1f), Is.InRange(0.4f, 0.5f));
-            Assert.That(VeilRenderer.ScarfWidth(1.8f), Is.InRange(0.5f, 0.6f), "widest where it comes apart");
-            Assert.Less(VeilRenderer.ScarfWidth(2.7f), VeilRenderer.ScarfWidth(1.8f));
+            // measured on ArtSource/ref/scarf_anim_sheet.png (hero 170 px = 1.9 m)
+            Assert.That(VeilRenderer.ScarfWidth(0f), Is.InRange(0.12f, 0.2f), "slim where it leaves the neck");
+            Assert.That(VeilRenderer.ScarfWidth(1f), Is.InRange(0.28f, 0.36f));
+            Assert.That(VeilRenderer.ScarfWidth(2f), Is.InRange(0.34f, 0.42f), "widest along the middle");
+            Assert.Less(VeilRenderer.ScarfWidth(3.2f), VeilRenderer.ScarfWidth(2f), "narrows into the whorls");
         }
 
         [Test]
@@ -64,9 +64,9 @@ namespace CrimsonVeil.Tests
                 float sh = VeilRenderer.TwistShade(tw);
                 minShade = Mathf.Min(minShade, sh); maxShade = Mathf.Max(maxShade, sh);
             }
-            Assert.Less(minW, 0.5f, "pinches where it turns edge-on");
+            Assert.Less(minW, 0.9f, "narrows a little where it turns");
             Assert.AreEqual(1f, maxShade, 1e-3f, "the bright crimson face");
-            Assert.Less(minShade, 0.5f, "and the deep wine reverse (key art)");
+            Assert.Less(minShade, 0.75f, "and the deeper wine reverse");
         }
 
         [Test]
@@ -78,6 +78,31 @@ namespace CrimsonVeil.Tests
                 Assert.AreEqual(1f, far, 1e-4f, "the key art's tongues of smoke at the back");
                 if (s > 1) Assert.AreEqual(0f, near, 1e-4f, "near the neck one band of cloth (the concept)");
             }
+        }
+
+        [Test]
+        public void LooseEnds_RollDownAndUnder_IntoTightSpirals()
+        {
+            var main = VeilRenderer.Strands[1];
+            // weapon tongues flick with curlSign; the loose ends roll the other way (key art: down and under)
+            Assert.AreEqual(-Mathf.Sign(main.curlSign), Mathf.Sign(VeilRenderer.LooseCurl(main)));
+            Assert.Greater(Mathf.Abs(VeilRenderer.LooseCurl(main)), 0.8f, "the main mass winds into a whole whorl (the sheet)");
+        }
+
+        [Test]
+        public void RestShape_IsTheSheetsLevelS_AndLoops()
+        {
+            // ArtSource/ref/scarf_anim_sheet.png: down ~0.4 m at 1.2 m, back up near the neck's line at 2 m, down again
+            for (float time = 0f; time < VeilRestShape.Duration; time += 0.2f)
+            {
+                float trough = VeilRestShape.Height(1.2f, time), crest = VeilRestShape.Height(2f, time);
+                Assert.That(trough, Is.InRange(-0.5f, -0.25f), "the first dip");
+                Assert.Greater(crest - trough, 0.15f, "an S, not a straight streamer");
+                Assert.Less(VeilRenderer.ScarfWidth(0f), 0.2f);
+            }
+            for (float d = 0f; d <= VeilRestShape.Reach; d += 0.4f)
+                Assert.AreEqual(VeilRestShape.Height(d, 0.05f), VeilRestShape.Height(d, 0.05f + VeilRestShape.Duration), 1e-4f, "a seamless loop");
+            Assert.AreEqual(12, VeilRestShape.Frames, "the sheet's 12 frames");
         }
 
         [Test]

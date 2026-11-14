@@ -5,6 +5,32 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.16.9] – 2026-11-14
+Šála podle animačního sešitu (12 snímků smyčky).
+
+### Přidáno
+- **Tvar šály ze sešitu `ArtSource/ref/scarf_anim_sheet.png`.**
+  - `ArtSource/scarf_sheet_fit.py` v každém z 12 snímků najde středovou linii šály a vygeneruje tabulku `VeilRestShape`: výšku linie každých 0,2 m od krku. Hrdina má na snímcích 170 px, tedy 1,9 m.
+  - Šála drží vodorovnou vlnu S: v 1,2 m klesne asi 0,4 m pod krk, ve 2 m se vrátí skoro do výšky krku a za 2,6 m znovu klesne. Smyčka trvá 2,4 s.
+  - Simulace ji k tomuto tvaru přitahuje. V klidu pevně, v běhu jen napůl. Při saltu, otáčení, vycítění tajemství a nebezpečí se tvar uvolní a projeví se fyzika.
+- Do `ArtSource/ref` přibyl key art (`key_art.png`) a animační sešit šály.
+
+### Změněno
+- **Délka šály je 3,2 m od krku**, plus víry na konci. Dřív byla 2,7 m.
+- **Šířky podle sešitu:**
+  - u krku úzká, 0,16 m;
+  - o metr dál 0,32 m;
+  - uprostřed 0,38 m;
+  - k vírům 0,3 m.
+- **Pás je složený z jemných podélných pramínků:** tmavší a světlejší proužky a mezi nimi lehce průsvitná místa. Přetočení pás zúží už jen mírně a rub je méně tmavý.
+- **Konec se stáčí do dvou vírů jako v sešitu:** tělo šály a spodní jazyky dolů a pod sebe, horní jazyky nahoru a dozadu. Víry jsou větší a volnější.
+- Jazyky se drží blíž u pásu, nahoru stoupají jen mírně.
+- Spirály se stáčejí dolů a pod pás a každý jazyk se zužuje až do vlasové špičky.
+- Okraje vypadají jako tah štětce na sucho.
+- Tmavé vrstvy jsou neprůhledné a vínové, nikde nevzniká šedý závoj.
+- Dýmové nitky jsou rudé tahy, ne šedý dým.
+- Posun jazyků je zrcadlově správný i při pohledu doleva.
+
 ## [0.16.8] – 2026-11-14
 Šála podle key artu.
 

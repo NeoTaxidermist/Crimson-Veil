@@ -192,7 +192,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: CrimsonVeil.Runtime::CrimsonVeil.Veil.VeilController
   settings:
     nodeCount: 32
-    length: 2.7
+    length: 3.2
     constraintIterations: 14
     damping: 0.985
     airDrag: 4.5
@@ -221,6 +221,8 @@ MonoBehaviour:
     drift: 1.4
     driftLift: 0.1
     maxRelativeFall: 2.5
+    restShapeStiffness: 120
+    restShapeDamping: 7
     hardenRate: 45
     maxSubstep: 0.008333334
     teleportDistance: 5
@@ -257,8 +259,8 @@ MonoBehaviour:
   smoothing: 3
   flutterTwist: 0.35
   curlPoints: 22
-  curlScale: 2
-  tendrilSpread: 0.75
+  curlScale: 1.6
+  tendrilSpread: 0.38
 --- !u!114 &5389534785771705521
 MonoBehaviour:
   m_ObjectHideFlags: 0

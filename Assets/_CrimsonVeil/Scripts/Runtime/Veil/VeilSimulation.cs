@@ -9,7 +9,8 @@ namespace CrimsonVeil.Veil
     {
         [Header("Cloth")]
         [Min(3)] public int nodeCount = 32;
-        public float length = 2.7f;
+        [Tooltip("The loose scarf's length (m): 3.2 m back from the neck in its animation sheet, plus the curls.")]
+        public float length = 3.2f;
         [Range(1, 20)] public int constraintIterations = 14;
         [Range(0.9f, 1f)] public float damping = 0.985f;
         public float airDrag = 4.5f;
@@ -52,6 +53,12 @@ namespace CrimsonVeil.Veil
         public float driftLift = 0.1f;
         [Tooltip("Weightless cloth: its vertical speed relative to the hero is limited to this (m/s), so jumps don't fling it up and landings don't slam it down. 0 = off.")]
         public float maxRelativeFall = 2.5f;
+
+        [Header("Rest shape (the scarf's animation sheet, VeilRestShape)")]
+        [Tooltip("Pull (1/s²) of the loose cloth towards the sheet's S-shaped centre line behind the hero.")]
+        public float restShapeStiffness = 120f;
+        [Tooltip("Damping (1/s) of the cloth's motion relative to the hero while it holds the sheet's shape.")]
+        public float restShapeDamping = 7f;
 
         [Header("Hardening (weapon forms)")]
         public float hardenRate = 45f;
@@ -124,6 +131,16 @@ namespace CrimsonVeil.Veil
         public float SwirlSpeed { get; set; }
         public float SwirlRadius { get; set; } = 0.75f;
         public float SwirlWeight { get; set; }
+        /// <summary>
+        /// 0..1: how firmly the loose cloth keeps the shape of its animation sheet (VeilRestShape): streaming back
+        /// level in an S behind the hero (towards <see cref="DriftDirection"/>). Full at rest, eased off when the hero
+        /// runs or somersaults, so the cloth's own physics shows through.
+        /// </summary>
+        public float RestShapeWeight { get; set; }
+
+        /// <summary>Horizontal reach of the sheet's S per metre of scarf (its waves take up the rest).</summary>
+        public const float RestReach = 0.88f;
+
         /// <summary>Node index after which the ribbon is not held together (-1 = whole): node i and i + 1 move apart freely.</summary>
         public int DetachedAfter { get; set; } = -1;
 
@@ -268,10 +285,23 @@ namespace CrimsonVeil.Veil
                 float drag = s.airDrag * (1f + 5f * SwirlWeight * loose);
                 Vector3 acc = new Vector3((airV.x - vel.x) * drag, (airV.y - vel.y) * drag, 0f) + g;
 
+                float shaped = RestShapeWeight * loose * (DriftDirection != 0f ? 1f : 0f);
+                if (shaped > 0.001f)
+                {
+                    // The sheet's shape: its centre line d metres back from the neck. Its S takes up length: it reaches
+                    // back ~RestReach of d (a straighter target would pull the S flat).
+                    float dAlong = f * s.length;
+                    var target = new Vector3(a.x + Mathf.Sign(DriftDirection) * dAlong * RestReach, a.y + VeilRestShape.Height(dAlong, time), p.z);
+                    Vector3 pull = (target - p) * s.restShapeStiffness;
+                    Vector3 still = new Vector3(anchorVel.x - vel.x, anchorVel.y - vel.y, 0f) * s.restShapeDamping;
+                    acc += new Vector3(pull.x + still.x, pull.y + still.y, 0f) * shaped;
+                }
+
                 if (loose > 0.001f)
                 {
                     // Its own life: a serpentine wave running down the scarf (stronger when moving),
-                    // a tail that rises like smoke and a tip that curls over.
+                    // a tail that rises like smoke and a tip that curls over (quieter while it holds the sheet's shape).
+                    float own = 1f - 0.9f * shaped;
                     Vector3 tan = Positions[Mathf.Min(i + 1, Count - 1)] - Positions[i - 1];
                     tan.z = 0f;
                     if (tan.sqrMagnitude > 1e-8f)
@@ -280,9 +310,9 @@ namespace CrimsonVeil.Veil
                         var normal = new Vector3(-tan.y, tan.x, 0f);
                         float amp = (s.undulation + s.undulationPerSpeed * bodySpeed) * f;
                         float wave = Mathf.Sin(s.undulationWaves * Mathf.PI * 2f * f - wavePhase);
-                        acc += normal * (amp * wave + s.tipCurl * Mathf.SmoothStep(0f, 1f, (f - 0.7f) / 0.3f)) * loose;
+                        acc += normal * (amp * wave + s.tipCurl * Mathf.SmoothStep(0f, 1f, (f - 0.7f) / 0.3f)) * loose * own;
                     }
-                    acc.y += s.buoyancy * f * f * loose;
+                    acc.y += s.buoyancy * f * f * loose * own;
                     acc += new Vector3(Breath.x, Breath.y, 0f) * (f * loose);
                 }
                 Vector3 next = p + (p - previous[i]) * s.damping + acc * (h * h);

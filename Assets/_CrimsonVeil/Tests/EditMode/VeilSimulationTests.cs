@@ -70,6 +70,31 @@ namespace CrimsonVeil.Tests
         }
 
         [Test]
+        public void AtRest_ScarfHoldsItsAnimationSheetsShape()
+        {
+            var sim = new VeilSimulation(new VeilSettings(), Vector3.zero)
+            {
+                DriftDirection = -1f, AmbientFlow = new Vector2(-0.75f, 0f), RestShapeWeight = 1f,
+            };
+            float err = 0f;
+            int frames = 0;
+            for (int i = 1; i <= 360; i++)
+            {
+                sim.Step(Dt, Vector3.zero);
+                if (i < 180) continue;
+                // a node ~1.2 m and one ~2 m along the scarf: the sheet's first dip and the crest after it
+                foreach (float d in new[] { 1.2f, 2f })
+                {
+                    int k = Mathf.RoundToInt(d / sim.Settings.length * (sim.Count - 1));
+                    err += Mathf.Abs(sim.Positions[k].y - VeilRestShape.Height(d, 0f));
+                    frames++;
+                }
+            }
+            Assert.Less(err / frames, 0.14f, "its centre line follows the sheet's S (mean error, m)");
+            Assert.Less(sim.Positions[sim.Count - 1].x, -2.2f, "streaming back behind the hero");
+        }
+
+        [Test]
         public void StandingStill_ScarfFloatsBehindOnItsBreeze()
         {
             // Same air as in the game (VeilController: horizontal ambient flow + level wind).

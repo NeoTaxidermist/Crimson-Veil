@@ -458,6 +458,11 @@ namespace CrimsonVeil.Veil
 
             Simulation.Hardness = Hardness;
             Simulation.DriftDirection = -Facing;
+            // The animation sheet's S-shape (VeilRestShape): held firmly at rest, eased off at a run, while turning
+            // round, in a somersault, when it senses a secret or bristles at danger.
+            float bodySpeed = Mathf.Abs(Simulation.AnchorVelocity.x);
+            Simulation.RestShapeWeight = (1f - wrap) * Mathf.Lerp(1f, 0.45f, Mathf.Clamp01(bodySpeed / 7f)) * Mathf.Abs(facingScale)
+                                         * (1f - Mathf.SmoothStep(0f, 1f, HintPull)) * (1f - 0.5f * Danger);
             // The shield's ring circles round the body on its own: once it has formed it is not tied to the hand.
             Simulation.DetachedAfter = ShapeForm == VeilForm.Shield && TransformProgress > 0.3f
                 ? Mathf.Clamp(Mathf.CeilToInt(HandFraction * (Simulation.Count - 1)) - 1, 0, Simulation.Count - 2) : -1;

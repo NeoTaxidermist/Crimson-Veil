@@ -22,9 +22,9 @@ namespace CrimsonVeil.Veil
         [Tooltip("Points in each end curl.")]
         [SerializeField, Range(6, 40)] int curlPoints = 22;
         [Tooltip("Global multiplier of the curl size.")]
-        [SerializeField] float curlScale = 2f;
+        [SerializeField] float curlScale = 1.6f;
         [Tooltip("How far (m) the tendrils fan away from the main ribbon at their ends.")]
-        [SerializeField] float tendrilSpread = 0.75f;
+        [SerializeField] float tendrilSpread = 0.38f;
 
         public struct Strand
         {
@@ -38,8 +38,9 @@ namespace CrimsonVeil.Veil
 
         public static readonly Strand[] Strands =
         {
-            // One flame-like mass, not an octopus: the layers overlap, only fan apart towards the tail, and all
-            // their ends roll the same way into one loose swirl (a vortex, not separate rings).
+            // One flame-like mass, not an octopus: the layers overlap and only fan apart towards the tail. As in
+            // the scarf's animation sheet the end winds into two whorls: the body and the lower tongues roll down
+            // and under, the upper tongues up and back (LooseCurl).
             // Dark wine under-layer, drifting a little behind.
             new Strand { start = 0f, end = 0.97f, width = 1.15f, side = 0.35f, spread = 0.8f, phase = 1.7f, alpha = 0.75f, seed = 0.31f,
                 curlLength = 0.9f, curlTurns = 0.8f, curlSign = -1f, tint = new Color(0.72f, 0.55f, 0.55f) },
@@ -48,7 +49,7 @@ namespace CrimsonVeil.Veil
                 curlLength = 1f, curlTurns = 0.95f, curlSign = -1f, tint = Color.white },
             // Layers peeling off the body like tongues of a flame.
             new Strand { start = 0.35f, end = 0.92f, width = 0.75f, side = -0.8f, spread = 1f, phase = 3.9f, alpha = 0.8f, seed = 0.67f,
-                curlLength = 0.8f, curlTurns = 0.75f, curlSign = -1f, tint = new Color(0.75f, 0.72f, 0.72f) },
+                curlLength = 0.8f, curlTurns = 0.75f, curlSign = 1f, tint = new Color(0.75f, 0.72f, 0.72f) },
             new Strand { start = 0.45f, end = 1f, width = 0.6f, side = 0.9f, spread = 1.1f, phase = 0.8f, alpha = 0.8f, seed = 0.12f,
                 curlLength = 0.85f, curlTurns = 0.9f, curlSign = -1f, tint = new Color(1.1f, 1.02f, 1.02f) },
             new Strand { start = 0.25f, end = 0.75f, width = 0.55f, side = 0.7f, spread = 0.9f, phase = 2.4f, alpha = 0.65f, seed = 0.48f,
@@ -59,7 +60,7 @@ namespace CrimsonVeil.Veil
             new Strand { start = 0.1f, end = 1f, width = 0.18f, side = 0.15f, spread = 1.2f, phase = 4.4f, alpha = 0.85f, seed = 0.21f,
                 curlLength = 0.8f, curlTurns = 0.85f, curlSign = -1f, tint = new Color(1.35f, 1.2f, 1.2f) },
             new Strand { start = 0.3f, end = 0.95f, width = 0.14f, side = -0.35f, spread = 1.3f, phase = 1.1f, alpha = 0.8f, seed = 0.92f,
-                curlLength = 0.7f, curlTurns = 0.8f, curlSign = -1f, tint = new Color(1.3f, 1.15f, 1.15f) },
+                curlLength = 0.7f, curlTurns = 0.8f, curlSign = 1f, tint = new Color(1.3f, 1.15f, 1.15f) },
             new Strand { start = 0.5f, end = 1f, width = 0.12f, side = 1.2f, spread = 1.2f, phase = 3.2f, alpha = 0.7f, seed = 0.57f,
                 curlLength = 0.6f, curlTurns = 0.7f, curlSign = -1f, tint = new Color(1.2f, 1.1f, 1.1f) },
         };
@@ -78,16 +79,16 @@ namespace CrimsonVeil.Veil
         float speedSmoothed;
 
         /// <summary>
-        /// Width (m) of the loose scarf <paramref name="d"/> metres from the neck, measured on the key art (the hero
-        /// 213 px tall there, ~9 mm per pixel): ~0.3 m where it leaves the wrap at the neck, ~0.45 m a metre behind,
-        /// ~0.55 m where it starts to come apart into its curling tongues, ~0.35 m at the end.
+        /// Width (m) of the loose scarf <paramref name="d"/> metres from the neck, measured on its animation sheet
+        /// (ArtSource/ref/scarf_anim_sheet.png, the hero 170 px = 1.9 m): slim where it leaves the wrap at the neck
+        /// (~0.16 m), ~0.32 m a metre back, ~0.38 m along the middle, ~0.3 m where it winds into its whorls.
         /// </summary>
         public static float ScarfWidth(float d)
         {
             if (d < 0f) d = 0f;
-            if (d < 1f) return Mathf.Lerp(0.3f, 0.45f, Mathf.SmoothStep(0f, 1f, d));
-            if (d < 1.8f) return Mathf.Lerp(0.45f, 0.55f, Mathf.SmoothStep(0f, 1f, (d - 1f) / 0.8f));
-            return Mathf.Lerp(0.55f, 0.35f, Mathf.SmoothStep(0f, 1f, (d - 1.8f) / 0.9f));
+            if (d < 1f) return Mathf.Lerp(0.16f, 0.32f, Mathf.SmoothStep(0f, 1f, d));
+            if (d < 2f) return Mathf.Lerp(0.32f, 0.38f, Mathf.SmoothStep(0f, 1f, d - 1f));
+            return Mathf.Lerp(0.38f, 0.3f, Mathf.SmoothStep(0f, 1f, (d - 2f) / 1.2f));
         }
 
         /// <summary>
@@ -99,15 +100,24 @@ namespace CrimsonVeil.Veil
         public static float Twist(float t, float time)
             => Mathf.PI * (-0.1f + 0.6f * t + 1.6f * t * t + 0.06f * Mathf.Sin(2.2f * Mathf.PI * t - 0.9f * time));
 
-        /// <summary>Width factor of the twisted ribbon: narrowest (0.3) where it is seen edge-on.</summary>
-        public static float TwistWidth(float twist) => Mathf.Lerp(0.3f, 1f, Mathf.Abs(Mathf.Cos(twist)));
+        /// <summary>Width factor of the twisted ribbon: a little narrower (0.72) where it turns (the sheet: no hard pinch).</summary>
+        public static float TwistWidth(float twist) => Mathf.Lerp(0.72f, 1f, Mathf.Abs(Mathf.Cos(twist)));
 
         /// <summary>Shade of the ribbon's face: 1 on the bright face, BackShade on the dark wine reverse.</summary>
         public static float TwistShade(float twist)
             => Mathf.Lerp(BackShade, 1f, Mathf.SmoothStep(0f, 1f, (Mathf.Cos(twist) + 0.25f) / 0.5f));
 
+        /// <summary>
+        /// Signed turns of a loose end's spiral. In the key art every end rolls down and under (the main mass into a
+        /// vortex below the band, the upper tongue into a hook) - the opposite sense to the weapon's flame tongues -
+        /// and winds in about LooseCurlTurns times as far as before, into a tight brush-stroke spiral.
+        /// </summary>
+        public static float LooseCurl(Strand st) => -st.curlSign * st.curlTurns * LooseCurlTurns;
+
+        public const float LooseCurlTurns = 1.05f;
+
         /// <summary>The reverse of the scarf, relative to its face (key art: deep wine under bright crimson).</summary>
-        public const float BackShade = 0.38f;
+        public const float BackShade = 0.6f;
 
         /// <summary>
         /// Opacity of strand <paramref name="s"/> of the loose scarf at veil fraction <paramref name="f"/>: near the
@@ -347,6 +357,10 @@ namespace CrimsonVeil.Veil
                         off = (BranchOffset(u, st.side, tendrilSpread * Mathf.Lerp(0.5f, 1f, vit)) + wave * 0.14f * st.spread * u) * loose;
                     else
                         off = (st.side + wave * 0.35f * st.spread * f) * w * loose * Mathf.SmoothStep(0f, 1f, f * 3f);
+                    // Mirror-true: a positive side is below the band whichever way it streams (the normal points
+                    // down for a scarf streaming left, up for one streaming right); hanging straight down, the
+                    // layers close up on the band.
+                    off *= Mathf.Lerp(1f, Mathf.Clamp(-nrm.y * 4f, -1f, 1f), loose);
                     // Hang from the neck rather than centre on it: the band and its layers spread mostly
                     // downwards, so the scarf streams level behind the hero instead of rising over the head.
                     // The hardening front (half-set cloth) flares up and swirls hardest: the ignition wave.
@@ -357,7 +371,10 @@ namespace CrimsonVeil.Veil
                         off += WeaponBraid(f, time, st.phase, w, hard) * (1f + 1.5f * front) * (1f - coiled);
 
                     Vector3 ov = nrm * off;
-                    if (ov.y > 0f) ov.y *= 0.5f;
+                    // The band itself is kept from rising over the head; the tongues further back fan as in the key
+                    // art - the upper one climbs into its hook, the lower ones stay close under the band.
+                    if (ov.y > 0f) ov.y *= branch ? Mathf.Lerp(0.85f, 0.5f, hard) : 0.5f;
+                    else if (branch) ov.y *= Mathf.Lerp(0.55f, 1f, hard);
                     c += ov + new Vector3(0f, -w * HangBelowNeck * loose * Mathf.SmoothStep(0f, 1f, f * 4f), (s - 1) * 0.012f);
 
                     // The shield's ring burns: tongues of flame lick outwards off it and its body flickers.
@@ -376,7 +393,8 @@ namespace CrimsonVeil.Veil
                     // Tendrils emerge from the ribbon: thin where they split, then full.
                     float sw = w * Mathf.Lerp(st.width, main ? 1f : 0.3f, hard) * burn;
                     if (!main) sw *= (1f + 1.6f * set) * (1f - 0.7f * lick); // bold tongues, each narrowing to its tip
-                    if (branch) sw *= Mathf.Lerp(0.25f, 0.51f, Mathf.SmoothStep(0f, 1f, u));
+                    if (branch) sw *= Mathf.Lerp(Mathf.Lerp(0.32f, 0.25f, hard), Mathf.Lerp(0.72f, 0.51f, hard), Mathf.SmoothStep(0f, 1f, u))
+                                      * Mathf.Lerp(1f - 0.45f * Mathf.SmoothStep(0.6f, 1f, u), 1f, hard); // tapers into its curl
                     float alpha = a * Mathf.Lerp(st.alpha, main ? 1f : 0.7f, hard);
                     // Loose, it is one band of cloth near the neck (the concept); the tongues of smoke come out
                     // further back (the key art), and all of them as it hardens into a weapon.
@@ -394,7 +412,10 @@ namespace CrimsonVeil.Veil
                 float looseEnd = 1f - lastHard;
                 float breathe = 1f + 0.18f * Mathf.Sin(time * (0.5f + 0.4f * st.seed) + st.phase);
                 float flicker = 1f + 0.25f * Mathf.Sin(time * (3.1f + 2f * st.seed) + st.phase * 2f);
-                float turns = Mathf.Lerp(0.2f * flicker, st.curlTurns * breathe * unroll, looseEnd);
+                // Signed turns, blended so the change is smooth: loose, the ends roll down and under into the key
+                // art's spirals (LooseCurl: against the weapon tongues' sense, and tighter); as a weapon a short
+                // tongue flicks off.
+                float turns = Mathf.Lerp(st.curlSign * 0.2f * flicker, LooseCurl(st) * breathe * unroll, looseEnd);
                 // A pointed weapon ends in its point: the core gets no flame tongue curling off the tip.
                 float tongue = main && Pointed(veil.ShapeForm) ? 0f : FlameTongueLength(main) * (1f - coiled);
                 float length = Mathf.Lerp(tongue * flicker, st.curlLength * curlScale, looseEnd) * Mathf.Lerp(0.5f, 1f, reach);
@@ -404,15 +425,15 @@ namespace CrimsonVeil.Veil
                 Vector3 flameDir = (dir * 0.35f + up * 0.9f + back * 0.35f).normalized;
                 dir = Vector3.Slerp(dir, flameDir, lastHard).normalized;
                 float heading = Mathf.Atan2(dir.y, dir.x);
-                BuildCurl(lastC, heading, st.curlSign * facing, length, turns, curlPoints, curl);
+                BuildCurl(lastC, heading, facing, length, turns, curlPoints, curl);
                 for (int k = 1; k <= curlPoints; k++)
                 {
                     float u = (float)k / curlPoints;
                     Vector3 d = curl[Mathf.Min(k + 1, curlPoints)] - curl[k - 1];
                     d.z = 0f;
                     Vector3 nrm = d.sqrMagnitude > 1e-10f ? new Vector3(-d.y, d.x, 0f).normalized : Vector3.up;
-                    // Stays broad through most of the loop, thinning only at the very tip.
-                    float sw = lastW * Mathf.Lerp(1f, 0.08f, Mathf.Pow(u, Mathf.Lerp(1.6f, 0.6f, lastHard)));
+                    // A brush stroke: it narrows steadily as it winds in, to a hairline at the centre of the spiral.
+                    float sw = lastW * Mathf.Lerp(1f, 0.03f, Mathf.Pow(u, Mathf.Lerp(0.85f, 0.6f, lastHard)));
                     float alpha = lastA * Mathf.Lerp(1f, 0.55f, u);
                     WriteVertex(baseV + (samples - 1 + k) * 2, curl[k], nrm, sw, alpha, st, lastHard, vit, lastFront, lastShade);
                 }

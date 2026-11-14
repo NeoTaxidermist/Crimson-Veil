@@ -21,8 +21,6 @@ Hrdina přesně podle změřeného návrhu.
   - **Volné kalhoty** končí ve výšce 0,66 m, **opasek** sedí níž (0,89–0,94 m) a nevyčnívá.
   - **Nárameníky** jsou menší.
 
-### Přidáno
-- `Captures/hero_vs_navrh.png`: návrh vedle siluety modelu, s obrysem modelu přes návrh a s mřížkou po 10 cm.
 
 ## [0.15.0] – 2026-11-14
 Nový model hrdiny podle koncept artu.

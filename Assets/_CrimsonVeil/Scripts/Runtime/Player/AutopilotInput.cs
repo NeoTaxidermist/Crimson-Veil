@@ -28,7 +28,7 @@ namespace CrimsonVeil.Player
         public bool JumpPressed { get { bool v = jumpPulse; jumpPulse = false; return v; } }
         public bool JumpHeld => jumpInterval > 0f && Mathf.Repeat(timer, jumpInterval) < jumpHold;
         public bool DashPressed => false;
-        public bool AttackPressed => false;
-        public VeilForm? FormRequested => null;
+        public VeilForm? CastPressed => null;
+        public bool CastHeld(VeilForm form) => false;
     }
 }

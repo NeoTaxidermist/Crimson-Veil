@@ -34,6 +34,21 @@ namespace CrimsonVeil.Player
         /// <summary>Latches the whip onto <paramref name="anchor"/> and starts swinging. False if out of reach.</summary>
         public bool TryGrapple(Vector3 anchor) => Motor.BeginSwing(anchor, GripPosition);
 
+        [Header("Scarf ledge catch")]
+        [Tooltip("The scarf catches ledges up to this height above the feet (the hands alone reach maxLedgeHeight).")]
+        [SerializeField] float scarfLedgeHeight = 3.1f;
+        [SerializeField] float scarfPullTime = 0.22f;
+        /// <summary>Set by the veil: can the scarf reach out for a ledge right now (it is cloth and strong enough)?</summary>
+        public System.Func<bool> ScarfLedgeReach;
+        /// <summary>The scarf caught a ledge out of the hands' reach and is pulling the hero up to it.</summary>
+        public event System.Action ScarfCaught;
+        public bool ScarfCatching => scarfPull > 0f;
+        /// <summary>The lip of the ledge the scarf caught.</summary>
+        public Vector3 ScarfCatchPoint { get; private set; }
+        bool scarfLedge;
+        float scarfPull;
+        Vector3 pullFrom, pullTo;
+
         public MotorLogic Motor { get; private set; }
         public IPlayerInput InputSource { get; set; }
         public Vector3 Velocity => new Vector3(Motor.Velocity.x, Motor.Velocity.y, 0f);
@@ -97,7 +112,14 @@ namespace CrimsonVeil.Player
             if (!attached && !controller.isGrounded && Motor.Velocity.y <= 2f)
             {
                 int dir = Mathf.Abs(input.moveX) > 0.1f ? (input.moveX > 0f ? 1 : -1) : Motor.Facing;
+                scarfLedge = false;
                 if (ProbeLedge(dir, out probedLedgeTop, out probedWallX)) ledge = dir;
+                // Out of the hands' reach, the scarf can still lash round the lip and haul the hero up.
+                else if (ScarfLedgeReach != null && ScarfLedgeReach() && ProbeLedge(dir, scarfLedgeHeight, out probedLedgeTop, out probedWallX))
+                {
+                    ledge = dir;
+                    scarfLedge = true;
+                }
             }
             probedLedgeSide = ledge;
 
@@ -112,7 +134,12 @@ namespace CrimsonVeil.Player
 
             Vector2 v = Motor.Tick(dt, input, contacts);
 
-            if (Motor.State == MotorState.Climbing)
+            if (Motor.State == MotorState.LedgeHang && scarfPull > 0f)
+            {
+                scarfPull = Mathf.Max(0f, scarfPull - dt);
+                SetPosition(Vector3.Lerp(pullFrom, pullTo, Mathf.SmoothStep(0f, 1f, 1f - scarfPull / scarfPullTime)));
+            }
+            else if (Motor.State == MotorState.Climbing)
             {
                 SetPosition(ClimbPath(climbStart, climbTarget, Motor.ClimbProgress));
             }
@@ -155,8 +182,12 @@ namespace CrimsonVeil.Player
         /// A grabbable ledge: wall at chest height, free space above it, a flat top within hand reach
         /// and room to stand on it.
         /// </summary>
-        public bool ProbeLedge(int dir, out float top, out float wallX)
+        public bool ProbeLedge(int dir, out float top, out float wallX) => ProbeLedge(dir, maxLedgeHeight, out top, out wallX);
+
+        /// <summary>As above, for ledges up to <paramref name="maxHeight"/> above the feet.</summary>
+        public bool ProbeLedge(int dir, float maxHeight, out float top, out float wallX)
         {
+            float maxLedgeHeight = maxHeight;
             top = wallX = 0f;
             Vector3 p = transform.position;
             Vector3 d = new Vector3(dir, 0f, 0f);
@@ -187,12 +218,27 @@ namespace CrimsonVeil.Player
         void OnLedgeGrabbed()
         {
             int dir = probedLedgeSide != 0 ? probedLedgeSide : Motor.AttachSide;
-            SetPosition(new Vector3(probedWallX - dir * (controller.radius + 0.03f), probedLedgeTop - hangDrop, planeZ));
+            var hang = new Vector3(probedWallX - dir * (controller.radius + 0.03f), probedLedgeTop - hangDrop, planeZ);
             climbTarget = new Vector3(probedWallX + dir * 0.45f, probedLedgeTop + 0.02f, planeZ);
             squash = new Vector3(0.9f, 1.12f, 0.9f);
+            if (scarfLedge)
+            {
+                // The scarf lashes round the lip and hauls the hero up to hang from it.
+                pullFrom = transform.position;
+                pullTo = hang;
+                scarfPull = scarfPullTime;
+                ScarfCatchPoint = new Vector3(probedWallX, probedLedgeTop, planeZ);
+                scarfLedge = false;
+                ScarfCaught?.Invoke();
+            }
+            else SetPosition(hang);
         }
 
-        void OnClimbStarted() => climbStart = transform.position;
+        void OnClimbStarted()
+        {
+            if (scarfPull > 0f) { SetPosition(pullTo); scarfPull = 0f; }
+            climbStart = transform.position;
+        }
 
         void OnClimbFinished()
         {

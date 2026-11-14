@@ -207,6 +207,8 @@ namespace CrimsonVeil.Veil
             float hf = veil.HandFraction;
             float time = Time.time;
             float vit = Mathf.Clamp01(veil.Vitality);
+            // Length of the loose scarf: the lesser of the hero's life and the scarf's strength.
+            float reach = Mathf.Min(vit, Mathf.Lerp(0.3f, 1f, veil.Charge.Value));
             float facing = veil.Facing;
             bool bow = veil.ShapeForm == VeilForm.Bow;
             float gripFraction = Mathf.Max(hf, VeilFormLibrary.GripFraction(veil.ShapeForm));
@@ -236,7 +238,8 @@ namespace CrimsonVeil.Veil
                 // Keeps its volume until nearly set, so the transformation reads as the scarf winding in, not thinning out.
                 widthAt[i] = Mathf.Lerp(flowW * flowProfile, formW * weaponProfile, hard * hard * hard) * Mathf.Lerp(0.45f, 1f, vit);
 
-                float fray = 1f - Mathf.SmoothStep(0f, 1f, (t - Mathf.Lerp(0.3f, 1.05f, vit)) / 0.25f);
+                // The loose scarf ends where its strength runs out: casting shortens it, it grows back.
+                float fray = 1f - Mathf.SmoothStep(0f, 1f, (t - Mathf.Lerp(0.3f, 1.05f, reach)) / 0.25f);
                 alphaAt[i] = Mathf.Lerp(fray, 1f, hard) * Mathf.Lerp(0.6f, 1f, vit) * Mathf.SmoothStep(0f, 1f, t * 12f + 0.3f);
                 // A weapon is the whole veil transformed: the band from the neck to the hand melts away as it
                 // sets (and comes back as the weapon softens), so the weapon isn't tied to the neck.
@@ -320,7 +323,7 @@ namespace CrimsonVeil.Veil
                 float turns = Mathf.Lerp(0.2f * flicker, st.curlTurns * breathe * unroll, looseEnd);
                 // A pointed weapon ends in its point: the core gets no flame tongue curling off the tip.
                 float tongue = main && Pointed(veil.ShapeForm) ? 0f : FlameTongueLength(main) * (1f - coiled);
-                float length = Mathf.Lerp(tongue * flicker, st.curlLength * curlScale, looseEnd) * Mathf.Lerp(0.5f, 1f, vit);
+                float length = Mathf.Lerp(tongue * flicker, st.curlLength * curlScale, looseEnd) * Mathf.Lerp(0.5f, 1f, reach);
                 lastTan.z = 0f;
                 Vector3 dir = lastTan.sqrMagnitude > 1e-10f ? lastTan.normalized : Vector3.down;
                 // Flames rise: a weapon's tongues bend up and back, away from the direction of the blow.

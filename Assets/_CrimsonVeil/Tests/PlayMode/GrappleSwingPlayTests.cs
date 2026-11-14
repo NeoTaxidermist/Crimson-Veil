@@ -183,10 +183,9 @@ namespace CrimsonVeil.Tests
             low.transform.position = new Vector3(-3f, 6f, 0f); // above the near floor, ahead of the hero
             low.AddComponent<GrapplePoint>();
             yield return Wait(0.3f);
-            input.form = VeilForm.Whip;
-            yield return Wait(0.9f);
-            Assert.AreEqual(veil.GrappleCandidate != null, true, "the ring above is lit as the whip's target");
-            input.attack = true;
+            Assert.IsNotNull(veil.GrappleCandidate, "the ring above is lit: the hero knows the whip and it is in reach");
+            Assert.AreEqual(VeilForm.Flow, veil.Form, "lit while the scarf is still cloth — no switching needed");
+            input.cast = VeilForm.Whip;
             yield return Wait(0.2f);
             Assert.IsTrue(controller.Motor.IsSwinging, "the attack lashed the whip round the ring");
             Assert.IsNotNull(veil.Latched);

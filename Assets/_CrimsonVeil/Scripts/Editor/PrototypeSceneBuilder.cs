@@ -70,6 +70,12 @@ namespace CrimsonVeil.EditorTools
             Place("GrapplePoint", new Vector3(-1f, 7.8f, 0f), LevelLayer.Playfield, play);
             Place("Urn", new Vector3(-11.5f, 6f, 0f), LevelLayer.Playfield, play);
             Place("GrapplePoint", new Vector3(86.5f, 7.5f, 0f), LevelLayer.Playfield, play);
+            // The hero starts with the sword only; each relic teaches a weapon just before the place that needs it.
+            Place("RelicWhip", new Vector3(-4f, 0f, 0f), LevelLayer.Playfield, play);     // the ring and the high perch right after
+            Place("RelicSpear", new Vector3(19f, 0.6f, 0f), LevelLayer.Playfield, play);  // pogo / pierce from here on
+            Place("RelicShield", new Vector3(33f, 7f, 0f), LevelLayer.Playfield, play);   // before the shadow double
+            Place("RelicBow", new Vector3(63f, 0f, 0f), LevelLayer.Playfield, play);      // the bridge's rope waits at the chasm
+            Place("Secret", new Vector3(-11.5f, 6.8f, 0f), LevelLayer.Playfield, play);   // the urn on the high perch
 
             // Bestiary: each creature where it teaches something.
             Place("ShieldMonk", new Vector3(9f, 0f, 0f), LevelLayer.Playfield, play);       // climb the ledge block to get behind him

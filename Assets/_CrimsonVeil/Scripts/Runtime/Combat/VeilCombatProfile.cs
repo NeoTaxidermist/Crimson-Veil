@@ -81,6 +81,13 @@ namespace CrimsonVeil.Combat
             return Vector3.Distance(a + ab * t, p);
         }
 
+        /// <summary>Is the attacker in front of the hero (or right on him)?</summary>
+        public static bool FromFront(int facing, float heroX, float attackerX)
+        {
+            float dx = attackerX - heroX;
+            return Mathf.Abs(dx) < 0.05f || Mathf.Sign(dx) == facing;
+        }
+
         /// <summary>A shield blocks hits coming from the side the hero is facing.</summary>
         public static bool ShieldBlocks(VeilForm form, float hardness, int facing, float heroX, float attackerX)
         {

@@ -5,6 +5,64 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.12.0] – 2026-11-14
+Zbraně se sesílají jako kouzla a šála dostala vlastní roli.
+
+### Změněno
+- **Žádné přepínání zbraní.** Každé tlačítko zbraně šálu promění, hned udeří a po chvíli ji vrátí do látky. Proměna trvá jen asi 0,12 s a slouží jako nápřah úderu.
+  - **Kombo:** další stisk během úderu nebo hned po něm (0,6 s) pokračuje bez nové proměny.
+  - **Řetězení:** jiná zbraň během úderu přelije šálu rovnou z jedné zbraně do druhé, bez návratu do látky.
+- **Ovládání:**
+  - Klávesnice: **J / LMB** meč · **K** kopí · **L** bič · **U / RMB** štít · **I** luk (dál fungují i 1–5).
+  - Ovladač: **X** meč · **Y** kopí · **RT** bič · **LT** štít · **LB** luk.
+- **Držení zbraně:**
+  - **Luk:** ťuknutí vystřelí. Držení napne tětivu a ↑/↓ míří (až 55°). Puštění vystřelí.
+  - **Štít:** ťuknutí udeří štítem. Držení drží kryt. Zvednutý těsně před úderem (0,2 s) **odrazí** útok: útočník zavrávorá a šála se nasytí. Ve vzduchu štít nad hlavou zpomalí pád jako deštník.
+  - **Kopí:** ve vzduchu s **↓** bodne pod sebe. Zásah hrdinu **odrazí** vzhůru a vrátí mu výpad ve vzduchu.
+  - **Bič:** když je kruh v dosahu, rozzáří se i ve chvíli, kdy je šála látkou. Seslání biče rovnou chytí kruh.
+
+### Přidáno
+- **Síla šály = její délka.**
+  - Kouzla ji zkracují: bič 15 %, štít 20 % (plus průběžně, když ho držíš), kopí 25 %, luk 30 %. Meč je zdarma, takže hrdina má vždycky čím bojovat.
+  - Šála po chvíli dorůstá a každý zásah ji trochu nasytí.
+  - Na krátkou šálu kouzlo nevyjde. Zbraň se nesešle a šála se jen zachvěje.
+  - Nepotřebuje to žádný HUD, délka je vidět přímo na šále.
+- **Šála chrání.** Plná šála jednou zachytí zásah místo hrdiny a roztrhne se nakrátko. Pak musí dorůst. Kdo vyplýtvá šálu na útoky, nemá čím se chránit.
+- **Šála nese:**
+  - **Plachtění:** nový stisk skoku během pádu, a držet. Spotřebovává sílu. Samotné držení skoku hrdinu nikdy nezpomalí.
+  - **Chycení vzdálenější hrany:** na římsu, na kterou ruce nedosáhnou (do 3,1 m nad nohama), se šála natáhne a hrdinu vytáhne. Stojí 10 %.
+- **Šála jako němý společník:**
+  - U **tajemství** se volná šála nakloní k němu. V Level Editoru je to neviditelná značka „Tajemství“.
+  - Když je **nepřítel** blízko, šála se nervózně naježí.
+- **Postupné odemykání.** Hrdina začíná jen s mečem. Ostatní zbraně najde jako **relikvie**: kamenný podstavec s plovoucím rudým obrysem zbraně.
+  - V Level Editoru je najdeš jako **Relikvie: Bič / Kopí / Štít / Luk**.
+  - Relikvie, které leží za hrdinou na začátku hry, se počítají jako nalezené. „Hrát odsud“ uprostřed úrovně tak nezačne bez zbraní.
+- **Ukázková scéna:**
+  - Bič leží u startu před kruhem.
+  - Kopí je na plošině u stupňů.
+  - Štít je na vysoké cestě před stínovým dvojníkem.
+  - Luk je na pláni před mostem.
+  - U urny na vysoké římse je tajemství.
+
+### Testy
+- **Logika:**
+  - síla šály: utrácení, dorůstání, pohlcení zásahu, nasycení zásahem;
+  - ceny kouzel a rychlost proměny;
+  - plachtění jen po novém stisku, deštník a odraz;
+  - tah šály k tajemství.
+- **Hrací testy:**
+  - seslání stojí sílu a ta doroste;
+  - zamčená zbraň nebo krátká šála se nesešle;
+  - kombo bez návratu do látky a přelití meče do kopí;
+  - držený luk a výstřel po puštění;
+  - odražení vs. kryt štítem a plná šála, která pohltí zásah;
+  - bod kopím dolů s odrazem;
+  - chycení římsy 6 m vysoko;
+  - relikvie (dotykem i za hrdinou);
+  - šála se nakloní k tajemství a naježí u nepřítele.
+- **Level kit:** relikvie a tajemství v katalogu, hrdina začíná jen s mečem.
+- Původní bojové testy jsou převedené na sesílání.
+
 ## [0.11.0] – 2026-11-14
 Houpání na biči.
 

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using CrimsonVeil.Veil;
 using CrimsonVeil.World;
 using UnityEditor;
 using UnityEngine;
@@ -72,6 +73,16 @@ namespace CrimsonVeil.EditorTools
                 build = () => LevelKitFactory.RopeBridge(Vector3.zero) },
             new Entry { id = "GrapplePoint", label = "Úchyt pro bič", hint = "Železný kruh s rudou stuhou. S bičem v ruce zaútoč v dosahu (7,5 m, kruh musí být nad tebou): bič se omotá a hrdina se houpe. ←/→ rozhoupat, ↑/↓ šplhat po biči, skok = pustit se a vyletět. Pokládej nad propasti nebo pod vysoké římsy.", category = Category.Hra, previewSize = new Vector2(2.6f, 4f),
                 build = () => LevelKitFactory.GrapplePoint(Vector3.zero) },
+            new Entry { id = "RelicWhip", label = "Relikvie: Bič", hint = "Kamenný podstavec s rudým obrysem biče. Hrdina se ho dotkne a naučí se bič (L / RT). Relikvie za hrdinou na začátku hry se počítají jako nalezené.", category = Category.Hra, previewSize = new Vector2(1.2f, 2.6f),
+                build = () => LevelKitFactory.Relic(VeilForm.Whip, Vector3.zero) },
+            new Entry { id = "RelicSpear", label = "Relikvie: Kopí", hint = "Naučí kopí (K / Y): výpad, probodne štít, ve vzduchu s ↓ bodne dolů a odrazí se.", category = Category.Hra, previewSize = new Vector2(1.2f, 2.6f),
+                build = () => LevelKitFactory.Relic(VeilForm.Spear, Vector3.zero) },
+            new Entry { id = "RelicShield", label = "Relikvie: Štít", hint = "Naučí štít (U / LT): ťuk = úder štítem, držet = kryt, zvednout těsně před úderem = odražení; ve vzduchu zpomalí pád.", category = Category.Hra, previewSize = new Vector2(1.2f, 2.6f),
+                build = () => LevelKitFactory.Relic(VeilForm.Shield, Vector3.zero) },
+            new Entry { id = "RelicBow", label = "Relikvie: Luk", hint = "Naučí luk (I / LB): ťuk = výstřel, držet = napnout a mířit ↑/↓, pustit = vystřelit.", category = Category.Hra, previewSize = new Vector2(1.2f, 2.6f),
+                build = () => LevelKitFactory.Relic(VeilForm.Bow, Vector3.zero) },
+            new Entry { id = "Secret", label = "Tajemství", hint = "Neviditelná značka: v okruhu 9 m se volná šála nakloní k ní. Dej ji k ukryté urně, vysoké římse nebo tajné cestě.", category = Category.Hra, previewSize = new Vector2(1f, 1f),
+                build = () => LevelKitFactory.Hint(Vector3.zero) },
             new Entry { id = "CameraZone", label = "Zóna kamery", hint = "V této oblasti kamera oddálí a zvedne pohled.", category = Category.Hra, previewSize = new Vector2(20f, 6f),
                 build = () => LevelKitFactory.CameraZone(Vector3.zero) },
 

@@ -99,18 +99,14 @@ namespace CrimsonVeil.Tests
         {
             var veil = player.GetComponent<VeilController>();
             yield return WaitSeconds(0.3f);
-            input.form = VeilForm.Sword;
-            // The transformation is a visible vortex now (~0.4 s); give it time to set fully.
-            yield return WaitSeconds(0.7f);
+            // One press: the scarf whirls into the blade (the transformation is the wind-up) and strikes at once.
+            input.cast = VeilForm.Sword;
+            yield return WaitSeconds(0.2f);
             Assert.AreEqual(VeilForm.Sword, veil.Form);
-            Assert.AreEqual(VeilFormLibrary.Hardness(VeilForm.Sword), veil.Hardness, 1e-3f);
-            input.attack = true;
-            yield return null;
-            yield return null;
-            Assert.IsTrue(veil.IsAttacking);
+            Assert.IsTrue(veil.IsAttacking, "the blow follows the transformation without a second press");
 
-            input.form = VeilForm.Sword; // toggle back to cloth
-            yield return WaitSeconds(0.7f);
+            // After the blow it lingers a moment, then melts back into cloth by itself.
+            yield return WaitSeconds(0.46f + VeilCasting.Linger + 0.9f);
             Assert.AreEqual(VeilForm.Flow, veil.Form);
             Assert.AreEqual(0f, veil.Hardness, 1e-3f);
         }

@@ -59,6 +59,9 @@ namespace CrimsonVeil.Combat
             InvulnerableTime = invulnerableTime;
         }
 
+        /// <summary>A moment of grace (e.g. after the scarf took a hit for the hero).</summary>
+        public void GrantInvulnerability(float seconds) => invulnerableTimer = Mathf.Max(invulnerableTimer, seconds);
+
         public bool TryDamage(in DamageInfo info)
         {
             if (IsDead || IsInvulnerable || info.amount <= 0f) return false;

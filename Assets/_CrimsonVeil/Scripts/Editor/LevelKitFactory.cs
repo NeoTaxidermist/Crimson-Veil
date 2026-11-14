@@ -109,6 +109,7 @@ namespace CrimsonVeil.EditorTools
             var pc = player.AddComponent<PlayerController>();
             SetRef(pc, "visualRoot", visual);
             var veil = player.AddComponent<VeilController>();
+            veil.startUnlocked = new[] { VeilForm.Sword }; // the rest are found as relics in the level
             SetRef(veil, "anchor", anchor);
             SetRef(veil, "player", pc);
             SetRef(veil, "arrowMaterial", M.rope);
@@ -391,6 +392,60 @@ namespace CrimsonVeil.EditorTools
             glint.SetActive(false);
             root.AddComponent<CrimsonVeil.World.GrapplePoint>();
             return root;
+        }
+
+        /// <summary>
+        /// Weapon relic: a worn stone plinth with the crimson outline of the weapon floating above it. The hero
+        /// touches it and the veil learns the weapon.
+        /// </summary>
+        public static GameObject Relic(VeilForm form, Vector3 foot)
+        {
+            var root = new GameObject("Relic_" + form);
+            root.transform.position = new Vector3(foot.x, foot.y, 0f);
+            var plinth = Block(root.transform, "Plinth", Vector3.zero, new Vector3(0.7f, 0.85f, 0.7f), M.inkPlay, false);
+            plinth.transform.localPosition = new Vector3(0f, 0.425f, 0.6f);
+            var cap = Block(root.transform, "Cap", Vector3.zero, new Vector3(0.9f, 0.14f, 0.9f), M.inkPlay, false);
+            cap.transform.localPosition = new Vector3(0f, 0.92f, 0.6f);
+            var foot2 = Block(root.transform, "Foot", Vector3.zero, new Vector3(0.95f, 0.16f, 0.95f), M.inkPlay, false);
+            foot2.transform.localPosition = new Vector3(0f, 0.08f, 0.6f);
+
+            // The glyph: the weapon's own outline (as the veil forms it), drawn as a glowing crimson stroke.
+            var glyph = new GameObject("Glyph");
+            glyph.transform.SetParent(root.transform, false);
+            glyph.transform.localPosition = new Vector3(0f, 1.75f, 0f);
+            var pts = VeilFormLibrary.ControlPoints(form, out int start);
+            var weapon = pts.GetRange(Mathf.Max(0, start - 1), pts.Count - Mathf.Max(0, start - 1));
+            Vector2 min = weapon[0], max = weapon[0];
+            foreach (var p in weapon) { min = Vector2.Min(min, p); max = Vector2.Max(max, p); }
+            Vector2 centre = (min + max) * 0.5f;
+            float size = Mathf.Max(max.x - min.x, max.y - min.y);
+            float scale = 1.1f / Mathf.Max(0.3f, size);
+            var line = glyph.AddComponent<LineRenderer>();
+            line.useWorldSpace = false;
+            line.positionCount = weapon.Count;
+            for (int i = 0; i < weapon.Count; i++) line.SetPosition(i, (Vector3)((weapon[i] - centre) * scale));
+            line.widthMultiplier = 0.09f;
+            line.numCornerVertices = 3;
+            line.numCapVertices = 3;
+            line.sharedMaterial = M.rope;
+            line.shadowCastingMode = ShadowCastingMode.Off;
+            Card(root.transform, "Glint", new Vector3(0f, 1.75f, 0.1f), new Vector2(2.2f, 2.2f), M.burst);
+
+            var col = root.AddComponent<SphereCollider>();
+            col.isTrigger = true;
+            col.center = new Vector3(0f, 1.2f, 0f);
+            col.radius = 0.9f;
+            root.AddComponent<VeilRelic>().form = form;
+            return root;
+        }
+
+        /// <summary>An invisible secret marker: near it, the loose scarf leans towards it.</summary>
+        public static GameObject Hint(Vector3 pos)
+        {
+            var go = new GameObject("Secret");
+            go.transform.position = new Vector3(pos.x, pos.y, 0f);
+            go.AddComponent<CrimsonVeil.World.VeilHint>();
+            return go;
         }
 
         public static GameObject RopeBridge(Vector3 hinge, float length = 11f)

@@ -137,6 +137,25 @@ namespace CrimsonVeil.Veil
 
         public event Action<VeilForm> FormChanged;
         public event Action<VeilForm> Attacked;
+        /// <summary>A cast that could not happen (weapon not unlocked yet, or the scarf too short): the cloth flinches.</summary>
+        public event Action<VeilForm> CastFizzled;
+        public event Action<VeilForm> WeaponUnlocked;
+
+        [Header("Casting")]
+        [Tooltip("Weapons the hero has from the start; the rest are unlocked by relics found in the level.")]
+        public VeilForm[] startUnlocked = { VeilForm.Sword, VeilForm.Spear, VeilForm.Whip, VeilForm.Shield, VeilForm.Bow };
+        readonly System.Collections.Generic.HashSet<VeilForm> unlocked = new System.Collections.Generic.HashSet<VeilForm>();
+
+        /// <summary>The scarf's strength — its length. Casts spend it, it grows back; full, it takes a hit for the hero.</summary>
+        public VeilCharge Charge { get; } = new VeilCharge();
+        /// <summary>True while the spear is thrust straight down from the air (it bounces the hero off what it hits).</summary>
+        public bool ThrustingDown { get; private set; }
+        /// <summary>True while the bow is held drawn.</summary>
+        public bool Drawing { get; private set; }
+        /// <summary>The shield was raised a moment ago: a blow landing now is parried.</summary>
+        public bool InParryWindow => Form == VeilForm.Shield && sinceShieldRaised < VeilCasting.ParryWindow;
+        /// <summary>The current weapon came from a cast (it melts back into cloth after the blow).</summary>
+        public bool IsCast => castMode;
 
         Vector2[] shape, fromShape, current;
         float morph = 1f;
@@ -144,9 +163,12 @@ namespace CrimsonVeil.Veil
         float facingScale = 1f;
         float attackTime = -1f;
         bool arrowFired;
-        bool aimUp;
+        float aimTilt, aimTiltTarget;
         float time;
         IPlayerInput input;
+        bool castMode;
+        VeilForm? pendingAttack, buffered;
+        float lingerTimer = -1f, sinceShieldRaised = 99f, drawTime;
 
         void Awake()
         {
@@ -157,6 +179,89 @@ namespace CrimsonVeil.Veil
             fromShape = new Vector2[Simulation.Count];
             current = new Vector2[Simulation.Count];
             facingScale = Facing;
+            foreach (var f in startUnlocked) unlocked.Add(f);
+            if (player != null)
+            {
+                player.ScarfLedgeReach = () => Form == VeilForm.Flow && Charge.CanAfford(VeilCasting.LedgeCatchCost);
+                player.ScarfCaught += () => Charge.TrySpend(VeilCasting.LedgeCatchCost);
+            }
+        }
+
+        public bool IsUnlocked(VeilForm form) => unlocked.Contains(form);
+
+        /// <summary>A relic was found: the veil learns a new weapon.</summary>
+        public void Unlock(VeilForm form)
+        {
+            if (form == VeilForm.Flow || !unlocked.Add(form)) return;
+            WeaponUnlocked?.Invoke(form);
+        }
+
+        /// <summary>Replaces the set of known weapons (level start, tests).</summary>
+        public void SetUnlocked(params VeilForm[] forms)
+        {
+            unlocked.Clear();
+            foreach (var f in forms) unlocked.Add(f);
+        }
+
+        /// <summary>
+        /// Casts a weapon like a spell: the scarf whirls into it (the transformation is the wind-up), strikes at
+        /// once, and melts back into cloth after <see cref="VeilCasting.Linger"/> unless pressed again (combo) or
+        /// another weapon is cast (the veil pours from one weapon straight into the next). Held weapons stay:
+        /// the shield guards while its button is down, the bow stays drawn. The whip, cast at a lit ring, lashes
+        /// round it. Costs scarf strength (<see cref="VeilCasting.Cost"/>).
+        /// </summary>
+        public bool Cast(VeilForm form)
+        {
+            if (form == VeilForm.Flow) return false;
+            if (!IsUnlocked(form)) { CastFizzled?.Invoke(form); return false; }
+            if (Latched != null) return false;
+            float cost = VeilCasting.Cost(form);
+
+            if (form == VeilForm.Whip && GrappleCandidate != null && player != null)
+            {
+                if (!Charge.CanAfford(cost)) { CastFizzled?.Invoke(form); return false; }
+                var ring = GrappleCandidate;
+                BeginCast(form);
+                if (player.TryGrapple(ring.transform.position))
+                {
+                    Charge.TrySpend(cost);
+                    Latched = ring;
+                    whipOpen = 1f;
+                    pendingAttack = null;
+                    WhipLatched?.Invoke(Latched);
+                    return true;
+                }
+            }
+
+            // Mid-blow: remember the press and follow up the moment this blow is spent.
+            if (attackTime >= 0f || pendingAttack.HasValue)
+            {
+                buffered = form;
+                return true;
+            }
+            if (!Charge.TrySpend(cost)) { CastFizzled?.Invoke(form); return false; }
+            if (Form != form || !castMode) BeginCast(form);
+            pendingAttack = form;
+            if (form == VeilForm.Shield) sinceShieldRaised = 0f;
+            return true;
+        }
+
+        void BeginCast(VeilForm form)
+        {
+            SetForm(form);
+            castMode = true;
+            lingerTimer = VeilCasting.Linger;
+        }
+
+        /// <summary>A blow of the veil landed: the scarf feeds on it; a downward spear bounces the hero up.</summary>
+        public void NotifyHitLanded()
+        {
+            Charge.OnHitLanded();
+            if (ThrustingDown && player != null)
+            {
+                player.Motor.Bounce();
+                ThrustingDown = false;
+            }
         }
 
         void Start()
@@ -168,6 +273,11 @@ namespace CrimsonVeil.Veil
         {
             if (form == Form) return;
             if (Latched != null && player != null) player.Motor.ReleaseSwing(); // the whip melts: the hero drops
+            castMode = false;
+            pendingAttack = null;
+            ThrustingDown = false;
+            Drawing = false;
+            aimTiltTarget = 0f;
             if (form == VeilForm.Flow && TransformProgress > 0.05f) releaseTime = 0f; // start exhaling
             Form = form;
             if (form != VeilForm.Flow)
@@ -213,13 +323,82 @@ namespace CrimsonVeil.Veil
                 WhipLatched?.Invoke(Latched);
                 return true;
             }
+            StartAttack();
+            return true;
+        }
+
+        void StartAttack()
+        {
             attackTime = 0f;
             arrowFired = false;
             lunged = false;
             whipCracked = false;
-            aimUp = input != null && input.AimY > 0.5f;
+            Drawing = false;
+            drawTime = 0f;
+            float aim = input != null ? input.AimY : 0f;
+            bool airborne = player != null && player.Motor != null && !player.IsGrounded;
+            ThrustingDown = ShapeForm == VeilForm.Spear && airborne && aim < -0.5f;
+            aimTiltTarget = ThrustingDown ? VeilCasting.DownThrustTilt
+                : ShapeForm == VeilForm.Bow ? Mathf.Clamp(aim, -1f, 1f) * VeilCasting.BowAimRange : 0f;
+            if (ThrustingDown || ShapeForm == VeilForm.Bow) aimTilt = aimTiltTarget;
             Attacked?.Invoke(Form);
-            return true;
+        }
+
+        /// <summary>Pending blows, held weapons, follow-ups, and melting back into cloth after a cast.</summary>
+        void UpdateCasting(float dt)
+        {
+            sinceShieldRaised += dt;
+            // The blow comes the moment the weapon is firm: the transformation is its wind-up.
+            if (pendingAttack.HasValue && Form == pendingAttack.Value && Hardness >= 0.5f * VeilFormLibrary.Hardness(Form))
+            {
+                pendingAttack = null;
+                bool guard = Form == VeilForm.Shield && input != null && input.CastHeld(VeilForm.Shield);
+                if (!guard) StartAttack();
+            }
+            // Bow held: the string stays drawn at full draw and the bow follows the aim; letting go looses.
+            bool bowHeld = attackTime >= 0f && ShapeForm == VeilForm.Bow && castMode && input != null
+                           && input.CastHeld(VeilForm.Bow) && drawTime < VeilCasting.MaxDraw;
+            Drawing = false;
+            if (bowHeld)
+            {
+                float hold = VeilCasting.BowHoldAt * VeilFormLibrary.AttackDuration(VeilForm.Bow);
+                if (attackTime >= hold)
+                {
+                    attackTime = hold;
+                    Drawing = true;
+                    drawTime += dt;
+                    aimTiltTarget = Mathf.Clamp(input.AimY, -1f, 1f) * VeilCasting.BowAimRange;
+                }
+            }
+            // Shield held: it guards (and drains the scarf); in the air it is held overhead and slows the fall.
+            bool shieldHeld = Form == VeilForm.Shield && castMode && input != null && input.CastHeld(VeilForm.Shield)
+                              && Charge.Drain(VeilCasting.ShieldHoldDrain, dt);
+            if (player != null && player.Motor != null)
+            {
+                var m = player.Motor;
+                m.ScarfGlide = Form == VeilForm.Flow && Charge.Value > 0.02f;
+                m.Umbrella = shieldHeld && !player.IsGrounded;
+                if (m.IsGliding && m.GlideTime <= 0f && Form == VeilForm.Flow) Charge.Drain(VeilCasting.GlideDrain, dt);
+            }
+            // A press during a blow follows it up as soon as it is spent (combo, or pour into another weapon).
+            if (buffered.HasValue && attackTime < 0f && !pendingAttack.HasValue)
+            {
+                var next = buffered.Value;
+                buffered = null;
+                Cast(next);
+            }
+            // A cast weapon lingers for a follow-up, then melts back into cloth.
+            if (castMode && Form != VeilForm.Flow)
+            {
+                if (attackTime >= 0f || pendingAttack.HasValue || shieldHeld || Drawing || Latched != null) lingerTimer = VeilCasting.Linger;
+                else
+                {
+                    lingerTimer -= dt;
+                    if (lingerTimer <= 0f) SetForm(VeilForm.Flow);
+                }
+            }
+            aimTilt = Mathf.MoveTowardsAngle(aimTilt, aimTiltTarget, 480f * dt);
+            Charge.Tick(dt);
         }
 
         void Update() => Tick(Time.deltaTime);
@@ -232,26 +411,34 @@ namespace CrimsonVeil.Veil
             UpdateGrapple();
             if (input != null)
             {
-                var request = input.FormRequested;
-                if (request.HasValue) ToggleForm(request.Value);
-                if (input.AttackPressed) Attack();
+                var cast = input.CastPressed;
+                if (cast.HasValue) Cast(cast.Value);
             }
 
             float goal = Form == VeilForm.Flow ? 0f : 1f;
-            TransformProgress = Mathf.SmoothDamp(TransformProgress, goal, ref progressVel, transformTime * 0.4f, Mathf.Infinity, dt);
+            // A cast snaps into shape (the transformation is the blow's wind-up); melting back is unhurried.
+            float tTime = castMode && Form != VeilForm.Flow ? VeilCasting.CastTransformTime : transformTime;
+            float mTime = castMode ? VeilCasting.CastMorphTime : morphTime;
+            TransformProgress = Mathf.SmoothDamp(TransformProgress, goal, ref progressVel, tTime * 0.4f, Mathf.Infinity, dt);
             if (Mathf.Abs(TransformProgress - goal) < 0.002f) { TransformProgress = goal; progressVel = 0f; }
             Hardness = VeilFormLibrary.Hardness(ShapeForm) * TransformProgress;
-            morph = Mathf.Min(1f, morph + dt / Mathf.Max(0.01f, morphTime));
+            morph = Mathf.Min(1f, morph + dt / Mathf.Max(0.01f, mTime));
+            UpdateCasting(dt);
 
             int facing = Facing;
             facingScale = Mathf.MoveTowards(facingScale, facing, dt * turnSpeed);
             Vector3 a = anchor.position;
 
             // Releasing a weapon, the flame exhales back over the shoulder instead of pooling at the feet.
-            Simulation.Wind = wind;
+            UpdateSenses(dt, a);
+            // Danger near: the scarf bristles — quick, nervous gusts.
+            Simulation.Wind = wind + new Vector2(Mathf.Sin(time * 23f), Mathf.Sin(time * 31f + 1.3f)) * (2.4f * Danger);
             releaseTime += dt;
             Simulation.Breath = Form == VeilForm.Flow ? ReleaseBreath(releaseTime / ReleaseBreathDuration, facing) : Vector2.zero;
-            Simulation.AmbientFlow = new Vector2(-facing, 0f) * idleDriftSpeed; // horizontal: the veil streams behind, it doesn't rise
+            // Horizontal: the veil streams behind, it doesn't rise — unless it senses a secret and leans towards it.
+            Vector2 flow = new Vector2(-facing, 0f) * idleDriftSpeed;
+            if (Form == VeilForm.Flow && HintPull > 0f) flow = Vector2.Lerp(flow, HintDirection * idleDriftSpeed * 2.4f, Mathf.SmoothStep(0f, 1f, HintPull));
+            Simulation.AmbientFlow = flow;
 
             UpdateNodeHardness();
             if (TransformProgress > 0f && ShapeForm != VeilForm.Flow) UpdateTargets(a, dt);
@@ -264,12 +451,62 @@ namespace CrimsonVeil.Veil
             UpdateWhipRope();
         }
 
+        /// <summary>0..1: how close a living enemy is (the scarf bristles).</summary>
+        public float Danger { get; private set; }
+        /// <summary>0..1 pull of a secret nearby, and the direction to it (the loose scarf leans that way).</summary>
+        public float HintPull { get; private set; }
+        public Vector2 HintDirection { get; private set; }
+        const float DangerRadius = 6f;
+        float senseTimer, dangerTarget;
+        bool relicsChecked;
+        readonly Collider[] senseBuffer = new Collider[24];
+
+        /// <summary>The scarf as a mute companion: it leans towards secrets and bristles when enemies are near.</summary>
+        void UpdateSenses(float dt, Vector3 a)
+        {
+            // Relics already behind the hero when play starts (play from here, a checkpoint) are his.
+            if (!relicsChecked && time > 0.05f)
+            {
+                relicsChecked = true;
+                foreach (var r in VeilRelic.All)
+                    if (r != null && !r.Collected && r.transform.position.x < transform.position.x - 1f) r.Collect(this, quiet: true);
+            }
+            HintDirection = CrimsonVeil.World.VeilHint.Pull(a, out float pull);
+            HintPull = pull;
+
+            senseTimer -= dt;
+            if (senseTimer <= 0f)
+            {
+                senseTimer = 0.25f;
+                dangerTarget = 0f;
+                int count = Physics.OverlapSphereNonAlloc(a, DangerRadius, senseBuffer, ~0, QueryTriggerInteraction.Collide);
+                for (int i = 0; i < count; i++)
+                {
+                    var c = senseBuffer[i];
+                    if (c == null || c.transform.IsChildOf(transform)) continue;
+                    bool alive = false;
+                    var creature = c.GetComponentInParent<CrimsonVeil.Combat.CreatureBase>();
+                    if (creature != null) alive = !creature.IsDead;
+                    else
+                    {
+                        var enemy = c.GetComponentInParent<CrimsonVeil.Combat.Enemy>();
+                        alive = enemy != null && enemy.Health != null && !enemy.Health.IsDead;
+                    }
+                    if (!alive) continue;
+                    float d = Vector2.Distance(c.ClosestPoint(a), a);
+                    dangerTarget = Mathf.Max(dangerTarget, 1f - d / DangerRadius);
+                }
+            }
+            Danger = Mathf.MoveTowards(Danger, dangerTarget, dt * 3f);
+        }
+
         /// <summary>Lights the ring the whip would catch; lets go of the ring when the swing has ended.</summary>
         void UpdateGrapple()
         {
             if (Latched != null && (player == null || !player.Motor.IsSwinging)) Latched = null;
             CrimsonVeil.World.GrapplePoint candidate = null;
-            if (Latched == null && player != null && Form == VeilForm.Whip && Hardness >= 0.5f * VeilFormLibrary.Hardness(VeilForm.Whip))
+            // Any ring in reach lights up once the hero knows the whip and has the strength to cast it.
+            if (Latched == null && player != null && IsUnlocked(VeilForm.Whip) && Charge.CanAfford(VeilCasting.Cost(VeilForm.Whip)))
                 candidate = CrimsonVeil.World.GrapplePoint.FindBest(player.GripPosition, Facing, ~0);
             if (candidate != GrappleCandidate)
             {
@@ -282,7 +519,8 @@ namespace CrimsonVeil.Veil
         /// <summary>A taut crimson core from the hand to the ring while swinging (the cloth follows it).</summary>
         void UpdateWhipRope()
         {
-            if (Latched == null)
+            bool catching = player != null && player.ScarfCatching;
+            if (Latched == null && !catching)
             {
                 if (whipRope != null) whipRope.enabled = false;
                 return;
@@ -300,7 +538,8 @@ namespace CrimsonVeil.Veil
             }
             whipRope.enabled = true;
             whipRope.SetPosition(0, hand != null ? hand.position : player.GripPosition);
-            whipRope.SetPosition(1, Latched.transform.position);
+            // Swinging: to the ring. Catching a ledge: a strand of the scarf to the lip it lashed round.
+            whipRope.SetPosition(1, Latched != null ? Latched.transform.position : player.ScarfCatchPoint);
         }
 
         /// <summary>A thin crimson string between the bow tips, pulled back by the drawing hand.</summary>
@@ -373,6 +612,8 @@ namespace CrimsonVeil.Veil
                 {
                     attackTime = -1f;
                     t = -1f;
+                    ThrustingDown = false;
+                    aimTiltTarget = 0f;
                 }
                 AttackProgress = t;
             }
@@ -432,6 +673,10 @@ namespace CrimsonVeil.Veil
                 rest = VeilWeaponPose.Apply(ShapeForm, rest, weapon, t, armDriven);
                 rest += weapon ? handDelta : handDelta * (HandFraction > 0f ? f / HandFraction : 1f);
                 if (weapon && armDriven && !whip) rest = VeilWeaponPose.Rotate(rest, grip, forearmTurn);
+                // Aim: the bow follows up/down, the spear turns straight down for a thrust from the air.
+                if (weapon && !whip && Mathf.Abs(aimTilt) > 0.01f) rest = VeilWeaponPose.Rotate(rest, grip, aimTilt);
+                // A downward thrust is driven straight under the hero (both hands on the shaft at the belly).
+                if (weapon && ThrustingDown) rest += new Vector2(-grip.x, -0.25f) * Mathf.Clamp01(Mathf.Abs(aimTilt) / 80f);
                 restBuf[i] = rest;
             }
             if (Latched != null)
@@ -533,8 +778,9 @@ namespace CrimsonVeil.Veil
         {
             var hand = VeilFormLibrary.Hand;
             var pos = a + new Vector3((hand.x + 0.35f) * facing, hand.y, 0f);
-            // Hold up while attacking to loose the arrow at 50° — needed to reach high ropes.
-            Vector3 dir = aimUp ? new Vector3(facing * 0.64f, 0.77f, 0f) : new Vector3(facing, 0.06f, 0f);
+            // Aim with up/down (held or at the moment of the cast): up to 55° — needed to reach high ropes.
+            float aim = Mathf.Abs(aimTiltTarget) > 1f ? aimTiltTarget * Mathf.Deg2Rad : 0.06f;
+            Vector3 dir = new Vector3(facing * Mathf.Cos(aim), Mathf.Sin(aim), 0f);
             VeilArrow.Spawn(pos, dir.normalized * arrowSpeed, arrowMaterial, gameObject);
         }
 

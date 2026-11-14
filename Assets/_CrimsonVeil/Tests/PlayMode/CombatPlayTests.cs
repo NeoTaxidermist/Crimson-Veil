@@ -72,12 +72,12 @@ namespace CrimsonVeil.Tests
             return go.AddComponent<Enemy>();
         }
 
-        IEnumerator HardenInto(VeilForm form)
+        /// <summary>Casts a weapon (one press: the veil forms it and strikes at once).</summary>
+        IEnumerator CastAfterSettling(VeilForm form)
         {
             yield return Wait(0.3f);
-            input.form = form;
-            yield return Wait(0.35f);
-            Assert.AreEqual(form, veil.Form);
+            input.cast = form;
+            yield return null;
         }
 
         [UnityTest]
@@ -89,9 +89,8 @@ namespace CrimsonVeil.Tests
             box.isTrigger = true; box.center = new Vector3(0f, 0.4f, 0f); box.size = new Vector3(0.6f, 0.8f, 0.6f);
             var breakable = urn.AddComponent<Breakable>();
 
-            yield return HardenInto(VeilForm.Sword);
-            input.attack = true;
-            yield return Wait(0.4f);
+            yield return CastAfterSettling(VeilForm.Sword);
+            yield return Wait(0.5f);
             Assert.IsTrue(breakable == null || breakable.IsBroken, "the sword swing should shatter the urn");
         }
 
@@ -100,10 +99,10 @@ namespace CrimsonVeil.Tests
         {
             var enemy = SpawnEnemy(2.2f);
             enemy.Brain.Settings.windupTime = 10f; // keep it from fighting back during the test
-            yield return HardenInto(VeilForm.Spear);
+            yield return Wait(0.3f);
             float before = enemy.Health.Current;
-            input.attack = true;
-            yield return Wait(0.45f);
+            input.cast = VeilForm.Spear;
+            yield return Wait(0.6f);
             Assert.AreEqual(before - VeilCombatProfile.Damage(VeilForm.Spear), enemy.Health.Current, 1e-3f, "exactly one hit per thrust");
             Assert.Greater(enemy.transform.position.x, 2.2f, "knocked back away from the hero");
         }
@@ -111,6 +110,7 @@ namespace CrimsonVeil.Tests
         [UnityTest]
         public IEnumerator Enemy_TelegraphsThenWoundsHero()
         {
+            veil.Charge.Drain(100f, 1f); // a spent scarf cannot take the blow for the hero
             var enemy = SpawnEnemy(1.4f);
             yield return Wait(0.2f);
             Assert.AreEqual(EnemyState.Windup, enemy.Brain.State, "in range: it raises its arms first");
@@ -122,7 +122,10 @@ namespace CrimsonVeil.Tests
         [UnityTest]
         public IEnumerator Shield_BlocksAndStaggers()
         {
-            yield return HardenInto(VeilForm.Shield);
+            input.held = VeilForm.Shield; // hold the shield up
+            yield return CastAfterSettling(VeilForm.Shield);
+            yield return Wait(0.35f);
+            Assert.AreEqual(VeilForm.Shield, veil.Form, "held, the shield stays");
             var enemy = SpawnEnemy(1.4f);
             yield return Wait(enemy.Brain.Settings.windupTime + 0.4f);
             Assert.AreEqual(health.Model.Max, health.Model.Current, "shield facing the wraith takes no damage");
@@ -141,9 +144,8 @@ namespace CrimsonVeil.Tests
             var rope = Track(new GameObject("Rope")).AddComponent<CuttableRope>();
             rope.Configure(a, b, hinge, null);
 
-            yield return HardenInto(VeilForm.Bow);
             input.aimY = 1f;
-            input.attack = true;
+            yield return CastAfterSettling(VeilForm.Bow);
             yield return Wait(1.2f);
             Assert.IsTrue(rope.IsCut, "an upward arrow should reach the high rope");
             Assert.IsTrue(hinge.Released);

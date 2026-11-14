@@ -125,6 +125,22 @@ namespace CrimsonVeil.Player
         public float GlideTime { get; set; }
         /// <summary>True while the hero floats down holding jump.</summary>
         public bool IsGliding { get; private set; }
+        /// <summary>The scarf can carry the hero: press jump again while falling and hold it to glide.</summary>
+        public bool ScarfGlide { get; set; }
+        /// <summary>The shield is held overhead: the fall is slowed without holding jump.</summary>
+        public bool Umbrella { get; set; }
+        bool glideLatched;
+
+        /// <summary>Bounce up off something struck below (the spear's downward thrust).</summary>
+        public void Bounce(float factor = 0.95f)
+        {
+            Velocity.y = Settings.JumpVelocity * factor;
+            IsJumping = true;
+            IsGrounded = false;
+            airDashAvailable = true;
+            glideLatched = false;
+            Jumped?.Invoke();
+        }
         /// <summary>Fall speed (m/s) while gliding.</summary>
         public const float GlideFallSpeed = 2.2f;
         /// <summary>Side of the wall/ledge the hero is attached to.</summary>
@@ -528,11 +544,16 @@ namespace CrimsonVeil.Player
 
                 Velocity.y -= s.Gravity * mult * dt;
                 if (Velocity.y < -s.maxFallSpeed) Velocity.y = -s.maxFallSpeed;
-                // Gliding on a captured kite's cloth: holding jump while falling floats the hero down.
-                IsGliding = GlideTime > 0f && input.jumpHeld && Velocity.y < 0f && State == MotorState.Normal;
+                // Gliding: on a captured kite's cloth holding jump while falling floats the hero down; the scarf
+                // does it too, on a fresh press of jump in the air (so a held jump never turns floaty by itself);
+                // a shield held overhead slows the fall like an umbrella.
+                if (input.jumpPressed && Velocity.y < 0f) glideLatched = true;
+                if (!input.jumpHeld) glideLatched = false;
+                bool held = input.jumpHeld && Velocity.y < 0f && State == MotorState.Normal;
+                IsGliding = (held && (GlideTime > 0f || (ScarfGlide && glideLatched))) || (Umbrella && Velocity.y < 0f && State == MotorState.Normal);
                 if (IsGliding)
                 {
-                    GlideTime = Mathf.Max(0f, GlideTime - dt);
+                    if (GlideTime > 0f && held) GlideTime = Mathf.Max(0f, GlideTime - dt);
                     if (Velocity.y < -GlideFallSpeed) Velocity.y = Mathf.MoveTowards(Velocity.y, -GlideFallSpeed, s.Gravity * 3f * dt);
                 }
                 if (State == MotorState.WallSlide && Velocity.y < -s.wallSlideSpeed) Velocity.y = -s.wallSlideSpeed;

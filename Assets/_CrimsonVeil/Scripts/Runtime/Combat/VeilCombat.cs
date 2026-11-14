@@ -72,6 +72,7 @@ namespace CrimsonVeil.Combat
                     };
                     if (target.ReceiveHit(info))
                     {
+                        veil.NotifyHitLanded(); // feeds the scarf; a downward spear bounces the hero up
                         Hit?.Invoke(target, info);
                         CombatFx.HitStop(form == VeilForm.Spear || form == VeilForm.Shield ? 0.08f : 0.055f);
                         CombatFx.Shake(form == VeilForm.Shield ? 0.45f : 0.3f);

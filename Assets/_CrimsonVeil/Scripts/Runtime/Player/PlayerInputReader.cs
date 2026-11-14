@@ -5,13 +5,15 @@ using UnityEngine.InputSystem;
 namespace CrimsonVeil.Player
 {
     /// <summary>
-    /// Keyboard + gamepad bindings built in code (no asset wiring needed).
-    /// Keyboard: A/D or arrows move, Space jump, Shift dash, J / LMB attack, 1-5 veil forms.
-    /// Gamepad: stick move, South jump, East/RB dash, West attack, D-pad + LB veil forms.
+    /// Keyboard + gamepad bindings built in code (no asset wiring needed). Every weapon button casts its
+    /// weapon: the veil forms it, strikes and melts back into cloth.
+    /// Keyboard: A/D or arrows move, W/S aim, Space jump, Shift dash;
+    ///   J / LMB sword · K spear · L whip · U shield (hold) · I bow (hold to draw) — or 1-5.
+    /// Gamepad: stick move/aim, South jump, East/RB dash; West sword · North spear · RT whip · LT shield · LB bow (D-pad too).
     /// </summary>
     public sealed class PlayerInputReader : MonoBehaviour, IPlayerInput
     {
-        InputAction move, aim, jump, dash, attack;
+        InputAction move, aim, jump, dash;
         InputAction whip, sword, spear, shield, bow;
 
         void Awake()
@@ -28,13 +30,12 @@ namespace CrimsonVeil.Player
 
             jump = Button("Jump", "<Keyboard>/space", "<Gamepad>/buttonSouth");
             dash = Button("Dash", "<Keyboard>/leftShift", "<Gamepad>/buttonEast", "<Gamepad>/rightShoulder");
-            attack = Button("Attack", "<Keyboard>/j", "<Mouse>/leftButton", "<Gamepad>/buttonWest");
 
-            whip = Button("Whip", "<Keyboard>/1", "<Gamepad>/dpad/left");
-            sword = Button("Sword", "<Keyboard>/2", "<Gamepad>/dpad/up");
-            spear = Button("Spear", "<Keyboard>/3", "<Gamepad>/dpad/right");
-            shield = Button("Shield", "<Keyboard>/4", "<Gamepad>/dpad/down");
-            bow = Button("Bow", "<Keyboard>/5", "<Gamepad>/leftShoulder");
+            sword = Button("Sword", "<Keyboard>/j", "<Mouse>/leftButton", "<Keyboard>/2", "<Gamepad>/buttonWest", "<Gamepad>/dpad/up");
+            spear = Button("Spear", "<Keyboard>/k", "<Keyboard>/3", "<Gamepad>/buttonNorth", "<Gamepad>/dpad/right");
+            whip = Button("Whip", "<Keyboard>/l", "<Keyboard>/1", "<Gamepad>/rightTrigger", "<Gamepad>/dpad/left");
+            shield = Button("Shield", "<Keyboard>/u", "<Mouse>/rightButton", "<Keyboard>/4", "<Gamepad>/leftTrigger", "<Gamepad>/dpad/down");
+            bow = Button("Bow", "<Keyboard>/i", "<Keyboard>/5", "<Gamepad>/leftShoulder");
         }
 
         static InputAction Button(string name, params string[] bindings)
@@ -44,7 +45,7 @@ namespace CrimsonVeil.Player
             return action;
         }
 
-        InputAction[] All => new[] { move, aim, jump, dash, attack, whip, sword, spear, shield, bow };
+        InputAction[] All => new[] { move, aim, jump, dash, whip, sword, spear, shield, bow };
 
         void OnEnable() { foreach (var a in All) a.Enable(); }
         void OnDisable() { foreach (var a in All) a.Disable(); }
@@ -55,19 +56,30 @@ namespace CrimsonVeil.Player
         public bool JumpPressed => jump.WasPressedThisFrame();
         public bool JumpHeld => jump.IsPressed();
         public bool DashPressed => dash.WasPressedThisFrame();
-        public bool AttackPressed => attack.WasPressedThisFrame();
 
-        public VeilForm? FormRequested
+        InputAction For(VeilForm form)
+        {
+            switch (form)
+            {
+                case VeilForm.Whip: return whip;
+                case VeilForm.Sword: return sword;
+                case VeilForm.Spear: return spear;
+                case VeilForm.Shield: return shield;
+                case VeilForm.Bow: return bow;
+                default: return null;
+            }
+        }
+
+        public VeilForm? CastPressed
         {
             get
             {
-                if (whip.WasPressedThisFrame()) return VeilForm.Whip;
-                if (sword.WasPressedThisFrame()) return VeilForm.Sword;
-                if (spear.WasPressedThisFrame()) return VeilForm.Spear;
-                if (shield.WasPressedThisFrame()) return VeilForm.Shield;
-                if (bow.WasPressedThisFrame()) return VeilForm.Bow;
+                foreach (var f in new[] { VeilForm.Sword, VeilForm.Spear, VeilForm.Whip, VeilForm.Shield, VeilForm.Bow })
+                    if (For(f).WasPressedThisFrame()) return f;
                 return null;
             }
         }
+
+        public bool CastHeld(VeilForm form) => For(form) is InputAction a && a.IsPressed();
     }
 }

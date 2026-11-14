@@ -5,6 +5,22 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.16.0] – 2026-11-14
+Klidový postoj podle sešitu animace.
+
+### Přidáno
+- **Hrdina ve stoje stojí v postoji z návrhu a pohupuje se v něm.**
+  - Postoj je převzatý ze sešitu 12 bočních siluet `ArtSource/ref/walk_cycle.png`: přední noha 21° vpřed s kolenem povoleným o 10°, zadní noha 23° vzad natažená, chodidla naplocho.
+  - Ruce se pomalu kývají (bližší 19–27° vpřed, vzdálenější 7–23° vzad), hlava kývne o ±5° a tělo se lehce pohupuje. Smyčka trvá 3,6 s a snímky se plynule prolínají.
+  - Při rozběhu se postoj plynule přelije do chůze. Hrudník dál dýchá a tasená zbraň drží ruku v úchopu.
+  - Sešit ukazuje nohy ve všech 12 snímcích ve stejném rozkroku, takže chůzi samotnou nemění.
+- `ArtSource/hero_fit_walk.py`: pro každý snímek sešitu dohledá úhly kloubů kostry tak, aby se silueta modelu co nejvíc kryla s kresbou (překryv 66–74 %). Hlídá meze kolen a loktů a každý snímek začne od předchozího.
+- `ArtSource/walk_to_idle_table.py`: z dohledaných úhlů vygeneruje tabulku `HeroIdleCycle.cs` (ruce a hlava vyhlazené, chodidla naplocho).
+
+### Testy
+- `Idle_StandsInTheConceptStance_SwaysAndBreathes`, `IdleCycle_LoopsSmoothly_WithTheFeetFlat`.
+- Upravený test tasené zbraně ve stoje (ruka drží úchop, i když ve stoje už visí mírně vpředu).
+
 ## [0.15.5] – 2026-11-14
 Normálně vypadající paže.
 

@@ -129,7 +129,7 @@ namespace CrimsonVeil.Player
             else if (s.wallSliding) target = WallSlidePose(time);
             else if (s.dashing) target = DashPose();
             else if (!s.grounded) target = AirPose(s.verticalVelocity);
-            else target = GroundPose(run);
+            else target = Standing(GroundPose(run), run);
 
             // Somersault: knees pulled to the chest, arms hugging the shins, then opening out to land.
             bool flipping = !s.grounded && !s.hanging && !s.climbing && !s.swinging && Somersault.Active(s.somersault);
@@ -176,6 +176,19 @@ namespace CrimsonVeil.Player
                 Current = HeroPose.Lerp(Current, target, MovementMath.Damp(sharp, dt));
             }
             return Current;
+        }
+
+        /// <summary>
+        /// Standing still the hero takes the concept's wide stance and sways in it (<see cref="HeroIdleCycle"/>, from the
+        /// walk sheet); setting off, it pours into the gait. The chest keeps breathing.
+        /// </summary>
+        HeroPose Standing(HeroPose gait, float run)
+        {
+            float w = 1f - Mathf.SmoothStep(0f, 1f, run / 0.2f);
+            if (w <= 0f) return gait;
+            var idle = HeroIdleCycle.Sample(time);
+            idle.chest = gait.chest;
+            return HeroPose.Lerp(gait, idle, w);
         }
 
         HeroPose GroundPose(float run)

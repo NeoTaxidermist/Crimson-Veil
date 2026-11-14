@@ -54,18 +54,46 @@ namespace CrimsonVeil.Tests
         }
 
         [Test]
-        public void Idle_IsCalmAndBreathes()
+        public void Idle_StandsInTheConceptStance_SwaysAndBreathes()
         {
             var solver = new HeroPoseSolver();
-            float minChest = float.MaxValue, maxChest = float.MinValue;
-            for (int i = 0; i < 240; i++)
+            float minChest = float.MaxValue, maxChest = float.MinValue, minArm = float.MaxValue, maxArm = float.MinValue;
+            for (int i = 0; i < 300; i++)
             {
                 var p = solver.Step(Dt, Ground(0f));
-                Assert.Less(Mathf.Abs(p.thighL), 10f);
+                if (i < 60) continue;
+                Assert.Greater(p.thighL, 15f, "near leg forward");
+                Assert.Less(p.thighR, -15f, "far leg back");
                 minChest = Mathf.Min(minChest, p.chest);
                 maxChest = Mathf.Max(maxChest, p.chest);
+                minArm = Mathf.Min(minArm, p.armL);
+                maxArm = Mathf.Max(maxArm, p.armL);
             }
             Assert.Greater(maxChest - minChest, 1f, "chest should rise and fall");
+            Assert.Greater(maxArm - minArm, 8f, "the arms sway (as on the walk sheet)");
+        }
+
+        [Test]
+        public void IdleCycle_LoopsSmoothly_WithTheFeetFlat()
+        {
+            var a = HeroIdleCycle.Sample(0f);
+            var b = HeroIdleCycle.Sample(HeroIdleCycle.Duration);
+            Assert.AreEqual(a.armL, b.armL, 1e-3f, "the loop wraps");
+            float maxJump = 0f;
+            for (int i = 1; i <= 360; i++)
+            {
+                var p = HeroIdleCycle.Sample((i - 1) * HeroIdleCycle.Duration / 360f);
+                var q = HeroIdleCycle.Sample(i * HeroIdleCycle.Duration / 360f);
+                maxJump = Mathf.Max(maxJump, Mathf.Max(Mathf.Abs(q.armL - p.armL), Mathf.Abs(q.armR - p.armR), Mathf.Abs(q.head - p.head)));
+            }
+            Assert.Less(maxJump, 1f, "no jerks between the sheet's frames");
+            foreach (var f in HeroIdleCycle.Frames)
+            {
+                Assert.AreEqual(0f, f.footL + (f.thighL - f.kneeL), 0.2f, "near foot flat");
+                Assert.AreEqual(0f, f.footR + (f.thighR - f.kneeR), 0.2f, "far foot flat");
+                Assert.GreaterOrEqual(f.kneeL, 0f, "knees never bend backwards");
+                Assert.GreaterOrEqual(f.kneeR, 0f);
+            }
         }
 
         [Test]
@@ -148,7 +176,9 @@ namespace CrimsonVeil.Tests
             var bare = Run(new HeroPoseSolver(), 0.5f, s);
             s.weaponHeld = 1f;
             var armed = Run(new HeroPoseSolver(), 0.5f, s);
-            Assert.Greater(armed.armR, bare.armR + 15f, "standing: blade held forward");
+            // (standing, the near arm already hangs a little forward - the walk sheet's stance)
+            Assert.AreEqual(HeroPoseSolver.HoldArm, armed.armR, 5f, "standing: blade held forward at the grip");
+            Assert.Greater(armed.armR, bare.armR, "the weapon raises the arm");
             var running = Ground(8f);
             running.weaponHeld = 1f;
             var p = Run(new HeroPoseSolver(), 0.6f, running);

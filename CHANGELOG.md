@@ -5,6 +5,21 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.15.3] – 2026-11-14
+Celé tělo hrdiny z obrysu návrhu.
+
+### Změněno
+- **Celé tělo je postavené přímo z boční siluety návrhu, stejně jako předtím hlava.** Týká se to trupu s hrudníkem, kalhot, chráničů kolen, lýtek, bot, chodidel, paží, chráničů předloktí a pěstí.
+  - Kostra se postaví do pózy návrhu.
+  - Kolem každé kosti se z obrysu vyřízne její díl. V každém řezu napříč kostí zůstane jen souvislý úsek obrysu, kterým kost prochází, takže se do stehna nepřiplete druhá noha a do trupu předloktí.
+  - Díl dostane v řezu elipsu: hloubku podle šířky obrysu v návrhu, šířku do stran v rozumném poměru.
+  - Kost ho pak přenese z pózy návrhu do základní polohy.
+  - V póze návrhu se tak silueta modelu kryje s kresbou: boty, kalhoty i hrudník jsou kreslené tvary.
+- **Doplnění z boku neviditelných částí:**
+  - Pro obě strany se použije přední noha a bližší ruka z návrhu (zadní ruka drží meč).
+  - Záda v ramenou zakrývá v návrhu šála, takže tam záda pokračují linií viditelných zad.
+- Model je souvislý i zepředu: obrys je bez děr na schůdcích pixelů, drobné světlé tečky v kresbě (odlesk sponky) jsou zacelené a hrany jsou zjemněné.
+
 ## [0.15.2] – 2026-11-14
 Hlava a vlasy přímo z obrysu návrhu, porovnání v póze návrhu.
 

@@ -1,15 +1,15 @@
 {
  "UpperLeg.L": -20.0,
- "LowerLeg.L": 12.0,
- "UpperLeg.R": 28.0,
- "LowerLeg.R": -5.0,
- "drop": 0.0020000000000000018,
+ "LowerLeg.L": 11.0,
+ "UpperLeg.R": 31.0,
+ "LowerLeg.R": -11.0,
+ "drop": -0.0019999999999999983,
  "Spine": 0.0,
- "Neck": 1.0,
- "Foot.L": 25.0,
- "Foot.R": 29.0,
- "UpperArm.L": 10.0,
- "LowerArm.L": 13.0,
- "UpperArm.R": -18.0,
- "LowerArm.R": -7.0
+ "Neck": 0.0,
+ "Foot.L": 34.0,
+ "Foot.R": 32.0,
+ "UpperArm.L": 4.0,
+ "LowerArm.L": 28.0,
+ "UpperArm.R": -19.0,
+ "LowerArm.R": -6.0
 }

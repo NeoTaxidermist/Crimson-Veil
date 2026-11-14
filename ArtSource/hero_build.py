@@ -201,21 +201,211 @@ def torso_at(z):
     return list(TORSO[0][1:] if z < TORSO[0][0] else TORSO[-1][1:])
 
 
-torso_w = blend_z([(1.0, "Hips"), (1.1, "Spine"), (1.26, "Spine"), (1.34, "Chest")])
-loft([((0, cy, z), rx, ry, {"back": 0.92 if 1.2 < z < 1.48 else 1.0})
-      for z, rx, ry, cy in TORSO], torso_w, n=28)
+# ---------------------------------------------------------------- body traced from the concept
+# Like the head, the body is the concept's own side silhouette (ArtSource/ref/hero_concept.jpg): the rig is posed as
+# in the drawing (ArtSource/ref/concept_pose.json, found by hero_fit_pose.py), every part takes the silhouette around
+# its bone (a capsule), the part is "inflated" into a rounded solid (half-width grows with the distance from the
+# outline), and then carried by its bone from the drawing's pose back to the rest pose. Seen from the side the boots,
+# breeches, knee guards, chest, arms and fists are the drawing's. The front leg and the near arm of the drawing are
+# used for both sides (the far arm holds the sword).
+import json
+import numpy as np
 
-# Cuirass: layered bands over the belly and a raised breastplate edge — the stepped profile of the concept.
-for z, grow in ((1.17, 0.016), (1.235, 0.018), (1.30, 0.02)):
-    rx, ry, cy = torso_at(z)
-    flush = {"back": ry / (ry + grow)}  # plates on the front and sides only: the back stays smooth (concept)
-    loft([((0, cy, z - 0.03), rx + 0.004, ry + 0.004, {"back": ry / (ry + 0.004)}), ((0, cy - 0.004, z - 0.008), rx + grow, ry + grow, flush),
-          ((0, cy, z + 0.03), rx + 0.004, ry + 0.004, {"back": ry / (ry + 0.004)})], torso_w, n=28)
-rx, ry, cy = torso_at(1.40)
-loft([((0, cy, 1.34), rx + 0.004, ry + 0.004, {"back": 0.9}), ((0, cy - 0.006, 1.40), rx + 0.016, ry + 0.02, {"back": 0.9}),
-      ((0, cy, 1.47), rx - 0.01, ry + 0.006, {"back": 0.9})], torso_w, n=28, square=0.25)
+REF = ROOT + r"\ArtSource\ref\hero_concept.jpg"
+K = 0.00166                       # metres per concept pixel (crown at the rig's 1.84 m)
+GROUND_ROW, AXIS_COL = 1875, 720  # concept pixel row of the ground; column of the neck's axis
+NECK_Y = -0.05                    # model y of that axis
+BODY_STEP = 4                     # trace every 4th pixel (6.6 mm)
+
+
+def concept_body_mask():
+    im = bpy.data.images.load(REF, check_existing=True)
+    w, h = im.size
+    px = np.array(im.pixels[:], dtype=np.float32).reshape(h, w, 4)[::-1]
+    r, g, b = px[..., 0], px[..., 1], px[..., 2]
+    red = (r > g * 1.8) & (r > 0.25)
+    m = ((0.3 * r + 0.59 * g + 0.11 * b) < 0.12) | red  # the crimson trim belongs to the body
+    rows, cols = np.mgrid[0:h, 0:w]
+    cy, cx = rows - 680, cols - 250  # the measuring crop
+    m &= ~((np.abs((cy - 880) + cx * (180.0 / 285.0)) < 22) & (cx < 300))  # the sword's blade
+    # The scarf streaming behind hides the back of the shoulders: there the back follows the line of the visible
+    # back below it (from x 350 at row 445 up to 382 at the shoulder top).
+    m &= ~((cy < 445) & (cx < 382 - (cy - 260) * (32.0 / 185.0)))
+    m &= rows < GROUND_ROW + 2
+    # Close the little highlights inside the outline (a clasp's glint on the bracer): they are not holes.
+    for grow in (True, True, True, False, False, False):
+        pad = np.pad(m, 1)
+        nb = pad[:-2, 1:-1], pad[2:, 1:-1], pad[1:-1, :-2], pad[1:-1, 2:]
+        m = (m | nb[0] | nb[1] | nb[2] | nb[3]) if grow else (m & nb[0] & nb[1] & nb[2] & nb[3])
+    return m
+
+
+def px_to_model(row, col):
+    return NECK_Y - (col - AXIS_COL) * K, (GROUND_ROW - row) * K
+
+
+def model_to_px(y, z):
+    return GROUND_ROW - z / K, AXIS_COL + (NECK_Y - y) / K
+
+
+# Pose the rig as in the drawing.
+CONCEPT_POSE = json.load(open(ROOT + r"\ArtSource\ref\concept_pose.json"))
+for pb in rig.pose.bones:
+    pb.rotation_mode = 'QUATERNION'
+    pb.rotation_quaternion = (1, 0, 0, 0)
+    pb.location = (0, 0, 0)
+for name, deg in CONCEPT_POSE.items():
+    if name in rig.pose.bones:
+        pb = rig.pose.bones[name]
+        M3 = pb.bone.matrix_local.to_3x3()
+        pb.rotation_quaternion = (M3.inverted() @ Matrix.Rotation(math.radians(deg), 3, 'X') @ M3).to_quaternion()
+hips_pb = rig.pose.bones["Hips"]
+hips_pb.location = hips_pb.bone.matrix_local.to_3x3().inverted() @ Vector((0, 0, -CONCEPT_POSE.get("drop", 0.0)))
+bpy.context.view_layer.update()
+UNPOSE = {pb.name: pb.bone.matrix_local @ pb.matrix.inverted() for pb in rig.pose.bones}
+POSED = {pb.name: (pb.head.copy(), pb.tail.copy()) for pb in rig.pose.bones}
+
+BMASK = concept_body_mask()
+B_R0, B_R1, B_C0, B_C1 = 905, GROUND_ROW + 2, 380, 1080
+bsub = BMASK[B_R0:B_R1:BODY_STEP, B_C0:B_C1:BODY_STEP]
+# Distance (m) from the outline, by repeated erosion (alternating 4- and 8-neighbourhoods ~ octagonal distance).
+bdist = np.zeros(bsub.shape, np.float32)
+cur = bsub.copy()
+for it in range(60):
+    pad = np.pad(cur, 1)
+    er = cur & pad[:-2, 1:-1] & pad[2:, 1:-1] & pad[1:-1, :-2] & pad[1:-1, 2:]
+    if it % 2:
+        er &= pad[:-2, :-2] & pad[:-2, 2:] & pad[2:, :-2] & pad[2:, 2:]
+    bdist[er] += BODY_STEP * K
+    cur = er
+    if not cur.any():
+        break
+
+
+def trace_part(bone, ext0, ext1, max_r, R, lateral, weight, mirror_to=None, zmin=None, zmax=None):
+    """Builds the part of the silhouette within max_r of the posed bone (extended ext0 before its head and ext1
+    past its tail), inflated (half-width = lateral * R * roundness(distance / R)) and carried to the rest pose.
+    weight(p_rest) -> {bone: w}. mirror_to: (bone map) builds a mirrored copy for the other side."""
+    h, t = POSED[bone]
+    a = Vector(model_to_px(h.y, h.z))
+    b = Vector(model_to_px(t.y, t.z))
+    d = (b - a)
+    L = d.length
+    d = d / L
+    a = a - d * (ext0 / K)
+    L += (ext0 + ext1) / K
+    rows = np.arange(bsub.shape[0]) * BODY_STEP + B_R0
+    cols = np.arange(bsub.shape[1]) * BODY_STEP + B_C0
+    RR, CC = np.meshgrid(rows, cols, indexing='ij')
+    rel_r, rel_c = RR - a.x, CC - a.y
+    along = rel_r * d.x + rel_c * d.y
+    sperp = rel_r * d.y - rel_c * d.x  # signed distance (px) across the bone
+    region = bsub & (along >= 0) & (along <= L) & (np.abs(sperp) <= max_r / K)
+    if zmin is not None:
+        region &= (GROUND_ROW - RR) * K >= zmin
+    if zmax is not None:
+        region &= (GROUND_ROW - RR) * K <= zmax
+    # Slice by slice across the bone: keep only the run of the outline the bone passes through (not the other leg,
+    # not the forearm in front of the chest); its extent is the cross-section's depth, an ellipse round the bone.
+    slices = {}
+    for i, j in zip(*np.nonzero(region)):
+        slices.setdefault(int(along[i, j] // BODY_STEP), []).append((float(sperp[i, j]), i, j))
+    keep = np.zeros_like(region)
+    cross = {}
+    for lst in slices.values():
+        lst.sort()
+        runs, cur = [], [lst[0]]
+        for e in lst[1:]:
+            if e[0] - cur[-1][0] > 2.2 * BODY_STEP:
+                runs.append(cur)
+                cur = [e]
+            else:
+                cur.append(e)
+        runs.append(cur)
+        run = min(runs, key=lambda r: 0.0 if r[0][0] <= 0.0 <= r[-1][0] else min(abs(r[0][0]), abs(r[-1][0])))
+        lo, hi = run[0][0], run[-1][0]
+        for e in run:
+            keep[e[1], e[2]] = True
+            cross[(e[1], e[2])] = (lo, hi)
+    region = keep
+    unpose = UNPOSE[bone]
+    bx = h.x
+    out = []  # rest-space points (for extents)
+    for side in [None] + ([mirror_to] if mirror_to else []):
+        front, back = {}, {}
+        for i, j in zip(*np.nonzero(region)):
+            y, z = px_to_model(RR[i, j], CC[i, j])
+            lo, hi = cross[(i, j)]
+            half = (hi - lo) / 2 + BODY_STEP * 0.5
+            u = (float(sperp[i, j]) - (hi + lo) / 2) / half
+            on_outline = bdist[i, j] <= 0 or sperp[i, j] in (lo, hi)
+            rnd_ = 0.0 if on_outline else math.sqrt(max(0.0, 1 - u * u))
+            hw = (lateral(z) if callable(lateral) else lateral * half * K) * rnd_
+            pts = []
+            for sgn in ((1, -1) if hw > 1e-4 else (0,)):
+                p = unpose @ Vector((bx + sgn * hw, y, z))
+                if side:
+                    p.x = -p.x
+                pts.append(p)
+            w = weight(pts[0])
+            if side:
+                w = {side.get(k, k): v for k, v in w.items()}
+            ids = [add_vert(p, w) for p in pts]
+            front[(i, j)] = ids[0]
+            back[(i, j)] = ids[-1]
+            if side is None:
+                out.extend(pts)
+        flip = side is not None  # mirroring flips the winding
+        for i, j in zip(*np.nonzero(region)):
+            quad = [q for q in ((i, j), (i, j + 1), (i + 1, j + 1), (i + 1, j)) if q in front]
+            if len(quad) >= 3:  # full cells and the outline's steps (three corners): watertight from the front too
+                f0 = tuple(front[q] for q in quad)
+                f1 = tuple(back[q] for q in reversed(quad))
+                if flip:
+                    f0, f1 = f0[::-1], f1[::-1]
+                faces.append(f0); fmat.append(INK)
+                faces.append(f1); fmat.append(INK)
+    return out
+
+
+L2R = {"UpperLeg.L": "UpperLeg.R", "LowerLeg.L": "LowerLeg.R", "Foot.L": "Foot.R", "Hips": "Hips"}
+R2L = {"UpperArm.R": "UpperArm.L", "LowerArm.R": "LowerArm.L", "Hand.R": "Hand.L", "Shoulder.R": "Shoulder.L"}
+
+torso_w = blend_z([(1.0, "Hips"), (1.1, "Spine"), (1.26, "Spine"), (1.34, "Chest")])
+# Torso: from the hips (the breeches below belong to the legs) to the base of the neck.
+torso_pts = []
+for bone, e0, e1 in (("Hips", 0.06, 0.02), ("Spine", 0.02, 0.02), ("Chest", 0.02, 0.0)):
+    torso_pts += trace_part(bone, e0, e1, 0.19, 0.14, lambda z: torso_at(z)[0], lambda p: torso_w(p, 0), zmin=0.86, zmax=1.6)
+# Legs (the drawing's front leg), with the breeches, knee guard, calf, boot and foot.
+thigh_w = lambda p: {"UpperLeg.L": 1.0} if p.z < 0.9 else {"Hips": 0.35, "UpperLeg.L": 0.65}
+trace_part("UpperLeg.L", 0.08, 0.04, 0.13, 0.1, 0.8, thigh_w, L2R)
+trace_part("LowerLeg.L", 0.03, 0.02, 0.1, 0.075, 0.9, lambda p: {"LowerLeg.L": 1.0}, L2R)
+trace_part("Foot.L", 0.09, 0.03, 0.07, 0.045, 0.9, lambda p: {"Foot.L": 1.0}, L2R)
+# Arms (the drawing's near arm), with the bracer and the fist.
+trace_part("UpperArm.R", 0.02, 0.03, 0.05, 0.05, 1.0, lambda p: {"UpperArm.R": 1.0}, R2L)  # (hidden in the chest: ~10 cm)
+trace_part("LowerArm.R", 0.02, 0.02, 0.05, 0.036, 1.0, lambda p: {"LowerArm.R": 1.0}, R2L)
+trace_part("Hand.R", 0.0, 0.03, 0.055, 0.04, 1.0, lambda p: {"Hand.R": 1.0}, R2L)
+
+# Back to the rest pose (the mesh is built in rest space).
+for pb in rig.pose.bones:
+    pb.rotation_quaternion = (1, 0, 0, 0)
+    pb.location = (0, 0, 0)
+bpy.context.view_layer.update()
+
+TP = np.array([(p.x, p.y, p.z) for p in torso_pts])
+
+
+def torso_at(z):
+    """Half width, half depth and centre y of the traced torso at height z (for the crimson trim and the belt)."""
+    sel = TP[np.abs(TP[:, 2] - z) < 0.012]
+    if len(sel) == 0:
+        return [0.15, 0.1, 0.0]
+    return [float(np.abs(sel[:, 0]).max()), float(sel[:, 1].max() - sel[:, 1].min()) / 2, float(sel[:, 1].max() + sel[:, 1].min()) / 2]
+
+
 # A crimson line across the chest (the stitched trim in the art).
-loft([((0, cy, 1.392), rx + 0.019, ry + 0.023, {"back": 0.9}), ((0, cy, 1.408), rx + 0.019, ry + 0.023, {"back": 0.9})],
+rx, ry, cy = torso_at(1.40)
+loft([((0, cy, 1.392), rx + 0.006, ry + 0.006), ((0, cy, 1.408), rx + 0.006, ry + 0.006)],
      torso_w, mat=CRIMSON, n=28, cap0=False, cap1=False, square=0.25)
 
 # Belt (concept: z 0.89-0.93) with a crimson sash under it and a tail hanging at the left hip.
@@ -237,58 +427,16 @@ for z, r, t, yc in ((1.545, 0.088, 0.03, -0.012), (1.585, 0.078, 0.026, -0.03)):
 HEAD = W("Head")
 HF = -0.05  # the head juts forward on a long neck: the face is ahead of the chest line, as in the concept
 
-# ---------------------------------------------------------------- arms and legs
-# Measured from the concept art (side view, ~1.66 mm/px at the rig's 1.84 m to the crown). Values are half
-# thicknesses (rx sideways, ry front/back); the concept's side profile gives the front/back ones:
-#   upper arm 0.10 m, forearm 0.055-0.065, fist 0.076; thigh 0.15, knee with guard 0.15-0.16, calf 0.138,
-#   boot shin 0.075-0.09, ankle 0.067, foot 0.26 long and 0.075 high; breeches end at z 0.66, hem ~0.2 wide.
+# ---------------------------------------------------------------- pauldrons
+# Stacked over each shoulder cap (seen from the front; from the side they stay within the drawing's shoulder).
 for side, sx in (("L", 1), ("R", -1)):
-    sh, el, wr = head_of("UpperArm." + side), head_of("LowerArm." + side), head_of("Hand." + side)
-    ua, la = "UpperArm." + side, "LowerArm." + side
-    # Deltoid and upper arm.
-    loft([(sh + Vector((0, 0, 0.02)), 0.046, 0.046), (sh.lerp(el, 0.18), 0.054, 0.05), (sh.lerp(el, 0.5), 0.05, 0.047),
-          (sh.lerp(el, 0.85), 0.04, 0.038), (el, 0.035, 0.034)], along(sh, el, ua, la), n=14)
-    # Forearm, wrapped in a bracer from mid-forearm to the wrist.
-    loft([(el, 0.035, 0.034), (el.lerp(wr, 0.3), 0.034, 0.031), (wr, 0.026, 0.024)], along(el, wr, la, "Hand." + side), n=14)
-    loft([(el.lerp(wr, 0.3), 0.038, 0.034), (el.lerp(wr, 0.36), 0.036, 0.032), (el.lerp(wr, 0.86), 0.031, 0.028),
-          (el.lerp(wr, 0.96), 0.034, 0.031)], W(la), n=14, square=0.3)
-    # Gauntleted fist (0.076 deep).
-    hand = head_of("Hand." + side)
-    blob(hand + Vector((sx * 0.004, -0.008, -0.042)), (0.032, 0.038, 0.05), W("Hand." + side), seg=12, rings=8)
-    blob(hand + Vector((sx * -0.016, -0.026, -0.036)), (0.012, 0.014, 0.026), W("Hand." + side), seg=8, rings=6)  # thumb
-    # Stacked pauldron: three overlapping plates over the shoulder cap, each a little lower and further out.
-    for k, (r, d) in enumerate(((0.09, 0.03), (0.08, 0.026), (0.07, 0.022))):
+    sh = head_of("UpperArm." + side)
+    ua = "UpperArm." + side
+    for k, (r, d) in enumerate(((0.085, 0.026), (0.075, 0.022), (0.065, 0.019))):
         out = Vector((sx * (0.55 + 0.3 * k), 0.0, 1.0 - 0.25 * k)).normalized()
         c = sh + Vector((sx * (0.0 + 0.02 * k), 0.005, 0.03 - 0.04 * k))
         w = (lambda b: (lambda p, s: {b: 1.0}))(ua) if k else (lambda p, s, a=ua, sd=side: {a: 0.6, "Shoulder." + sd: 0.4})
         dome(c, out, r, d, w, squash=0.9, up=(0, 1, 0))
-
-for side, sx in (("L", 1), ("R", -1)):
-    hp, kn, an = head_of("UpperLeg." + side), head_of("LowerLeg." + side), head_of("Foot." + side)
-    ul, ll, ft = "UpperLeg." + side, "LowerLeg." + side, "Foot." + side
-    thigh = lambda p, s, a=hp, b=kn, ul=ul, ll=ll: (
-        {"Hips": 0.35, ul: 0.65} if p.z > a.z + 0.02 else along(a, b, ul, ll)(p, s))
-    loft([(hp + Vector((0, 0, 0.04)), 0.08, 0.08), (hp.lerp(kn, 0.3), 0.077, 0.077), (hp.lerp(kn, 0.7), 0.068, 0.072),
-          (kn, 0.058, 0.062)], thigh, n=16)
-    # Loose short breeches, ending above the knee (z 0.66) in a wide hem.
-    loft([(hp + Vector((0, 0, 0.05)), 0.094, 0.1), (hp.lerp(kn, 0.3), 0.098, 0.104), (hp.lerp(kn, 0.58), 0.1, 0.104),
-          (hp.lerp(kn, 0.65), 0.103, 0.106)], thigh, n=16)
-    # Calf: a strong muscle at the back (0.138 deep), narrowing into the slim boot.
-    calf = along(kn, an, ll, ft, blend_from=0.9)
-    loft([(kn, 0.056, 0.06), (kn.lerp(an, 0.22), 0.06, 0.062, {"back": 1.15}), (kn.lerp(an, 0.42), 0.05, 0.05, {"back": 1.1}),
-          (kn.lerp(an, 0.62), 0.04, 0.04), (an, 0.032, 0.034)], calf, n=16)
-    # Tall slim boot from mid-shin to the ankle (0.075-0.09 deep), with a turned rim.
-    loft([(kn.lerp(an, 0.5), 0.047, 0.048), (kn.lerp(an, 0.55), 0.044, 0.045), (kn.lerp(an, 0.85), 0.039, 0.04),
-          (an + Vector((0, 0, -0.01)), 0.038, 0.042)], calf, n=16, square=0.2)
-    # Knee guard: a plate over the kneecap and a smaller one over the shin top.
-    dome(kn + Vector((0, -0.05, 0.0)), (0, -1, 0.15), 0.05, 0.025, W(ll), squash=1.1, up=(0, 0, 1))
-    dome(kn + Vector((0, -0.045, -0.06)), (0, -1, 0.05), 0.038, 0.018, W(ll), squash=1.3, up=(0, 0, 1))
-    # Boot foot: heel to toe, 0.26 long, 0.075 high.
-    loft([(an + Vector((0, 0.05, -0.03)), 0.036, 0.028), (an + Vector((0, 0.0, -0.045)), 0.042, 0.04),
-          (an + Vector((0, -0.09, -0.058)), 0.04, 0.028), (an + Vector((0, -0.17, -0.068)), 0.032, 0.018),
-          (an + Vector((0, -0.21, -0.074)), 0.018, 0.01)], along(an + Vector((0, 0.05, 0)), an + Vector((0, -0.21, 0)), ft, None),
-         n=12)
-    box(an + Vector((0, -0.075, -0.083)), (0.085, 0.27, 0.018), W(ft))  # sole
 
 # ---------------------------------------------------------------- head and hair, traced from the concept
 # The head and its mop of hair are built from the concept's side silhouette itself (ArtSource/ref/hero_concept.jpg):
@@ -413,8 +561,8 @@ for i, j in zip(ii, jj):
         front[(i, j)] = add_vert(q0, head_hair_w(q0, 0))
         back[(i, j)] = add_vert(q1, head_hair_w(q1, 0))
 for i, j in zip(ii, jj):
-    quad = [(i, j), (i, j + 1), (i + 1, j + 1), (i + 1, j)]
-    if all(q in front for q in quad):
+    quad = [q for q in ((i, j), (i, j + 1), (i + 1, j + 1), (i + 1, j)) if q in front]
+    if len(quad) >= 3:  # a full cell, or a step of the outline (three corners): no holes between the rows
         faces.append(tuple(front[q] for q in quad)); fmat.append(INK)
         faces.append(tuple(back[q] for q in reversed(quad))); fmat.append(INK)
 
@@ -432,6 +580,14 @@ me.materials.append(ink)
 me.materials.append(crimson)
 for poly, m in zip(me.polygons, fmat):
     poly.material_index = m
+# Soften the traced outlines' pixel steps (side plane only: y and z).
+import bmesh
+_bm = bmesh.new()
+_bm.from_mesh(me)
+for _ in range(3):
+    bmesh.ops.smooth_vert(_bm, verts=_bm.verts, factor=0.5, use_axis_x=False, use_axis_y=True, use_axis_z=True)
+_bm.to_mesh(me)
+_bm.free()
 ob = bpy.data.objects.new("Hero", me)
 bpy.context.scene.collection.objects.link(ob)
 ob.parent = rig

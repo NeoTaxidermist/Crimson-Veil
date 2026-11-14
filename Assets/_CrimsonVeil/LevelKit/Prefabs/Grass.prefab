@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 6575158559605098406}
   - component: {fileID: 5589321221710645157}
   - component: {fileID: 376839290348725984}
+  - component: {fileID: 4730403494573810540}
   m_Layer: 0
   m_Name: Grass
   m_TagString: Untagged
@@ -123,3 +124,16 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: CrimsonVeil.Runtime::CrimsonVeil.World.DepthLayer
   layer: 2
+--- !u!114 &4730403494573810540
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 311461179390704681}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e562a088fa6708c4c96cbd1c053df5d2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CrimsonVeil.Runtime::CrimsonVeil.World.GroundAnchor
+  sink: 0.1

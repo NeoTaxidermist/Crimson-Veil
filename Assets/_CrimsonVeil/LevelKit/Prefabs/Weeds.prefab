@@ -67,6 +67,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: dfddce9c4a769204bb766d666e2a4086, type: 3}
       insertIndex: -1
       addedObject: {fileID: 3229279022303939682}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: dfddce9c4a769204bb766d666e2a4086, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6391492900455865436}
   m_SourcePrefab: {fileID: 100100000, guid: dfddce9c4a769204bb766d666e2a4086, type: 3}
 --- !u!1 &2260373414287643777 stripped
 GameObject:
@@ -86,3 +89,16 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: CrimsonVeil.Runtime::CrimsonVeil.World.DepthLayer
   layer: 2
+--- !u!114 &6391492900455865436
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2260373414287643777}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e562a088fa6708c4c96cbd1c053df5d2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CrimsonVeil.Runtime::CrimsonVeil.World.GroundAnchor
+  sink: 0.1

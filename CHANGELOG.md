@@ -5,6 +5,24 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.10.2] – 2026-11-14
+Rostliny se v Level Editoru samy přichytí k zemi.
+
+### Přidáno
+- **Přichycení k zemi (`GroundAnchor`)** pro přízemní rostliny: tráva, kapradí, ostružiní, suché byliny a spadané listí. Kdykoli rostlinu v editoru posuneš, změníš jí vrstvu nebo ji položíš z palety, sama si sedne na nejvyšší terén pod sebou.
+  - V **popředí** zapustí kořeny do přední hrany skály, takže se při pohybu kamery hýbe se zemí a neujíždí.
+  - **Za rovinou hry** zůstane na horní ploše bloku v hloubce, kterou jí dáš.
+  - V dalších vrstvách (blízko, střed, dálka) terén není, takže ji nechá být.
+  - Hloubku zapuštění kořenů lze nastavit v Inspectoru (`Sink`).
+- Rostlina posunutá nad jámu se ve Scene view označí červeným kroužkem a tlačítko **✔ Zkontrolovat** v Level Editoru ji vypíše.
+- Přichytávání funguje i ve chvíli, kdy Scene view zrovna nepřekresluje (hlídá ho editorový skript).
+- Ukázková scéna používá stejnou komponentu, takže i její rostliny zůstanou při úpravách na zemi.
+
+### Testy
+- Tráva položená z palety do popředí sedne na horní hranu podlahy a do přední hrany skály.
+- Nad jámou komponenta nahlásí, že nemá terén.
+- Při změně vrstvy se rostlina znovu přichytí, ve vzdálených vrstvách ji komponenta nechá být.
+
 ## [0.10.1] – 2026-11-14
 Tráva drží na zemi, nepřátelé se otáčejí ve 3D.
 

@@ -291,6 +291,8 @@ namespace CrimsonVeil.EditorTools
                 if (Mathf.Abs(t.transform.position.z) > 0.01f) problems.Add($"{t.name}: terén není v rovině hry (z ≠ 0).");
             foreach (var e in FindObjectsByType<CrimsonVeil.Combat.Enemy>(FindObjectsSortMode.None))
                 if (!Physics.Raycast(e.transform.position + Vector3.up, Vector3.down, 3f)) problems.Add($"{e.name} na x={e.transform.position.x:0.#} nestojí na zemi.");
+            foreach (var a in FindObjectsByType<GroundAnchor>(FindObjectsSortMode.None))
+                if (!a.Snap()) problems.Add($"{a.name} na x={a.transform.position.x:0.#} visí nad jámou (nemá pod sebou terén).");
             status = problems.Count == 0 ? "Úroveň vypadá v pořádku. ✔" : "Nalezeno:\n• " + string.Join("\n• ", problems);
         }
 

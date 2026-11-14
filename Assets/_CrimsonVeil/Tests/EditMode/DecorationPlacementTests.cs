@@ -48,6 +48,44 @@ namespace CrimsonVeil.Tests
         }
 
         [Test]
+        public void EditorPlacedGrass_InTheForeground_TakesRootInTheLip()
+        {
+            var grass = LevelKitCatalog.Place(LevelKitCatalog.Find("Grass"), new Vector3(0.5f, 4f, 0f), LevelLayer.Foreground, null);
+            var anchor = grass.GetComponent<GroundAnchor>();
+            Assert.IsNotNull(anchor, "ground plants carry an anchor");
+            Assert.IsTrue(anchor.OnGround);
+            Assert.AreEqual(2f - anchor.sink, grass.transform.position.y, 0.02f, "dropped onto the floor top");
+            Assert.That(grass.transform.position.z, Is.InRange(-2f, -1.8f), "rooted in the front lip, not at the foreground depth");
+        }
+
+        [Test]
+        public void MovedOverAPit_TheAnchorReportsIt()
+        {
+            var weeds = LevelKitCatalog.Place(LevelKitCatalog.Find("Weeds"), new Vector3(0f, 3f, 0f), LevelLayer.Foreground, null);
+            var anchor = weeds.GetComponent<GroundAnchor>();
+            weeds.transform.position = new Vector3(12f, 3f, -1.9f);
+            Assert.IsFalse(anchor.Snap(), "nothing to stand on");
+            Assert.IsFalse(anchor.OnGround);
+        }
+
+        [Test]
+        public void ChangingLayer_ReanchorsAndOtherLayersAreLeftAlone()
+        {
+            var fern = LevelKitCatalog.Place(LevelKitCatalog.Find("Fern"), new Vector3(-1f, 3f, 0f), LevelLayer.Playfield, null);
+            fern.transform.position = new Vector3(-1f, 3f, 1.2f);
+            var anchor = fern.GetComponent<GroundAnchor>();
+            Assert.IsTrue(anchor.Snap());
+            Assert.AreEqual(1.2f, fern.transform.position.z, 1e-3f, "behind the play plane it keeps its depth on the top");
+            LevelKitFactory.ApplyLayer(fern, LevelLayer.Foreground);
+            anchor.Snap();
+            Assert.That(fern.transform.position.z, Is.InRange(-2f, -1.8f));
+            LevelKitFactory.ApplyLayer(fern, LevelLayer.Mid);
+            float midZ = fern.transform.position.z;
+            anchor.Snap();
+            Assert.AreEqual(midZ, fern.transform.position.z, 1e-4f, "no terrain in the mid layer: untouched");
+        }
+
+        [Test]
         public void Bramble_FitsOnlyWhereItsCanesStayOnTheBlock()
         {
             Assert.IsTrue(PrototypeSceneBuilder.Fits("Bramble", 0f, 1f, out float y), "centre of a 6 m floor");

@@ -23,6 +23,8 @@ namespace CrimsonVeil.EditorTools
             /// <summary>Decorations can be put on any depth layer; gameplay pieces always live on the playfield.</summary>
             public bool layered;
             public Vector2 previewSize;
+            /// <summary>A ground plant: it gets a <see cref="GroundAnchor"/> and always sits on the terrain under it.</summary>
+            public bool ground;
             public Func<GameObject> build;
             public string PrefabPath => $"{PrefabDir}/{id}.prefab";
         }
@@ -92,15 +94,15 @@ namespace CrimsonVeil.EditorTools
                 build = () => LevelKitFactory.Ruin("Castle", Vector3.zero, LevelLayer.Far) },
             new Entry { id = "CliffRuin", label = "Útes s vesnicí", hint = "Vrstevnatý skalní útes s domky, zvonicí a suchými stromy na vrcholu.", category = Category.Dekorace, layered = true, previewSize = new Vector2(30f, 25f),
                 build = () => LevelKitFactory.Ruin("CliffRuin", Vector3.zero, LevelLayer.Mid) },
-            new Entry { id = "Bramble", label = "Ostružiní", hint = "Trnité šlahouny – do popředí i na okraje plošin.", category = Category.Dekorace, layered = true, previewSize = new Vector2(3f, 1.6f),
+            new Entry { id = "Bramble", ground = true, label = "Ostružiní", hint = "Trnité šlahouny – do popředí i na okraje plošin.", category = Category.Dekorace, layered = true, previewSize = new Vector2(3f, 1.6f),
                 build = () => LevelKitFactory.Ruin("Bramble", Vector3.zero, LevelLayer.Near) },
-            new Entry { id = "Weeds", label = "Suché byliny", hint = "Stébla se semeníky a okolíky.", category = Category.Dekorace, layered = true, previewSize = new Vector2(2f, 1.8f),
+            new Entry { id = "Weeds", ground = true, label = "Suché byliny", hint = "Stébla se semeníky a okolíky.", category = Category.Dekorace, layered = true, previewSize = new Vector2(2f, 1.8f),
                 build = () => LevelKitFactory.Ruin("Weeds", Vector3.zero, LevelLayer.Near) },
             new Entry { id = "Chain", label = "Řetěz", hint = "Visící řetěz s hákem (2,4 m).", category = Category.Dekorace, layered = true, previewSize = new Vector2(0.4f, 3.4f),
                 build = () => LevelKitFactory.Ruin("Chain", Vector3.zero, LevelLayer.Near) },
-            new Entry { id = "LeafPile", label = "Spadané listí", hint = "Hromádka rudých javorových listů.", category = Category.Dekorace, layered = true, previewSize = new Vector2(3.5f, 0.6f),
+            new Entry { id = "LeafPile", ground = true, label = "Spadané listí", hint = "Hromádka rudých javorových listů.", category = Category.Dekorace, layered = true, previewSize = new Vector2(3.5f, 0.6f),
                 build = () => LevelKitFactory.Ruin("LeafPile", Vector3.zero, LevelLayer.Near) },
-            new Entry { id = "Fern", label = "Kapradí", hint = "Keř kapradí – skvělý do popředí (vlaje).", category = Category.Dekorace, layered = true, previewSize = new Vector2(3f, 1.6f),
+            new Entry { id = "Fern", ground = true, label = "Kapradí", hint = "Keř kapradí – skvělý do popředí (vlaje).", category = Category.Dekorace, layered = true, previewSize = new Vector2(3f, 1.6f),
                 build = () => LevelKitFactory.Fern(Vector3.zero, LevelLayer.Near) },
             new Entry { id = "Rubble", label = "Sutiny", hint = "Hromada kamenů.", category = Category.Dekorace, layered = true, previewSize = new Vector2(2.4f, 0.8f),
                 build = () => LevelKitFactory.Rubble(Vector3.zero, LevelLayer.Near, 4) },
@@ -110,7 +112,7 @@ namespace CrimsonVeil.EditorTools
                 build = () => LevelKitFactory.Gallows(Vector3.zero, LevelLayer.Near) },
             new Entry { id = "CrimsonTree", label = "Rudý strom", hint = "Javor s rudými listy.", category = Category.Dekorace, layered = true, previewSize = new Vector2(8f, 11f),
                 build = () => LevelKitFactory.CrimsonTree(Vector3.zero, LevelLayer.Near) },
-            new Entry { id = "Grass", label = "Tráva", hint = "Trs trávy (vlaje).", category = Category.Dekorace, layered = true, previewSize = new Vector2(3f, 1.4f),
+            new Entry { id = "Grass", ground = true, label = "Tráva", hint = "Trs trávy (vlaje).", category = Category.Dekorace, layered = true, previewSize = new Vector2(3f, 1.4f),
                 build = () => LevelKitFactory.Grass(Vector3.zero, LevelLayer.Near) },
             new Entry { id = "Waterfall", label = "Vodopád", hint = "Vodopád s tříští dole.", category = Category.Dekorace, layered = true, previewSize = new Vector2(3.2f, 22f),
                 build = () => LevelKitFactory.Waterfall(Vector3.zero, LevelLayer.Near) },
@@ -137,6 +139,7 @@ namespace CrimsonVeil.EditorTools
             {
                 var go = e.build();
                 go.name = e.id;
+                if (e.ground && go.GetComponent<GroundAnchor>() == null) go.AddComponent<GroundAnchor>();
                 PrefabUtility.SaveAsPrefabAsset(go, e.PrefabPath);
                 UnityEngine.Object.DestroyImmediate(go);
             }
@@ -163,6 +166,12 @@ namespace CrimsonVeil.EditorTools
             if (parent != null) go.transform.SetParent(parent, true);
             go.transform.position = new Vector3(pos.x, pos.y, e.layered ? DepthLayer.Z(layer) : 0f);
             if (e.layered && layer != LevelLayer.Near) LevelKitFactory.ApplyLayer(go, layer);
+            if (e.ground)
+            {
+                var anchor = go.GetComponent<GroundAnchor>();
+                if (anchor == null) anchor = go.AddComponent<GroundAnchor>();
+                anchor.Snap();
+            }
             return go;
         }
     }

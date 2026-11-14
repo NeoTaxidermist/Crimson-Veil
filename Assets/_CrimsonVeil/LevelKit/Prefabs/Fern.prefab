@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 6567206225780558407}
   - component: {fileID: 397034915358337343}
   - component: {fileID: 2703615081952406802}
+  - component: {fileID: 6510474799561633012}
   m_Layer: 0
   m_Name: Fern
   m_TagString: Untagged
@@ -121,3 +122,16 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: CrimsonVeil.Runtime::CrimsonVeil.World.DepthLayer
   layer: 2
+--- !u!114 &6510474799561633012
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3700843801286908776}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e562a088fa6708c4c96cbd1c053df5d2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CrimsonVeil.Runtime::CrimsonVeil.World.GroundAnchor
+  sink: 0.1

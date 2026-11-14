@@ -118,6 +118,7 @@ namespace CrimsonVeil.EditorTools
                 if (!Fits(model, gx, scale, out float gy)) continue;
                 var m = FgModel(model, new Vector3(gx, gy - 0.05f, 0f), LevelLayer.Playfield, deco, scale, i % 2 == 1);
                 m.transform.position += new Vector3(0f, 0f, 1.3f + 0.2f * (i % 3));
+                OnLip(m, gx, deco); // Playfield: the anchor keeps it on the block's top, at this depth
             }
             // Ferns behind the play plane, at the foot of walls and ledges.
             foreach (var (x, y) in new[] { (-12f, 0f), (11f, 0f), (17.5f, 0.6f), (30f, -1.2f), (57f, 0f), (79f, 0f), (91.5f, 0f), (114f, 0f) })
@@ -201,22 +202,17 @@ namespace CrimsonVeil.EditorTools
         /// front edge when there is none. Foreground plants rooted here stay glued to the ground in parallax.
         /// </summary>
         public static float LipZ(float x)
-        {
-            float best = float.NaN, z = -1.9f;
-            foreach (var hit in Physics.RaycastAll(new Vector3(x, 60f, 0f), Vector3.down, 120f, ~0, QueryTriggerInteraction.Ignore))
-            {
-                var block = hit.collider.GetComponentInParent<TerrainBlock>();
-                if (block == null || (!float.IsNaN(best) && hit.point.y <= best)) continue;
-                best = hit.point.y;
-                z = block.transform.position.z - block.depth * 0.5f + 0.1f;
-            }
-            return z;
-        }
+            => GroundAnchor.FindGround(x, 60f, out _, out var block) ? GroundAnchor.LipZ(block) : -1.9f;
 
+        /// <summary>Roots a foreground plant in the ground lip with a <see cref="GroundAnchor"/>, so it also
+        /// stays there when the level is edited later.</summary>
         static GameObject OnLip(GameObject go, float x, Transform parent)
         {
             var p = go.transform.position;
-            go.transform.position = new Vector3(p.x, p.y, LipZ(x));
+            var anchor = go.GetComponent<GroundAnchor>();
+            if (anchor == null) anchor = go.AddComponent<GroundAnchor>();
+            if (GroundAnchor.FindGround(x, p.y + 1.5f, out float top, out _)) anchor.sink = Mathf.Max(0f, top - p.y);
+            anchor.Snap();
             go.transform.SetParent(parent, true);
             return go;
         }

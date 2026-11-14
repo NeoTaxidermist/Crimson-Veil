@@ -117,7 +117,7 @@ namespace CrimsonVeil.Veil
         public bool IsAttacking => attackTime >= 0f;
         /// <summary>Normalised progress of the current attack (0..1), or -1 when not attacking.</summary>
         public float AttackProgress { get; private set; } = -1f;
-        /// <summary>Hero's life force (0..1). The veil thins and dims as it drops — no HUD needed.</summary>
+        /// <summary>The veil's glow (0..1): dimmed while smothered by ash. (Life itself is shown by the HUD.)</summary>
         public float Vitality { get; set; } = 1f;
         public int Facing => player != null && player.Motor != null ? player.Motor.Facing : 1;
         /// <summary>Smoothed facing (-1..1): passes through 0 while the hero turns round.</summary>

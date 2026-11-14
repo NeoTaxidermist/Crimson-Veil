@@ -2,7 +2,8 @@
     "name": "CrimsonVeil.Runtime",
     "rootNamespace": "CrimsonVeil",
     "references": [
-        "Unity.InputSystem"
+        "Unity.InputSystem",
+        "UnityEngine.UI"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

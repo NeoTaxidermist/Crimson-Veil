@@ -5,6 +5,24 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.12.1] – 2026-11-14
+Ukazatel životů v levém horním rohu.
+
+### Přidáno
+- **HUD: životy jako šála.** V levém horním rohu je rudá plamenná stuha uvázaná v uzlu, která vlaje ve větru. Má tmavé a světlé plamenné pruhy, roztřepený spodní okraj a šikmé roztržené řezy.
+  - **Jeden kus stuhy = jeden život.** Ztracené kusy zůstanou jako šedý popel, takže je vždycky vidět, kolik životů bylo.
+  - Živý konec hoří malým jazykem plamene. Čerstvě ztracená část chvíli žhne jako uhlíky a zableskne se.
+  - Při posledním životě stuha pulzuje.
+- **Pod stuhou je tenká nit se silou šály** pro kouzla. Když je šála plná (a tedy pohltí příští zásah), na konci nitě se třpytí jiskra.
+- HUD se vytvoří sám s hrdinou, takže ho má každá úroveň bez dalšího nastavování. Kreslí se kódem (bez textur) a škáluje s rozlišením.
+
+### Změněno
+- **Šála už neukazuje životy.** Při zranění neslábne ani netmavne. Její délka ukazuje jen sílu pro kouzla a ztlumí ji jen popel.
+
+### Testy
+- **Rozložení stuhy:** kus na život s mezerami, ubývání od volného konce, polovina života = půl kusu, prázdný stav a přetečení, vlání víc na volném konci.
+- **Hrací test:** HUD se objeví s hrdinou, hned ukáže zbývající život, uhlíky po ráně a sílu šály. Šála sama při zranění neslábne.
+
 ## [0.12.0] – 2026-11-14
 Zbraně se sesílají jako kouzla a šála dostala vlastní roli.
 

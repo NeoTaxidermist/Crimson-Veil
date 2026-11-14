@@ -277,6 +277,23 @@ namespace CrimsonVeil.Tests
         }
 
         [UnityTest]
+        public IEnumerator Hud_ShowsLifeInTheCorner_TheScarfNoLonger()
+        {
+            yield return Wait(0.3f);
+            var hud = Object.FindFirstObjectByType<CrimsonVeil.UI.ScarfHud>();
+            Assert.IsNotNull(hud, "the hero brings the HUD with him into any level");
+            veil.Charge.Drain(100f, 1f); // no scarf guard: the blow lands
+            health.ReceiveHit(new DamageInfo { amount = 2f, knockback = Vector2.zero, source = root, point = Vector3.zero });
+            yield return Wait(0.2f);
+            Assert.AreEqual(health.Model.Current, hud.Bar.health, 1e-3f, "the gauge shows the life left at once");
+            Assert.AreEqual(health.Model.Max, hud.Bar.maxHealth, 1e-3f);
+            Assert.Greater(hud.Bar.trailingHealth, hud.Bar.health, "what was just lost glows on as embers");
+            Assert.AreEqual(veil.Charge.Value, hud.Bar.charge, 0.02f, "the thread shows the scarf's strength");
+            yield return Wait(1f);
+            Assert.AreEqual(1f, veil.Vitality, 1e-3f, "the scarf itself no longer thins with the wounds");
+        }
+
+        [UnityTest]
         public IEnumerator Scarf_LeansToSecrets_AndBristlesNearEnemies()
         {
             var secret = new GameObject("Secret");

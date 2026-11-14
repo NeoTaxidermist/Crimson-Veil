@@ -7,7 +7,7 @@ using UnityEngine;
 namespace CrimsonVeil.Combat
 {
     /// <summary>
-    /// Hero's life. There is no HUD: the veil itself thins and dims as health drops.
+    /// Hero's life, shown by the scarf-shaped gauge in the top-left corner (<see cref="CrimsonVeil.UI.ScarfHud"/>).
     /// A hardened shield facing the attacker blocks the hit and staggers it.
     /// </summary>
     [RequireComponent(typeof(PlayerController))]
@@ -54,8 +54,11 @@ namespace CrimsonVeil.Combat
             if (IsAlive && sinceHit > regenDelay) Model.Heal(regenPerSecond * dt);
             dimTimer = Mathf.Max(0f, dimTimer - dt);
             float dim = dimTimer > 0f ? dimAmount : 0f;
-            if (veil != null) veil.Vitality = Mathf.MoveTowards(veil.Vitality, Model.Fraction * (1f - dim), dt * 2f);
+            // Life is shown by the HUD (top-left), not by the scarf: the scarf only dims when smothered by ash.
+            if (veil != null) veil.Vitality = Mathf.MoveTowards(veil.Vitality, 1f - dim, dt * 2f);
         }
+
+        void Start() => CrimsonVeil.UI.ScarfHud.Ensure();
 
         float dimTimer, dimAmount;
 

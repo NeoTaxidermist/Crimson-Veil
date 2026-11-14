@@ -302,7 +302,7 @@ namespace CrimsonVeil.EditorTools
                 model.transform.SetParent(visual, false);
                 foreach (var smr in model.GetComponentsInChildren<SkinnedMeshRenderer>())
                 {
-                    smr.sharedMaterial = M.wraith; // pure ink: the hero's own shadow
+                    smr.sharedMaterial = M.shadowInk; // pure ink: the hero's own shadow
                     smr.updateWhenOffscreen = true;
                     smr.shadowCastingMode = ShadowCastingMode.Off;
                 }

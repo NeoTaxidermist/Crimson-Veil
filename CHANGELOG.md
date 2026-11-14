@@ -5,6 +5,19 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.8.2] – 2026-11-14
+Nepřátelé v odstínech šedi.
+
+### Změněno
+- **Nepřátelé už nejsou čistě černí a nesplývají s prostředím.** Mají tmavě šedé tělo, které je nahoře o něco světlejší (měsíc svítí shora a zepředu), takže jsou vidět záhyby hábitu, kapuce, peří i kořeny. K nohám tmavnou a po obrysu mají jemný světle šedý lem, který je oddělí od tmavého pozadí. Rudé detaily zůstávají.
+- **Stínový dvojník zůstává čistě černý** (je to hrdinův stín), jen s velmi slabým lemem.
+- Shader siluet má tři nové volitelné vlastnosti: modelování světlem, lem po obrysu a tmavnutí k nohám. Výchozí hodnota je vypnuto, takže prostředí ani hrdina se nemění.
+
+### Testy
+- Materiál nepřátel je tmavě šedý, se světlem a světlým lemem.
+- Dvojník je čistě černý.
+- Prostředí a hrdina zůstali beze změny.
+
 ## [0.8.1] – 2026-11-14
 Detailní modely nepřátel z Blenderu.
 

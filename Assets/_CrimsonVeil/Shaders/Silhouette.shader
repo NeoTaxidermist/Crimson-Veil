@@ -13,6 +13,12 @@ Shader "CrimsonVeil/Silhouette"
         _Cracks ("Stone Cracks", Range(0, 1)) = 0
         _CrackScale ("Crack Scale", Float) = 1.2
         _EdgeLight ("Top Edge Light", Range(0, 1)) = 0.08
+        _FormShade ("Form Shading (moonlight)", Range(0, 1)) = 0
+        _RimLight ("Rim Light", Range(0, 1)) = 0
+        _RimColor ("Rim Color", Color) = (0.62, 0.62, 0.66, 1)
+        _RimWidth ("Rim Width", Range(0.5, 8)) = 3
+        _FootShade ("Darker Towards the Feet", Range(0, 1)) = 0
+        _FootHeight ("Feet-to-Head Height (m)", Float) = 2
         _MistStrength ("Ground Mist Strength", Range(0, 2)) = 1
         [Toggle] _Wind ("Wind Sway", Float) = 0
         _WindWeight ("Wind Weight", Float) = 1
@@ -40,6 +46,12 @@ Shader "CrimsonVeil/Silhouette"
             float _Cracks;
             float _CrackScale;
             float _EdgeLight;
+            float _FormShade;
+            float _RimLight;
+            half4 _RimColor;
+            float _RimWidth;
+            float _FootShade;
+            float _FootHeight;
             float _MistStrength;
             float _Wind;
             float _WindWeight;
@@ -120,6 +132,27 @@ Shader "CrimsonVeil/Silhouette"
                 }
 
                 col += saturate(i.normalWS.y) * _EdgeLight;
+
+                // Creatures: modelled by the moon (from above, slightly behind the camera), darker towards the
+                // feet, and a pale rim along the outline so they never melt into a dark background.
+                float3 n = normalize(i.normalWS);
+                if (_FormShade > 0.001)
+                {
+                    float3 moon = normalize(float3(0.35, 0.85, -0.4));
+                    float lit = saturate(dot(n, moon) * 0.5 + 0.5);
+                    col *= lerp(1.0, lerp(0.55, 1.9, lit), _FormShade);
+                }
+                if (_FootShade > 0.001)
+                {
+                    float h = saturate((i.positionWS.y - UNITY_MATRIX_M._m13) / max(0.1, _FootHeight));
+                    col *= lerp(1.0, lerp(0.55, 1.15, h), _FootShade);
+                }
+                if (_RimLight > 0.001)
+                {
+                    float3 view = normalize(GetWorldSpaceViewDir(i.positionWS));
+                    float rim = pow(saturate(1.0 - abs(dot(n, view))), _RimWidth);
+                    col = lerp(col, _RimColor.rgb, rim * _RimLight);
+                }
                 col = MixFog(col, i.fogFactor);
                 float mist = CV_GroundMist(i.positionWS, _MistStrength);
                 col = lerp(col, _CV_MistColor.rgb, mist);

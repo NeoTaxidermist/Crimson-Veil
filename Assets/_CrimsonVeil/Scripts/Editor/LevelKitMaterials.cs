@@ -14,6 +14,8 @@ namespace CrimsonVeil.EditorTools
         public const string MatDir = Root + "/Materials";
 
         public Material inkFG, inkPlay, inkNear, inkMid, inkFar, inkSky, grass, banner, leaf, hero, wraith, wraithEyes;
+        /// <summary>Pure ink for the hero's shadow double (the creatures themselves are shaded grey: <see cref="wraith"/>).</summary>
+        public Material shadowInk;
         public Material mistBand, mistLow, waterfall, shaft, moon;
         public Material veil, wisp, leafParticle, inkGrade;
         /// <summary>Simple particle materials (hit bursts, ropes) — the veil shader is for cloth only.</summary>
@@ -64,7 +66,9 @@ namespace CrimsonVeil.EditorTools
                 banner = Wind(Sil("BannerCrimson", sil, new Color(0.62f, 0.015f, 0.03f), 0.3f, 0.6f), 1.6f, true),
                 leaf = Clip(Wind(Sil("LeafCrimson", sil, new Color(0.78f, 0.02f, 0.035f), 0.2f, 0.7f), 0.6f, false), maple),
                 hero = Sil("HeroInk", sil, new Color(0.012f, 0.012f, 0.014f), 0.12f, 0.15f),
-                wraith = Sil("WraithInk", sil, new Color(0.008f, 0.008f, 0.01f), 0.15f, 0.25f),
+                // Creatures: dark grey, modelled by the moonlight, with a pale rim so they read on any background.
+                wraith = Creature(Sil("WraithInk", sil, new Color(0.075f, 0.075f, 0.082f), 0.15f, 0.3f), 0.8f, 0.55f, 3f, 0.6f),
+                shadowInk = Creature(Sil("ShadowInk", sil, new Color(0.006f, 0.006f, 0.008f), 0.15f, 0.25f), 0f, 0.22f, 4f, 0f),
                 wraithEyes = Sil("WraithEyes", sil, new Color(1f, 0.02f, 0.04f), 0f, 0f),
 
                 mistBand = MistMat("MistBand", mist, "_MODE_MIST", 0, new Color(0.8f, 0.8f, 0.8f), 0.55f, new Vector2(3f, 1.2f), new Vector2(0.025f, 0f), new Vector2(0.15f, 0.45f)),
@@ -96,6 +100,19 @@ namespace CrimsonVeil.EditorTools
             m.SetFloat("_MistStrength", mist);
             m.SetFloat("_GrainStrength", grain);
             m.SetFloat("_EdgeLight", color.grayscale > 0.15f && color.r - color.g < 0.1f ? 0.03f : 0f);
+            return m;
+        }
+
+        /// <summary>Creature look on the silhouette shader: moonlight form shading, a pale rim, darker feet.</summary>
+        static Material Creature(Material m, float formShade, float rim, float rimWidth, float footShade)
+        {
+            m.SetFloat("_FormShade", formShade);
+            m.SetFloat("_RimLight", rim);
+            m.SetFloat("_RimWidth", rimWidth);
+            m.SetColor("_RimColor", new Color(0.6f, 0.6f, 0.64f));
+            m.SetFloat("_FootShade", footShade);
+            m.SetFloat("_FootHeight", 2f);
+            m.SetFloat("_EdgeLight", 0.05f);
             return m;
         }
 

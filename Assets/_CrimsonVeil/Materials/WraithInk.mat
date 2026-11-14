@@ -34,14 +34,20 @@ Material:
     - _Cracks: 0
     - _Cull: 2
     - _Cutoff: 0.5
-    - _EdgeLight: 0
+    - _EdgeLight: 0.05
+    - _FootHeight: 2
+    - _FootShade: 0.6
+    - _FormShade: 0.8
     - _GrainScale: 0.6
-    - _GrainStrength: 0.25
+    - _GrainStrength: 0.3
     - _MistStrength: 0.15
     - _PinTop: 0
+    - _RimLight: 0.55
+    - _RimWidth: 3
     - _Wind: 0
     - _WindWeight: 1
     m_Colors:
-    - _BaseColor: {r: 0.008, g: 0.008, b: 0.01, a: 1}
+    - _BaseColor: {r: 0.075, g: 0.075, b: 0.082, a: 1}
+    - _RimColor: {r: 0.6, g: 0.6, b: 0.64, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

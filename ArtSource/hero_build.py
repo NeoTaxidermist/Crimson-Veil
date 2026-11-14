@@ -202,12 +202,12 @@ def torso_at(z):
 
 
 # ---------------------------------------------------------------- body traced from the concept
-# Like the head, the body is the concept's own side silhouette (ArtSource/ref/hero_concept.jpg): the rig is posed as
-# in the drawing (ArtSource/ref/concept_pose.json, found by hero_fit_pose.py), every part takes the silhouette around
-# its bone (a capsule), the part is "inflated" into a rounded solid (half-width grows with the distance from the
-# outline), and then carried by its bone from the drawing's pose back to the rest pose. Seen from the side the boots,
-# breeches, knee guards, chest, arms and fists are the drawing's. The front leg and the near arm of the drawing are
-# used for both sides (the far arm holds the sword).
+# The body is measured off the concept's own side silhouette (ArtSource/ref/hero_concept.jpg): the rig is posed as in
+# the drawing (ArtSource/ref/concept_pose.json, found by hero_fit_pose.py) and, every 1.2 cm along each bone, the
+# outline's reach in front of and behind the bone is read. Each part is then a smooth loft along its rest bone with
+# exactly that profile - so the parts meet at the joints, and seen from the side the boots, breeches, knee guards,
+# chest, bracers and fists are the drawing's. The front leg and the near arm of the drawing are used for both sides
+# (the far arm holds the sword).
 import json
 import numpy as np
 
@@ -282,125 +282,140 @@ for it in range(60):
         break
 
 
-def trace_part(bone, ext0, ext1, max_r, R, lateral, weight, mirror_to=None, zmin=None, zmax=None):
-    """Builds the part of the silhouette within max_r of the posed bone (extended ext0 before its head and ext1
-    past its tail), inflated (half-width = lateral * R * roundness(distance / R)) and carried to the rest pose.
-    weight(p_rest) -> {bone: w}. mirror_to: (bone map) builds a mirrored copy for the other side."""
-    h, t = POSED[bone]
+def measure_profile(bone, ext0, ext1, max_r, step=0.012, head=None, tail=None):
+    """The drawing's outline across the posed bone: every `step` metres along it (from ext0 before its head to ext1
+    past its tail), how far the outline reaches in front of and behind the bone. Only the run of the outline the
+    bone passes through counts (not the other leg, not the forearm in front of the chest). Returns
+    [(s metres from the head, front m, back m)], lightly smoothed."""
+    h, t = (head, tail) if head is not None else POSED[bone]
     a = Vector(model_to_px(h.y, h.z))
     b = Vector(model_to_px(t.y, t.z))
-    d = (b - a)
-    L = d.length
-    d = d / L
-    a = a - d * (ext0 / K)
-    L += (ext0 + ext1) / K
-    rows = np.arange(bsub.shape[0]) * BODY_STEP + B_R0
-    cols = np.arange(bsub.shape[1]) * BODY_STEP + B_C0
-    RR, CC = np.meshgrid(rows, cols, indexing='ij')
-    rel_r, rel_c = RR - a.x, CC - a.y
-    along = rel_r * d.x + rel_c * d.y
-    sperp = rel_r * d.y - rel_c * d.x  # signed distance (px) across the bone
-    region = bsub & (along >= 0) & (along <= L) & (np.abs(sperp) <= max_r / K)
-    if zmin is not None:
-        region &= (GROUND_ROW - RR) * K >= zmin
-    if zmax is not None:
-        region &= (GROUND_ROW - RR) * K <= zmax
-    # Slice by slice across the bone: keep only the run of the outline the bone passes through (not the other leg,
-    # not the forearm in front of the chest); its extent is the cross-section's depth, an ellipse round the bone.
-    slices = {}
-    for i, j in zip(*np.nonzero(region)):
-        slices.setdefault(int(along[i, j] // BODY_STEP), []).append((float(sperp[i, j]), i, j))
-    keep = np.zeros_like(region)
-    cross = {}
-    for lst in slices.values():
-        lst.sort()
-        runs, cur = [], [lst[0]]
-        for e in lst[1:]:
-            if e[0] - cur[-1][0] > 2.2 * BODY_STEP:
-                runs.append(cur)
-                cur = [e]
-            else:
-                cur.append(e)
-        runs.append(cur)
-        run = min(runs, key=lambda r: 0.0 if r[0][0] <= 0.0 <= r[-1][0] else min(abs(r[0][0]), abs(r[-1][0])))
-        lo, hi = run[0][0], run[-1][0]
-        for e in run:
-            keep[e[1], e[2]] = True
-            cross[(e[1], e[2])] = (lo, hi)
-    region = keep
-    unpose = UNPOSE[bone]
-    bx = h.x
-    out = []  # rest-space points (for extents)
-    for side in [None] + ([mirror_to] if mirror_to else []):
-        front, back = {}, {}
-        for i, j in zip(*np.nonzero(region)):
-            y, z = px_to_model(RR[i, j], CC[i, j])
-            lo, hi = cross[(i, j)]
-            half = (hi - lo) / 2 + BODY_STEP * 0.5
-            u = (float(sperp[i, j]) - (hi + lo) / 2) / half
-            on_outline = bdist[i, j] <= 0 or sperp[i, j] in (lo, hi)
-            rnd_ = 0.0 if on_outline else math.sqrt(max(0.0, 1 - u * u))
-            hw = (lateral(z) if callable(lateral) else lateral * half * K) * rnd_
-            pts = []
-            for sgn in ((1, -1) if hw > 1e-4 else (0,)):
-                p = unpose @ Vector((bx + sgn * hw, y, z))
-                if side:
-                    p.x = -p.x
-                pts.append(p)
-            w = weight(pts[0])
-            if side:
-                w = {side.get(k, k): v for k, v in w.items()}
-            ids = [add_vert(p, w) for p in pts]
-            front[(i, j)] = ids[0]
-            back[(i, j)] = ids[-1]
-            if side is None:
-                out.extend(pts)
-        flip = side is not None  # mirroring flips the winding
-        for i, j in zip(*np.nonzero(region)):
-            quad = [q for q in ((i, j), (i, j + 1), (i + 1, j + 1), (i + 1, j)) if q in front]
-            if len(quad) >= 3:  # full cells and the outline's steps (three corners): watertight from the front too
-                f0 = tuple(front[q] for q in quad)
-                f1 = tuple(back[q] for q in reversed(quad))
-                if flip:
-                    f0, f1 = f0[::-1], f1[::-1]
-                faces.append(f0); fmat.append(INK)
-                faces.append(f1); fmat.append(INK)
+    L = (b - a).length
+    d = (b - a) / L
+    n = Vector((-d.y, d.x))  # front (for a bone hanging down: forward; for the foot: up)
+    out = []
+    s = -ext0
+    reach = int(max_r / K)
+    H, Wd = BMASK.shape
+    while s <= L * K + ext1 + 1e-6:
+        c = a + d * (s / K)
+        vals = []
+        for k in range(-reach, reach + 1):
+            p = c + n * k
+            r_, c_ = int(round(p.x)), int(round(p.y))
+            vals.append(0 <= r_ < H and 0 <= c_ < Wd and bool(BMASK[r_, c_]))
+        runs, start = [], None
+        for k, v in enumerate(vals + [False]):
+            if v and start is None:
+                start = k
+            if not v and start is not None:
+                runs.append((start - reach, k - 1 - reach))
+                start = None
+        if runs:
+            lo, hi = min(runs, key=lambda r: 0 if r[0] <= 0 <= r[1] else min(abs(r[0]), abs(r[1])))
+            out.append([s, max(hi, 1) * K, max(-lo, 1) * K])
+        s += step
+    for _ in range(2):  # smooth the pixel noise
+        out = [[out[i][0]] + [(out[max(i - 1, 0)][j] + 2 * out[i][j] + out[min(i + 1, len(out) - 1)][j]) / 4 for j in (1, 2)]
+               for i in range(len(out))]
     return out
+
+
+def front_normal(dvec):
+    """Rest-space side-plane normal of a bone direction pointing to its front (matching measure_profile)."""
+    return Vector((0.0, dvec.z, -dvec.y)).normalized() if abs(dvec.y) + abs(dvec.z) > 1e-6 else Vector((0, -1, 0))
+
+
+def loft_bone(bone, profile, lateral, weight, cap_r=None, mirror=None, n=18, head=None, tail=None, flip_front=False):
+    """Smooth loft along the rest bone with the drawing's profile: section centre shifted by (front - back) / 2,
+    depth (front + back) / 2, side half-width lateral(s, depth) (or lateral * depth). cap_r clamps the depth."""
+    rh = head if head is not None else head_of(bone)
+    rt = tail if tail is not None else tail_of(bone)
+    L = (rt - rh).length
+    dvec = (rt - rh) / L
+    nf = front_normal(dvec)
+    if flip_front:
+        nf = -nf
+    for side_map in [None] + ([mirror] if mirror else []):
+        secs = []
+        for s, f, bk in profile:
+            if cap_r is not None:
+                f, bk = min(f, cap_r), min(bk, cap_r)
+            depth = (f + bk) / 2
+            c = rh + dvec * s + nf * ((f - bk) / 2)
+            rx = lateral(s, depth, c) if callable(lateral) else lateral * depth
+            if side_map is not None:
+                c = Vector((-c.x, c.y, c.z))
+            secs.append((c, rx, depth))
+        if side_map is None:
+            w = weight
+        else:
+            w = (lambda p, s_, wf=weight, m=side_map: {m.get(k, k): v for k, v in wf(Vector((-p.x, p.y, p.z)), s_).items()})
+        loft(secs, w, n=n)
 
 
 L2R = {"UpperLeg.L": "UpperLeg.R", "LowerLeg.L": "LowerLeg.R", "Foot.L": "Foot.R", "Hips": "Hips"}
 R2L = {"UpperArm.R": "UpperArm.L", "LowerArm.R": "LowerArm.L", "Hand.R": "Hand.L", "Shoulder.R": "Shoulder.L"}
 
 torso_w = blend_z([(1.0, "Hips"), (1.1, "Spine"), (1.26, "Spine"), (1.34, "Chest")])
-# Torso: from the hips (the breeches below belong to the legs) to the base of the neck.
-torso_pts = []
-for bone, e0, e1 in (("Hips", 0.06, 0.02), ("Spine", 0.02, 0.02), ("Chest", 0.02, 0.0)):
-    torso_pts += trace_part(bone, e0, e1, 0.19, 0.14, lambda z: torso_at(z)[0], lambda p: torso_w(p, 0), zmin=0.86, zmax=1.6)
-# Legs (the drawing's front leg), with the breeches, knee guard, calf, boot and foot.
-thigh_w = lambda p: {"UpperLeg.L": 1.0} if p.z < 0.9 else {"Hips": 0.35, "UpperLeg.L": 0.65}
-trace_part("UpperLeg.L", 0.08, 0.04, 0.13, 0.1, 0.8, thigh_w, L2R)
-trace_part("LowerLeg.L", 0.03, 0.02, 0.1, 0.075, 0.9, lambda p: {"LowerLeg.L": 1.0}, L2R)
-trace_part("Foot.L", 0.09, 0.03, 0.07, 0.045, 0.9, lambda p: {"Foot.L": 1.0}, L2R)
-# Arms (the drawing's near arm), with the bracer and the fist.
-trace_part("UpperArm.R", 0.02, 0.03, 0.05, 0.05, 1.0, lambda p: {"UpperArm.R": 1.0}, R2L)  # (hidden in the chest: ~10 cm)
-trace_part("LowerArm.R", 0.02, 0.02, 0.05, 0.036, 1.0, lambda p: {"LowerArm.R": 1.0}, R2L)
-trace_part("Hand.R", 0.0, 0.03, 0.055, 0.04, 1.0, lambda p: {"Hand.R": 1.0}, R2L)
+# Torso: along the spine line, from below the belt to the base of the neck. Its side-to-side breadth (not in the side
+# view) keeps the earlier front-view table.
+T_TOP, T_BOT = POSED["Chest"][1], POSED["Hips"][0] - Vector((0, 0, 0.12))
+TORSO_PROFILE = measure_profile(None, 0.0, 0.0, 0.2, step=0.012, head=T_TOP, tail=T_BOT)
+# Where the drawing's arms lie over the torso it can't be read: the near elbow over the belly (front, z 0.95-1.2), the
+# far hand and the sword's hilt over the hips (back, below z 1.0), the scarf's knot under the chin (front, z 1.38-1.5).
+for e in TORSO_PROFILE:
+    z = T_TOP.z - e[0]
+    if 0.95 < z < 1.2:
+        e[1] = min(e[1], 0.118)
+    if z < 1.0:
+        e[2] = min(e[2], 0.15)
+    if 1.38 < z < 1.5:
+        e[1] = max(e[1], 0.1)
+T_REST_TOP, T_REST_BOT = tail_of("Chest"), head_of("Hips") - Vector((0, 0, 0.12))
+loft_bone(None, TORSO_PROFILE, lambda s, dep, c: torso_at(c.z)[0], lambda p, s: torso_w(p, s), cap_r=0.17,
+          head=T_REST_TOP, tail=T_REST_BOT, n=28)
+_tz = [(T_REST_TOP.z - s, f, bk) for s, f, bk in TORSO_PROFILE]
 
-# Back to the rest pose (the mesh is built in rest space).
+# Legs (the drawing's front leg) - breeches, knee guard, calf, boot - and the foot; mirrored for the other leg.
+leg_l = lambda p, s: along(head_of("UpperLeg.L"), head_of("LowerLeg.L"), "UpperLeg.L", "LowerLeg.L", 0.85)(p, s) \
+    if p.z < head_of("UpperLeg.L").z - 0.02 else {"Hips": 0.35, "UpperLeg.L": 0.65}
+# (the breeches stay narrow at the belt and balloon out below it, as drawn - side to side as well)
+loft_bone("UpperLeg.L", measure_profile("UpperLeg.L", 0.06, 0.02, 0.13),
+          lambda s, dep, c: dep * 0.85 * min(1.0, 0.55 + max(s + 0.06, 0.0) / 0.3), leg_l, cap_r=0.12, mirror=L2R)
+loft_bone("LowerLeg.L", measure_profile("LowerLeg.L", 0.02, 0.0, 0.1),
+          0.9, along(head_of("LowerLeg.L"), head_of("Foot.L"), "LowerLeg.L", "Foot.L", 0.9), cap_r=0.09, mirror=L2R)
+# The foot stands flat in the drawing: read it along the ground, 4.5 cm up, from the heel (col 755) to the toe
+# (col 918) of the front boot; its top above that line, the sole below. It lies flat under the ankle at rest.
+_heel_y, _toe_y = px_to_model(0, 755)[0], px_to_model(0, 918)[0]
+FOOT_PROFILE = measure_profile(None, 0.0, 0.0, 0.08, step=0.01, head=Vector((0, _heel_y, 0.045)), tail=Vector((0, _toe_y, 0.045)))
+_ank = head_of("Foot.L")
+_foot_len = _heel_y - _toe_y
+loft_bone("Foot.L", FOOT_PROFILE, 0.95, lambda p, s: {"Foot.L": 1.0}, cap_r=0.07, mirror=L2R,
+          head=Vector((_ank.x, _ank.y + 0.075, 0.045)), tail=Vector((_ank.x, _ank.y + 0.075 - _foot_len, 0.045)))
+
+# Arms (the drawing's near arm): upper arm (hidden in the chest in the drawing: capped), bracer, fist; mirrored.
+loft_bone("UpperArm.R", measure_profile("UpperArm.R", 0.03, 0.0, 0.06), 1.0,
+          along(head_of("UpperArm.R"), head_of("LowerArm.R"), "UpperArm.R", "LowerArm.R", 0.85), cap_r=0.05, mirror=R2L, n=14)
+loft_bone("LowerArm.R", measure_profile("LowerArm.R", 0.02, 0.0, 0.05), 1.0,
+          along(head_of("LowerArm.R"), head_of("Hand.R"), "LowerArm.R", "Hand.R", 0.9), cap_r=0.045, mirror=R2L, n=14)
+loft_bone("Hand.R", measure_profile("Hand.R", 0.015, 0.03, 0.055), 0.85, lambda p, s: {"Hand.R": 1.0},
+          cap_r=0.05, mirror=R2L, n=14)
+
+# Back to the rest pose.
 for pb in rig.pose.bones:
     pb.rotation_quaternion = (1, 0, 0, 0)
     pb.location = (0, 0, 0)
 bpy.context.view_layer.update()
 
-TP = np.array([(p.x, p.y, p.z) for p in torso_pts])
+_old_torso_at = torso_at
 
 
 def torso_at(z):
-    """Half width, half depth and centre y of the traced torso at height z (for the crimson trim and the belt)."""
-    sel = TP[np.abs(TP[:, 2] - z) < 0.012]
-    if len(sel) == 0:
-        return [0.15, 0.1, 0.0]
-    return [float(np.abs(sel[:, 0]).max()), float(sel[:, 1].max() - sel[:, 1].min()) / 2, float(sel[:, 1].max() + sel[:, 1].min()) / 2]
+    """Half width (front-view table), half depth and centre y of the torso at height z, from the drawing."""
+    best = min(_tz, key=lambda e: abs(e[0] - z))
+    f, bk = min(best[1], 0.17), min(best[2], 0.17)
+    return [_old_torso_at(z)[0], (f + bk) / 2, -(f - bk) / 2]
 
 
 # A crimson line across the chest (the stitched trim in the art).
@@ -580,14 +595,6 @@ me.materials.append(ink)
 me.materials.append(crimson)
 for poly, m in zip(me.polygons, fmat):
     poly.material_index = m
-# Soften the traced outlines' pixel steps (side plane only: y and z).
-import bmesh
-_bm = bmesh.new()
-_bm.from_mesh(me)
-for _ in range(3):
-    bmesh.ops.smooth_vert(_bm, verts=_bm.verts, factor=0.5, use_axis_x=False, use_axis_y=True, use_axis_z=True)
-_bm.to_mesh(me)
-_bm.free()
 ob = bpy.data.objects.new("Hero", me)
 bpy.context.scene.collection.objects.link(ob)
 ob.parent = rig

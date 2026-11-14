@@ -5,6 +5,18 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.15.4] – 2026-11-14
+Tělo hrdiny drží pohromadě.
+
+### Opraveno
+- **Ruce už nevisí ve vzduchu a díly těla na sebe navazují.** Dřív se každý díl z kresby přenášel přes dohledanou pózu a každá její nepřesnost ho posunula nebo pootočila: ruce stály bokem, pěsti byly odpojené, chodidla mířila špičkou dolů a povrch byl samý schod.
+  - Z návrhu se teď bere jen to podstatné: v řezech každých 1,2 cm podél každé kosti, kam sahá obrys před kost a za ni.
+  - Každý díl je hladká trubice navlečená na kost se zachyceným profilem, takže se díly v kloubech potkávají a z boku mají obrys z kresby.
+  - Kde v návrhu leží přes trup ruka, je obrys trupu omezený na hodnotu nezakrytých míst: bližší loket přes břicho, vzdálenější ruka s jílcem přes boky, uzel šály pod bradou.
+  - Chodidlo se měří vodorovně podél nakreslené boty (stojí naplocho), takže boty stojí rovně.
+  - Kalhoty jsou u opasku úzké a dolů se rozšiřují (i do stran), bez hranatých výstupků nad boky.
+- Model má 19 tisíc vrcholů místo 42 tisíc. V póze návrhu se silueta kryje s kresbou ze 77 %.
+
 ## [0.15.3] – 2026-11-14
 Celé tělo hrdiny z obrysu návrhu.
 

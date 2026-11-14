@@ -5,6 +5,16 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.16.12] – 2026-11-14
+Nahrávač krátkých klipů ze hry.
+
+### Přidáno
+- **`ClipRecorder`** natáčí krátké klipy ze hry na ukázku (šála, zbraně, štít, salto).
+  - Ovládá hrdinu podle časového scénáře vstupů, například `move:1`, `jump`, `cast:Sword`, `hold:Shield`, `release`.
+  - Běží s pevnou snímkovou frekvencí (`Time.captureFramerate`), takže klip je plynulý i v pomalém editoru.
+  - Kamera sleduje hrdinu a každý snímek se uloží jako PNG.
+  - Stejně jako `AutopilotInput` je to zdroj vstupu pro `PlayerController.InputSource`.
+
 ## [0.16.11] – 2026-11-14
 Objemné víry na konci šály a čisté tahy bez úlomků.
 

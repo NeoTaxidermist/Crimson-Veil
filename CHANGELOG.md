@@ -5,6 +5,15 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.15.5] – 2026-11-14
+Normálně vypadající paže.
+
+### Opraveno
+- **Paže jsou složené z obou rukou návrhu do jedné souvislé paže.** Měřit je přímo z obrysu nešlo: bližší nadloktí se v návrhu ztrácí v trupu a vzdálenější předloktí drží meč a mizí za jílcem.
+  - **Vrchní část** (rameno, nadloktí s chráničem, loket) je podle zadní ruky, hluboká 10–11 cm.
+  - **Spodní část** (chránič předloktí, zápěstí, pěst) je podle přední ruky: chránič se zužuje k zápěstí na 5 cm, pěst má 7,5 cm.
+  - Paže se od ramene k zápěstí plynule zužuje a leží rovně na kostech ruky.
+
 ## [0.15.4] – 2026-11-14
 Tělo hrdiny drží pohromadě.
 

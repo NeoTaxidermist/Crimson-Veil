@@ -394,13 +394,37 @@ _foot_len = _heel_y - _toe_y
 loft_bone("Foot.L", FOOT_PROFILE, 0.95, lambda p, s: {"Foot.L": 1.0}, cap_r=0.07, mirror=L2R,
           head=Vector((_ank.x, _ank.y + 0.075, 0.045)), tail=Vector((_ank.x, _ank.y + 0.075 - _foot_len, 0.045)))
 
-# Arms (the drawing's near arm): upper arm (hidden in the chest in the drawing: capped), bracer, fist; mirrored.
-loft_bone("UpperArm.R", measure_profile("UpperArm.R", 0.03, 0.0, 0.06), 1.0,
-          along(head_of("UpperArm.R"), head_of("LowerArm.R"), "UpperArm.R", "LowerArm.R", 0.85), cap_r=0.05, mirror=R2L, n=14)
-loft_bone("LowerArm.R", measure_profile("LowerArm.R", 0.02, 0.0, 0.05), 1.0,
-          along(head_of("LowerArm.R"), head_of("Hand.R"), "LowerArm.R", "Hand.R", 0.9), cap_r=0.045, mirror=R2L, n=14)
-loft_bone("Hand.R", measure_profile("Hand.R", 0.015, 0.03, 0.055), 0.85, lambda p, s: {"Hand.R": 1.0},
-          cap_r=0.05, mirror=R2L, n=14)
+# Arms. The drawing can't be read straight for them: the near upper arm is lost in the chest and the far forearm
+# vanishes behind the sword's hilt. So the arm is composed: the upper part (shoulder, upper arm with its guard, elbow)
+# from the far arm - 0.10-0.13 m deep in the drawing - and the lower part (bracer, wrist, fist) from the near arm -
+# the bracer tapering to ~0.05 m at the wrist, the fist ~0.075 m. They are joined into one arm that tapers smoothly
+# from the shoulder to the wrist, straight along the arm's bones. (t: 0..1 along the bone; depth in metres)
+UPPER_ARM = [(-0.1, 0.08), (0.0, 0.1), (0.15, 0.108), (0.45, 0.1), (0.8, 0.085), (1.0, 0.076), (1.06, 0.073)]
+FOREARM = [(-0.06, 0.074), (0.0, 0.075), (0.16, 0.077), (0.2, 0.084), (0.3, 0.08), (0.75, 0.066), (0.9, 0.058), (1.0, 0.05), (1.04, 0.048)]
+FIST = [(-0.12, 0.05), (0.15, 0.072), (0.5, 0.078), (0.85, 0.07), (1.2, 0.036)]
+
+
+def arm_profile(points, bone, step=0.012):
+    L = (tail_of(bone) - head_of(bone)).length
+    out = []
+    t = points[0][0]
+    while t <= points[-1][0] + 1e-6:
+        for (t0, d0), (t1, d1) in zip(points, points[1:]):
+            if t0 <= t <= t1:
+                u = (t - t0) / (t1 - t0)
+                u = u * u * (3 - 2 * u)
+                dep = d0 + (d1 - d0) * u
+                break
+        out.append([t * L, dep / 2, dep / 2])
+        t += step / L
+    return out
+
+
+loft_bone("UpperArm.R", arm_profile(UPPER_ARM, "UpperArm.R"), 0.95,
+          along(head_of("UpperArm.R"), head_of("LowerArm.R"), "UpperArm.R", "LowerArm.R", 0.85), mirror=R2L, n=16)
+loft_bone("LowerArm.R", arm_profile(FOREARM, "LowerArm.R"), 0.9,
+          along(head_of("LowerArm.R"), head_of("Hand.R"), "LowerArm.R", "Hand.R", 0.9), mirror=R2L, n=16)
+loft_bone("Hand.R", arm_profile(FIST, "Hand.R", step=0.01), 0.8, lambda p, s: {"Hand.R": 1.0}, mirror=R2L, n=14)
 
 # Back to the rest pose.
 for pb in rig.pose.bones:

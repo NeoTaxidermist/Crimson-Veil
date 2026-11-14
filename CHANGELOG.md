@@ -5,6 +5,19 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.16.7] – 2026-11-14
+Delší prameny vlasů.
+
+### Změněno
+- **Prameny vlasů jsou dlouhé a tenké.** Nad hmotu vlasů sahají 1,7× dál a jsou užší, takže vlají dozadu jako na konceptu.
+
+### Opraveno
+- **Obrys kštice se z konceptu snímá i se světlejšími konci pramenů.**
+  - Konce jsou na kresbě světlejší šedé (práh jasu je nově 0,42, dříve 0,12), takže je snímání dřív usekávalo.
+  - Výřez je širší.
+  - Kštice teď sahá o 5 cm dál dozadu a o 2,5 cm výš.
+  - V obrysu se našlo 14 špiček místo 9, každá má svůj pružinový řetěz.
+
 ## [0.16.6] – 2026-11-14
 Vlasy jako na konceptu: hladká hmota a pár pramenů do špiček.
 

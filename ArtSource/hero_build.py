@@ -863,7 +863,8 @@ def concept_mask():
     px = np.array(im.pixels[:], dtype=np.float32).reshape(h, w, 4)[::-1]
     r, g, b = px[..., 0], px[..., 1], px[..., 2]
     red = (r > g * 1.8) & (r > 0.25)
-    return ((0.3 * r + 0.59 * g + 0.11 * b) < 0.12) & ~red
+    # (0.42: the thin ends of the locks are drawn lighter than the mass - the background is ~0.57)
+    return ((0.3 * r + 0.59 * g + 0.11 * b) < 0.42) & ~red
 
 
 def to_model(row, col, x=0.0):
@@ -871,7 +872,7 @@ def to_model(row, col, x=0.0):
 
 
 mask = concept_mask()
-R0, R1, C0, C1 = HEAD_BOX = (705, 909, 560, 860)  # the head in the concept (the jaw ends at row ~905)
+R0, R1, C0, C1 = HEAD_BOX = (690, 909, 520, 860)  # the head in the concept (the jaw ends at row ~905)
 sub = mask[R0:R1:STEP, C0:C1:STEP].copy()
 sub[(885 - R0) // STEP:, :(700 - C0) // STEP] = False  # the scarf behind the nape is not the head
 nr, nc = sub.shape
@@ -1083,11 +1084,13 @@ for ang, r_root, r_tip, names in chains:
     d = (tip - centre).normalized()
     k = int(((ang + 360) % 360) // 3) % _N
     root = centre + d * (HAIR_R[k] * 0.62)
-    bend = -0.014 if 60 < ang < 200 else 0.01
-    lock(root, tip, 0.062, 0.03, bend)
+    surf = centre + d * HAIR_R[k]
+    tip = surf + (tip - surf) * 1.7  # long, thin wisps (the drawing's ends fade out lighter, longer than they read)
+    bend = -0.016 if 60 < ang < 200 else 0.01
+    lock(root, tip, 0.046, 0.024, bend)
     if ang > 60:  # beside the locks swept back, a lock to each side: they read from the front as well
         for sx in (1, -1):
-            lock(root + Vector((sx * 0.04, 0, 0)), root.lerp(tip, 0.86) + Vector((sx * 0.06, 0, 0)), 0.05, 0.026, bend)
+            lock(root + Vector((sx * 0.04, 0, 0)), root.lerp(tip, 0.82) + Vector((sx * 0.06, 0, 0)), 0.04, 0.022, bend)
 
 # ---------------------------------------------------------------- mesh object
 old = bpy.data.objects.get("Hero")

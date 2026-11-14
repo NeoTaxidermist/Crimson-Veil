@@ -95,6 +95,37 @@ namespace CrimsonVeil.Tests
         }
 
         [Test]
+        public void ShieldRing_BurnsWithTonguesOfFlame()
+        {
+            // Along the ring at one moment: several sharp tongues, not a smooth band.
+            int tongues = 0;
+            bool up = false;
+            float maxLick = 0f, minFlicker = 9f, maxFlicker = 0f;
+            for (int i = 0; i <= 400; i++)
+            {
+                float f = 0.2f + 0.8f * i / 400f;
+                float l = VeilRenderer.ShieldFlameLick(f, 1.3f, 0.8f, 0.12f);
+                maxLick = Mathf.Max(maxLick, l);
+                if (!up && l > 0.4f) { tongues++; up = true; }
+                if (up && l < 0.05f) up = false;
+                float fl = VeilRenderer.ShieldFlicker(f, 1.3f, 0.8f);
+                minFlicker = Mathf.Min(minFlicker, fl); maxFlicker = Mathf.Max(maxFlicker, fl);
+            }
+            Assert.GreaterOrEqual(tongues, 4, "tongues of flame all round the ring");
+            Assert.LessOrEqual(maxLick, 1f);
+            Assert.Greater(maxFlicker - minFlicker, 0.4f, "its body flickers");
+            Assert.Greater(minFlicker, 0.5f, "but never breaks");
+            // And they move.
+            float change = 0f;
+            for (int i = 0; i <= 100; i++)
+            {
+                float f = 0.2f + 0.8f * i / 100f;
+                change += Mathf.Abs(VeilRenderer.ShieldFlameLick(f, 1.3f, 0.8f, 0.12f) - VeilRenderer.ShieldFlameLick(f, 1.35f, 0.8f, 0.12f));
+            }
+            Assert.Greater(change, 2f, "the flames run and flicker");
+        }
+
+        [Test]
         public void Spear_HasALeafShapedHead()
         {
             float max = 0f;

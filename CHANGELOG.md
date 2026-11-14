@@ -5,6 +5,18 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.14.3] – 2026-11-14
+Štít hoří.
+
+### Změněno
+- **Prstenec štítu vypadá jako plameny, ne jako hladká obruč.**
+  - Z prstence šlehají ven ostré, nepravidelné jazyky ohně, které po něm běží a mihotají se. Každá vrstva šály má svoje.
+  - Tloušťka prstence se mihotá.
+  - Všechny vrstvy šály teď hoří celým kruhem, ne jen jeho začátkem.
+
+### Testy
+- Nový test `ShieldRing_BurnsWithTonguesOfFlame`.
+
 ## [0.14.2] – 2026-11-14
 Robustnější štít, dál od postavy.
 

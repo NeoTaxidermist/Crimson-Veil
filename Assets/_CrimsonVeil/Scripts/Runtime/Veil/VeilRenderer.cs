@@ -214,6 +214,7 @@ namespace CrimsonVeil.Veil
             bool bow = veil.ShapeForm == VeilForm.Bow;
             bool shield = veil.ShapeForm == VeilForm.Shield;
             float shieldCut = Mathf.Ceil(hf * (n - 1)) / (n - 1) + 0.002f;
+            Vector3 shieldCentre = p[0] + new Vector3(VeilFormLibrary.ShieldCenter.x * facing, VeilFormLibrary.ShieldCenter.y, 0f);
             float gripFraction = Mathf.Max(hf, VeilFormLibrary.GripFraction(veil.ShapeForm));
 
             // Per-sample frame, width and alpha of the scarf body.
@@ -267,7 +268,7 @@ namespace CrimsonVeil.Veil
                 float lastW = 0f, lastA = 0f, lastHard = 0f, lastFront = 0f;
                 // As a weapon, each strand ends somewhere along the blade, where its flame tongue peels off.
                 // (On a bow every strand runs the whole way round, so both limbs are equally full.)
-                float end = StrandEnd(st, main, bow, weaponness, gripFraction);
+                float end = StrandEnd(st, main, bow || shield, weaponness, gripFraction); // (every layer burns all round the shield)
                 // Keep a pointed weapon's tip clean: the braided strands' tongues flare before the point.
                 if (!main && Pointed(veil.ShapeForm)) end = Mathf.Min(end, Mathf.Lerp(1f, 0.82f, weaponness));
                 // On a weapon the braided strands start at the hand, so the part behind it (a spear's butt) is
@@ -309,8 +310,22 @@ namespace CrimsonVeil.Veil
                     if (ov.y > 0f) ov.y *= 0.5f;
                     c += ov + new Vector3(0f, -w * HangBelowNeck * loose * Mathf.SmoothStep(0f, 1f, f * 4f), (s - 1) * 0.012f);
 
+                    // The shield's ring burns: tongues of flame lick outwards off it and its body flickers.
+                    float lick = 0f, burn = 1f, set = 0f;
+                    if (shield && f >= hf)
+                    {
+                        set = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.4f, 0.9f, hard));
+                        lick = ShieldFlameLick(f, time, st.phase, st.seed) * set;
+                        burn = Mathf.Lerp(1f, ShieldFlicker(f, time, st.phase), set);
+                        Vector3 outward = c - shieldCentre;
+                        outward.z = 0f;
+                        if (outward.sqrMagnitude > 1e-6f)
+                            c += outward.normalized * (lick * (main ? 0.16f : 0.6f) + (main ? 0f : 0.05f * set));
+                    }
+
                     // Tendrils emerge from the ribbon: thin where they split, then full.
-                    float sw = w * Mathf.Lerp(st.width, main ? 1f : 0.3f, hard);
+                    float sw = w * Mathf.Lerp(st.width, main ? 1f : 0.3f, hard) * burn;
+                    if (!main) sw *= (1f + 1.6f * set) * (1f - 0.7f * lick); // bold tongues, each narrowing to its tip
                     if (branch) sw *= Mathf.Lerp(0.25f, 0.51f, Mathf.SmoothStep(0f, 1f, u));
                     float alpha = a * Mathf.Lerp(st.alpha, main ? 1f : 0.7f, hard);
                     if (branch) alpha *= Mathf.SmoothStep(0f, 1f, u * 5f) * Mathf.Lerp(1f, 0.12f, coiled);
@@ -398,6 +413,22 @@ namespace CrimsonVeil.Veil
         /// tongues peel off all along it rather than only at the tip.</summary>
         public static float WeaponStrandEnd(Strand st, float handFraction)
             => Mathf.Lerp(Mathf.Min(handFraction + 0.12f, 0.95f), 0.99f, 0.15f + 0.85f * Mathf.Repeat(st.seed * 1.7f + st.phase * 0.13f, 1f));
+
+        /// <summary>
+        /// 0..1 how far a tongue of flame licks out of the shield's ring at veil fraction <paramref name="f"/>:
+        /// sharp, irregular spikes that run along the ring and flicker (each strand its own set).
+        /// </summary>
+        public static float ShieldFlameLick(float f, float time, float phase, float seed)
+        {
+            float s = Mathf.Sin(f * 2f * Mathf.PI * 9f + phase * 2.3f - time * 10f);
+            float spike = Mathf.Pow(Mathf.Max(0f, s), 5f);
+            float gust = 0.55f + 0.45f * Mathf.Sin(f * 31f - time * 6.5f + seed * 17f);
+            return Mathf.Clamp01(spike * gust * 1.2f);
+        }
+
+        /// <summary>Flickering thickness of the burning ring (about 0.65..1.3).</summary>
+        public static float ShieldFlicker(float f, float time, float phase)
+            => 0.98f + 0.2f * Mathf.Sin(f * 47f - time * 13f + phase) + 0.13f * Mathf.Sin(f * 19f + time * 7f + phase * 1.7f);
 
         /// <summary>Weapons that end in a point (no flame curl at the tip).</summary>
         public static bool Pointed(VeilForm form) => form == VeilForm.Sword || form == VeilForm.Spear;

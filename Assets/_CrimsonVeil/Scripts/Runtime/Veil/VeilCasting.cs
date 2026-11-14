@@ -9,7 +9,9 @@ namespace CrimsonVeil.Veil
     public static class VeilCasting
     {
         /// <summary>Seconds a cast weapon keeps its shape after the blow — another press continues the combo.</summary>
-        public const float Linger = 0.6f;
+        public const float Linger = 0.25f;
+        /// <summary>Melting back into cloth once a weapon is let go: quick, so the scarf is back at once.</summary>
+        public const float MeltTime = 0.16f;
         /// <summary>Hardening / morph time of a cast: the transformation *is* the wind-up, so it must be quick.</summary>
         public const float CastTransformTime = 0.12f;
         public const float CastMorphTime = 0.14f;

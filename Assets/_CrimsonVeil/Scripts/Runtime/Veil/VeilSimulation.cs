@@ -124,6 +124,8 @@ namespace CrimsonVeil.Veil
         public float SwirlSpeed { get; set; }
         public float SwirlRadius { get; set; } = 0.75f;
         public float SwirlWeight { get; set; }
+        /// <summary>Node index after which the ribbon is not held together (-1 = whole): node i and i + 1 move apart freely.</summary>
+        public int DetachedAfter { get; set; } = -1;
 
         /// <summary>Air velocity of the swirl at <paramref name="p"/> relative to the moving centre.</summary>
         public static Vector2 SwirlVelocity(Vector2 p, Vector2 center, float speed, float radius)
@@ -321,6 +323,7 @@ namespace CrimsonVeil.Veil
             {
                 for (int i = 0; i < Count - 1; i++)
                 {
+                    if (i == DetachedAfter) continue; // a weapon that floats free of the hand (the shield's ring)
                     float rest = Mathf.Lerp(FlowRestLength, TargetRest[i], 0.5f * (H(i) + H(i + 1)));
                     Vector3 d = Positions[i + 1] - Positions[i];
                     d.z = 0f; // 2.5D: lengths live in the picture plane; depth is only a cosmetic wobble

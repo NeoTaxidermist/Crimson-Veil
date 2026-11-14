@@ -416,8 +416,9 @@ namespace CrimsonVeil.Veil
             }
 
             float goal = Form == VeilForm.Flow ? 0f : 1f;
-            // A cast snaps into shape (the transformation is the blow's wind-up); melting back is unhurried.
-            float tTime = castMode && Form != VeilForm.Flow ? VeilCasting.CastTransformTime : transformTime;
+            // A cast snaps into shape (the transformation is the blow's wind-up) and melts back into cloth quickly.
+            float tTime = Form == VeilForm.Flow ? VeilCasting.MeltTime
+                : castMode ? VeilCasting.CastTransformTime : transformTime;
             float mTime = castMode ? VeilCasting.CastMorphTime : morphTime;
             TransformProgress = Mathf.SmoothDamp(TransformProgress, goal, ref progressVel, tTime * 0.4f, Mathf.Infinity, dt);
             if (Mathf.Abs(TransformProgress - goal) < 0.002f) { TransformProgress = goal; progressVel = 0f; }
@@ -445,8 +446,11 @@ namespace CrimsonVeil.Veil
             if (wrap > 0f)
             {
                 Simulation.SwirlCenter = (Vector2)player.transform.position + Vector2.up * Somersault.Pivot;
-                Simulation.SwirlSpeed = -player.FlipFacing * (2f * Mathf.PI / Somersault.Duration) * 1.2f;
+                // Whirl with the body as it turns (slow-fast-slow), and run down smoothly as it lets go.
+                float bodySpin = Somersault.AngularVelocity(player.FlipProgress, player.FlipFacing);
+                Simulation.SwirlSpeed = Mathf.Lerp(Simulation.SwirlSpeed, bodySpin, 1f - Mathf.Exp(-14f * dt));
             }
+            else Simulation.SwirlSpeed = 0f;
 
             UpdateNodeHardness();
             if (TransformProgress > 0f && ShapeForm != VeilForm.Flow) UpdateTargets(a, dt);
@@ -454,6 +458,9 @@ namespace CrimsonVeil.Veil
 
             Simulation.Hardness = Hardness;
             Simulation.DriftDirection = -Facing;
+            // The shield's ring circles round the body on its own: once it has formed it is not tied to the hand.
+            Simulation.DetachedAfter = ShapeForm == VeilForm.Shield && TransformProgress > 0.3f
+                ? Mathf.Clamp(Mathf.CeilToInt(HandFraction * (Simulation.Count - 1)) - 1, 0, Simulation.Count - 2) : -1;
             Simulation.Step(dt, a);
             UpdateBowString();
             UpdateWhipRope();

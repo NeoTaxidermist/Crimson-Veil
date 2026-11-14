@@ -127,7 +127,7 @@ namespace CrimsonVeil.Tests
             Assert.IsTrue(veil.IsAttacking, "the blow follows the transformation without a second press");
 
             // After the blow it lingers a moment, then melts back into cloth by itself.
-            yield return WaitSeconds(0.46f + VeilCasting.Linger + 0.9f);
+            yield return WaitSeconds(0.46f + VeilCasting.Linger + 0.45f); // and quickly: the scarf is back at once
             Assert.AreEqual(VeilForm.Flow, veil.Form);
             Assert.AreEqual(0f, veil.Hardness, 1e-3f);
         }

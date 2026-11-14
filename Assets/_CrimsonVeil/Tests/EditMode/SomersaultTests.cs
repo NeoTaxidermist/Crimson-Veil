@@ -25,6 +25,21 @@ namespace CrimsonVeil.Tests
         }
 
         [Test]
+        public void TheTurnFlows_NeverStopping_AndTheScarfWhirlsAtItsPace()
+        {
+            float min = float.MaxValue, max = 0f;
+            for (int i = 1; i < 100; i++)
+            {
+                float t = i / 100f;
+                float w = Somersault.AngularVelocity(t, 1);
+                float numeric = (Somersault.Angle(t + 0.001f, 1) - Somersault.Angle(t - 0.001f, 1)) * Mathf.Deg2Rad / (0.002f * Somersault.Duration);
+                Assert.AreEqual(numeric, w, 0.05f * Mathf.Abs(numeric) + 0.05f, "the scarf's whirl matches the body's turn");
+                min = Mathf.Min(min, -w); max = Mathf.Max(max, -w);
+            }
+            Assert.Greater(min, 0.2f * max, "never slows to a stop and then jerks: one flowing turn");
+        }
+
+        [Test]
         public void TucksThroughTheMiddle()
         {
             Assert.AreEqual(0f, Somersault.Tuck(0f), 1e-4f, "0 = unset: no tuck");

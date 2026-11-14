@@ -5,6 +5,19 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.14.1] – 2026-11-14
+Plynulejší salto, štít jako kroužící prstenec, rychlejší návrat do šály.
+
+### Změněno
+- **Salto při dvojskoku plyne.**
+  - Tělo se otáčí bez zastavení: na krajích pomaleji, uprostřed rychleji, aniž by se na začátku zaseklo a pak trhlo.
+  - Šála krouží stejnou rychlostí jako tělo. Obtáčí se plynule a po saltu se pomalu pouští.
+- **Štít je čistý tenký prstenec ze šály s malou mezerou**, který krouží kolem celé postavy (asi otáčka za sekundu).
+  - Místo přeplácané bubliny je to jeden pruh.
+  - Prstenec není přivázaný k ruce, takže volně obíhá kolem těla.
+  - Úder štítem prstenec nafoukne a roztočí rychleji.
+- **Rychlejší návrat do šály po útoku.** Zbraň po úderu vydrží 0,25 s místo 0,6 s a rozplyne se zpátky v látku zhruba dvakrát rychleji.
+
 ## [0.14.0] – 2026-11-14
 Dvojskok se saltem, štít jako bublina, rovný meč.
 

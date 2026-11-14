@@ -22,7 +22,8 @@ namespace CrimsonVeil.Tests
             // The bow has two sharp corners by design (where the string meets the limb tips): a node that
             // straddles one is closer to its neighbour along the chord. Nothing else may be uneven.
             // (The spear has one: the scarf comes down to its butt and the shaft runs back forward through the hand.)
-            int allowedCorners = form == VeilForm.Bow ? 2 : form == VeilForm.Spear ? 1 : 0, corners = 0;
+            // (The shield has one: the reach out from the hand turns onto its ring.)
+            int allowedCorners = form == VeilForm.Bow ? 2 : form == VeilForm.Spear || form == VeilForm.Shield ? 1 : 0, corners = 0;
             for (int i = 1; i < pts.Length - 1; i++)
             {
                 float d = Vector2.Distance(pts[i], pts[i + 1]);
@@ -47,24 +48,35 @@ namespace CrimsonVeil.Tests
         }
 
         [Test]
-        public void Shield_IsABubbleRoundTheWholeHero()
+        public void Shield_IsAnOpenRingRoundTheWholeHero()
         {
             var pts = new Vector2[48];
             float hf = VeilFormLibrary.BuildShape(VeilForm.Shield, pts);
             var c = VeilFormLibrary.ShieldCenter;
             Assert.Less(c.magnitude, 0.8f, "centred on the body (the anchor is at the neck)");
             float swept = 0f, minY = 9f, maxY = -9f;
-            int start = Mathf.CeilToInt(hf * (pts.Length - 1)) + 6;
+            int start = Mathf.CeilToInt(hf * (pts.Length - 1));
             for (int i = start; i < pts.Length; i++)
             {
-                float r = Vector2.Distance(pts[i], c);
-                Assert.That(r, Is.InRange(0.85f, 1.15f), "out on the bubble");
+                Assert.AreEqual(VeilFormLibrary.ShieldRadius, Vector2.Distance(pts[i], c), 0.03f, "one clean ring");
                 if (i > start) swept += Vector2.SignedAngle(pts[i - 1] - c, pts[i] - c);
                 minY = Mathf.Min(minY, pts[i].y); maxY = Mathf.Max(maxY, pts[i].y);
             }
-            Assert.Greater(Mathf.Abs(swept), 360f, "runs all the way round");
+            Assert.That(Mathf.Abs(swept), Is.InRange(290f, 340f), "nearly all the way round, leaving a small gap");
             Assert.Greater(maxY, 0.15f, "over the head");
             Assert.Less(minY, -1.4f, "down to the feet");
+        }
+
+        [Test]
+        public void ShieldRing_CirclesRoundTheHero()
+        {
+            var c = VeilFormLibrary.ShieldCenter;
+            var p = c + Vector2.right * VeilFormLibrary.ShieldRadius;
+            var a = VeilWeaponPose.Idle(VeilForm.Shield, p, true, 0f);
+            var b = VeilWeaponPose.Idle(VeilForm.Shield, p, true, 0.25f);
+            float turned = Vector2.SignedAngle(a - c, b - c);
+            Assert.AreEqual(VeilFormLibrary.ShieldSpin * 0.25f, turned, 3f, "a quarter second later it has gone round");
+            Assert.AreEqual(VeilFormLibrary.ShieldRadius, Vector2.Distance(b, c), 0.05f, "staying on its ring");
         }
 
         [Test]
@@ -111,9 +123,10 @@ namespace CrimsonVeil.Tests
         public void IdlePose_KeepsTheGripNearTheHand()
         {
             var hand = VeilFormLibrary.Hand;
-            // The shield vortex turns around its own centre, so its grip may drift slightly more.
+            // (Not the shield: its ring is not held — it circles round the body, see ShieldRing_CirclesRoundTheHero.)
             foreach (var f in Weapons)
-                Assert.Less(Vector2.Distance(hand, VeilWeaponPose.Idle(f, hand, true, 1.7f)), f == VeilForm.Shield ? 0.15f : 0.05f, f.ToString());
+                if (f != VeilForm.Shield)
+                    Assert.Less(Vector2.Distance(hand, VeilWeaponPose.Idle(f, hand, true, 1.7f)), 0.05f, f.ToString());
         }
 
         [Test]

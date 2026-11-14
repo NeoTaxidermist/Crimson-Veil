@@ -212,6 +212,8 @@ namespace CrimsonVeil.Veil
             float reach = Mathf.Min(vit, Mathf.Lerp(0.3f, 1f, veil.Charge.Value));
             float facing = veil.Facing;
             bool bow = veil.ShapeForm == VeilForm.Bow;
+            bool shield = veil.ShapeForm == VeilForm.Shield;
+            float shieldCut = Mathf.Ceil(hf * (n - 1)) / (n - 1) + 0.002f;
             float gripFraction = Mathf.Max(hf, VeilFormLibrary.GripFraction(veil.ShapeForm));
 
             // Per-sample frame, width and alpha of the scarf body.
@@ -245,6 +247,8 @@ namespace CrimsonVeil.Veil
                 // A weapon is the whole veil transformed: the band from the neck to the hand melts away as it
                 // sets (and comes back as the weapon softens), so the weapon isn't tied to the neck.
                 alphaAt[i] *= 1f - NeckBandFade(t, hf, hard);
+                // The shield's ring floats free of the hand: nothing may be drawn across the gap to it.
+                if (shield && t < shieldCut) alphaAt[i] *= 1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.3f, 0.8f, hard));
             }
 
             int per = perStrand * 2;

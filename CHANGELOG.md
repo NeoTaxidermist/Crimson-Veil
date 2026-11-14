@@ -5,6 +5,22 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.16.5] – 2026-11-14
+Hlava s obličejem a vlasy podle konceptu.
+
+### Změněno
+- **Hlava je vymodelovaná lebka s obličejem, už ne nafouknutý obrys.**
+  - Obličej má vysoké čelo, nadočnicové oblouky a hluboko posazené oči.
+  - Dál rovný nos, lícní kosti, rty, špičatou bradu a výrazný úhel čelisti.
+  - Uši jsou pod vlasy.
+  - Proporce jsou změřené na obrysu tváře v konceptu: čelo, brada a spodní hrana čelisti.
+- **Vlasy jsou rozcuchaná kštice z tenkých pramínků přiléhající k lebce**, jako na konceptu.
+  - Pramínky vedou z čepice na lebce do bodů obrysu kštice v konceptu (po 3°), takže z boku je silueta kresby.
+  - Do stran jsou rozházené a ke spánkům kratší, takže zepředu je to kulatá kštice, ne placka.
+  - Nad ušima jsou krátké pramínky sčesané dozadu.
+  - Pramínky u pružinových řetězů se dál vlní.
+- Model má 54 tisíc vrcholů.
+
 ## [0.16.4] – 2026-11-14
 Trup, tunika a nohy vymodelované podle podkladů (walk sheet a koncept).
 

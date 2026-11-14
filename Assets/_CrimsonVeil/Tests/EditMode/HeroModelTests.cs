@@ -72,6 +72,26 @@ namespace CrimsonVeil.Tests
         }
 
         [Test]
+        public void Head_IsASculptedFace_WithANoseAndRoundCheeks()
+        {
+            var mesh = Hero().GetComponentInChildren<SkinnedMeshRenderer>().sharedMesh;
+            var b = mesh.bounds;
+            int up = b.size.y >= b.size.z ? 1 : 2, depth = 3 - up;
+            var nose = mesh.vertices.Where(v => v[up] - b.min[up] > 1.66f && v[up] - b.min[up] < 1.68f).ToArray();
+            // the face is on one side of the depth axis: the nose stands out there, not behind
+            float best = float.MinValue;
+            foreach (float s in new[] { 1f, -1f })
+            {
+                float mid = nose.Where(v => Mathf.Abs(v.x) < 0.006f).Max(v => s * v[depth]);
+                float side = nose.Where(v => Mathf.Abs(v.x) > 0.03f && Mathf.Abs(v.x) < 0.036f).Max(v => s * v[depth]);
+                best = Mathf.Max(best, mid - side);
+            }
+            Assert.Greater(best, 0.012f, "the nose stands out of the face (the old traced head was a flat slab)");
+            float width = nose.Max(v => v.x) - nose.Min(v => v.x);
+            Assert.That(width, Is.InRange(0.13f, 0.2f), "a head's width at the cheekbones (with the ears)");
+        }
+
+        [Test]
         public void IsHeroSized()
         {
             var b = Hero().GetComponentInChildren<SkinnedMeshRenderer>().sharedMesh.bounds;

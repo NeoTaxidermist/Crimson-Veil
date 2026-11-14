@@ -953,23 +953,111 @@ def head_hair_w(p, s):
     return {bone: 1.0} if w >= 1 else {"Head": 1 - w, bone: w}
 
 
-# The solid: a front and a back surface over the traced nodes, meeting along the outline.
-front, back = {}, {}
-for i, j in zip(ii, jj):
-    d = min(dist[i, j], HEAD_HALF)
-    hw = HEAD_HALF * math.sqrt(max(0.0, 1 - (1 - d / HEAD_HALF) ** 2))
+# The head itself: a sculpted skull and face, measured against the concept's side outline (the face's front line:
+# brow ~0.15 m ahead of the neck axis, the chin 0.13, the jaw's underside at 1.60 m) and shaped after the walk
+# sheet's face - a high forehead, the brow ridge over deep-set eyes, a straight nose, cheekbones, firm lips, a
+# pointed chin and a strong jaw angle, the ears under the hair. (z, half width, front y, back y)
+HEAD_RINGS = [(1.598, 0.026, -0.108, -0.062), (1.606, 0.04, -0.12, -0.04), (1.616, 0.05, -0.128, -0.02),
+              (1.63, 0.06, -0.134, 0.0), (1.648, 0.065, -0.138, 0.02), (1.665, 0.068, -0.142, 0.04),
+              (1.685, 0.072, -0.143, 0.055), (1.705, 0.076, -0.143, 0.065), (1.725, 0.078, -0.147, 0.072),
+              (1.75, 0.079, -0.145, 0.076), (1.78, 0.076, -0.13, 0.072), (1.81, 0.066, -0.106, 0.057),
+              (1.835, 0.047, -0.078, 0.032), (1.852, 0.02, -0.052, 0.006)]
+
+
+def head_ring(z):
+    """Catmull-Rom through the rings (smooth, no ripples at the measured heights)."""
+    H = HEAD_RINGS
+    for k in range(len(H) - 1):
+        if H[k][0] <= z <= H[k + 1][0]:
+            u = (z - H[k][0]) / (H[k + 1][0] - H[k][0])
+            a, b, c, d = H[max(k - 1, 0)], H[k], H[k + 1], H[min(k + 2, len(H) - 1)]
+            return [0.5 * (2 * b[j] + (c[j] - a[j]) * u + (2 * a[j] - 5 * b[j] + 4 * c[j] - d[j]) * u * u
+                           + (3 * b[j] - a[j] - 3 * c[j] + d[j]) * u ** 3) for j in (1, 2, 3)]
+    return list(H[0][1:] if z < H[0][0] else H[-1][1:])
+
+
+def face_bump(z, ax, fr):
+    if fr <= 0:
+        return 0.0
+    w = fr ** 2.5
+    nose = _g(ax / 0.011) * (0.021 * _g((z - 1.669) / 0.011) * _sig((z - 1.66) / 0.0025)
+                             + 0.009 * _g((z - 1.693) / 0.016))
+    brow = 0.006 * _g((ax - 0.03) / 0.028) * _g((z - 1.721) / 0.008)
+    eyes = -0.009 * _g((ax - 0.031) / 0.015) * _g((z - 1.704) / 0.01)
+    cheek = 0.006 * _g((ax - 0.05) / 0.02) * _g((z - 1.688) / 0.014)
+    lips = 0.005 * _g(ax / 0.02) * _g((z - 1.652) / 0.006) - 0.003 * _g(ax / 0.022) * _g((z - 1.646) / 0.0025)
+    chin = 0.007 * _g(ax / 0.02) * _g((z - 1.624) / 0.01)
+    return w * (nose + brow + eyes + cheek + lips + chin)
+
+
+HEAD_AXIS_Y = -0.035  # rings on one upright axis (a shifting centre would tilt them)
+_hs = []
+_z = HEAD_RINGS[0][0]
+while _z <= HEAD_RINGS[-1][0] + 1e-6:
+    rx, yf, yb = head_ring(_z)
+    _hs.append(((0.0, HEAD_AXIS_Y, _z), rx, 1.0, {"front": HEAD_AXIS_Y - yf, "back": yb - HEAD_AXIS_Y}))
+    _z += 0.004
+loft(_hs, HEAD, n=72,
+     disp=lambda i, rel: face_bump(_hs[i][0][2], abs(rel.x), -rel.y / max(rel.length, 1e-6)))
+for sx in (1, -1):  # ears
+    blob((sx * 0.074, 0.008, 1.69), (0.012, 0.018, 0.028), HEAD, seg=12, rings=8)
+
+# The hair, after the concept: a close-cropped, tousled mop of thin strands hugging the skull, a few fine spikes
+# streaming back and up, a soft fringe over the brow. A cap covers the skull; from it fan out thin strands, each
+# reaching one point of the concept's own outline of the hair (every 3 degrees round the head) - so the side view is
+# the drawing's - scattered side to side, shorter towards the temples, so from the front it is a rounded head
+# of hair, not a slab. The strands near a spring chain sway with it.
+blob((0.0, -0.02, 1.77), (0.081, 0.094, 0.085), HEAD, seg=24, rings=14)
+
+
+def strand(root, tip, width, thick, lift):
+    d = tip - root
+    side = d.cross(Vector((1, 0, 0)))
+    side = side.normalized() if side.length > 1e-6 else Vector((0, 0, 1))
+    secs = []
+    for k in range(7):
+        t = k / 6
+        p = root + d * t + side * (lift * math.sin(math.pi * t))
+        secs.append((p, thick * (1 - t) ** 0.8 + 0.001, width * (1 - t) ** 0.9 + 0.0012))
+    loft(secs, head_hair_w, n=5)
+
+
+_hair_bins = {}
+for i, j in zip(ei, ej):
     p = pts_m[(i, j)]
-    if hw < 1e-4:
-        front[(i, j)] = back[(i, j)] = add_vert(p, head_hair_w(p, 0))
-    else:
-        q0, q1 = p + Vector((hw, 0, 0)), p - Vector((hw, 0, 0))
-        front[(i, j)] = add_vert(q0, head_hair_w(q0, 0))
-        back[(i, j)] = add_vert(q1, head_hair_w(q1, 0))
-for i, j in zip(ii, jj):
-    quad = [q for q in ((i, j), (i, j + 1), (i + 1, j + 1), (i + 1, j)) if q in front]
-    if len(quad) >= 3:  # a full cell, or a step of the outline (three corners): no holes between the rows
-        faces.append(tuple(front[q] for q in quad)); fmat.append(INK)
-        faces.append(tuple(back[q] for q in reversed(quad))); fmat.append(INK)
+    rel = p - centre
+    ang = math.degrees(math.atan2(rel.z, -rel.y))
+    if -150 < ang < -20 or rel.length < (0.112 if ang < 30 else 0.095):  # the face and the jaw; the skull's own
+        # edge (the brow's outline is skin, not hair)
+        continue
+    key = int((ang + 360) % 360 // 3)
+    if key not in _hair_bins or rel.length > _hair_bins[key][1]:
+        _hair_bins[key] = (p, rel.length)
+_rnd = random.Random(7)
+for key, (tip, r) in sorted(_hair_bins.items()):
+    d = (tip - centre).normalized()
+    root = centre + d * 0.055
+    for k in range(6):  # strands scattered side to side (not in layers: from the front it is a tousled mop)
+        sx = 0.0 if k == 0 else _rnd.uniform(-0.078, 0.078)
+        reach = 1.0 - 0.32 * (sx / 0.078) ** 2
+        jitter = Vector((0, _rnd.uniform(-0.007, 0.007), _rnd.uniform(-0.007, 0.007))) if k else Vector()
+        t = root.lerp(tip, reach) + Vector((sx * 1.35, 0, 0)) + jitter
+        strand(root + Vector((sx * 0.7, 0, 0)), t, 0.024, 0.016, _rnd.uniform(-0.01, 0.01))
+    for sgn in (1, -1):  # over the temples: short strands lying on the side of the skull
+        sx = sgn * _rnd.uniform(0.08, 0.098)
+        t = root.lerp(tip, 0.62) + Vector((sx * 1.15, 0, 0))
+        strand(root + Vector((sx * 0.85, 0, 0)), t, 0.026, 0.016, _rnd.uniform(-0.006, 0.006))
+
+# The sides of the mop: short strands combed back over the temples and above the ears.
+_hc, _hr = Vector((0.0, -0.02, 1.77)), Vector((0.081, 0.094, 0.085))
+for sgn in (1, -1):
+    for e in (-8, 10, 28, 46):
+        for a in range(35, 171, 15):
+            ar, er = math.radians(a + _rnd.uniform(-5, 5)), math.radians(e + _rnd.uniform(-4, 4))
+            dirn = Vector((sgn * math.sin(ar) * math.cos(er), -math.cos(ar) * math.cos(er), math.sin(er)))
+            root = _hc + Vector((dirn.x * _hr.x, dirn.y * _hr.y, dirn.z * _hr.z)) * 0.9
+            sweep = (dirn * 0.45 + Vector((0, 1.0, 0.1 - 0.004 * e))).normalized()
+            strand(root, root + sweep * _rnd.uniform(0.045, 0.07), 0.022, 0.012, _rnd.uniform(-0.006, 0.006))
 
 # ---------------------------------------------------------------- mesh object
 old = bpy.data.objects.get("Hero")

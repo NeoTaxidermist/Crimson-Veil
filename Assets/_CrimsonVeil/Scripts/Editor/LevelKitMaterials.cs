@@ -132,12 +132,13 @@ namespace CrimsonVeil.EditorTools
             m.SetFloat("_EdgeSoftness", edgeSoftness);
             m.SetFloat("_Erosion", erosion);
             m.SetFloat("_FlowSpeed", flowSpeed);
-            // The loose scarf as in the key art: a ribbon in red ink (crimson, a lighter sheen, deep wine reverse);
+            // The loose scarf as in its animation sheet: pure crimson ink (sRGB ~0.80/0.02/0.03, light 1.0/0.04/0.04,
+            // dark 0.36/0/0.01) - lighter only where it is translucent, never orange;
             // the smoke threads keep the fire look.
             m.SetFloat("_Cloth", cloth ? 1f : 0f);
-            m.SetColor("_ClothDeep", new Color(0.55f, 0.04f, 0.05f));
-            m.SetColor("_ClothMid", new Color(0.85f, 0.06f, 0.06f));
-            m.SetColor("_ClothLight", new Color(1f, 0.3f, 0.25f));
+            m.SetColor("_ClothDeep", new Color(0.36f, 0.0f, 0.01f));
+            m.SetColor("_ClothMid", new Color(0.8f, 0.02f, 0.03f));
+            m.SetColor("_ClothLight", new Color(1.0f, 0.04f, 0.04f));
             m.renderQueue = (int)RenderQueue.Transparent;
             return m;
         }

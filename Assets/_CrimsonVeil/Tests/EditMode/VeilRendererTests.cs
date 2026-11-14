@@ -106,6 +106,21 @@ namespace CrimsonVeil.Tests
         }
 
         [Test]
+        public void ScarfColours_AreTheSheetsPureCrimson_NeverOrangeOrGrey()
+        {
+            var m = UnityEditor.AssetDatabase.LoadAssetAtPath<Material>("Assets/_CrimsonVeil/Materials/Veil.mat");
+            Assert.AreEqual(1f, m.GetFloat("_Cloth"), "the scarf is painted cloth");
+            foreach (var name in new[] { "_ClothDeep", "_ClothMid", "_ClothLight" })
+            {
+                var c = m.GetColor(name);
+                Assert.Less(Mathf.Max(c.g, c.b), 0.06f, name + ": pure red ink (the sheet), no orange or pink cast");
+                Assert.Greater(c.r, 0.3f, name);
+            }
+            Assert.Greater(m.GetColor("_ClothLight").r, m.GetColor("_ClothMid").r - 1e-3f);
+            Assert.Less(m.GetColor("_ClothDeep").r, m.GetColor("_ClothMid").r);
+        }
+
+        [Test]
         public void Scarf_HangsFromTheNeck_NotCentredOnIt()
         {
             // Centred on the neck, half of the broad band (and its upper layers) rose over the head when running.

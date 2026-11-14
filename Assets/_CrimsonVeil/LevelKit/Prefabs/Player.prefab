@@ -258,7 +258,7 @@ MonoBehaviour:
   material: {fileID: 2100000, guid: 191086c641e9fc845acacd74fa34b1fb, type: 2}
   smoothing: 3
   flutterTwist: 0.35
-  curlPoints: 22
+  curlPoints: 34
   curlScale: 1.6
   tendrilSpread: 0.38
 --- !u!114 &5389534785771705521
@@ -277,12 +277,12 @@ MonoBehaviour:
   maxWisps: 60
   trailPoints: 24
   sampleInterval: 0.025
-  baseRate: 3
+  baseRate: 1.2
   speedRate: 0.6
   weaponRate: 5
   swingRate: 16
   lifetime: 1.9
-  widthRange: {x: 0.05, y: 0.18}
+  widthRange: {x: 0.015, y: 0.045}
   followSharpness: 1.6
   curl: 3.6
   drag: 0.7

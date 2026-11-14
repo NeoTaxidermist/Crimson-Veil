@@ -5,6 +5,24 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.16.10] – 2026-11-14
+Barvy a víry šály podle animačního sešitu.
+
+### Změněno
+- **Barvy změřené v sešitu, sRGB:**
+  - čistá karmínová (0,80/0,02/0,03), světla čistě rudá (1,0/0,04/0,04), tmavé tóny (0,36/0/0,01);
+  - žádný oranžový ani šedý nádech;
+  - světlejší je šála jen tam, kde je průsvitná.
+- **Průsvitnost jako v sešitu:**
+  - u krku neprůhledná, uprostřed lehce průsvitná, ve vírech růžovočervená lazura;
+  - tenká lazura má jasně červenou barvu, nikdy ne tmavou prosvítající do šeda;
+  - tmavé linky ve vírech už nejsou neprůhledné.
+- **Víry na konci jsou ze širších tahů:**
+  - jazyky jsou u kořene širší a do víru se zužují jen málo;
+  - tahy se ztenčují až ve středu víru a stáčejí se víc dokola;
+  - spirály mají 34 bodů místo 22, takže jsou hladké a bez hranatých úlomků.
+- **Dýmové nitky jsou jemné vlasové linky** (1,5–4,5 cm) a je jich méně, jako tenké tahy kolem šály v sešitu.
+
 ## [0.16.9] – 2026-11-14
 Šála podle animačního sešitu (12 snímků smyčky).
 

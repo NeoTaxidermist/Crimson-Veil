@@ -20,7 +20,7 @@ namespace CrimsonVeil.Veil
         [SerializeField, Range(1, 6)] int smoothing = 3;
         [SerializeField, Range(0f, 1f)] float flutterTwist = 0.35f;
         [Tooltip("Points in each end curl.")]
-        [SerializeField, Range(6, 40)] int curlPoints = 22;
+        [SerializeField, Range(6, 40)] int curlPoints = 34;
         [Tooltip("Global multiplier of the curl size.")]
         [SerializeField] float curlScale = 1.6f;
         [Tooltip("How far (m) the tendrils fan away from the main ribbon at their ends.")]
@@ -114,7 +114,7 @@ namespace CrimsonVeil.Veil
         /// </summary>
         public static float LooseCurl(Strand st) => -st.curlSign * st.curlTurns * LooseCurlTurns;
 
-        public const float LooseCurlTurns = 1.05f;
+        public const float LooseCurlTurns = 1.35f;
 
         /// <summary>The reverse of the scarf, relative to its face (key art: deep wine under bright crimson).</summary>
         public const float BackShade = 0.6f;
@@ -393,8 +393,8 @@ namespace CrimsonVeil.Veil
                     // Tendrils emerge from the ribbon: thin where they split, then full.
                     float sw = w * Mathf.Lerp(st.width, main ? 1f : 0.3f, hard) * burn;
                     if (!main) sw *= (1f + 1.6f * set) * (1f - 0.7f * lick); // bold tongues, each narrowing to its tip
-                    if (branch) sw *= Mathf.Lerp(Mathf.Lerp(0.32f, 0.25f, hard), Mathf.Lerp(0.72f, 0.51f, hard), Mathf.SmoothStep(0f, 1f, u))
-                                      * Mathf.Lerp(1f - 0.45f * Mathf.SmoothStep(0.6f, 1f, u), 1f, hard); // tapers into its curl
+                    if (branch) sw *= Mathf.Lerp(Mathf.Lerp(0.38f, 0.25f, hard), Mathf.Lerp(0.95f, 0.51f, hard), Mathf.SmoothStep(0f, 1f, u))
+                                      * Mathf.Lerp(1f - 0.15f * Mathf.SmoothStep(0.6f, 1f, u), 1f, hard); // a broad stroke into its whorl
                     float alpha = a * Mathf.Lerp(st.alpha, main ? 1f : 0.7f, hard);
                     // Loose, it is one band of cloth near the neck (the concept); the tongues of smoke come out
                     // further back (the key art), and all of them as it hardens into a weapon.
@@ -432,8 +432,8 @@ namespace CrimsonVeil.Veil
                     Vector3 d = curl[Mathf.Min(k + 1, curlPoints)] - curl[k - 1];
                     d.z = 0f;
                     Vector3 nrm = d.sqrMagnitude > 1e-10f ? new Vector3(-d.y, d.x, 0f).normalized : Vector3.up;
-                    // A brush stroke: it narrows steadily as it winds in, to a hairline at the centre of the spiral.
-                    float sw = lastW * Mathf.Lerp(1f, 0.03f, Mathf.Pow(u, Mathf.Lerp(0.85f, 0.6f, lastHard)));
+                    // A brush stroke: broad as it winds round its whorl (the sheet), thinning to a fine end at the centre.
+                    float sw = lastW * Mathf.Lerp(1f, Mathf.Lerp(0.06f, 0.03f, lastHard), Mathf.Pow(u, Mathf.Lerp(1.05f, 0.6f, lastHard)));
                     float alpha = lastA * Mathf.Lerp(1f, 0.55f, u);
                     WriteVertex(baseV + (samples - 1 + k) * 2, curl[k], nrm, sw, alpha, st, lastHard, vit, lastFront, lastShade);
                 }

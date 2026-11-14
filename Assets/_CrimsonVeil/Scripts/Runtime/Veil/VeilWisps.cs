@@ -15,12 +15,12 @@ namespace CrimsonVeil.Veil
         [SerializeField] int maxWisps = 60;
         [SerializeField] int trailPoints = 24;
         [SerializeField] float sampleInterval = 0.025f;
-        [SerializeField] float baseRate = 3f;
+        [SerializeField] float baseRate = 1.2f; // a few fine hairline strokes round the scarf (its sheet)
         [SerializeField] float speedRate = 0.6f;
         [SerializeField] float weaponRate = 5f;
         [SerializeField] float swingRate = 16f;
         [SerializeField] float lifetime = 1.9f;
-        [SerializeField] Vector2 widthRange = new Vector2(0.05f, 0.18f);
+        [SerializeField] Vector2 widthRange = new Vector2(0.015f, 0.045f);
         [SerializeField] float followSharpness = 1.6f;
         [Tooltip("Base turn rate of a curl (rad/s); grows as the curl ages, so strokes wind into spirals.")]
         [SerializeField] float curl = 3.6f;

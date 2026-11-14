@@ -13,9 +13,9 @@ Shader "CrimsonVeil/Veil"
         _EdgeSoftness ("Edge Softness", Range(0.05, 1)) = 0.45
         _Erosion ("Tail Erosion", Range(0, 1)) = 0.75
         _Cloth ("Cloth Look (loose scarf as in the concept)", Range(0, 1)) = 0
-        _ClothDeep ("Cloth Wine", Color) = (0.55, 0.04, 0.05, 1)
-        _ClothMid ("Cloth Crimson", Color) = (0.85, 0.06, 0.06, 1)
-        _ClothLight ("Cloth Light", Color) = (1.0, 0.3, 0.25, 1)
+        _ClothDeep ("Cloth Wine", Color) = (0.36, 0.0, 0.01, 1)
+        _ClothMid ("Cloth Crimson", Color) = (0.8, 0.02, 0.03, 1)
+        _ClothLight ("Cloth Light", Color) = (1.0, 0.04, 0.04, 1)
     }
     SubShader
     {
@@ -129,7 +129,9 @@ Shader "CrimsonVeil/Veil"
                     float rag = CV_Fbm(float2(along * 7.0 - t * 0.3, seed + across * 0.3));
                     float clothAlpha = smoothstep(0.0, 0.12, edge - (rag - 0.5) * 0.3 - (brush - 0.5) * 0.25 * (1.0 - core));
                     // the wash: opaque body, translucent overlapping layers towards the curls
-                    float wash = lerp(1.0, 0.7, smoothstep(0.45, 0.9, along));
+                    // the sheet: opaque crimson at the neck, ~70 % through the middle, a translucent pink-red wash in
+                    // the whorls
+                    float wash = lerp(1.0, 0.66, smoothstep(0.3, 0.92, along));
                     clothAlpha *= wash * lerp(0.82, 1.0, smoothstep(0.3, 0.6, streak));
                     clothAlpha *= 1.0 - smoothstep(0.86, 0.9, along + (rag - 0.5) * 0.1);   // stroke ends in a point
                     // dry brush: the bristles leave streaks along the stroke - at its edges and all over the thin,
@@ -144,7 +146,7 @@ Shader "CrimsonVeil/Veil"
                     float sheaf = strands * 0.65 + strands2 * 0.35;
                     sheen = saturate(sheen * 0.6 + sheaf * 0.55 - 0.08);
                     clothAlpha *= lerp(0.78, 1.0, smoothstep(0.25, 0.6, sheaf));
-                    half3 cc = lerp(_ClothDeep.rgb, _ClothMid.rgb, smoothstep(0.18, 0.42, sheen));
+                    half3 cc = lerp(_ClothDeep.rgb, _ClothMid.rgb, smoothstep(0.06, 0.3, sheen));
                     cc = lerp(cc, _ClothLight.rgb, smoothstep(0.62, 0.85, sheen) * (0.35 + core * 0.65));
                     cc *= lerp(0.72, 1.0, smoothstep(0.0, 0.3, edge));               // brush edges a shade deeper
                     col = lerp(col, cc, cloth);
@@ -157,14 +159,15 @@ Shader "CrimsonVeil/Veil"
                 float clothV = _Cloth * loose;
                 float shadeV = saturate(max(i.color.r, max(i.color.g, i.color.b)));
                 half3 clothCol = lerp(_ClothDeep.rgb, col, smoothstep(0.25, 1.0, shadeV));
-                clothCol = lerp(_ClothMid.rgb, clothCol, smoothstep(0.1, 0.4, alpha * i.color.a));
+                // a thin wash is clear bright red (pink on the paper), never a dark shade seen through
+                clothCol = lerp(_ClothLight.rgb, clothCol, smoothstep(0.3, 0.85, alpha * i.color.a));
                 col = lerp(col * i.color.rgb, clothCol * max(1.0, i.color.r), clothV);
                 // the ribbon is painted, not smoke: the layers' soft vertex alpha is lifted on the cloth
                 float va = lerp(i.color.a, saturate(i.color.a * 1.6), clothV);
                 float outA = saturate(alpha * va);
                 // where the dark reverse or a dense dark layer shows it is thick ink: opaque, so it reads as deep
                 // wine and never as a grey veil over the background
-                float darkInk = (1.0 - smoothstep(0.3, 1.0, shadeV)) * clothV;
+                float darkInk = (1.0 - smoothstep(0.3, 1.0, shadeV)) * clothV * (1.0 - smoothstep(0.3, 0.55, along));
                 outA = lerp(outA, saturate(outA * 2.2), darkInk);
                 return half4(col, outA);
             }

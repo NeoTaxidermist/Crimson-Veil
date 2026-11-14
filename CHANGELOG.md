@@ -5,6 +5,17 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.16.6] – 2026-11-14
+Vlasy jako na konceptu: hladká hmota a pár pramenů do špiček.
+
+### Změněno
+- **Vlasy nejsou ježek z desítek bodlin, ale jedna hladká hmota vlasů, ze které trčí jen pár pramenů do špiček.**
+  - Hmota z boku kopíruje obrys kštice z konceptu bez špiček. Obrys je vyhlazený a měří se po 3° kolem hlavy.
+  - Pramenů je devět, každý vede do jedné špičky obrysu: ofina dopředu nad čelo, ostatní sčesané dozadu a nahoru.
+  - Prameny jsou u kořene široké a lehce prohnuté.
+  - Prameny sčesané dozadu mají vedle sebe po stranách ještě jeden, takže jsou vidět i zepředu.
+- Model má zase 32 tisíc vrcholů (vlasy z pramínků ho nafoukly na 54 tisíc).
+
 ## [0.16.5] – 2026-11-14
 Hlava s obličejem a vlasy podle konceptu.
 

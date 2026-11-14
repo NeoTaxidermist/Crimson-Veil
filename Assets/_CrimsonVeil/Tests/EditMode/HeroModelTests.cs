@@ -92,6 +92,13 @@ namespace CrimsonVeil.Tests
         }
 
         [Test]
+        public void Hair_IsOneMassWithAFewLocks_NotAHedgehog()
+        {
+            var mesh = Hero().GetComponentInChildren<SkinnedMeshRenderer>().sharedMesh;
+            Assert.Less(mesh.vertexCount, 45000, "the hair is a smooth mass and ~9 locks (hundreds of strands blew it up)");
+        }
+
+        [Test]
         public void IsHeroSized()
         {
             var b = Hero().GetComponentInChildren<SkinnedMeshRenderer>().sharedMesh.bounds;

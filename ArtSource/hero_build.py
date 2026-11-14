@@ -1002,62 +1002,92 @@ loft(_hs, HEAD, n=72,
 for sx in (1, -1):  # ears
     blob((sx * 0.074, 0.008, 1.69), (0.012, 0.018, 0.028), HEAD, seg=12, rings=8)
 
-# The hair, after the concept: a close-cropped, tousled mop of thin strands hugging the skull, a few fine spikes
-# streaming back and up, a soft fringe over the brow. A cap covers the skull; from it fan out thin strands, each
-# reaching one point of the concept's own outline of the hair (every 3 degrees round the head) - so the side view is
-# the drawing's - scattered side to side, shorter towards the temples, so from the front it is a rounded head
-# of hair, not a slab. The strands near a spring chain sway with it.
-blob((0.0, -0.02, 1.77), (0.081, 0.094, 0.085), HEAD, seg=24, rings=14)
-
-
-def strand(root, tip, width, thick, lift):
-    d = tip - root
-    side = d.cross(Vector((1, 0, 0)))
-    side = side.normalized() if side.length > 1e-6 else Vector((0, 0, 1))
-    secs = []
-    for k in range(7):
-        t = k / 6
-        p = root + d * t + side * (lift * math.sin(math.pi * t))
-        secs.append((p, thick * (1 - t) ** 0.8 + 0.001, width * (1 - t) ** 0.9 + 0.0012))
-    loft(secs, head_hair_w, n=5)
-
-
-_hair_bins = {}
+# The hair, after the concept: one smooth mass of hair over the skull, out of which only a few locks run to a point -
+# the spikes of the drawing's outline (the fringe forward over the brow, the rest swept back and up).
+# The mass: the concept's outline of the hair, read every 3 degrees round the head, with the spikes cut off (a running
+# minimum over +-27 degrees) and smoothed; a rounded solid whose side view is that outline and whose half width is
+# ~9 cm. The locks: one tapering, gently curved strand to each spike tip (the spring chains), a little thicker at the
+# root so it grows out of the mass.
+_N = 120
+_raw = [0.0] * _N
 for i, j in zip(ei, ej):
     p = pts_m[(i, j)]
     rel = p - centre
     ang = math.degrees(math.atan2(rel.z, -rel.y))
-    if -150 < ang < -20 or rel.length < (0.112 if ang < 30 else 0.095):  # the face and the jaw; the skull's own
-        # edge (the brow's outline is skin, not hair)
-        continue
-    key = int((ang + 360) % 360 // 3)
-    if key not in _hair_bins or rel.length > _hair_bins[key][1]:
-        _hair_bins[key] = (p, rel.length)
-_rnd = random.Random(7)
-for key, (tip, r) in sorted(_hair_bins.items()):
-    d = (tip - centre).normalized()
-    root = centre + d * 0.055
-    for k in range(6):  # strands scattered side to side (not in layers: from the front it is a tousled mop)
-        sx = 0.0 if k == 0 else _rnd.uniform(-0.078, 0.078)
-        reach = 1.0 - 0.32 * (sx / 0.078) ** 2
-        jitter = Vector((0, _rnd.uniform(-0.007, 0.007), _rnd.uniform(-0.007, 0.007))) if k else Vector()
-        t = root.lerp(tip, reach) + Vector((sx * 1.35, 0, 0)) + jitter
-        strand(root + Vector((sx * 0.7, 0, 0)), t, 0.024, 0.016, _rnd.uniform(-0.01, 0.01))
-    for sgn in (1, -1):  # over the temples: short strands lying on the side of the skull
-        sx = sgn * _rnd.uniform(0.08, 0.098)
-        t = root.lerp(tip, 0.62) + Vector((sx * 1.15, 0, 0))
-        strand(root + Vector((sx * 0.85, 0, 0)), t, 0.026, 0.016, _rnd.uniform(-0.006, 0.006))
+    k = int(((ang + 360) % 360) // 3) % _N
+    _raw[k] = max(_raw[k], rel.length)
 
-# The sides of the mop: short strands combed back over the temples and above the ears.
-_hc, _hr = Vector((0.0, -0.02, 1.77)), Vector((0.081, 0.094, 0.085))
-for sgn in (1, -1):
-    for e in (-8, 10, 28, 46):
-        for a in range(35, 171, 15):
-            ar, er = math.radians(a + _rnd.uniform(-5, 5)), math.radians(e + _rnd.uniform(-4, 4))
-            dirn = Vector((sgn * math.sin(ar) * math.cos(er), -math.cos(ar) * math.cos(er), math.sin(er)))
-            root = _hc + Vector((dirn.x * _hr.x, dirn.y * _hr.y, dirn.z * _hr.z)) * 0.9
-            sweep = (dirn * 0.45 + Vector((0, 1.0, 0.1 - 0.004 * e))).normalized()
-            strand(root, root + sweep * _rnd.uniform(0.045, 0.07), 0.022, 0.012, _rnd.uniform(-0.006, 0.006))
+
+def _is_face(a):
+    a = (a + 180) % 360 - 180
+    return -150 < a < -22
+
+
+for k in range(_N):
+    if _is_face(k * 3 + 1.5) or _raw[k] == 0.0:
+        _raw[k] = 0.065  # under the face: the mass stays inside the skull
+_open = [min(_raw[(k + d) % _N] for d in range(-9, 10)) for k in range(_N)]
+_open = [max(_open[(k + d) % _N] for d in range(-4, 5)) for k in range(_N)]  # (opening: spikes gone)
+HAIR_R = _open
+for _ in range(4):
+    HAIR_R = [(HAIR_R[k - 1] + 2 * HAIR_R[k] + HAIR_R[(k + 1) % _N]) / 4 for k in range(_N)]
+HAIR_R = [max(r, 0.065) for r in HAIR_R]
+
+_nphi = 14
+_grid = []
+for k in range(_N):
+    a = math.radians(k * 3 + 1.5)
+    d = Vector((0.0, -math.cos(a), math.sin(a)))
+    R = HAIR_R[k]
+    W = min(0.09, 0.62 * R + 0.012)
+    row = []
+    for m in range(1, _nphi):
+        ph = -math.pi / 2 + math.pi * m / _nphi
+        p = centre + d * (R * math.cos(ph)) + Vector((W * math.sin(ph), 0, 0))
+        row.append(add_vert(p, head_hair_w(p, 0)))
+    _grid.append(row)
+_poles = [add_vert(centre + Vector((s * 0.088, 0, 0)), {"Head": 1.0}) for s in (-1, 1)]
+
+
+def _face_out(idx, outward):
+    n = (verts[idx[1]] - verts[idx[0]]).cross(verts[idx[2]] - verts[idx[0]])
+    if n.dot(outward) < 0:
+        idx = tuple(reversed(idx))
+    faces.append(tuple(idx)); fmat.append(INK)
+
+
+for k in range(_N):
+    k1 = (k + 1) % _N
+    for m in range(_nphi - 2):
+        q = (_grid[k][m], _grid[k1][m], _grid[k1][m + 1], _grid[k][m + 1])
+        _face_out(q, sum((verts[i] for i in q), Vector()) / 4 - centre)
+    _face_out((_poles[0], _grid[k][0], _grid[k1][0]), Vector((-1, 0, 0)))
+    _face_out((_poles[1], _grid[k1][-1], _grid[k][-1]), Vector((1, 0, 0)))
+
+
+def lock(root, tip, width, thick, bend):
+    """A lock of hair: flat-ish, tapering to a point, bowed a little (bend: metres, + = upwards/outwards)."""
+    d = tip - root
+    side = d.cross(Vector((1, 0, 0)))
+    side = side.normalized() if side.length > 1e-6 else Vector((0, 0, 1))
+    secs = []
+    for k in range(10):
+        t = k / 9
+        p = root + d * t + side * (bend * math.sin(math.pi * t))
+        secs.append((p, thick * (1 - t) ** 0.8 + 0.001, width * (1 - t) ** 1.1 + 0.0012))
+    loft(secs, head_hair_w, n=10)
+
+
+for ang, r_root, r_tip, names in chains:
+    tip = rig.data.bones[names[-1]].tail_local.copy()
+    d = (tip - centre).normalized()
+    k = int(((ang + 360) % 360) // 3) % _N
+    root = centre + d * (HAIR_R[k] * 0.62)
+    bend = -0.014 if 60 < ang < 200 else 0.01
+    lock(root, tip, 0.062, 0.03, bend)
+    if ang > 60:  # beside the locks swept back, a lock to each side: they read from the front as well
+        for sx in (1, -1):
+            lock(root + Vector((sx * 0.04, 0, 0)), root.lerp(tip, 0.86) + Vector((sx * 0.06, 0, 0)), 0.05, 0.026, bend)
 
 # ---------------------------------------------------------------- mesh object
 old = bpy.data.objects.get("Hero")

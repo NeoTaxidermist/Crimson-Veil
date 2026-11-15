@@ -191,6 +191,47 @@ namespace CrimsonVeil.Tests
         }
 
         [UnityTest]
+        public IEnumerator ThePlateauTunnel_StopsAStandingHero_AndIsCrawledThrough()
+        {
+            yield return At(203.8f, 7f);
+            input.moveX = 1f;                              // standing: the tunnel's face stops him
+            yield return Wait(1.2f);
+            Assert.Less(P.x, 205.6f, "no walking in upright");
+            input.aimY = -1f;                              // crouch and crawl
+            float end = Time.time + 5f;
+            while (Time.time < end && P.x < 211f) yield return null;
+            Assert.Greater(P.x, 211f, "crawled through");
+            Assert.AreEqual(7f, P.y, 0.2f);
+            input.aimY = 0f;
+            yield return Wait(0.3f);
+            Assert.IsFalse(pc.IsLow, "out the other side he stands up");
+        }
+
+        [UnityTest]
+        public IEnumerator TheGardenTunnel_IsSlidThrough_FasterThanCrawling()
+        {
+            yield return At(317.5f, 2f);
+            input.moveX = 1f; input.aimY = -1f;            // down + the arrow...
+            yield return Wait(0.15f);
+            input.dash = true;                             // ...and dash: a slide under the roof
+            float start = Time.time;
+            float end = Time.time + 5f;
+            bool slid = false, lowInside = false;
+            while (Time.time < end && P.x < 325.5f)
+            {
+                slid |= pc.Motor.IsSliding;
+                if (P.x > 320f && P.x < 324f) lowInside |= pc.IsLow;
+                if (!pc.Motor.IsSliding && pc.Motor.IsGrounded && Time.time - start > 0.6f) input.dash = true;   // slide again
+                yield return null;
+            }
+            Assert.IsTrue(slid, "it slid");
+            Assert.IsTrue(lowInside, "low under the roof");
+            Assert.Greater(P.x, 325.5f, "through the tunnel");
+            Assert.Less(Time.time - start, 6f / 2.6f, "quicker than crawling the 6 m");
+            input.aimY = 0f; input.moveX = 0f;
+        }
+
+        [UnityTest]
         public IEnumerator UpTheShaft_ToTheTopOfTheTower()
         {
             yield return At(122f, 16f);                    // on ledge D

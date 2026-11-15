@@ -80,6 +80,11 @@ namespace CrimsonVeil.Player
         public float weaponHeld;
         /// <summary>0..1 through the double jump's somersault, -1 when not flipping (the body tucks).</summary>
         public float somersault;
+        /// <summary>Crouched low on the ground (down held, or under a low ceiling): crawling when moving.</summary>
+        public bool crouching;
+        /// <summary>Sliding along the ground; <see cref="slideProgress"/> 0..1 through it.</summary>
+        public bool sliding;
+        public float slideProgress;
     }
 
     /// <summary>
@@ -157,6 +162,8 @@ namespace CrimsonVeil.Player
             else if (s.wallSliding) target = WallSlidePose(time);
             else if (s.dashing) target = DashPose();
             else if (!s.grounded) target = AirPose(s.verticalVelocity);
+            else if (s.sliding) target = SlidePose(s.slideProgress);
+            else if (s.crouching) target = CrouchPose(s.speed, Phase, time);
             else target = Standing(GroundPose(run), run);
 
             // Somersault: knees pulled to the chest, arms hugging the shins, then opening out to land.
@@ -263,6 +270,49 @@ namespace CrimsonVeil.Player
             p.footL = -0.35f * p.thighL + 0.15f * p.kneeL * Mathf.Max(0f, cosA);
             p.footR = -0.35f * p.thighR + 0.15f * p.kneeR * Mathf.Max(0f, cosB);
             return p;
+        }
+
+        /// <summary>How far the hips sink crouched (m): the body fits under a ceiling a metre up.</summary>
+        public const float CrouchDrop = 0.5f;
+
+        /// <summary>
+        /// Crouched low: deep knees, the body bent over them, the head up to see ahead, the hands ready near the
+        /// knees. Moving, a low crawl: short steps from the crouch, the knees working, a hand brushing the ground.
+        /// The phase advances with the distance crawled (the stride is short), so the feet don't slide.
+        /// </summary>
+        public static HeroPose CrouchPose(float speed, float phase, float time)
+        {
+            float move = Mathf.Clamp01(speed / 2.6f);
+            float a = phase * Mathf.PI * 2f * 2.2f;               // short steps: more of them per stride
+            float sinA = Mathf.Sin(a), cosA = Mathf.Cos(a);
+            float breathe = Mathf.Sin(time * 1.8f) * (1f - move);
+            return new HeroPose
+            {
+                spine = 30f + 4f * move + breathe, chest = 12f, head = 22f + 4f * move, neck = 8f,
+                bob = -CrouchDrop + Mathf.Abs(sinA) * 0.03f * move,
+                thighL = 92f + 20f * sinA * move, kneeL = 122f - 18f * Mathf.Max(0f, cosA) * move, footL = -18f + 10f * sinA * move,
+                thighR = 78f - 20f * sinA * move, kneeR = 128f - 18f * Mathf.Max(0f, -cosA) * move, footR = -14f - 10f * sinA * move,
+                armL = 38f - 22f * sinA * move, elbowL = 48f, armR = 26f + 22f * sinA * move, elbowR = 40f,
+                toeL = 14f, toeR = 18f,
+            };
+        }
+
+        /// <summary>
+        /// A slide: leaning back, the hips low over the ground, the front leg stretched out ahead, the back one tucked
+        /// under, a hand trailing on the ground; at its end, gathering into the crouch.
+        /// </summary>
+        public static HeroPose SlidePose(float t)
+        {
+            var slide = new HeroPose
+            {
+                spine = -18f, chest = -10f, head = 26f, neck = 10f, bob = -0.72f,
+                thighL = 78f, kneeL = 8f, footL = 18f,               // stretched out ahead
+                thighR = 18f, kneeR = 128f, footR = -10f, toeR = 30f, // tucked under
+                armL = -38f, elbowL = 8f, wristL = -50f,             // trailing on the ground
+                armR = 22f, elbowR = 78f,                            // the other hand held in to the chest
+            };
+            var crouch = CrouchPose(0f, 0f, 0f);
+            return HeroPose.Lerp(slide, crouch, Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.7f, 1f, t)));
         }
 
         /// <summary>The tuck of a somersault: curled into a ball round the hips.</summary>

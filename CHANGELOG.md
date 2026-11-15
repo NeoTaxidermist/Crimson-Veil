@@ -5,6 +5,34 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.26.0] – 2026-11-15
+### Přidáno
+- **Přikrčení:** šipka dolů na zemi. Hrdina se skrčí (hluboká kolena, tělo nad nimi, hlava nahoru) a s šipkou do strany se plíží rychlostí 2,6 m/s. Tělo je pak vysoké jen 1 m, takže proleze pod nízkým stropem.
+- **Skluz:** šipka dolů + Shift (s šipkou doleva nebo doprava). Hrdina vyjede po zemi rychlostí 13 m/s, zpomalí na plížení a ujede přes 4 m.
+  - Póza: zaklonění, přední noha natažená, zadní pod tělem, ruka se táhne po zemi. Skluz končí v přikrčení.
+  - Do zdi se zastaví. Z hrany přejde v pád a hybnost nese dál. Skokem se dá přerušit.
+  - Shift bez šipky dolů je dál obyčejný dash.
+- **Nízký strop:** pod ním se hrdina nedokáže narovnat ani vyskočit. Zůstane přikrčený, i když šipku dolů pustí, a vstane až venku.
+- **Tunely v levelu:**
+  - Na plošině před zvonicí 5 m dlouhý tunel s mezerou 1,2 m.
+  - V zahradě 6 m dlouhý tunel s mezerou 1,1 m: dá se proplížit, skluzem je to rychlejší.
+  - Oba jsou příliš vysoké na přeskočení, i dvojskokem.
+  - Mnichové a přízrak jsou přesunutí za tunely, kontrolní bod před tunel na plošině.
+
+### Testy
+- `CrouchSlideMotorTests`:
+  - přikrčení a plížení;
+  - pod nízkým stropem nejde vstát ani skočit;
+  - skluz je rychlý, zpomaluje a ujede přes 3 m;
+  - skluz jde směrem šipky;
+  - dash bez šipky dolů zůstává dashem;
+  - skluz do zdi a z hrany;
+  - pózy jsou nízko.
+- `LevelExtensionTests.TheTunnels_MustBeCrawledOrSlid`: tunel je dost vysoký pro skrčené tělo a nízký pro stojící; přes něj se nedá přeskočit.
+- `LevelExtensionPlayTests` (ve skutečné scéně):
+  - stojící hrdina do tunelu na plošině nevejde, přikrčený ho proleze a venku vstane;
+  - zahradním tunelem projede skluzem rychleji než plížením.
+
 ## [0.25.0] – 2026-11-15
 ### Přidáno
 - **Měření playtestu** (`PlaytestLog`, vzniká s HUD):

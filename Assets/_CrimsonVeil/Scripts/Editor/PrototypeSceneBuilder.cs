@@ -118,8 +118,8 @@ namespace CrimsonVeil.EditorTools
             Place("Wraith", new Vector3(193f, -4f, 0f), LevelLayer.Playfield, play);
             Zone(play, 186f, -11f, 11f, new Vector3(0f, 2.5f, -21f));
             // ---- 9. Out of the well up the steps to the last plateau, the end wall.
-            Place("Checkpoint", new Vector3(206f, 7f, 0f), LevelLayer.Playfield, play);
-            Place("ShieldMonk", new Vector3(211f, 7f, 0f), LevelLayer.Playfield, play);
+            Place("Checkpoint", new Vector3(204f, 7f, 0f), LevelLayer.Playfield, play);
+            Place("ShieldMonk", new Vector3(214.5f, 7f, 0f), LevelLayer.Playfield, play);   // waiting past the tunnel
             Place("Wraith", new Vector3(217f, 7f, 0f), LevelLayer.Playfield, play);
             Place("Urn", new Vector3(220f, 7f, 0f), LevelLayer.Playfield, play);
             // ---- 10. The belfry: up ledge by ledge, a shaft by its right wall, a ring; out onto its roof at 38 m.
@@ -148,8 +148,8 @@ namespace CrimsonVeil.EditorTools
             Zone(play, 296f, -15f, 15f, new Vector3(0f, 2f, -24f));
             // ---- 13./14. Up the shaft out of the chasm into the garden; the end.
             Place("Checkpoint", new Vector3(316f, 2f, 0f), LevelLayer.Playfield, play);
-            Place("ShieldMonk", new Vector3(324f, 2f, 0f), LevelLayer.Playfield, play);
-            Place("Wraith", new Vector3(331f, 2f, 0f), LevelLayer.Playfield, play);
+            Place("ShieldMonk", new Vector3(329f, 2f, 0f), LevelLayer.Playfield, play);     // past the tunnel
+            Place("Wraith", new Vector3(334f, 2f, 0f), LevelLayer.Playfield, play);
             Place("Urn", new Vector3(336f, 2f, 0f), LevelLayer.Playfield, play);
 
             // ---------------------------------------------------------------- decoration: playfield
@@ -413,6 +413,7 @@ namespace CrimsonVeil.EditorTools
             new BlockDef("step 1", 197f, 0f, 4f, 4f, TerrainStyle.Rock, 34),                      // 195 .. 199
             new BlockDef("step 2", 201f, 3.5f, 4f, 7.5f, TerrainStyle.Rock, 35),                  // 199 .. 203
             new BlockDef("plateau", 212.5f, 7f, 19f, 12f, TerrainStyle.Rock, 36),                 // 203 .. 222
+            new BlockDef("plateau tunnel", 208f, 15f, 5f, 6.8f, TerrainStyle.Ruin, 65),          // 205.5 .. 210.5, 1.2 m over the plateau: crawl or slide
             // 10. the belfry: a step, ledges to and fro 4 m apart, a wall-jump shaft by its right wall, out at 38 m
             new BlockDef("belfry floor", 230f, 7f, 16f, 12f, TerrainStyle.Rock, 37),            // 222 .. 238
             new BlockDef("belfry left wall", 222.7f, 44f, 1.4f, 34f, TerrainStyle.Ruin, 38, false), // hangs: walk in under it (3 m)
@@ -445,6 +446,7 @@ namespace CrimsonVeil.EditorTools
             new BlockDef("chasm right wall", 311f, 2f, 2f, 18f, TerrainStyle.Ruin, 62, false),    // 310 .. 312
             // 14. the garden at the end, and the end wall
             new BlockDef("garden", 325f, 2f, 26f, 14f, TerrainStyle.Rock, 63),                   // 312 .. 338
+            new BlockDef("garden tunnel", 322f, 9.2f, 6f, 6.1f, TerrainStyle.Ruin, 66),          // 319 .. 325, 1.1 m over the ground: a long crawl, or a slide
             new BlockDef("end wall", 339f, 22f, 2f, 30f, TerrainStyle.Ruin, 64, false),
         };
 
@@ -464,6 +466,14 @@ namespace CrimsonVeil.EditorTools
             ("chasm ledge 2", "chasm ledge 3", "drop"), ("chasm ledge 3", "chasm ledge 4", "drop"), ("chasm ledge 4", "chasm ledge 5", "drop"),
             ("chasm ledge 5", "chasm ledge 6", "drop"), ("chasm ledge 6", "chasm ledge 7", "drop"), ("chasm ledge 7", "chasm floor", "drop"),
             ("chasm floor", "chasm right wall", "shaft"), ("chasm right wall", "garden", "walk"),
+        };
+
+        /// <summary>Low passages on the way: (the block overhead, the ground under it). Crouch (down) to crawl through,
+        /// or slide (down + dash).</summary>
+        public static readonly (string roof, string ground)[] ExtensionTunnels =
+        {
+            ("plateau tunnel", "plateau"),
+            ("garden tunnel", "garden"),
         };
 
         /// <summary>The wall-jump shafts of the way: (the ledge it starts from, the hanging pillar walked in under, the

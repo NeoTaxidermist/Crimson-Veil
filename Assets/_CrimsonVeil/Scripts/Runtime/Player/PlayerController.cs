@@ -148,9 +148,11 @@ namespace CrimsonVeil.Player
                 wallSide = wall,
                 ledgeSide = ledge,
                 gripPosition = GripPosition,
+                lowCeiling = controller.isGrounded && !attached && HeadBlocked(),
             };
 
             Vector2 v = Motor.Tick(dt, input, contacts);
+            SetLow(Motor.IsCrouching || Motor.IsSliding);
 
             if (Motor.State == MotorState.LedgeHang && scarfPull > 0f)
             {
@@ -176,6 +178,37 @@ namespace CrimsonVeil.Player
 
             UpdateFlip(dt);
             UpdateVisual(dt);
+        }
+
+        [Header("Crouch")]
+        [Tooltip("Height of the body crouched or sliding (it passes under anything higher).")]
+        [SerializeField] float crouchHeight = 1.0f;
+        float standHeight = -1f, standCenterY;
+
+        /// <summary>Is the body crouched low (crouching or sliding)?</summary>
+        public bool IsLow { get; private set; }
+        public float CrouchHeight => crouchHeight;
+
+        /// <summary>Is there something over the hero that leaves no room to stand up?</summary>
+        public bool HeadBlocked()
+        {
+            float stand = standHeight > 0f ? standHeight : controller.height;
+            float r = controller.radius * 0.9f;
+            // (from inside the crouched body: a cast starting inside a collider doesn't hit it, the hero's own included)
+            var origin = transform.position + Vector3.up * (crouchHeight * 0.6f);
+            float dist = stand - crouchHeight * 0.6f - r + 0.02f;
+            return Physics.SphereCast(origin, r, Vector3.up, out _, dist, environment, QueryTriggerInteraction.Ignore);
+        }
+
+        /// <summary>Shrinks the body to the crouch height (feet where they are) or stands it up again.</summary>
+        void SetLow(bool low)
+        {
+            if (standHeight < 0f) { standHeight = controller.height; standCenterY = controller.center.y; }
+            if (low == IsLow) return;
+            IsLow = low;
+            float h = low ? crouchHeight : standHeight;
+            controller.height = h;
+            controller.center = new Vector3(controller.center.x, low ? standCenterY - (standHeight - h) * 0.5f : standCenterY, controller.center.z);
         }
 
         /// <summary>Wall in contact on the side we push towards (or either side), measured at two heights.</summary>

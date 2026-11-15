@@ -148,6 +148,10 @@ MonoBehaviour:
     dashDuration: 0.16
     dashCooldown: 0.35
     dashEndSpeedFactor: 0.55
+    crouchSpeed: 2.6
+    slideSpeed: 13
+    slideEndSpeed: 3
+    slideDuration: 0.5
     wallSlideSpeed: 2.3
     wallJumpHeight: 3.3
     wallJumpPush: 7.5
@@ -178,6 +182,7 @@ MonoBehaviour:
   gripHeight: 2.05
   scarfLedgeHeight: 3.1
   scarfPullTime: 0.22
+  crouchHeight: 1
 --- !u!114 &4233667051544647546
 MonoBehaviour:
   m_ObjectHideFlags: 0

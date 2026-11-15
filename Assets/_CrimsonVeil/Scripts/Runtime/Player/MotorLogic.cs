@@ -39,6 +39,14 @@ namespace CrimsonVeil.Player
         [Tooltip("Fraction of dash speed kept when the dash ends.")]
         public float dashEndSpeedFactor = 0.55f;
 
+        [Header("Crouch & slide")]
+        [Tooltip("Crawling speed while crouched (down held on the ground, or under a low ceiling).")]
+        public float crouchSpeed = 2.6f;
+        [Tooltip("Speed at the start of a slide (down + dash on the ground); it slows to slideEndSpeed.")]
+        public float slideSpeed = 13f;
+        public float slideEndSpeed = 3f;
+        public float slideDuration = 0.5f;
+
         [Header("Wall")]
         public float wallSlideSpeed = 2.3f;
         public float wallJumpHeight = 3.3f;
@@ -108,6 +116,8 @@ namespace CrimsonVeil.Player
         public int ledgeSide;
         /// <summary>Where the hero holds the whip (hands), world XY — needed while swinging.</summary>
         public Vector2 gripPosition;
+        /// <summary>Something over the crouched hero: there is no room to stand up (or to jump) here.</summary>
+        public bool lowCeiling;
     }
 
     /// <summary>
@@ -123,6 +133,14 @@ namespace CrimsonVeil.Player
         public MotorState State { get; private set; } = MotorState.Normal;
         public bool IsGrounded { get; private set; }
         public bool IsDashing => dashTimer > 0f;
+        /// <summary>Crouched on the ground: down held, or no room to stand. Crawls slowly; the body is low.</summary>
+        public bool IsCrouching { get; private set; }
+        /// <summary>Sliding along the ground (down + dash): fast, low, slowing to a crawl.</summary>
+        public bool IsSliding => slideTimer > 0f;
+        /// <summary>0..1 through the slide.</summary>
+        public float SlideProgress => Settings.slideDuration > 0f ? 1f - Mathf.Clamp01(slideTimer / Settings.slideDuration) : 1f;
+        public event Action Slid;
+        float slideTimer;
         public bool IsJumping { get; private set; }
         public bool IsStunned => stunTimer > 0f;
         public int Facing { get; private set; } = 1;
@@ -436,6 +454,10 @@ namespace CrimsonVeil.Player
                 hasInput = false;
                 inputSide = 0;
             }
+            // Crouched: down held on the ground, or no room over him to stand up.
+            bool downHeld = input.aimY < -0.5f;
+            IsCrouching = IsGrounded && State == MotorState.Normal && !IsDashing && (downHeld || contacts.lowCeiling || IsSliding);
+            if (!IsGrounded) slideTimer = 0f;   // slid off an edge: the momentum carries on as a fall
 
             // Ledge grab: falling or near the apex, pushing into a ledge.
             if (!IsGrounded && contacts.ledgeSide != 0 && regrabTimer <= 0f && Velocity.y <= 2f && !IsDashing
@@ -459,7 +481,7 @@ namespace CrimsonVeil.Player
                 Facing = AttachSide;
             }
 
-            bool canJump = bufferTimer > 0f && coyoteTimer > 0f;
+            bool canJump = bufferTimer > 0f && coyoteTimer > 0f && !(IsGrounded && contacts.lowCeiling);
             int jumpWall = sliding ? contacts.wallSide : lastWallSide;
             // No climbing a single wall by kicking off it again and again: the next wall jump must be
             // from the other side (or after touching ground / grabbing a ledge).
@@ -472,7 +494,16 @@ namespace CrimsonVeil.Player
                               && airJumpsUsed < s.airJumps && !IsStunned;
 
             // --- Dash (from a wall it always launches away from it) ------------------------
-            if (input.dashPressed && !IsDashing && dashCooldownTimer <= 0f && (IsGrounded || airDashAvailable))
+            if (input.dashPressed && !IsDashing && !IsSliding && dashCooldownTimer <= 0f && IsGrounded && IsCrouching)
+            {
+                // down + dash: a slide along the ground, low under things
+                if (hasInput) Facing = inputSide;
+                slideTimer = s.slideDuration;
+                dashCooldownTimer = s.dashCooldown;
+                IsJumping = false;
+                Slid?.Invoke();
+            }
+            else if (input.dashPressed && !IsDashing && !IsSliding && dashCooldownTimer <= 0f && (IsGrounded || airDashAvailable))
             {
                 if (sliding) Facing = -contacts.wallSide;
                 else if (hasInput) Facing = inputSide;
@@ -483,6 +514,22 @@ namespace CrimsonVeil.Player
                 State = MotorState.Normal;
                 inputLockTimer = 0f;
                 Dashed?.Invoke();
+            }
+
+            if (IsSliding)
+            {
+                if (canJump)
+                {
+                    slideTimer = 0f;   // a slide-jump keeps the momentum
+                }
+                else
+                {
+                    slideTimer = Mathf.Max(0f, slideTimer - dt);
+                    float speed = Mathf.Lerp(s.slideSpeed, s.slideEndSpeed, SlideProgress * SlideProgress);
+                    Velocity = new Vector2(Facing * speed, -s.groundStickVelocity);
+                    if (contacts.wallSide != 0 && contacts.wallSide == Facing) { Velocity.x = 0f; slideTimer = 0f; }
+                    return Velocity;
+                }
             }
 
             if (IsDashing)
@@ -508,7 +555,7 @@ namespace CrimsonVeil.Player
             // --- Horizontal ----------------------------------------------------------------
             if (!locked)
             {
-                float maxSpeed = s.maxRunSpeed;
+                float maxSpeed = IsCrouching ? s.crouchSpeed : s.maxRunSpeed;
                 if (!IsGrounded && IsJumping && Mathf.Abs(Velocity.y) < s.apexThreshold) maxSpeed *= s.apexSpeedBonus;
                 float target = moveX * maxSpeed;
 

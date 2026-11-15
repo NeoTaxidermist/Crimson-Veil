@@ -170,6 +170,9 @@ namespace CrimsonVeil.Player
                 swingSpeed = player.Motor.SwingAngularVelocity * player.Motor.Facing,
                 weaponHeld = veil != null && veil.Form != VeilForm.Flow ? veil.TransformProgress : 0f,
                 somersault = player.FlipProgress,
+                crouching = player.Motor.IsCrouching,
+                sliding = player.Motor.IsSliding,
+                slideProgress = player.Motor.SlideProgress,
             };
             if (s.hanging)
             {

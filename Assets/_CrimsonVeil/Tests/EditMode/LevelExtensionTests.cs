@@ -91,12 +91,28 @@ namespace CrimsonVeil.Tests
                 {
                     if (o.name == p.name || o.Bottom <= p.top) continue;
                     if (o.Right <= p.Left + 1e-3f || o.Left >= p.Right - 1e-3f) continue;   // not over it
+                    if (PrototypeSceneBuilder.ExtensionTunnels.Any(t => t.roof == o.name && t.ground == p.name)) continue;   // crawled under (see TheTunnels_...)
                     Assert.GreaterOrEqual(o.Bottom - p.top, 1.95f, o.name + " over " + p.name + " leaves no room to stand");
                 }
             }
             var floor = Get("tower floor");
             Assert.LessOrEqual(floor.Left, 115.01f, "the tower floor joins the far side (it ends at 115)");
             Assert.GreaterOrEqual(Get("tower left wall").Bottom - floor.top, 1.95f, "walk into the tower under its wall");
+        }
+
+        [Test]
+        public void TheTunnels_MustBeCrawledOrSlid()
+        {
+            Assert.GreaterOrEqual(PrototypeSceneBuilder.ExtensionTunnels.Length, 2);
+            foreach (var (roofName, groundName) in PrototypeSceneBuilder.ExtensionTunnels)
+            {
+                var roof = Get(roofName);
+                var ground = Get(groundName);
+                float gap = roof.Bottom - ground.top;
+                Assert.That(gap, Is.InRange(1.05f, 1.6f), roofName + ": room for the crouched body (1 m), not for a standing one (1.8 m)");
+                Assert.Greater(roof.top - ground.top, 6.5f, roofName + ": too high to jump over (even with the double jump)");
+                Assert.IsTrue(roof.Left > ground.Left + 0.5f && roof.Right < ground.Right - 0.5f, roofName + ": over its ground, room to stand at both ends");
+            }
         }
 
         [Test]

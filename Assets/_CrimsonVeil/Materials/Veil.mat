@@ -84,6 +84,7 @@ Material:
     - _SrcBlend: 5
     - _SrcBlendAlpha: 1
     - _Surface: 1
+    - _WeaponInk: 0.85
     - _ZWrite: 0
     m_Colors:
     - _BaseColor: {r: 1.25, g: 0.06, b: 0.07, a: 1}

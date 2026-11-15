@@ -29,6 +29,7 @@ Material:
     - _EdgeSoftness: 0.9
     - _Erosion: 0.95
     - _FlowSpeed: 0.5
+    - _WeaponInk: 0.85
     m_Colors:
     - _ClothDeep: {r: 0.36, g: 0, b: 0.01, a: 1}
     - _ClothLight: {r: 1, g: 0.04, b: 0.04, a: 1}

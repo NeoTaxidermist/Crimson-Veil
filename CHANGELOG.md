@@ -5,6 +5,26 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.21.1] – 2026-11-15
+### Opraveno
+- **Hrdina visel na římse rukama ve vzduchu, asi půl metru od skály.**
+  - Hrana se měřila paprskem, který narazil na vlastní kolizi hrdiny, takže vyšla o kus vedle.
+  - Teď se hrana měří přímo pod horní plochou a hrdinovy kolize se nepočítají (`PlayerController.LipPoint`).
+  - Hrdina visí za hranou na dosah rukou (`HangReach`), u vyboulené stěny nikdy ne v ní (`HangX`). Vylézá se na místo nad skutečnou hranou.
+  - Paže při visu míří přímo na hranu podle její skutečné polohy (`HeroPoseSolver.HangArm`).
+  - Ověřeno ve hře na plovoucí skále ze scény.
+- **Kořenovému běžci procházely nožičky stropem i zemí.**
+  - Kořeny se rozevíraly do celého kruhu, teď jen do vějíře ±72° směrem od povrchu, na kterém visí nebo stojí, a kmitají o ±12° (`RootCrawlerLogic.RootAngle`).
+  - Mez je změřená na modelu: ohnuté kořeny při víc než ~85° klesnou pod povrch.
+
+### Testy
+- `LedgeReachRootTests`:
+  - poloha visu u kolmé, podříznuté a vyboulené stěny;
+  - paže míří na hranu;
+  - vějíř kořenů;
+  - žádný kořen modelu nesahá pod povrch ani při kmitání.
+- `TraversalPlayTests.HangingFromALedge_TheHandsAreOnTheLip_NotInTheAir`: skutečnou fyzikou se změří hrana a ověří, že hrdina visí na dosah za ní.
+
 ## [0.21.0] – 2026-11-15
 Útok z místa (Ctrl), opravené šplhání a luk nad hlavou, mnich otáčí štít a propracovanější modely přízraku, mnicha a oběšence.
 

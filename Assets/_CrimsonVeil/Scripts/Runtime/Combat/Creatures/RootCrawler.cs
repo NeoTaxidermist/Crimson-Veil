@@ -138,8 +138,9 @@ namespace CrimsonVeil.Combat
             float speed = Current == State.Pinned ? 18f : Current == State.Skitter ? 9f : 2f;
             for (int i = 0; i < roots.Length; i++)
             {
-                float baseAngle = i * (360f / roots.Length);
-                roots[i].localRotation = Quaternion.Euler(0f, 0f, baseAngle + Mathf.Sin(Time.time * speed + i * 1.7f) * (Current == State.Pinned ? 6f : 18f));
+                // fanned out away from the surface it clings to / stands on, never down into it
+                float wiggle = Mathf.Sin(Time.time * speed + i * 1.7f) * (Current == State.Pinned ? 6f : RootCrawlerLogic.Wiggle);
+                roots[i].localRotation = Quaternion.Euler(0f, 0f, RootCrawlerLogic.RootAngle(i, roots.Length) + wiggle);
             }
         }
 
@@ -164,5 +165,20 @@ namespace CrimsonVeil.Combat
     {
         /// <summary>Drop when the hero passes underneath (close in x, below it).</summary>
         public static bool ShouldDrop(float dx, float dy, float trigger) => Mathf.Abs(dx) < trigger && dy < -0.5f && dy > -9f;
+
+        /// <summary>How far (degrees, either side of straight away from the surface) the roots fan out. The knot sits
+        /// 0.25 m off the surface; measured on the model, past ~85° (fan + writhe) the bent roots dip under it.</summary>
+        public const float Spread = 72f;
+
+        /// <summary>How far each root writhes about its place in the fan.</summary>
+        public const float Wiggle = 12f;
+
+        /// <summary>The place of root <paramref name="i"/> of <paramref name="count"/> in the fan (degrees from straight
+        /// away from the surface): evenly across it, the outer ones splayed out like legs bracing on the surface.</summary>
+        public static float RootAngle(int i, int count)
+        {
+            if (count <= 1) return 0f;
+            return Mathf.Lerp(-Spread, Spread, i / (float)(count - 1));
+        }
     }
 }

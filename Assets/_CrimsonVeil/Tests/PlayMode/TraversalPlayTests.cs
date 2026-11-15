@@ -54,6 +54,25 @@ namespace CrimsonVeil.Tests
         }
 
         [UnityTest]
+        public IEnumerator HangingFromALedge_TheHandsAreOnTheLip_NotInTheAir()
+        {
+            yield return Wait(0.3f);
+            input.moveX = 1f;
+            yield return Wait(0.25f);
+            input.jump = true;
+            input.jumpHeld = true;
+            float end = Time.time + 1.2f;
+            while (Time.time < end && controller.Motor.State != MotorState.LedgeHang) yield return null;
+            Assert.AreEqual(MotorState.LedgeHang, controller.Motor.State, "grabbed the ledge");
+            // the ledge box's near face is at x = 3.5, its top at 4.6
+            Assert.AreEqual(3.5f, controller.LipPoint.x, 0.02f, "the lip measured on the ledge (not on the hero's own collider)");
+            Assert.AreEqual(4.6f, controller.LipPoint.y, 0.02f);
+            float reach = controller.LipPoint.x - player.transform.position.x;
+            Assert.That(reach, Is.InRange(0.25f, 0.4f), "hanging just behind the lip, within the arms' reach");
+            input.jumpHeld = false;
+        }
+
+        [UnityTest]
         public IEnumerator JumpAtLedge_GrabsAndClimbsOnTop()
         {
             yield return Wait(0.3f);

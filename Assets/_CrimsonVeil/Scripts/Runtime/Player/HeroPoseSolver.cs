@@ -71,6 +71,8 @@ namespace CrimsonVeil.Player
         public bool hanging;
         public bool climbing;
         public float climbProgress;
+        /// <summary>Hanging: the arm angle that reaches the lip (see HangArm); 0 = the usual one.</summary>
+        public float hangArm;
         /// <summary>Hanging from the whip; <see cref="swingSpeed"/> is the angular velocity (rad/s, + = towards facing).</summary>
         public bool swinging;
         public float swingSpeed;
@@ -151,7 +153,7 @@ namespace CrimsonVeil.Player
             HeroPose target;
             if (s.climbing) target = ClimbPose(s.climbProgress);
             else if (s.swinging) target = SwingPose(s.swingSpeed, time);
-            else if (s.hanging) target = HangPose(time);
+            else if (s.hanging) target = HangPose(time, s.hangArm);
             else if (s.wallSliding) target = WallSlidePose(time);
             else if (s.dashing) target = DashPose();
             else if (!s.grounded) target = AirPose(s.verticalVelocity);
@@ -296,8 +298,9 @@ namespace CrimsonVeil.Player
         /// Both hands gripping the lip above, the arms almost straight, the body close to the wall: one foot braced
         /// against the stone, the other leg hanging and swinging a little, the head tipped back to the lip.
         /// </summary>
-        public static HeroPose HangPose(float time)
+        public static HeroPose HangPose(float time, float arm = DefaultHangArm)
         {
+            if (arm <= 0f) arm = DefaultHangArm;
             float swing = Mathf.Sin(time * 2.2f) * 5f;
             float breathe = Mathf.Sin(time * 1.6f) * 1.5f;
             return new HeroPose
@@ -305,9 +308,27 @@ namespace CrimsonVeil.Player
                 spine = 8f + breathe, chest = -2f, head = 16f, neck = 6f, bob = 0f,
                 thighL = 42f, kneeL = 78f, footL = 18f, toeL = 20f,          // braced against the wall
                 thighR = 2f + swing, kneeR = 22f + swing * 0.5f, footR = -22f,
-                armL = 150f, elbowL = 10f, armR = 146f, elbowR = 14f,      // reaching forward-up to the lip (it is ~0.3 m ahead)
+                armL = arm, elbowL = 10f, armR = arm - 4f, elbowR = 14f,   // reaching forward-up to the lip
                 shoulderL = -4f, shoulderR = -4f, wristL = 30f, wristR = 30f, // hooked over the lip
             };
+        }
+
+        /// <summary>The hang's arm angle for the usual lip (PlayerController.HangReach ahead, at the top of the reach).</summary>
+        public const float DefaultHangArm = 146f;
+
+        /// <summary>Height of the shoulders above the feet (hanging, the body straight).</summary>
+        public const float ShoulderHeight = 1.45f;
+
+        /// <summary>
+        /// The hang's arm angle (0 down, 90 forward, 180 up, against the chest) for a lip <paramref name="ahead"/> m in
+        /// front of the feet and <paramref name="above"/> m above them: the arms point at it, so the hands are on the
+        /// stone and not in the air beside it.
+        /// </summary>
+        public static float HangArm(float ahead, float above)
+        {
+            float world = 90f + Mathf.Atan2(above - ShoulderHeight, Mathf.Max(0.02f, ahead)) * Mathf.Rad2Deg;
+            const float lean = 6f;   // the hang leans the chest forward this much (spine + chest)
+            return Mathf.Clamp(world - lean, 110f, 175f);
         }
 
         /// <summary>Keys of the mantle (progress of the climb): the pull-up, the press over the lip, the knee on top, standing.</summary>

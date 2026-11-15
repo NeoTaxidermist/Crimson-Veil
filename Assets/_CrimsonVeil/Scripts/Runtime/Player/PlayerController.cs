@@ -235,8 +235,12 @@ namespace CrimsonVeil.Player
         void OnLedgeGrabbed()
         {
             int dir = probedLedgeSide != 0 ? probedLedgeSide : Motor.AttachSide;
-            var hang = new Vector3(probedWallX - dir * (controller.radius + 0.03f), probedLedgeTop - hangDrop, planeZ);
-            climbTarget = new Vector3(probedWallX + dir * 0.45f, probedLedgeTop + 0.02f, planeZ);
+            // The hands go where the lip really is - measured just under the top, not where the wall was hit at chest
+            // height (a rounded or undercut rock's lip can be well away from its side lower down).
+            float lipX = MeasureLip(dir, probedLedgeTop, probedWallX);
+            LipPoint = new Vector3(lipX, probedLedgeTop, planeZ);
+            var hang = new Vector3(HangX(dir, lipX, probedWallX, controller.radius), probedLedgeTop - hangDrop, planeZ);
+            climbTarget = new Vector3(lipX + dir * 0.45f, probedLedgeTop + 0.02f, planeZ);
             squash = new Vector3(0.9f, 1.12f, 0.9f);
             if (scarfLedge)
             {
@@ -249,6 +253,37 @@ namespace CrimsonVeil.Player
                 ScarfCaught?.Invoke();
             }
             else SetPosition(hang);
+        }
+
+        /// <summary>How far in front of the hero the hands hold the lip while hanging (the hang pose reaches this far).</summary>
+        public const float HangReach = 0.3f;
+
+        /// <summary>The lip the hands hold (world), set on grabbing a ledge.</summary>
+        public Vector3 LipPoint { get; private set; }
+
+        /// <summary>
+        /// Where the hero hangs (x) for a lip at <paramref name="lipX"/>: the hands' reach behind it - but never into the
+        /// wall below it, if that bulges out further than the lip.
+        /// </summary>
+        public static float HangX(int dir, float lipX, float wallX, float radius)
+        {
+            float byLip = lipX - dir * HangReach;
+            float byWall = wallX - dir * (radius + 0.03f);
+            return dir > 0 ? Mathf.Min(byLip, byWall) : Mathf.Max(byLip, byWall);
+        }
+
+        /// <summary>The x of the ledge's edge just under its top (falls back to the wall hit if nothing is found).</summary>
+        float MeasureLip(int dir, float top, float wallX)
+        {
+            // (cast from behind the hero towards the ledge: his own collider is in the way and must not count)
+            var from = new Vector3(wallX - dir * 0.8f, top - 0.06f, planeZ);
+            float best = float.MaxValue, lip = wallX;
+            foreach (var hit in Physics.RaycastAll(from, new Vector3(dir, 0f, 0f), 1.6f, environment, QueryTriggerInteraction.Ignore))
+            {
+                if (hit.collider.transform.IsChildOf(transform) || Mathf.Abs(hit.normal.y) >= 0.8f) continue;
+                if (hit.distance < best) { best = hit.distance; lip = hit.point.x; }
+            }
+            return lip;
         }
 
         void OnClimbStarted()

@@ -143,6 +143,12 @@ namespace CrimsonVeil.Player
                 weaponHeld = veil != null && veil.Form != VeilForm.Flow ? veil.TransformProgress : 0f,
                 somersault = player.FlipProgress,
             };
+            if (s.hanging)
+            {
+                // the arms reach for where the lip really is
+                var feet = player.transform.position;
+                s.hangArm = HeroPoseSolver.HangArm((player.LipPoint.x - feet.x) * player.Motor.AttachSide, player.LipPoint.y - feet.y);
+            }
             var p = Solver.Step(Time.deltaTime, s);
             Apply(p);
             if (Hands != null)

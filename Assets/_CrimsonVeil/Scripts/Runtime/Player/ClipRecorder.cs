@@ -58,6 +58,7 @@ namespace CrimsonVeil.Player
             if (!string.IsNullOrEmpty(Folder)) Directory.CreateDirectory(Folder);
             rt = new RenderTexture(Width, Height, 24);
             tex = new Texture2D(Width, Height, TextureFormat.RGB24, false);
+            StartCoroutine(CaptureLoop());
         }
 
         void Update()
@@ -88,7 +89,20 @@ namespace CrimsonVeil.Player
             }
         }
 
-        void LateUpdate()
+        // Frames are captured at the end of the frame, after Unity has skinned the meshes. A Camera.Render() in
+        // LateUpdate would draw the body with the previous frame's skinning while the veil (built in LateUpdate)
+        // is already current, so the weapon would seem to leave the fist by a whole frame of motion.
+        System.Collections.IEnumerator CaptureLoop()
+        {
+            var end = new WaitForEndOfFrame();
+            while (!Done)
+            {
+                yield return end;
+                Capture();
+            }
+        }
+
+        void Capture()
         {
             if (Done || Camera == null) return;
             if (Warmup > 0) { Warmup--; return; }

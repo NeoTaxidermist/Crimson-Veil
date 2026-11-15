@@ -122,6 +122,31 @@ namespace CrimsonVeil.Tests
         }
 
         [Test]
+        public void Whip_HasAHandle_ThenTheLash()
+        {
+            VeilFormLibrary.WhipHandleSpan(out float butt, out float fist, out float stockEnd);
+            Assert.Less(butt, fist); Assert.Less(fist, stockEnd);
+            float stock = VeilRenderer.TipProfile(VeilForm.Whip, Mathf.Lerp(fist, stockEnd, 0.4f));
+            float lash = VeilRenderer.TipProfile(VeilForm.Whip, stockEnd + (1f - stockEnd) * 0.3f);
+            Assert.Greater(stock, lash * 1.15f, "the handle is stouter than the lash");
+            Assert.Greater(VeilRenderer.TipProfile(VeilForm.Whip, butt), stock, "a knob at its butt");
+            Assert.Less(VeilRenderer.TipProfile(VeilForm.Whip, 1f), 0.2f, "the lash tapers to a fine tip");
+            Assert.AreEqual(VeilFormLibrary.GripFraction(VeilForm.Whip), fist, 1e-4f, "the fist holds the handle");
+        }
+
+        [Test]
+        public void TheHiltHandleAndGrip_AreHeldInTheFist_FromTheCast()
+        {
+            Assert.IsTrue(VeilFormLibrary.HeldSpan(VeilForm.Sword, out float a, out float b));
+            VeilFormLibrary.SwordHilt(out float pommel, out float fist, out float guard);
+            Assert.AreEqual(pommel, a, 1e-4f); Assert.Greater(b, guard, "the whole hilt");
+            Assert.IsTrue(VeilFormLibrary.HeldSpan(VeilForm.Whip, out a, out b));
+            Assert.IsTrue(VeilFormLibrary.HeldSpan(VeilForm.Bow, out a, out b));
+            Assert.IsFalse(VeilFormLibrary.HeldSpan(VeilForm.Spear, out a, out b), "the spear's shaft slides through the fist");
+            Assert.IsFalse(VeilFormLibrary.HeldSpan(VeilForm.Shield, out a, out b), "the shield floats round the body");
+        }
+
+        [Test]
         public void Sword_EndsInASharpPoint()
         {
             Assert.AreEqual(1f, VeilRenderer.TipProfile(VeilForm.Sword, 0.6f), 1e-4f, "full blade");

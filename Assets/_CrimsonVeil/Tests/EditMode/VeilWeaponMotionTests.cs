@@ -141,13 +141,14 @@ namespace CrimsonVeil.Tests
             int returns = 0;
             bool away = false;
             int start = Mathf.CeilToInt(hfExt * 199) + 2;
+            Vector2 stockEnd = VeilFormLibrary.Hand + new Vector2(VeilFormLibrary.WhipHandle, 0f);
             for (int i = start; i < fine.Length; i++)
             {
-                float d = Vector2.Distance(fine[i], VeilFormLibrary.Hand);
+                float d = Vector2.Distance(fine[i], stockEnd);
                 if (d > 0.3f) away = true;
                 else if (away && d < 0.06f) { returns++; away = false; }
             }
-            Assert.AreEqual(VeilFormLibrary.WhipCoilLoops, returns, "each loop hangs from the hand and comes back to it");
+            Assert.AreEqual(VeilFormLibrary.WhipCoilLoops, returns, "each loop hangs from the end of the handle in the fist and comes back to it");
             Assert.LessOrEqual(VeilFormLibrary.WhipCoilLoops, 3);
         }
 

@@ -558,6 +558,21 @@ namespace CrimsonVeil.Veil
                     float x = Mathf.Clamp01((t - 0.84f) / 0.16f);
                     return Mathf.Pow(1f - x, 0.7f) * (1f + 0.15f * Mathf.Sin(x * Mathf.PI));
                 }
+                case VeilForm.Whip:
+                {
+                    // The handle: a knob at its butt, the stock through the fist, a collar where the lash leaves it;
+                    // then the lash, thinner, tapering to the tip.
+                    VeilFormLibrary.WhipHandleSpan(out float butt, out _, out float stockEnd);
+                    float span = Mathf.Max(1e-4f, stockEnd - butt);
+                    if (t <= stockEnd + span * 0.15f)
+                    {
+                        float knob = WhipButtWidth * Mathf.Exp(-Mathf.Pow((t - butt) / (span * 0.12f), 2f));
+                        float collar = WhipCollarWidth * Mathf.Exp(-Mathf.Pow((t - stockEnd) / (span * 0.08f), 2f));
+                        return Mathf.Max(WhipStockWidth, Mathf.Max(knob, collar));
+                    }
+                    float x = Mathf.Clamp01((t - stockEnd) / Mathf.Max(1e-3f, 1f - stockEnd));
+                    return Mathf.Lerp(WhipLashWidth, 0.15f, Mathf.SmoothStep(0f, 1f, x));
+                }
                 case VeilForm.Spear:
                 {
                     // Last 14%: a leaf blade — widens past the socket, then tapers to the point.
@@ -573,6 +588,9 @@ namespace CrimsonVeil.Veil
 
         /// <summary>The sword's hilt, in blade widths: the grip in the fist, the pommel's knob, the crossguard.</summary>
         public const float SwordGripWidth = 0.32f, SwordPommelWidth = 0.6f, SwordGuardWidth = 2.6f;
+
+        /// <summary>The whip, in its width: the stock of the handle, the knob at its butt, the collar, the lash.</summary>
+        public const float WhipStockWidth = 0.8f, WhipButtWidth = 1.15f, WhipCollarWidth = 1.05f, WhipLashWidth = 0.62f;
 
         /// <summary>The spearhead's widest point, in shaft widths.</summary>
         public const float SpearHeadWidth = 3.2f;

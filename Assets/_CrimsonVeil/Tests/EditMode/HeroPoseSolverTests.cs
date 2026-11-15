@@ -134,11 +134,31 @@ namespace CrimsonVeil.Tests
             s.attackT = 0.28f;
             var up = Run(new HeroPoseSolver(), 0.3f, s);
             Assert.Greater(up.armR, 120f, "blade raised back over the shoulder");
-            s.attackT = 0.52f;
+            s.attackT = 0.66f;
             var down = Run(new HeroPoseSolver(), 0.3f, s);
-            Assert.Less(down.armR, -30f, "follow-through below");
+            Assert.Less(down.armR, 30f, "follow-through low");
+            Assert.Greater(down.armR, 0f, "follow-through still in front, not behind the body");
             Assert.Greater(down.thighL, 30f, "front leg lunges");
             Assert.Greater(down.spine, 15f, "body commits to the cut");
+        }
+
+        [Test]
+        public void SwordCut_HandStaysInFrontAndSweepsWithoutASnap()
+        {
+            const float upper = 0.3f, fore = 0.28f;
+            float dur = CrimsonVeil.Veil.VeilFormLibrary.AttackDuration(CrimsonVeil.Veil.VeilForm.Sword);
+            float prev = float.NaN, maxSpeed = 0f;
+            for (int i = 0; i <= 400; i++)
+            {
+                float t = i / 400f;
+                var k = HeroAttackChoreography.Sample(CrimsonVeil.Veil.VeilForm.Sword, t);
+                float a = k.armR * Mathf.Deg2Rad, f = (k.armR + k.elbowR) * Mathf.Deg2Rad;
+                float handForward = Mathf.Sin(a) * upper + Mathf.Sin(f) * fore;
+                Assert.Greater(handForward, 0.05f, $"sword fist in front of the shoulder at t={t:0.00}, not hidden behind the head or body");
+                if (!float.IsNaN(prev)) maxSpeed = Mathf.Max(maxSpeed, Mathf.Abs(k.armR - prev) / (dur / 400f));
+                prev = k.armR;
+            }
+            Assert.Less(maxSpeed, 1300f, "the arm sweeps over several frames, no one-frame jump");
         }
 
         [Test]

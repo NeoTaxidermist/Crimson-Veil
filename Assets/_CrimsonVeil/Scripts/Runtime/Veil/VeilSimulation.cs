@@ -131,6 +131,13 @@ namespace CrimsonVeil.Veil
         public float SwirlSpeed { get; set; }
         public float SwirlRadius { get; set; } = 0.75f;
         public float SwirlWeight { get; set; }
+        /// <summary>The span of the veil (fractions) held in the fist, and how firmly (0..1): it sits exactly on the
+        /// weapon's shape from the moment of the cast, and a little behind the palm so the fist is drawn over it.</summary>
+        public float HeldFrom { get; set; }
+        public float HeldTo { get; set; }
+        public float HeldWeight { get; set; }
+        /// <summary>How far (m) behind the weapon's plane the held part lies, so the fist in front of it covers it.</summary>
+        public const float HeldTuck = 0.08f;
         /// <summary>
         /// Which way the scarf trails round the body while it is wound in the somersault (+1 anticlockwise,
         /// -1 clockwise; 0 = against <see cref="SwirlSpeed"/>). The body turns one way, the cloth lags the other.
@@ -430,6 +437,8 @@ namespace CrimsonVeil.Veil
             for (int i = 1; i < Count; i++)
             {
                 float rigid = RigidHold(H(i));
+                float fi = (float)i / (Count - 1);
+                if (HeldWeight > 0f && fi >= HeldFrom && fi <= HeldTo) rigid = Mathf.Max(rigid, HeldWeight);
                 if (rigid <= 0f) continue;
                 Vector3 want = Targets[i] + targetOffset;
                 want.z = Positions[i].z;
@@ -445,6 +454,7 @@ namespace CrimsonVeil.Veil
                 float t = (float)i / (Count - 1);
                 float behind = s.depthOffset + Mathf.Sin(time * 2.3f + i * 0.55f) * s.depthWobble * t;
                 float z = a.z + Mathf.Lerp(behind, -s.weaponDepth, WeaponDepthBlend(H(i)));
+                if (HeldWeight > 0f && t >= HeldFrom && t <= HeldTo) z = Mathf.Lerp(z, a.z - s.weaponDepth + HeldTuck, HeldWeight);
                 Positions[i].z = z;
                 previous[i].z = z;
             }

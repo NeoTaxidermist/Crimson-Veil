@@ -38,13 +38,16 @@ namespace CrimsonVeil.Player
 
         static Key At(Key k, float t) { k.t = t; return k; }
 
+        // The sword hand never leaves the front of the body: raised high beside the head (not behind it, where the
+        // silhouette would swallow fist and hilt), one continuous diagonal cut down to the front, a low
+        // follow-through still in front. The free arm stays tucked at the chest.
         static readonly Key[] Sword =
         {
             At(Hold, 0f),
-            K(0.28f, 150f, 80f, 35f, 40f, -8f, -14f, 6f, 10f, 20f, -8f, 25f),   // wind-up over the shoulder
-            K(0.42f, 60f, 20f, -10f, 30f, 14f, 12f, -6f, 40f, 50f, -25f, 15f),  // the cut
-            K(0.52f, -55f, 5f, -35f, 25f, 24f, 20f, -10f, 45f, 55f, -30f, 20f), // follow-through, deep lunge
-            K(0.75f, -20f, 20f, -10f, 20f, 12f, 8f, -4f, 25f, 35f, -15f, 15f),
+            K(0.26f, 128f, 38f, 20f, 95f, -8f, -12f, 6f, 10f, 20f, -8f, 25f),   // wind-up: blade raised high, fist beside the head
+            K(0.50f, 40f, 12f, -15f, 70f, 18f, 14f, -8f, 42f, 52f, -28f, 18f),  // one diagonal cut, lunge
+            K(0.66f, 14f, 22f, -18f, 65f, 22f, 16f, -8f, 45f, 55f, -30f, 20f),  // follow-through low in front
+            K(0.82f, 22f, 20f, -8f, 40f, 10f, 6f, -4f, 25f, 35f, -15f, 15f),
             At(Hold, 1f),
         };
 

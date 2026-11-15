@@ -80,6 +80,11 @@ namespace CrimsonVeil.Veil
             switch (form)
             {
                 case VeilForm.Whip:
+                    // A whip has a handle: its butt just behind the fist, the stock through it and a little ahead,
+                    // and the lash running on from the end of the stock.
+                    pts[2] = Hand - new Vector2(WhipPommel, 0f);
+                    pts.Add(Hand);
+                    pts.Add(Hand + new Vector2(WhipHandle, 0f));
                     pts.Add(Hand + new Vector2(1.1f, 0.05f));
                     pts.Add(Hand + new Vector2(2.3f, -0.1f));
                     pts.Add(Hand + new Vector2(3.4f, -0.4f));
@@ -156,21 +161,23 @@ namespace CrimsonVeil.Veil
         /// </summary>
         public static float BuildWhipCoil(Vector2[] output)
         {
-            var extended = ControlPoints(VeilForm.Whip, out int handIndex);
+            var extended = ControlPoints(VeilForm.Whip, out _);
+            Vector2 stockEnd = Hand + new Vector2(WhipHandle, 0f);
+            int lashFrom = extended.IndexOf(stockEnd);
             float lash = 0f;
-            for (int i = handIndex + 1; i < extended.Count; i++) lash += Vector2.Distance(extended[i - 1], extended[i]);
+            for (int i = lashFrom + 1; i < extended.Count; i++) lash += Vector2.Distance(extended[i - 1], extended[i]);
 
-            // Held like a coiled rope: a couple of long loops hanging from the fist, fanned out a little so each
-            // reads on its own, and the last stretch of the lash dangling below.
-            var pts = new List<Vector2> { Vector2.zero, Shoulder, Hand };
+            // Held like a coiled rope: the handle in the fist, a couple of long loops hanging from its end, fanned out a
+            // little so each reads on its own, and the last stretch of the lash dangling below.
+            var pts = new List<Vector2> { Vector2.zero, Shoulder, Hand - new Vector2(WhipPommel, 0f), Hand, stockEnd };
             float left = lash;
-            Vector2 prev = Hand;
+            Vector2 prev = stockEnd;
             for (int loop = 0; loop < WhipCoilLoops && left > 1e-4f; loop++)
             {
                 float rx = 0.12f + 0.025f * loop, ry = 0.28f + 0.03f * loop;
                 float tilt = (-14f + 16f * loop) * Mathf.Deg2Rad;
                 Vector2 down = new Vector2(Mathf.Sin(tilt), -Mathf.Cos(tilt)), side = new Vector2(-down.y, down.x);
-                Vector2 centre = Hand + down * ry;
+                Vector2 centre = stockEnd + down * ry;
                 const int steps = 40;
                 for (int k = 1; k <= steps && left > 1e-4f; k++)
                 {
@@ -191,6 +198,44 @@ namespace CrimsonVeil.Veil
             pts.Add(next);
             prev = next;
             return d;
+        }
+
+        /// <summary>The whip's handle: its butt this far (m) behind the fist, its stock ending this far in front of it.</summary>
+        public const float WhipPommel = 0.07f, WhipHandle = 0.17f;
+
+        static float[] whipHandle;
+
+        /// <summary>Where along the veil (0 neck .. 1 end) the whip's handle lies: its butt (where the weapon starts),
+        /// the fist and the end of the stock, where the lash begins.</summary>
+        public static void WhipHandleSpan(out float butt, out float fist, out float stockEnd)
+        {
+            if (whipHandle == null)
+            {
+                var pts = ControlPoints(VeilForm.Whip, out int start);
+                int fistIndex = pts.IndexOf(Hand);
+                float total = 0f;
+                var at = new float[pts.Count];
+                for (int i = 1; i < pts.Count; i++) { total += Vector2.Distance(pts[i - 1], pts[i]); at[i] = total; }
+                whipHandle = new[] { at[start] / total, at[fistIndex] / total, at[fistIndex + 1] / total };
+            }
+            butt = whipHandle[0]; fist = whipHandle[1]; stockEnd = whipHandle[2];
+        }
+
+        /// <summary>
+        /// The part of the veil held firmly in the fist from the moment a weapon is cast (so it is in the hand at once
+        /// and the rest grows out of it): a sword's hilt, a whip's handle, a bow's grip. None for a spear (its shaft
+        /// slides through the fist in a thrust) or the shield (it floats round the body).
+        /// </summary>
+        public static bool HeldSpan(VeilForm form, out float from, out float to)
+        {
+            from = to = 0f;
+            switch (form)
+            {
+                case VeilForm.Sword: { SwordHilt(out from, out _, out float guard); to = guard + 0.01f; return true; }
+                case VeilForm.Whip: { WhipHandleSpan(out from, out _, out to); return true; }
+                case VeilForm.Bow: { float g = GripFraction(VeilForm.Bow); from = g - 0.025f; to = g + 0.025f; return true; }
+                default: return false;
+            }
         }
 
         /// <summary>Number of loops the resting whip is coiled into.</summary>

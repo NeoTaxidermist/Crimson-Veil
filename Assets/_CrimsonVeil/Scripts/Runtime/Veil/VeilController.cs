@@ -459,6 +459,13 @@ namespace CrimsonVeil.Veil
             if (attackTime < 0f) { AttackProgress = -1f; CurrentSwing = 0f; }
 
             Simulation.Hardness = Hardness;
+            // The hilt / handle / grip is in the fist from the moment of the cast; the rest of the weapon grows out of it.
+            if (ShapeForm != VeilForm.Flow && VeilFormLibrary.HeldSpan(ShapeForm, out float heldFrom, out float heldTo))
+            {
+                Simulation.HeldFrom = heldFrom; Simulation.HeldTo = heldTo;
+                Simulation.HeldWeight = Mathf.SmoothStep(0f, 1f, TransformProgress / 0.12f);
+            }
+            else Simulation.HeldWeight = 0f;
             Simulation.DriftDirection = -Facing;
             // The animation sheet's S-shape (VeilRestShape): held firmly at rest, eased off at a run, while turning
             // round, in a somersault, when it senses a secret or bristles at danger.
@@ -695,7 +702,8 @@ namespace CrimsonVeil.Veil
                 Vector2 basePoint = shape[i];
                 if (ShapeForm == VeilForm.Whip && weapon)
                 {
-                    float along = (f - HandFraction) / Mathf.Max(1e-3f, 1f - HandFraction);
+                    VeilFormLibrary.WhipHandleSpan(out _, out _, out float lashFrom);
+                    float along = Mathf.Max(0f, f - lashFrom) / Mathf.Max(1e-3f, 1f - lashFrom); // the handle stays put
                     basePoint = Vector2.Lerp(whipCoil[i], shape[i], VeilWeaponPose.WhipNodeOpen(whipOpen, along));
                 }
                 // Pose around the canonical grip, move onto the real hand, turn with the forearm.
@@ -721,11 +729,12 @@ namespace CrimsonVeil.Veil
                 Vector2 grip0 = grip;
                 Vector2 span = ring - grip0;
                 var side = new Vector2(span.y, -span.x).normalized;
+                VeilFormLibrary.WhipHandleSpan(out _, out _, out float ropeFrom);
                 for (int i = 0; i < n; i++)
                 {
                     float f = (float)i / (n - 1);
-                    if (f < HandFraction) continue;
-                    float along = (f - HandFraction) / Mathf.Max(1e-3f, 1f - HandFraction);
+                    if (f < ropeFrom) continue; // the handle stays in the fist
+                    float along = (f - ropeFrom) / Mathf.Max(1e-3f, 1f - ropeFrom);
                     float u = Mathf.Min(1f, along / 0.85f);
                     Vector2 p = grip0 + span * u + side * Mathf.Sin(u * Mathf.PI) * 0.12f;
                     if (along > 0.85f)
@@ -740,7 +749,8 @@ namespace CrimsonVeil.Veil
             {
                 // A whip is not a stick: every bit of it repeats the handle's motion a moment later, so a
                 // swing sends a loop rolling down to the tip, which cracks when the loop runs out.
-                int handIndex = Mathf.Clamp(Mathf.CeilToInt(HandFraction * (n - 1)), 0, n - 1);
+                VeilFormLibrary.WhipHandleSpan(out _, out _, out float stockEnd);
+                int handIndex = Mathf.Clamp(Mathf.CeilToInt(stockEnd * (n - 1)), 0, n - 1); // the stiff handle, then the lash
                 Array.Copy(restBuf, whipBuf, n);
                 VeilWeaponPose.WhipChain(restBuf, handIndex, TurnAgo, whipLag, whipBuf);
                 Array.Copy(whipBuf, restBuf, n);

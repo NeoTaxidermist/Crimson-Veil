@@ -5,6 +5,26 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.16.17] – 2026-11-15
+Meč sedí v pěsti po celé seknutí a bič má rukojeť.
+
+### Opraveno
+- **Nahrávač klipů ukazoval tělo o snímek pozadu.**
+  - `ClipRecorder` snímal kameru v `LateUpdate`, tedy dřív, než Unity přepočítá kostru těla.
+  - Tělo se proto kreslilo se stavem z minulého snímku, zatímco zbraň už byla aktuální, a při švihu meč na záznamu „ujížděl“ z ruky až o ~25 cm.
+  - Teď se snímá až na konci snímku (`WaitForEndOfFrame`), takže záznam odpovídá hře.
+- **Nová choreografie seknutí mečem.**
+  - Dříve paže skočila zepředu dozadu o 115° během jediného snímku a při nápřahu byla pěst schovaná za hlavou.
+  - Teď je meč zvednutý vysoko vedle hlavy, následuje jeden plynulý šikmý sek a dokončení zůstává dole před tělem. Volná ruka je přitažená k hrudi.
+- **Jílec je v pěsti už od vzniku zbraně.** Úsek rukojeti (hlavice–záštita) drží pevně v dlani hned od začátku přeměny a kreslí se za pěstí (`HeldSpan`, `HeldTuck`).
+
+### Přidáno
+- **Bič má rukojeť.** Hlavice, tužší násada a objímka, za kterou se šleh zužuje. Smyčky stočeného biče visí z konce násady.
+
+### Testy
+- `SwordCut_HandStaysInFrontAndSweepsWithoutASnap`: pěst je po celé seknutí před ramenem a paže se nikde neotočí rychleji než 1300 °/s.
+- Testy rukojeti biče a drženého úseku zbraně.
+
 ## [0.16.16] – 2026-11-15
 Zbraň drží v ruce i během animace útoku.
 

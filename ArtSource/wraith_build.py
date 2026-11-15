@@ -212,11 +212,12 @@ for side, sx in (("L", 1.0), ("R", -1.0)):
     loft([(head_of(sh).lerp(tail_of(sh), u), 0.035, 0.035) for u in (0.0, 1.0)], W(sh), n=10)
     # the sleeve: narrow at the shoulder, a bony elbow showing through, flaring into a torn bell at the wrist
     a, b = head_of(ua), tail_of(ua)
-    loft([(a.lerp(b, u), r, r) for u, r in ((0.0, 0.055), (0.5, 0.045), (1.0, 0.04))], along(a, b, ua, la, 0.8), n=14)
-    blob(b, 0.045, lambda p, s, ua=ua, la=la: {ua: 0.5, la: 0.5}, seg=10, rings=8)
+    loft([(a.lerp(b, u), r, r) for u, r in ((0.0, 0.075), (0.3, 0.07), (0.6, 0.064), (1.0, 0.06))], along(a, b, ua, la, 0.8), n=16,
+         disp=lambda i, k, p, c: (p - c) * (0.12 * math.sin(k * 2.1 + i)))   # loose cloth, creased
+    blob(b, 0.062, lambda p, s, ua=ua, la=la: {ua: 0.5, la: 0.5}, seg=10, rings=8)
     a, b = head_of(la), tail_of(la)
-    cuff = lambda i, k, p, c: V(0, 0, -0.05 * ((k * 5) % 3) / 2.0) if i == 3 else V(0, 0, 0)
-    loft([(a.lerp(b, u), r, r) for u, r in ((0.0, 0.042), (0.45, 0.05), (0.8, 0.075), (1.0, 0.095))],
+    cuff = lambda i, k, p, c: V(0, 0, -0.03 - 0.06 * ((k * 5) % 3) / 2.0) if i == 3 else V(0, 0, -0.02 * i * max(0.0, -(p - c).z) / 0.1)
+    loft([(a.lerp(b, u), r, r) for u, r in ((0.0, 0.062), (0.4, 0.07), (0.75, 0.1), (1.0, 0.13))],
          along(a, b, la, ha, 0.9), n=16, cap1=False, disp=cuff)
     # the bare bony forearm inside the sleeve, coming out at the wrist
     loft([(a.lerp(b, u), r, r) for u, r in ((0.5, 0.02), (1.0, 0.017))], W(la), n=8)

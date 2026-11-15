@@ -70,6 +70,38 @@ MonoBehaviour:
   m_EditorClassIdentifier: CrimsonVeil.Runtime::CrimsonVeil.Combat.CreatureThread
   line: {fileID: 2219615725881472562}
   sag: 0.08
+--- !u!1 &2665401384720827792
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3438138623171419946}
+  m_Layer: 0
+  m_Name: Visual
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &3438138623171419946
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2665401384720827792}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 2899194054947616962}
+  m_Father: {fileID: 1862298710750448240}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &4074912422472003597
 GameObject:
   m_ObjectHideFlags: 0
@@ -230,6 +262,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1862298710750448240}
   - component: {fileID: 2218822328128612450}
+  - component: {fileID: 5265360293790822759}
   - component: {fileID: 1691542680174164175}
   m_Layer: 0
   m_Name: HangedMan
@@ -279,6 +312,25 @@ CapsuleCollider:
   m_Height: 1.7
   m_Direction: 1
   m_Center: {x: 0, y: 0.85, z: 0}
+--- !u!114 &5265360293790822759
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6036604587003412533}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 19f39d87c02a376469407a67d4a90111, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CrimsonVeil.Runtime::CrimsonVeil.Player.SpringBones
+  root: {fileID: 3438138623171419946}
+  prefix: Tatter.
+  stiffness: 3
+  tipStiffness: 1
+  damping: 0.9
+  gravity: {x: 0, y: -6, z: 0}
+  drag: 0.8
 --- !u!114 &1691542680174164175
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -304,11 +356,11 @@ PrefabInstance:
   serializedVersion: 2
   m_Modification:
     serializedVersion: 3
-    m_TransformParent: {fileID: 1862298710750448240}
+    m_TransformParent: {fileID: 3438138623171419946}
     m_Modifications:
     - target: {fileID: -8679921383154817045, guid: 6787d6f2b99d0c845bb19c21027cc6c5, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -0
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 6787d6f2b99d0c845bb19c21027cc6c5, type: 3}
       propertyPath: m_LocalPosition.y
@@ -320,7 +372,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 6787d6f2b99d0c845bb19c21027cc6c5, type: 3}
       propertyPath: m_LocalRotation.w
-      value: 1
+      value: 0.7071068
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 6787d6f2b99d0c845bb19c21027cc6c5, type: 3}
       propertyPath: m_LocalRotation.x
@@ -328,11 +380,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 6787d6f2b99d0c845bb19c21027cc6c5, type: 3}
       propertyPath: m_LocalRotation.y
-      value: -0
+      value: 0.7071068
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 6787d6f2b99d0c845bb19c21027cc6c5, type: 3}
       propertyPath: m_LocalRotation.z
-      value: -0
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 6787d6f2b99d0c845bb19c21027cc6c5, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
@@ -346,32 +398,36 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: -7511558181221131132, guid: 6787d6f2b99d0c845bb19c21027cc6c5, type: 3}
+    - target: {fileID: 919132149155446097, guid: 6787d6f2b99d0c845bb19c21027cc6c5, type: 3}
+      propertyPath: m_Name
+      value: Model
+      objectReference: {fileID: 0}
+    - target: {fileID: 8630305719274311800, guid: 6787d6f2b99d0c845bb19c21027cc6c5, type: 3}
       propertyPath: m_CastShadows
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: -7511558181221131132, guid: 6787d6f2b99d0c845bb19c21027cc6c5, type: 3}
+    - target: {fileID: 8630305719274311800, guid: 6787d6f2b99d0c845bb19c21027cc6c5, type: 3}
       propertyPath: m_ReceiveShadows
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: -7511558181221131132, guid: 6787d6f2b99d0c845bb19c21027cc6c5, type: 3}
+    - target: {fileID: 8630305719274311800, guid: 6787d6f2b99d0c845bb19c21027cc6c5, type: 3}
+      propertyPath: m_UpdateWhenOffscreen
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8630305719274311800, guid: 6787d6f2b99d0c845bb19c21027cc6c5, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: acbfb3f17298b38408a7c2c2bd86e107, type: 2}
-    - target: {fileID: -7511558181221131132, guid: 6787d6f2b99d0c845bb19c21027cc6c5, type: 3}
+    - target: {fileID: 8630305719274311800, guid: 6787d6f2b99d0c845bb19c21027cc6c5, type: 3}
       propertyPath: 'm_Materials.Array.data[1]'
       value: 
       objectReference: {fileID: 2100000, guid: c1e73052eb5366b43aa22ce28857a641, type: 2}
-    - target: {fileID: 919132149155446097, guid: 6787d6f2b99d0c845bb19c21027cc6c5, type: 3}
-      propertyPath: m_Name
-      value: Visual
-      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 6787d6f2b99d0c845bb19c21027cc6c5, type: 3}
---- !u!4 &3438138623171419946 stripped
+--- !u!4 &2899194054947616962 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 6787d6f2b99d0c845bb19c21027cc6c5, type: 3}
   m_PrefabInstance: {fileID: 2899194054947616961}

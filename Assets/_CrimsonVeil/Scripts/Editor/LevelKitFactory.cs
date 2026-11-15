@@ -286,11 +286,50 @@ namespace CrimsonVeil.EditorTools
             return model.transform;
         }
 
+        /// <summary>
+        /// A rigged, skinned creature model (built like the hero, facing Unity +z) under a "Visual" group that the
+        /// creature's script turns and moves: the model sits in it turned to face +x, as the bestiary is authored.
+        /// Its Tatter.N.k chains (cloth ends, loose limbs) swing on SpringBones.
+        /// </summary>
+        public static Transform RiggedCreature(GameObject go, string fbx, float stiffness, float tipStiffness, float gravity)
+        {
+            var asset = AssetDatabase.LoadAssetAtPath<GameObject>(CreatureArt + fbx + ".fbx");
+            if (asset == null) return null;
+            var visual = new GameObject("Visual").transform;
+            visual.SetParent(go.transform, false);
+            var model = (GameObject)PrefabUtility.InstantiatePrefab(asset);
+            model.name = "Model";
+            model.transform.SetParent(visual, false);
+            model.transform.localRotation = Quaternion.Euler(0f, 90f, 0f);
+            foreach (var r in model.GetComponentsInChildren<Renderer>(true))
+            {
+                var mats = r.sharedMaterials;
+                for (int i = 0; i < mats.Length; i++)
+                    mats[i] = mats[i] != null && mats[i].name.Contains("Crimson") ? M.wraithEyes : M.wraith;
+                r.sharedMaterials = mats;
+                r.shadowCastingMode = ShadowCastingMode.Off;
+                r.receiveShadows = false;
+                if (r is SkinnedMeshRenderer smr) smr.updateWhenOffscreen = true;
+            }
+            var springs = go.AddComponent<SpringBones>();
+            var so = new SerializedObject(springs);
+            so.FindProperty("root").objectReferenceValue = visual;
+            so.FindProperty("prefix").stringValue = "Tatter.";
+            so.FindProperty("stiffness").floatValue = stiffness;
+            so.FindProperty("tipStiffness").floatValue = tipStiffness;
+            so.FindProperty("damping").floatValue = 0.9f;
+            so.FindProperty("gravity").vector3Value = new Vector3(0f, -gravity, 0f);
+            so.FindProperty("drag").floatValue = 0.8f;
+            so.ApplyModifiedPropertiesWithoutUndo();
+            return visual;
+        }
+
         public static GameObject ShieldMonk(Vector3 pos)
         {
             var go = Creature("ShieldMonk", pos);
             Capsule(go, new Vector3(0f, 1f, 0f), 2f, 0.45f);
-            if (CreatureModel(go.transform, "ShieldMonk", "Visual") == null)
+            // (the model's shield sits inside the nested model prefab: the monk's script moves it under the Visual at runtime)
+            if (RiggedCreature(go, "ShieldMonk", 7f, 2f, 4f) == null)
                 CrimsonVeil.Combat.ShieldMonk.BuildVisual(go.transform, M.wraith, M.wraithEyes);
             go.AddComponent<CrimsonVeil.Combat.ShieldMonk>();
             return go;
@@ -310,7 +349,8 @@ namespace CrimsonVeil.EditorTools
         {
             var go = Creature("HangedMan", pos);
             Capsule(go, new Vector3(0f, 0.85f, 0f), 1.7f, 0.3f);
-            if (CreatureModel(go.transform, "HangedMan", "Visual") != null) CrimsonVeil.Combat.HangedMan.BuildRope(go.transform, M.rope);
+            // limp: the loose limbs and the head hang on soft chains, trailing the swing, flopping when he falls
+            if (RiggedCreature(go, "HangedMan", 3f, 1f, 6f) != null) CrimsonVeil.Combat.HangedMan.BuildRope(go.transform, M.rope);
             else CrimsonVeil.Combat.HangedMan.BuildVisual(go.transform, M.wraith, M.wraithEyes, M.rope);
             go.AddComponent<CrimsonVeil.Combat.HangedMan>();
             return go;

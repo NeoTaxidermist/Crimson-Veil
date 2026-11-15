@@ -20,7 +20,8 @@ namespace CrimsonVeil.Tests
             {
                 var asset = AssetDatabase.LoadAssetAtPath<GameObject>(LevelKitFactory.RuinDir + model + ".fbx");
                 Assert.IsNotNull(asset, model + ".fbx");
-                int tris = asset.GetComponentsInChildren<MeshFilter>().Sum(f => f.sharedMesh.triangles.Length / 3);
+                int tris = asset.GetComponentsInChildren<MeshFilter>().Sum(f => f.sharedMesh.triangles.Length / 3)
+                         + asset.GetComponentsInChildren<SkinnedMeshRenderer>().Sum(s => s.sharedMesh.triangles.Length / 3);
                 Assert.Greater(tris, 100, model + " is a real model, not a placeholder");
             }
         }
@@ -31,7 +32,8 @@ namespace CrimsonVeil.Tests
             foreach (var model in new[] { "Aqueduct", "Castle", "CliffRuin" })
             {
                 var asset = AssetDatabase.LoadAssetAtPath<GameObject>(LevelKitFactory.RuinDir + model + ".fbx");
-                int tris = asset.GetComponentsInChildren<MeshFilter>().Sum(f => f.sharedMesh.triangles.Length / 3);
+                int tris = asset.GetComponentsInChildren<MeshFilter>().Sum(f => f.sharedMesh.triangles.Length / 3)
+                         + asset.GetComponentsInChildren<SkinnedMeshRenderer>().Sum(s => s.sharedMesh.triangles.Length / 3);
                 Assert.Greater(tris, 1500, model);
             }
         }
@@ -42,7 +44,8 @@ namespace CrimsonVeil.Tests
             foreach (var model in new[] { "RuinWall", "Tower" })
             {
                 var asset = AssetDatabase.LoadAssetAtPath<GameObject>(LevelKitFactory.RuinDir + model + ".fbx");
-                int tris = asset.GetComponentsInChildren<MeshFilter>().Sum(f => f.sharedMesh.triangles.Length / 3);
+                int tris = asset.GetComponentsInChildren<MeshFilter>().Sum(f => f.sharedMesh.triangles.Length / 3)
+                         + asset.GetComponentsInChildren<SkinnedMeshRenderer>().Sum(s => s.sharedMesh.triangles.Length / 3);
                 Assert.Greater(tris, 1500, model + " carries dressed stones, not a flat slab");
             }
         }
@@ -133,7 +136,8 @@ namespace CrimsonVeil.Tests
             {
                 var asset = AssetDatabase.LoadAssetAtPath<GameObject>(LevelKitMaterials.Root + "/Art/Enemy/" + model + ".fbx");
                 Assert.IsNotNull(asset, model);
-                int tris = asset.GetComponentsInChildren<MeshFilter>().Sum(f => f.sharedMesh.triangles.Length / 3);
+                int tris = asset.GetComponentsInChildren<MeshFilter>().Sum(f => f.sharedMesh.triangles.Length / 3)
+                         + asset.GetComponentsInChildren<SkinnedMeshRenderer>().Sum(s => s.sharedMesh.triangles.Length / 3);
                 Assert.Greater(tris, min, model);
             }
         }

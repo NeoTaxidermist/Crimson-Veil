@@ -18,12 +18,15 @@ namespace CrimsonVeil.Tests
             int n = 0;
             foreach (var f in go.GetComponentsInChildren<MeshFilter>())
                 if (f.sharedMesh != null) n += f.sharedMesh.triangles.Length / 3;
+            foreach (var s in go.GetComponentsInChildren<SkinnedMeshRenderer>())
+                if (s.sharedMesh != null) n += s.sharedMesh.triangles.Length / 3;
             return n;
         }
 
         static void AssertModel(GameObject go, int minTriangles, params string[] parts)
         {
-            var visual = CreatureParts.Find(go.transform, "Visual") ?? CreatureParts.Find(go.transform, "Model");
+            // (a rigged creature's model sits under its Visual group as "Model"; a kit creature's model is the Visual)
+            var visual = CreatureParts.Find(go.transform, "Model") ?? CreatureParts.Find(go.transform, "Visual");
             Assert.IsNotNull(visual, go.name + ": a visual");
             Assert.IsNotNull(PrefabUtility.GetCorrespondingObjectFromSource(visual.gameObject), go.name + ": built from the Blender model, not primitives");
             Assert.Greater(Triangles(go), minTriangles, go.name + ": detailed");

@@ -100,6 +100,48 @@ class Part:
             self._face(rings[-1], mat)
         return rings
 
+    def blade(self, pts, widths, thick=0.004, normal=(0, 0, -1), camber=0.0, mat=INK, cols=6, rachis=0.0, edge=None):
+        """A thin, cambered blade along a spine (feathers, petals, wing membranes, paper flaps, smoke ribbons).
+        widths: half-width per point (or one value); normal: the face's outward side; camber bows the blade
+        towards the normal (a fraction of the width); rachis raises a ridge along the spine; edge(i, u) -> extra
+        width factor (ragged margins). Closed (top and bottom skins meet at the margins), so it has real volume."""
+        pts = [Vector(p) for p in pts]
+        nrm = Vector(normal).normalized()
+        if not isinstance(widths, (list, tuple)):
+            widths = [widths] * len(pts)
+        n = len(pts)
+        top, bot = [], []
+        for i, p in enumerate(pts):
+            t = pts[min(i + 1, n - 1)] - pts[max(i - 1, 0)]
+            t = t.normalized() if t.length > 1e-6 else Vector((0, 1, 0))
+            side = nrm.cross(t)
+            side = side.normalized() if side.length > 1e-6 else Vector((1, 0, 0))
+            up = t.cross(side).normalized()
+            if up.dot(nrm) < 0:
+                up = -up
+            rt, rb = [], []
+            for c in range(cols + 1):
+                u = -1.0 + 2.0 * c / cols
+                w = widths[i] * (edge(i, u) if edge else 1.0)
+                bow = camber * w * (1 - u * u)
+                th = thick * (1 - u * u) * (1.0 if 0 < i < n - 1 else 0.3) + rachis * max(0.0, 1 - abs(u) * 4)
+                q = p + side * (u * w) + up * bow
+                rt.append(self._v(q + up * th))
+                rb.append(self._v(q - up * th * 0.6) if 0 < c < cols else rt[-1])
+            top.append(rt)
+            bot.append(rb)
+        for i in range(n - 1):
+            for c in range(cols):
+                self._face([top[i][c], top[i][c + 1], top[i + 1][c + 1], top[i + 1][c]], mat)
+                quad = [bot[i][c], bot[i + 1][c], bot[i + 1][c + 1], bot[i][c + 1]]
+                if len(set(quad)) >= 3:
+                    self._face(list(dict.fromkeys(quad)), mat)
+        for row in (0, n - 1):
+            ring = top[row] + list(reversed(bot[row][1:-1]))
+            if len(ring) >= 3:
+                self._face(ring if row else list(reversed(ring)), mat)
+        return top
+
     def lathe(self, profile, sides=24, center=(0, 0, 0), sx=1.0, sz=1.0, mat=INK, rfunc=None, yfunc=None, cap_top=True, cap_bottom=True):
         """Surface of revolution around the vertical axis. profile = [(radius, y)], bottom to top.
         rfunc(theta, i, r, y) -> radius multiplier (folds, rags); yfunc(theta, i, y) -> y offset (ragged hems)."""

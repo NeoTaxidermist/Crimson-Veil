@@ -36,6 +36,8 @@ namespace CrimsonVeil.Combat
             home = transform.position.x;
             visual = CreatureParts.Find(transform, "Visual");
             shield = CreatureParts.Find(transform, "Shield");
+            // (a rigged model brings its shield inside the model: it is moved in the Visual's frame, so it goes there)
+            if (shield != null && visual != null && shield.parent != visual) shield.SetParent(visual, true);
             if (shield != null) shieldRest = shield.localRotation;
         }
 

@@ -22,6 +22,9 @@ namespace CrimsonVeil.Player
         /// <summary>Camera position relative to the hero.</summary>
         public Vector3 CameraOffset = new Vector3(-1.4f, 1.1f, -16f);
         public float FieldOfView = 12f;
+        /// <summary>Turn the camera round the hero (degrees round the vertical; 0 = the game's side view), to see the
+        /// body in depth (a twist, an arm swung out) from three-quarters.</summary>
+        public float OrbitYaw = 0f;
         /// <summary>Frames of play before recording starts (the scarf settles).</summary>
         public int Warmup = 0;
         public bool Done { get; private set; }
@@ -108,7 +111,9 @@ namespace CrimsonVeil.Player
             if (Done || Camera == null) return;
             if (Warmup > 0) { Warmup--; return; }
             var p = transform.position;
-            Camera.transform.SetPositionAndRotation(p + CameraOffset, Quaternion.identity);
+            var orbit = Quaternion.Euler(0f, OrbitYaw, 0f);
+            var aim = p + new Vector3(CameraOffset.x, CameraOffset.y, 0f);
+            Camera.transform.SetPositionAndRotation(aim + orbit * new Vector3(0f, 0f, CameraOffset.z), orbit);
             Camera.fieldOfView = FieldOfView;
             var keep = Camera.targetTexture;
             Camera.targetTexture = rt;

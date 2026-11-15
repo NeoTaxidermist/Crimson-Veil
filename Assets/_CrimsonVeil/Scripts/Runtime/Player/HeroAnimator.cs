@@ -83,8 +83,41 @@ namespace CrimsonVeil.Player
             armR = J("UpperArm.R", "LowerArm.R", forward);
             elbowL = J("LowerArm.L", "Hand.L", forward);
             elbowR = J("LowerArm.R", "Hand.R", forward);
+
+            // The rest of the body (HeroBodyMotion): each joint calibrated the same way (turn it a little, see which
+            // way its probe goes). Second axes: the spine and chest turn round the vertical, the arms swing out.
+            var shoulderLT = Find("Shoulder.L");
+            var shoulderRT = Find("Shoulder.R");
+            var upperL = Find("UpperArm.L");
+            var upperR = Find("UpperArm.R");
+            var chestT = Find("Chest");
+            var legR = Find("UpperLeg.R");
+            if (shoulderRT != null)
+            {
+                spine?.WithSecond(up, () => shoulderRT.position, forward);
+                chest?.WithSecond(up, () => shoulderRT.position, forward);
+            }
+            pelvis = chestT != null ? RigJoint.Create(hips, lateral, () => chestT.position, forward) : null;
+            if (pelvis != null && legR != null) pelvis.WithSecond(up, () => legR.position, forward);
+            neckJ = headT != null ? RigJoint.Create(neck, lateral, () => headT.position, forward) : null;
+            shoulderL = upperL != null ? RigJoint.Create(shoulderLT, lateral, () => upperL.position, forward) : null;
+            shoulderR = upperR != null ? RigJoint.Create(shoulderRT, lateral, () => upperR.position, forward) : null;
+            Vector3 Outward(Transform t) => t != null && chestT != null ? Vector3.Project(t.position - chestT.position, lateral).normalized : lateral;
+            if (armL != null && upperL != null) { var c = Find("LowerArm.L"); var o = Outward(upperL); armL.WithSecond(forward, () => c.position, o); }
+            if (armR != null && upperR != null) { var c = Find("LowerArm.R"); var o = Outward(upperR); armR.WithSecond(forward, () => c.position, o); }
+            RigJoint Tip(string bone, float reach, Vector3 measure)
+            {
+                var t = Find(bone);
+                return t == null ? null : RigJoint.Create(t, lateral, () => t.position + t.up * reach, measure);
+            }
+            wristL = Tip("Hand.L", 0.08f, forward);
+            wristR = Tip("Hand.R", 0.08f, forward);
+            toeL = Tip("Toe.L", 0.05f, up);
+            toeR = Tip("Toe.R", 0.05f, up);
             return spine != null && thighL != null && thighR != null && armL != null && armR != null;
         }
+
+        RigJoint pelvis, neckJ, shoulderL, shoulderR, wristL, wristR, toeL, toeR;
 
         void LateUpdate()
         {
@@ -133,10 +166,17 @@ namespace CrimsonVeil.Player
 
         void Apply(in HeroPose p)
         {
-            spine?.Set(p.spine); chest?.Set(p.chest); head?.Set(p.head);
-            thighL?.Set(p.thighL); kneeL?.Set(p.kneeL); footL?.Set(p.footL);
-            thighR?.Set(p.thighR); kneeR?.Set(p.kneeR); footR?.Set(p.footR);
-            armL?.Set(p.armL); elbowL?.Set(p.elbowL); armR?.Set(p.armR); elbowR?.Set(p.elbowR);
+            // The pelvis tilts under the body: the legs and the spine are measured from it, so they take the tilt back
+            // out and keep the key pose's lines (the tilt shows in the hips themselves).
+            float tilt = pelvis != null ? p.pelvis : 0f;
+            pelvis?.Set(p.pelvis, p.pelvisTurn);
+            spine?.Set(p.spine - tilt, p.twist * 0.45f); chest?.Set(p.chest, p.twist * 0.55f);
+            neckJ?.Set(p.neck); head?.Set(p.head);
+            thighL?.Set(p.thighL + tilt); kneeL?.Set(p.kneeL); footL?.Set(p.footL); toeL?.Set(p.toeL);
+            thighR?.Set(p.thighR + tilt); kneeR?.Set(p.kneeR); footR?.Set(p.footR); toeR?.Set(p.toeR);
+            shoulderL?.Set(p.shoulderL); shoulderR?.Set(p.shoulderR);
+            armL?.Set(p.armL, p.armOutL); elbowL?.Set(p.elbowL); wristL?.Set(p.wristL);
+            armR?.Set(p.armR, p.armOutR); elbowR?.Set(p.elbowR); wristR?.Set(p.wristR);
 
             var parent = hips.parent;
             Vector3 up = model.parent != null ? model.parent.up : Vector3.up;

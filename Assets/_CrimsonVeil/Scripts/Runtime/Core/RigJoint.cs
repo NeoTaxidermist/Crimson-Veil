@@ -37,6 +37,30 @@ namespace CrimsonVeil.Core
             Transform.localRotation = Rest * Quaternion.AngleAxis(degrees, Axis);
         }
 
+        /// <summary>A second axis of the same bone (a twist round the body's vertical, an arm swung out to the side),
+        /// calibrated the same way. Set it with <see cref="Set(float, float)"/>.</summary>
+        public Vector3 SecondAxis { get; private set; }
+        public bool HasSecond { get; private set; }
+
+        public RigJoint WithSecond(Vector3 worldAxis, Func<Vector3> probe, Vector3 measure)
+        {
+            Vector3 local = Quaternion.Inverse(Transform.rotation) * worldAxis;
+            Vector3 before = probe();
+            Transform.localRotation = Rest * Quaternion.AngleAxis(10f, local);
+            Vector3 after = probe();
+            Transform.localRotation = Rest;
+            SecondAxis = Vector3.Dot(after - before, measure) >= 0f ? local : -local;
+            HasSecond = true;
+            return this;
+        }
+
+        /// <summary>The main (sagittal) angle, then the second axis on top of it.</summary>
+        public void Set(float degrees, float second)
+        {
+            var q = Rest * Quaternion.AngleAxis(degrees, Axis);
+            Transform.localRotation = HasSecond ? q * Quaternion.AngleAxis(second, SecondAxis) : q;
+        }
+
         public static Transform FindDeep(Transform root, string name)
         {
             if (root == null) return null;

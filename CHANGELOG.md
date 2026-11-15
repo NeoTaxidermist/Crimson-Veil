@@ -5,6 +5,38 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.18.0] – 2026-11-15
+Celé tělo v pohybu: pánev, krk, klíční kosti, zápěstí, špičky a natáčení trupu.
+
+### Přidáno
+- **Kosti prstů u nohou** (`Toe.L/R`, od bříška chodidla ke špičce). Bota se přes ně při odrazu ohne (`hero_build.py`).
+- **Nové klouby v animaci** (`HeroAnimator`):
+  - krk, klíční kosti, zápěstí, špičky;
+  - pánev: náklon i natočení kolem svislé osy;
+  - druhé osy kloubů: trup se natáčí kolem svislé osy, paže jdou do strany od těla (`RigJoint.WithSecond`).
+- **`HeroBodyMotion`: vrstva pohybu celého těla nad klíčovými pózami.**
+  - **Krok:** pánev a hrudník se protáčejí proti sobě. S vykročenou nohou jde dopředu její kyčel a opačné rameno.
+  - **Stoj:** pomalé houpání.
+  - **Klíční kosti** jdou s pažemi: rameno se natáhne do bodnutí a stáhne při nápřahu.
+  - **Paže** visí kousek od těla a při velkém švihu dopředu, dozadu nebo nad hlavu jdou víc do strany, aby míjely boky a hlavu.
+  - **Krk** drží hlavu, když se tělo předklání.
+  - **Špičky** se ohnou, když se pata zvedá k odrazu. Ve vzduchu volně visí.
+  - **Trup** se natočí do úderu, rameno se zbraní jde dovnitř.
+  - **Zápěstí** se opožďují za švihem paže jako volná ruka. Ruka se zbraní jen málo, aby jílec zůstal v pěsti a čepel šla s předloktím.
+- **Náklon pánve** se odečte z nohou a páteře, takže klíčové pózy zachovají své linie a náklon je vidět v bocích.
+- `ClipRecorder.OrbitYaw`: záběr kolem hrdiny, např. ze tří čtvrtin, na kontrolu pohybu do hloubky.
+
+### Testy
+- `HeroBodyMotionTests`:
+  - pánev a ramena se v kroku protáčejí proti sobě;
+  - klíční kosti jdou s pažemi a paže míjejí tělo;
+  - špičky se ohnou jen u odrážející nohy na zemi;
+  - krk drží pohled;
+  - trup se natočí do úderu;
+  - zápěstí se opožďují, u zbraně méně;
+  - druhá osa kloubu je správně kalibrovaná;
+  - model má prsty u nohou.
+
 ## [0.17.5] – 2026-11-15
 Štít s napůl otevřenou dlaní.
 

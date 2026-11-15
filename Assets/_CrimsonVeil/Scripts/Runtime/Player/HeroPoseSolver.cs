@@ -15,6 +15,18 @@ namespace CrimsonVeil.Player
         public float thighL, kneeL, footL, thighR, kneeR, footR;
         public float armL, elbowL, armR, elbowR;
 
+        // ---- The rest of the body (all 0 = as the key poses were drawn; see HeroBodyMotion, which fills them in).
+        /// <summary>Neck (sagittal, + forward): it keeps the gaze level as the body leans.</summary>
+        public float neck;
+        /// <summary>Pelvis tilt (+ top forward) and its turn round the vertical (+ the right hip forward).</summary>
+        public float pelvis, pelvisTurn;
+        /// <summary>The chest turned round the vertical against the hips (+ the right shoulder forward).</summary>
+        public float twist;
+        /// <summary>Collarbones (+ the shoulder forward), arms swung out to the side (+ away from the body).</summary>
+        public float shoulderL, shoulderR, armOutL, armOutR;
+        /// <summary>Wrists (+ the hand bent forward, the palm's way), toes (+ bent up, as the heel lifts).</summary>
+        public float wristL, wristR, toeL, toeR;
+
         public static HeroPose Lerp(in HeroPose a, in HeroPose b, float t)
         {
             return new HeroPose
@@ -25,12 +37,19 @@ namespace CrimsonVeil.Player
                 thighR = Mathf.Lerp(a.thighR, b.thighR, t), kneeR = Mathf.Lerp(a.kneeR, b.kneeR, t), footR = Mathf.Lerp(a.footR, b.footR, t),
                 armL = Mathf.Lerp(a.armL, b.armL, t), elbowL = Mathf.Lerp(a.elbowL, b.elbowL, t),
                 armR = Mathf.Lerp(a.armR, b.armR, t), elbowR = Mathf.Lerp(a.elbowR, b.elbowR, t),
+                neck = Mathf.Lerp(a.neck, b.neck, t), pelvis = Mathf.Lerp(a.pelvis, b.pelvis, t),
+                pelvisTurn = Mathf.Lerp(a.pelvisTurn, b.pelvisTurn, t), twist = Mathf.Lerp(a.twist, b.twist, t),
+                shoulderL = Mathf.Lerp(a.shoulderL, b.shoulderL, t), shoulderR = Mathf.Lerp(a.shoulderR, b.shoulderR, t),
+                armOutL = Mathf.Lerp(a.armOutL, b.armOutL, t), armOutR = Mathf.Lerp(a.armOutR, b.armOutR, t),
+                wristL = Mathf.Lerp(a.wristL, b.wristL, t), wristR = Mathf.Lerp(a.wristR, b.wristR, t),
+                toeL = Mathf.Lerp(a.toeL, b.toeL, t), toeR = Mathf.Lerp(a.toeR, b.toeR, t),
             };
         }
 
         public bool IsFinite()
         {
-            float s = spine + chest + head + bob + thighL + kneeL + footL + thighR + kneeR + footR + armL + elbowL + armR + elbowR;
+            float s = spine + chest + head + bob + thighL + kneeL + footL + thighR + kneeR + footR + armL + elbowL + armR + elbowR
+                      + neck + pelvis + pelvisTurn + twist + shoulderL + shoulderR + armOutL + armOutR + wristL + wristR + toeL + toeR;
             return !float.IsNaN(s) && !float.IsInfinity(s);
         }
     }
@@ -111,6 +130,7 @@ namespace CrimsonVeil.Player
         public float LandWeight => landTimer > 0f ? landTimer / landDuration : 0f;
 
         float time;
+        float lagL, lagR;
         float landTimer;
         bool wasGrounded = true;
         bool initialised;
@@ -170,6 +190,10 @@ namespace CrimsonVeil.Player
             if (attacking)
                 target = HeroAttackChoreography.Apply(target, s.attackForm, s.attackT, run, s.attackAim);
 
+            // The rest of the body: pelvis and chest turning in the stride, collarbones, arms clear of the body, the
+            // neck, the toes, turning into a blow.
+            target = HeroBodyMotion.Layer(target, s, Phase, run, time, attacking);
+
             if (!initialised)
             {
                 Current = target;
@@ -179,7 +203,15 @@ namespace CrimsonVeil.Player
             {
                 // Attacks need snap: follow the choreography much more tightly than locomotion.
                 float sharp = attacking || flipping ? sharpness * 2.6f : (s.grounded ? sharpness : sharpness * 0.6f);
-                Current = HeroPose.Lerp(Current, target, MovementMath.Damp(sharp, dt));
+                var prev = Current;
+                var next = HeroPose.Lerp(Current, target, MovementMath.Damp(sharp, dt));
+                // The wrists trail the arms' swing (a beat behind, like loose hands).
+                bool holding = s.weaponHeld > 0.3f;
+                lagL = Mathf.Lerp(lagL, HeroBodyMotion.WristLag((next.armL - prev.armL) / dt, false), MovementMath.Damp(14f, dt));
+                lagR = Mathf.Lerp(lagR, HeroBodyMotion.WristLag((next.armR - prev.armR) / dt, holding), MovementMath.Damp(14f, dt));
+                next.wristL = target.wristL + lagL;
+                next.wristR = target.wristR + lagR;
+                Current = next;
             }
             return Current;
         }

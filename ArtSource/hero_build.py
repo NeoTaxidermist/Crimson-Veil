@@ -367,7 +367,7 @@ def loft_bone(bone, profile, lateral, weight, cap_r=None, mirror=None, n=18, hea
         loft(secs, w, mat=mat, n=n, disp=disp)
 
 
-L2R = {"UpperLeg.L": "UpperLeg.R", "LowerLeg.L": "LowerLeg.R", "Foot.L": "Foot.R", "Hips": "Hips"}
+L2R = {"UpperLeg.L": "UpperLeg.R", "LowerLeg.L": "LowerLeg.R", "Foot.L": "Foot.R", "Toe.L": "Toe.R", "Hips": "Hips"}
 R2L = {"UpperArm.R": "UpperArm.L", "LowerArm.R": "LowerArm.L", "Hand.R": "Hand.L", "Shoulder.R": "Shoulder.L"}
 
 torso_w = blend_z([(1.0, "Hips"), (1.1, "Spine"), (1.26, "Spine"), (1.34, "Chest")])
@@ -606,12 +606,27 @@ _last = max(i for i, e in enumerate(FOOT_PROFILE) if e[1] > 0.008)
 FOOT_PROFILE = FOOT_PROFILE[:_last + 1]
 _ank = head_of("Foot.L")
 _foot_len = _heel_y - _toe_y
-loft_bone("Foot.L", FOOT_PROFILE, 0.95, lambda p, s: {"Foot.L": 1.0}, cap_r=0.07, mirror=L2R,
+# The toes: a bone from the ball of the foot to the toe (Toe.<side>), so the boot rolls over them as the heel lifts.
+# (The boot ends where the profile was cut, short of the drawing's full foot length: measured from there.)
+_boot_len = FOOT_PROFILE[-1][0] + 0.012
+_heel_pt = Vector((_ank.x, _ank.y + 0.075, 0.045))
+_toe_pt = Vector((_ank.x, _ank.y + 0.075 - _boot_len, 0.045))
+BALL = 0.66  # of the way from the heel to the toe
+_ball_pt = _heel_pt.lerp(_toe_pt, BALL)
+
+
+def _foot_w(p, s):
+    u = (_heel_pt.y - p.y) / _boot_len  # 0 at the heel .. 1 at the toe (forward is -y)
+    k = max(0.0, min(1.0, (u - (BALL - 0.06)) / 0.14))  # the boot bends across the ball of the foot
+    return {"Foot.L": 1.0 - k, "Toe.L": k} if k > 0.0 else {"Foot.L": 1.0}
+
+
+loft_bone("Foot.L", FOOT_PROFILE, 0.95, _foot_w, cap_r=0.07, mirror=L2R,
           head=Vector((_ank.x, _ank.y + 0.075, 0.045)), tail=Vector((_ank.x, _ank.y + 0.075 - _foot_len, 0.045)))
 # The boot's sole: a flat slab a little wider than the foot, from the heel to the toe.
 _fd = {round(s, 3): (f + b) / 2 for s, f, b in FOOT_PROFILE}
 SOLE = [[s, -0.028, 0.047] for s, f, b in FOOT_PROFILE if f > 0.008]
-loft_bone("Foot.L", SOLE, lambda s, dep, c: 0.95 * _fd[round(s, 3)] + 0.006, lambda p, s: {"Foot.L": 1.0},
+loft_bone("Foot.L", SOLE, lambda s, dep, c: 0.95 * _fd[round(s, 3)] + 0.006, _foot_w,
           mirror=L2R, n=20, head=Vector((_ank.x, _ank.y + 0.075, 0.045)),
           tail=Vector((_ank.x, _ank.y + 0.075 - _foot_len, 0.045)))
 
@@ -940,13 +955,16 @@ with bpy.context.temp_override(**_ctx):
 eb = rig.data.edit_bones
 for bn in [bn for bn in eb if bn.name.startswith("Hair.")]:
     eb.remove(bn)
-for bn in [bn for bn in eb if bn.name.startswith("Finger.") or bn.name.startswith("Thumb.")]:
+for bn in [bn for bn in eb if bn.name.startswith("Finger.") or bn.name.startswith("Thumb.") or bn.name.startswith("Toe.")]:
     eb.remove(bn)
+for _side, _sx in (("L", 1.0), ("R", -1.0)):
+    _m = lambda v, sx=_sx: Vector((v.x * sx, v.y, v.z))
+    FINGER_BONES.append(("Toe." + _side, _m(_ball_pt), _m(_toe_pt), "Foot." + _side))
 for name, head, tail, parent in FINGER_BONES:  # (parents come before their children)
     bn = eb.new(name)
     bn.head, bn.tail = head, tail
     bn.parent = eb[parent]
-    bn.use_connect = not parent.startswith("Hand.")
+    bn.use_connect = parent.startswith("Finger.") or parent.startswith("Thumb.")
 chains = []  # (angle, root radius, tip radius, [bone names])
 for n, (key, (tip, r_tip, ang)) in enumerate(sorted(bins.items())):
     d = (tip - centre).normalized()

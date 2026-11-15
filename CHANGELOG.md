@@ -5,6 +5,19 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.16.20] – 2026-11-15
+Útoky nejdou spamovat ani přerušit.
+
+### Změněno
+- **Úder se vždy dokončí.** Nic ho nepřeruší, ani jiná zbraň, ani hák biče na kroužek, který dřív rozjetý úder rozbil.
+- **Navázání jen ke konci úderu.** Další stisk se zapamatuje jen od 40 % úderu (`VeilCasting.ComboWindow`) nebo během zotavení. Dřívější mačkání se zahodí, takže už neřetězí údery.
+- **Zotavení po úderu** (`VeilCasting.Recovery`). Meč 0,12 s, štít 0,16 s, bič 0,2 s, kopí a luk 0,22 s. Teprve potom může začít další úder. Navázaný úder během zotavení drží zbraň v ruce, takže se šála mezi údery neroztaví.
+
+### Testy
+- `MashingEarlyInABlow_DoesNotChainBlows`: mačkání na začátku úderu dá jen jeden úder.
+- `ABlow_PlaysToItsEnd_AndTheBodyRecovers`: jiná zbraň uprostřed úderu ho nepřeruší a po úderu přijde zotavení.
+- Testy okna pro navázání a doby zotavení. Kombo testy stisknou až ke konci úderu.
+
 ## [0.16.19] – 2026-11-15
 Přechody šála ↔ štít ↔ luk bez utržení, schování a průchodu u nohou.
 

@@ -10,6 +10,23 @@ namespace CrimsonVeil.Tests
     public class VeilCastingTests
     {
         [Test]
+        public void Blows_AreCommitted_FollowUpOnlyLateInTheBlow()
+        {
+            Assert.IsFalse(VeilCasting.AcceptsFollowUp(0f));
+            Assert.IsFalse(VeilCasting.AcceptsFollowUp(0.3f), "mashing early is dropped");
+            Assert.IsTrue(VeilCasting.AcceptsFollowUp(0.5f));
+            Assert.IsTrue(VeilCasting.AcceptsFollowUp(1f));
+        }
+
+        [Test]
+        public void EveryWeapon_HasARecovery_HeavierOnesLonger()
+        {
+            foreach (var f in new[] { VeilForm.Sword, VeilForm.Spear, VeilForm.Whip, VeilForm.Shield, VeilForm.Bow })
+                Assert.Greater(VeilCasting.Recovery(f), 0.05f, f.ToString());
+            Assert.Less(VeilCasting.Recovery(VeilForm.Sword), VeilCasting.Recovery(VeilForm.Spear), "the sword is the quickest");
+        }
+
+        [Test]
         public void Charge_IsSpent_AndGrowsBackAfterABreath()
         {
             var c = new VeilCharge();

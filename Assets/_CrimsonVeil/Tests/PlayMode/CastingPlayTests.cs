@@ -118,7 +118,7 @@ namespace CrimsonVeil.Tests
             veil.Attacked += _ => blows++;
             yield return Wait(0.3f);
             input.cast = VeilForm.Sword;
-            yield return Wait(0.25f);
+            yield return Wait(0.4f); // late in the blow: the follow-up
             input.cast = VeilForm.Sword;
             bool melted = false;
             float end = Time.time + 0.9f;
@@ -132,18 +132,52 @@ namespace CrimsonVeil.Tests
         }
 
         [UnityTest]
+        public IEnumerator MashingEarlyInABlow_DoesNotChainBlows()
+        {
+            int blows = 0;
+            veil.Attacked += _ => blows++;
+            yield return Wait(0.3f);
+            input.cast = VeilForm.Sword;
+            yield return Wait(0.12f); // the blow has only just begun
+            for (int k = 0; k < 4; k++) { input.cast = VeilForm.Sword; yield return null; yield return null; }
+            yield return Wait(1.2f);
+            Assert.AreEqual(1, blows, "presses early in a blow are dropped: no spam");
+        }
+
+        [UnityTest]
+        public IEnumerator ABlow_PlaysToItsEnd_AndTheBodyRecovers()
+        {
+            yield return Wait(0.3f);
+            input.cast = VeilForm.Sword;
+            yield return Wait(0.15f);
+            Assert.IsTrue(veil.IsAttacking);
+            float started = veil.AttackProgress;
+            input.cast = VeilForm.Spear; // another weapon mid-blow: it doesn't cut the blow short
+            Assert.IsFalse(veil.Attack(), "no second blow over the first");
+            yield return Wait(0.1f);
+            Assert.AreEqual(VeilForm.Sword, veil.Form);
+            Assert.Greater(veil.AttackProgress, started, "the same blow carries on");
+            while (veil.IsAttacking) yield return null;
+            Assert.IsTrue(veil.Recovering, "a moment of recovery after the blow");
+            Assert.IsFalse(veil.Attack(), "nothing begins while recovering");
+            yield return Wait(VeilCasting.Recovery(VeilForm.Sword) + 0.05f);
+            Assert.IsFalse(veil.Recovering);
+        }
+
+        [UnityTest]
         public IEnumerator CastingAnotherWeaponMidBlow_PoursStraightIntoIt()
         {
             yield return Wait(0.3f);
             input.cast = VeilForm.Sword;
-            yield return Wait(0.2f);
+            yield return Wait(0.4f);
             input.cast = VeilForm.Spear;
             bool melted = false, spear = false;
-            float end = Time.time + 1f;
+            float end = Time.time + 1.5f;
             while (Time.time < end)
             {
                 if (veil.Form == VeilForm.Flow) melted = true;
                 if (veil.Form == VeilForm.Spear && veil.IsAttacking) spear = true;
+                if (spear && !veil.IsAttacking) break; // (after the thrust it melts back, as it should)
                 yield return null;
             }
             Assert.IsTrue(spear, "the spear thrust follows the sword");

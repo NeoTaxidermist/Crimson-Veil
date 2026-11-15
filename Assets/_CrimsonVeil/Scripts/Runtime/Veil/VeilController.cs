@@ -174,7 +174,9 @@ namespace CrimsonVeil.Veil
         IPlayerInput input;
         bool castMode;
         VeilForm? pendingAttack, buffered;
-        float lingerTimer = -1f, sinceShieldRaised = 99f, drawTime;
+        float lingerTimer = -1f, sinceShieldRaised = 99f, drawTime, recoverTimer;
+        /// <summary>True while the body recovers from a blow (no new blow can begin).</summary>
+        public bool Recovering => recoverTimer > 0f;
 
         void Awake()
         {
@@ -224,6 +226,16 @@ namespace CrimsonVeil.Veil
             if (Latched != null) return false;
             float cost = VeilCasting.Cost(form);
 
+            // A blow is committed: nothing cuts it short (not even the whip's grapple). A press late in the blow,
+            // or while recovering from it, is the follow-up; earlier presses are dropped, so mashing doesn't chain.
+            if (attackTime >= 0f || pendingAttack.HasValue || recoverTimer > 0f)
+            {
+                bool late = recoverTimer > 0f || (attackTime >= 0f && VeilCasting.AcceptsFollowUp(AttackProgress));
+                if (!late) return false;
+                buffered = form;
+                return true;
+            }
+
             if (form == VeilForm.Whip && GrappleCandidate != null && player != null)
             {
                 if (!Charge.CanAfford(cost)) { CastFizzled?.Invoke(form); return false; }
@@ -240,12 +252,6 @@ namespace CrimsonVeil.Veil
                 }
             }
 
-            // Mid-blow: remember the press and follow up the moment this blow is spent.
-            if (attackTime >= 0f || pendingAttack.HasValue)
-            {
-                buffered = form;
-                return true;
-            }
             if (!Charge.TrySpend(cost)) { CastFizzled?.Invoke(form); return false; }
             if (Form != form || !castMode) BeginCast(form);
             pendingAttack = form;
@@ -326,6 +332,7 @@ namespace CrimsonVeil.Veil
 
         public bool Attack()
         {
+            if (IsAttacking || recoverTimer > 0f) return false; // a blow plays to its end, then the body recovers
             if (Form == VeilForm.Flow || Hardness < 0.5f * VeilFormLibrary.Hardness(Form)) return false;
             if (Latched != null) return false;
             // The whip lashes round a ring in reach instead of cracking.
@@ -394,8 +401,10 @@ namespace CrimsonVeil.Veil
                 m.Umbrella = shieldHeld && !player.IsGrounded;
                 if (m.IsGliding && m.GlideTime <= 0f && Form == VeilForm.Flow) Charge.Drain(VeilCasting.GlideDrain, dt);
             }
-            // A press during a blow follows it up as soon as it is spent (combo, or pour into another weapon).
-            if (buffered.HasValue && attackTime < 0f && !pendingAttack.HasValue)
+            if (recoverTimer > 0f) recoverTimer -= dt;
+            // A press late in a blow follows it up once it is spent and the body has recovered (combo, or pour
+            // into another weapon).
+            if (buffered.HasValue && attackTime < 0f && !pendingAttack.HasValue && recoverTimer <= 0f)
             {
                 var next = buffered.Value;
                 buffered = null;
@@ -404,7 +413,8 @@ namespace CrimsonVeil.Veil
             // A cast weapon lingers for a follow-up, then melts back into cloth.
             if (castMode && Form != VeilForm.Flow)
             {
-                if (attackTime >= 0f || pendingAttack.HasValue || shieldHeld || Drawing || Latched != null) lingerTimer = VeilCasting.Linger;
+                if (attackTime >= 0f || pendingAttack.HasValue || shieldHeld || Drawing || Latched != null
+                    || (buffered.HasValue && recoverTimer > 0f)) lingerTimer = VeilCasting.Linger;
                 else
                 {
                     lingerTimer -= dt;
@@ -685,6 +695,7 @@ namespace CrimsonVeil.Veil
                 {
                     attackTime = -1f;
                     t = -1f;
+                    recoverTimer = VeilCasting.Recovery(ShapeForm);
                     ThrustingDown = false;
                     aimTiltTarget = 0f;
                 }

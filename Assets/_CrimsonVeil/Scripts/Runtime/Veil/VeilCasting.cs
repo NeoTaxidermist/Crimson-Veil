@@ -39,6 +39,29 @@ namespace CrimsonVeil.Veil
             }
         }
 
+        /// <summary>
+        /// A blow is committed: once begun it plays to its end. A press only counts as the follow-up from this far
+        /// into the blow (attack progress 0..1); earlier presses are dropped, so mashing doesn't chain blows.
+        /// </summary>
+        public const float ComboWindow = 0.4f;
+
+        /// <summary>Seconds after a blow before the next can begin: the body recovers from the swing.</summary>
+        public static float Recovery(VeilForm form)
+        {
+            switch (form)
+            {
+                case VeilForm.Sword: return 0.12f;
+                case VeilForm.Shield: return 0.16f;
+                case VeilForm.Whip: return 0.2f;
+                case VeilForm.Spear: return 0.22f;
+                case VeilForm.Bow: return 0.22f;
+                default: return 0f;
+            }
+        }
+
+        /// <summary>Is a press at attack progress <paramref name="t"/> taken as the follow-up (or dropped)?</summary>
+        public static bool AcceptsFollowUp(float t) => t >= ComboWindow;
+
         /// <summary>Strength drained per second while the shield is held up or the scarf glides.</summary>
         public const float ShieldHoldDrain = 0.18f;
         public const float GlideDrain = 0.3f;

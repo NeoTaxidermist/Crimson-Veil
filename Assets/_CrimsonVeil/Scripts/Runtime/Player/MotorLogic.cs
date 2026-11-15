@@ -455,7 +455,8 @@ namespace CrimsonVeil.Player
                 inputSide = 0;
             }
             // Crouched: down held on the ground, or no room over him to stand up.
-            bool downHeld = input.aimY < -0.5f;
+            // (planted - Ctrl held - down aims a blow low instead: no crouching)
+            bool downHeld = input.aimY < -0.5f && !input.stand;
             IsCrouching = IsGrounded && State == MotorState.Normal && !IsDashing && (downHeld || contacts.lowCeiling || IsSliding);
             if (!IsGrounded) slideTimer = 0f;   // slid off an edge: the momentum carries on as a fall
 

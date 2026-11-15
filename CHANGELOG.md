@@ -5,6 +5,17 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.26.1] – 2026-11-15
+### Změněno
+- **Ctrl + šipka dolů míří, nepřikrčuje.** S držením Ctrl (útok z místa) šipka dolů slouží k míření rány dolů, hrdina se nepřikrčí. Pod nízkým stropem zůstává přikrčený i tak.
+- Stránka s animacemi je aktualizovaná na stav 0.26:
+  - nové klipy: přikrčení a narovnání, dash, skluz, vylézání na římsu a luk nad hlavu;
+  - přetočené klipy: míření a nový přízrak;
+  - popisy odpovídají současnému chování.
+
+### Testy
+- `CrouchSlideMotorTests.Planted_DownAims_ItDoesNotCrouch`.
+
 ## [0.26.0] – 2026-11-15
 ### Přidáno
 - **Přikrčení:** šipka dolů na zemi. Hrdina se skrčí (hluboká kolena, tělo nad nimi, hlava nahoru) a s šipkou do strany se plíží rychlostí 2,6 m/s. Tělo je pak vysoké jen 1 m, takže proleze pod nízkým stropem.

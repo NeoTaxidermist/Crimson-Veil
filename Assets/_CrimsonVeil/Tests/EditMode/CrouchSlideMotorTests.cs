@@ -68,6 +68,16 @@ namespace CrimsonVeil.Tests
         }
 
         [Test]
+        public void Planted_DownAims_ItDoesNotCrouch()
+        {
+            var m = Standing();
+            for (int i = 0; i < 10; i++) m.Tick(Dt, new MotorInput { aimY = -1f, moveX = 1f, stand = true }, Ground);
+            Assert.IsFalse(m.IsCrouching, "Ctrl held: down aims a blow low (the bow down and forward)");
+            m.Tick(Dt, new MotorInput { aimY = -1f, stand = true }, new MotorContacts { grounded = true, lowCeiling = true });
+            Assert.IsTrue(m.IsCrouching, "under a low ceiling he is crouched anyway");
+        }
+
+        [Test]
         public void DashWithoutDown_IsStillADash()
         {
             var m = Standing();

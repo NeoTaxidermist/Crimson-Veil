@@ -565,6 +565,7 @@ namespace CrimsonVeil.Veil
             Simulation.Step(dt, a);
             UpdateBowString();
             UpdateWhipRope();
+            UpdateWhipHandle();
         }
 
         /// <summary>0..1: how close a living enemy is (the scarf bristles).</summary>
@@ -653,6 +654,7 @@ namespace CrimsonVeil.Veil
                 whipRope.startColor = whipRope.endColor = new Color(0.9f, 0.05f, 0.08f, 0.95f);
             }
             whipRope.enabled = true;
+            whipRope.gameObject.layer = gameObject.layer;
             whipRope.SetPosition(0, hand != null ? PalmPoint(hand) : player.GripPosition);
             // Swinging: to the ring. Catching a ledge: a strand of the scarf to the lip it lashed round.
             whipRope.SetPosition(1, Latched != null ? Latched.transform.position : player.ScarfCatchPoint);
@@ -679,6 +681,7 @@ namespace CrimsonVeil.Veil
                 bowString.startColor = bowString.endColor = new Color(1f, 0.1f, 0.1f, 0.9f);
             }
             bowString.enabled = true;
+            bowString.gameObject.layer = gameObject.layer;
             // A crisp core for the string section of the ribbon: upper tip → its middle (pulled when drawn) → lower tip.
             var p = Simulation.Positions;
             int n = Simulation.Count;
@@ -689,6 +692,67 @@ namespace CrimsonVeil.Veil
             bowString.SetPosition(0, p[top]);
             bowString.SetPosition(1, p[mid]);
             bowString.SetPosition(2, p[bottom]);
+        }
+
+        LineRenderer whipHandle;
+
+        /// <summary>
+        /// The whip's handle is a solid thing in the fist, not ink: a dark straight stock with a knob behind the little
+        /// finger and a crimson collar where the lash begins. (The ink of the veil is not drawn over it, see
+        /// VeilRenderer.)
+        /// </summary>
+        void UpdateWhipHandle()
+        {
+            bool show = ShapeForm == VeilForm.Whip && Form == VeilForm.Whip
+                        && Hardness > 0.5f * VeilFormLibrary.Hardness(VeilForm.Whip);
+            if (!show)
+            {
+                if (whipHandle != null) whipHandle.enabled = false;
+                return;
+            }
+            if (whipHandle == null)
+            {
+                var go = new GameObject("WhipHandle");
+                go.transform.SetParent(transform, false);
+                whipHandle = go.AddComponent<LineRenderer>();
+                whipHandle.positionCount = 4;
+                whipHandle.numCapVertices = 4;
+                whipHandle.widthMultiplier = WhipHandleWidth;
+                whipHandle.widthCurve = new AnimationCurve(
+                    new Keyframe(0f, 1.55f), new Keyframe(0.12f, 1f), new Keyframe(0.86f, 0.92f), new Keyframe(0.93f, 1.3f), new Keyframe(1f, 1.3f));
+                whipHandle.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                // its own copy of the string material, white, so the stock's colours are its own (dark wood, crimson collar)
+                var mat = stringMaterial != null ? new Material(stringMaterial) : null;
+                if (mat != null && mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", Color.white);
+                whipHandle.sharedMaterial = mat;
+                // dark stock right up to a crisp crimson collar (blended, the stock smeared into the lash's red)
+                var g = new Gradient { mode = GradientMode.Fixed };
+                g.SetKeys(
+                    new[] { new GradientColorKey(new Color(0.04f, 0.025f, 0.025f), 0.9f), new GradientColorKey(new Color(0.85f, 0.05f, 0.06f), 1f) },
+                    new[] { new GradientAlphaKey(1f, 0f), new GradientAlphaKey(1f, 1f) });
+                whipHandle.colorGradient = g;
+            }
+            whipHandle.enabled = true;
+            whipHandle.gameObject.layer = gameObject.layer; // drawn wherever the hero is (and by any camera that sees him)
+            VeilFormLibrary.WhipHandleSpan(out float butt, out float fist, out float stockEnd);
+            float z = hand != null ? hand.position.z + 0.015f : Simulation.Positions[0].z; // just behind the fingers
+            whipHandle.SetPosition(0, OnVeil(butt, z));
+            whipHandle.SetPosition(1, OnVeil(fist, z));
+            whipHandle.SetPosition(2, OnVeil(Mathf.Lerp(fist, stockEnd, 0.85f), z));
+            whipHandle.SetPosition(3, OnVeil(stockEnd, z));
+        }
+
+        /// <summary>Width (m) of the whip's handle: a hand's grip.</summary>
+        public const float WhipHandleWidth = 0.042f;
+
+        Vector3 OnVeil(float fraction, float z)
+        {
+            var p = Simulation.Positions;
+            float f = Mathf.Clamp01(fraction) * (Simulation.Count - 1);
+            int i0 = Mathf.Min(Mathf.FloorToInt(f), Simulation.Count - 2);
+            Vector3 v = Vector3.Lerp(p[i0], p[i0 + 1], f - i0);
+            v.z = z;
+            return v;
         }
 
         public Transform DrawHand { get => drawHand; set => drawHand = value; }

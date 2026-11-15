@@ -643,9 +643,11 @@ loft_bone("UpperArm.R", arm_profile([(0.27, 0.068, 0.07), (0.29, 0.072, 0.073), 
           lambda p, s: {"UpperArm.R": 1.0}, mirror=R2L, n=18, mat=CRIMSON)
 
 
-def build_hand(side):
+def build_hand(side, fist=False):
     """An open, relaxed hand on Hand.<side>: palm, four three-jointed fingers spread front to back (so they read in
-    the side view) and curled a little toward the palm, and a thumb reaching forward."""
+    the side view) and curled a little toward the palm, and a thumb reaching forward.
+    fist=True: the same vertices clenched round a grip that runs front to back through the palm (a sword's hilt,
+    a whip's stock) - the fingers wrap round it into the palm, the thumb closes over them. Used as a shape key."""
     sx = 1.0 if side == "L" else -1.0
     bone = "Hand." + side
     wrist = head_of(bone)
@@ -665,7 +667,8 @@ def build_hand(side):
         dirn = direction.normalized()
         for k, ln in enumerate(lengths):
             # each joint curls toward the palm and a little forward
-            dirn = (dirn + palm_in * math.tan(math.radians(18 + 10 * k)) + fwd * math.tan(math.radians(5))).normalized()
+            bend = (62, 88, 70)[k] if fist else 18 + 10 * k
+            dirn = (dirn + palm_in * math.tan(math.radians(bend)) + fwd * math.tan(math.radians(0 if fist else 5))).normalized()
             pts.append(pts[-1] + dirn * ln)
             rads.append(r0 * (0.86 - 0.12 * k))
         secs = []
@@ -680,14 +683,25 @@ def build_hand(side):
     knuckles = wrist + d * 0.09
     for off, lens, r0, spread in ((0.03, (0.035, 0.022, 0.018), 0.0105, 8), (0.01, (0.04, 0.025, 0.02), 0.011, 2),
                                   (-0.01, (0.037, 0.024, 0.019), 0.0105, -3), (-0.029, (0.029, 0.019, 0.016), 0.0095, -9)):
-        direction = d + fwd * math.tan(math.radians(spread))
-        finger(knuckles + fwd * off, direction, lens, r0)
-    # thumb: from the front of the palm, forward and down, towards the palm side
-    finger(wrist + d * 0.03 + fwd * 0.03 + palm_in * 0.008, d * 0.6 + fwd * 0.75 + palm_in * 0.25, (0.034, 0.027), 0.013)
+        direction = d + fwd * math.tan(math.radians(0 if fist else spread))  # clenched, the fingers close up side by side
+        finger(knuckles + fwd * (off * (0.85 if fist else 1.0)), direction, lens, r0)
+    # thumb: from the front of the palm, forward and down, towards the palm side; clenched it closes over the fingers
+    if fist:
+        finger(wrist + d * 0.03 + fwd * 0.03 + palm_in * 0.008, d * 0.75 + palm_in * 0.55 - fwd * 0.35, (0.034, 0.027), 0.013)
+    else:
+        finger(wrist + d * 0.03 + fwd * 0.03 + palm_in * 0.008, d * 0.6 + fwd * 0.75 + palm_in * 0.25, (0.034, 0.027), 0.013)
 
 
 build_hand("L")
+FIST_R_START = len(verts)
 build_hand("R")
+# The clenched right hand as a shape key (Fist.R): the same hand built clenched, its vertices kept, the geometry
+# thrown away. The game closes the fist whenever a weapon is in it (HeroAnimator).
+_nv, _nf = len(verts), len(faces)
+build_hand("R", fist=True)
+FIST_R = [v.copy() for v in verts[_nv:]]
+assert len(FIST_R) == _nv - FIST_R_START, "the fist must have the open hand's vertices"
+del verts[_nv:], vweights[_nv:], faces[_nf:], fmat[_nf:]
 
 # Back to the rest pose.
 for pb in rig.pose.bones:
@@ -1122,6 +1136,10 @@ for vi, w in enumerate(vweights):
         g.add([vi], x / tot, 'REPLACE')
 mod = ob.modifiers.new("Armature", 'ARMATURE')
 mod.object = rig
+ob.shape_key_add(name="Basis", from_mix=False)
+_fist = ob.shape_key_add(name="Fist.R", from_mix=False)
+for _k, _co in enumerate(FIST_R):
+    _fist.data[FIST_R_START + _k].co = _co
 
 bpy.ops.wm.save_as_mainfile(filepath=ROOT + r"\ArtSource\Hero.blend")
 result = {"verts": len(verts), "faces": len(faces), "hair_chains": len(chains),
@@ -1135,4 +1153,5 @@ if globals().get("EXPORT", True):
       bpy.ops.export_scene.fbx(filepath=ROOT + r"\Assets\_CrimsonVeil\Art\Hero\Hero.fbx", use_selection=True,
                              object_types={'ARMATURE', 'MESH'}, add_leaf_bones=False, primary_bone_axis='Y',
                              secondary_bone_axis='X', axis_forward='-Z', axis_up='Y', apply_scale_options='FBX_SCALE_ALL',
-                             bake_anim=False, mesh_smooth_type='FACE', use_armature_deform_only=True)
+                             bake_anim=False, mesh_smooth_type='FACE', use_armature_deform_only=True,
+                             use_mesh_modifiers=False)  # (keeps the Fist.R shape key)

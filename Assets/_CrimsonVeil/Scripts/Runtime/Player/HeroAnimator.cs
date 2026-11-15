@@ -107,9 +107,28 @@ namespace CrimsonVeil.Player
             };
             var p = Solver.Step(Time.deltaTime, s);
             Apply(p);
+            ClenchFist(Mathf.MoveTowards(fist, HeroPoseSolver.FistWeight(s.weaponHeld), Time.deltaTime / 0.08f));
 
             if (veilAnchor != null)
                 veilAnchor.position = neck.position + veilAnchorOffset;
+        }
+
+        SkinnedMeshRenderer body;
+        int fistShape = -2; // -2 not looked up yet, -1 the model has none
+        float fist;
+
+        /// <summary>The sword hand closes round what it holds (the model's Fist.R shape key), 0 open .. 1 clenched.</summary>
+        public float Fist => fist;
+
+        void ClenchFist(float w)
+        {
+            fist = w;
+            if (fistShape == -2)
+            {
+                body = model != null ? model.GetComponentInChildren<SkinnedMeshRenderer>() : GetComponentInChildren<SkinnedMeshRenderer>();
+                fistShape = body != null && body.sharedMesh != null ? body.sharedMesh.GetBlendShapeIndex("Fist.R") : -1;
+            }
+            if (fistShape >= 0) body.SetBlendShapeWeight(fistShape, 100f * w);
         }
 
         void Apply(in HeroPose p)

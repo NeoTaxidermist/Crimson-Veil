@@ -286,6 +286,10 @@ namespace CrimsonVeil.Veil
                 gripFraction = Mathf.Max(gripFraction, guardAt);
             }
 
+            bool whipForm = veil.ShapeForm == VeilForm.Whip;
+            VeilFormLibrary.WhipHandleSpan(out float whipButt, out _, out float whipStockEnd);
+            float whipHandleShown = whipForm && veil.Form == VeilForm.Whip && veil.Hardness > 0.5f * formHardness ? 1f : 0f;
+
             // How far the weapon has set where it leaves the hand (the neck band only melts away after that).
             float handHard = Mathf.SmoothStep(0f, 1f, hardAt[Mathf.Clamp(Mathf.RoundToInt(Mathf.Min(1f, hf + 0.03f) * (samples - 1)), 0, samples - 1)]);
             // ... and once the weapon has taken its shape (the shield's ring is thrown round first): until then the
@@ -333,6 +337,8 @@ namespace CrimsonVeil.Veil
                 alphaAt[i] *= 1f - NeckBandFade(t, hf, bandSet);
                 // The shield's ring floats free of the hand: nothing may be drawn across the gap to it.
                 if (shield && t < shieldCut) alphaAt[i] *= 1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.3f, 0.8f, bandSet));
+                // The whip's handle is a solid stock in the fist (VeilController.UpdateWhipHandle): no ink over it.
+                if (whipForm && t >= whipButt - 0.01f && t <= whipStockEnd + 0.004f) alphaAt[i] *= 1f - whipHandleShown;
             }
 
             int per = perStrand * 2;
@@ -576,16 +582,10 @@ namespace CrimsonVeil.Veil
                 }
                 case VeilForm.Whip:
                 {
-                    // The handle: a knob at its butt, the stock through the fist, a collar where the lash leaves it;
-                    // then the lash, thinner, tapering to the tip.
-                    VeilFormLibrary.WhipHandleSpan(out float butt, out _, out float stockEnd);
-                    float span = Mathf.Max(1e-4f, stockEnd - butt);
-                    if (t <= stockEnd + span * 0.15f)
-                    {
-                        float knob = WhipButtWidth * Mathf.Exp(-Mathf.Pow((t - butt) / (span * 0.12f), 2f));
-                        float collar = WhipCollarWidth * Mathf.Exp(-Mathf.Pow((t - stockEnd) / (span * 0.08f), 2f));
-                        return Mathf.Max(WhipStockWidth, Mathf.Max(knob, collar));
-                    }
+                    // The handle is a solid stock drawn on its own (VeilController.UpdateWhipHandle), not ink; the ink
+                    // is the lash, leaving the stock's collar and tapering to the tip.
+                    VeilFormLibrary.WhipHandleSpan(out _, out _, out float stockEnd);
+                    if (t <= stockEnd) return WhipLashWidth;
                     float x = Mathf.Clamp01((t - stockEnd) / Mathf.Max(1e-3f, 1f - stockEnd));
                     return Mathf.Lerp(WhipLashWidth, 0.15f, Mathf.SmoothStep(0f, 1f, x));
                 }
@@ -606,7 +606,7 @@ namespace CrimsonVeil.Veil
         public const float SwordGripWidth = 0.32f, SwordPommelWidth = 0.6f, SwordGuardWidth = 2.6f;
 
         /// <summary>The whip, in its width: the stock of the handle, the knob at its butt, the collar, the lash.</summary>
-        public const float WhipStockWidth = 1.3f, WhipButtWidth = 1.9f, WhipCollarWidth = 1.7f, WhipLashWidth = 0.62f; // a stout stock, so the handle reads at play zoom
+        public const float WhipLashWidth = 0.62f;
 
         /// <summary>The spearhead's widest point, in shaft widths.</summary>
         public const float SpearHeadWidth = 3.2f;

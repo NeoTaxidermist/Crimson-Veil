@@ -126,12 +126,21 @@ namespace CrimsonVeil.Tests
         {
             VeilFormLibrary.WhipHandleSpan(out float butt, out float fist, out float stockEnd);
             Assert.Less(butt, fist); Assert.Less(fist, stockEnd);
-            float stock = VeilRenderer.TipProfile(VeilForm.Whip, Mathf.Lerp(fist, stockEnd, 0.4f));
-            float lash = VeilRenderer.TipProfile(VeilForm.Whip, stockEnd + (1f - stockEnd) * 0.3f);
-            Assert.Greater(stock, lash * 1.15f, "the handle is stouter than the lash");
-            Assert.Greater(VeilRenderer.TipProfile(VeilForm.Whip, butt), stock, "a knob at its butt");
+            // The handle is a solid stock of its own (VeilController.UpdateWhipHandle): a hand's grip wide, the fist
+            // clenched round it; the ink is the lash, leaving its collar full width and tapering to the tip.
+            Assert.That(VeilController.WhipHandleWidth, Is.InRange(0.03f, 0.06f), "a grip a hand closes round");
+            Assert.AreEqual(VeilRenderer.WhipLashWidth, VeilRenderer.TipProfile(VeilForm.Whip, stockEnd), 1e-4f);
             Assert.Less(VeilRenderer.TipProfile(VeilForm.Whip, 1f), 0.2f, "the lash tapers to a fine tip");
             Assert.AreEqual(VeilFormLibrary.GripFraction(VeilForm.Whip), fist, 1e-4f, "the fist holds the handle");
+            Assert.Greater(fist - butt, 0.01f, "a knob behind the little finger");
+        }
+
+        [Test]
+        public void TheSwordHand_ClenchesAsTheWeaponForms()
+        {
+            Assert.AreEqual(0f, CrimsonVeil.Player.HeroPoseSolver.FistWeight(0f), 1e-4f, "open with the scarf loose");
+            Assert.AreEqual(1f, CrimsonVeil.Player.HeroPoseSolver.FistWeight(0.5f), 1e-4f, "a fist once the grip has formed");
+            Assert.That(CrimsonVeil.Player.HeroPoseSolver.FistWeight(0.2f), Is.InRange(0.05f, 0.95f), "closing as it forms");
         }
 
         [Test]

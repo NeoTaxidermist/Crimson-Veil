@@ -95,6 +95,10 @@ namespace CrimsonVeil.Player
             }
         }
 
+        /// <summary>How clenched the sword hand is (0 open .. 1 a fist) for how far a weapon has formed in it: it closes
+        /// as the hilt / stock / grip forms in the palm, and opens again as the weapon melts.</summary>
+        public static float FistWeight(float weaponHeld) => Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.05f, 0.4f, weaponHeld));
+
         /// <summary>Shoulder angle of the standing ready stance for a weapon (attacks start and end here).</summary>
         public static float HoldArmFor(VeilForm form)
         {

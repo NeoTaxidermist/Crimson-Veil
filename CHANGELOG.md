@@ -5,6 +5,23 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.17.3] – 2026-11-15
+Ruka svírá zbraň v pěsti a bič má skutečnou rukojeť.
+
+### Opraveno
+- **Pravá ruka se se zbraní sevře v pěst.** Model měl jen otevřenou dlaň s roztaženými prsty a nic nesvíral.
+  - Pravá ruka má nový tvar `Fist.R` (shape key): prsty se ohnou kolem rukojeti a palec se přes ně zavře.
+  - `HeroAnimator` pěst zavře, jakmile se v ruce zformuje zbraň, a otevře ji, když se zbraň rozplyne (`HeroPoseSolver.FistWeight`).
+- **Rukojeť biče je pevný předmět, ne inkoust.**
+  - Rukojeť dřív tvořil tlustý červený pruh inkoustu, který vypadal jako šleh a pěst ho držela za konec.
+  - Teď je to tmavá rovná násada: hlavice za malíčkem, pěst kolem ní, a pak ostrá červená objímka (`VeilController.UpdateWhipHandle`). Inkoust šály se přes rukojeť nekreslí, šleh začíná až za objímkou.
+  - Násada vede 0,17 m před pěst.
+- Tětiva luku, lano biče a rukojeť přebírají vrstvu hrdiny, takže je vidí každá kamera, která vidí hrdinu (i nahrávač klipů). Na dřívějších klipech luku tětiva chyběla.
+
+### Testy
+- Rukojeť biče má šířku úchopu, šleh začíná u objímky v plné šířce a hlavice je za pěstí.
+- Ruka se sevře, jak se zbraň formuje.
+
 ## [0.17.2] – 2026-11-15
 Úklid vizuálních dluhů: kopí nahoru, šála u zdi, návrat ze štítu a rukojeť biče.
 

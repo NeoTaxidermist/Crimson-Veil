@@ -338,14 +338,17 @@ namespace CrimsonVeil.Tests
             {
                 yield return new WaitForEndOfFrame();
                 if (!veil.IsAttacking) continue;
+                // where the sword really is (not just where it is meant to be): its grip, against the palm
                 var sim = veil.Simulation;
-                int hi = Mathf.Clamp(Mathf.CeilToInt(veil.HandFraction * (sim.Count - 1)), 0, sim.Count - 1);
-                Vector2 grip = sim.Targets[hi], h = hand.position;
-                worst = Mathf.Max(worst, Vector2.Distance(grip, h));
+                float gf = VeilFormLibrary.GripFraction(VeilForm.Sword) * (sim.Count - 1);
+                int i0 = Mathf.Min(Mathf.FloorToInt(gf), sim.Count - 2);
+                Vector2 grip = Vector3.Lerp(sim.Positions[i0], sim.Positions[i0 + 1], gf - i0);
+                Vector2 palm = VeilController.PalmPoint(hand);
+                worst = Mathf.Max(worst, Vector2.Distance(grip, palm));
                 frames++;
             }
             Assert.Greater(frames, 10, "the sword formed and swung");
-            Assert.Less(worst, 0.12f, "the blade grows out of the hand this frame, not where it was a moment ago");
+            Assert.Less(worst, 0.04f, "the hilt stays in the fist through the swing, not trailing behind it");
         }
     }
 }

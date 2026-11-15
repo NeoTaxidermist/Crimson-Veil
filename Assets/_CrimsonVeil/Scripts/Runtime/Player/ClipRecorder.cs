@@ -25,6 +25,9 @@ namespace CrimsonVeil.Player
         /// <summary>Frames of play before recording starts (the scarf settles).</summary>
         public int Warmup = 0;
         public bool Done { get; private set; }
+        /// <summary>Optional measurement taken every recorded frame and written to probe.txt beside the frames.</summary>
+        public System.Func<string> Probe;
+        readonly System.Text.StringBuilder probeLog = new System.Text.StringBuilder();
 
         struct Cue { public float time; public string action; }
         readonly List<Cue> cues = new List<Cue>();
@@ -102,12 +105,14 @@ namespace CrimsonVeil.Player
             tex.Apply();
             RenderTexture.active = active;
             File.WriteAllBytes(Path.Combine(Folder, $"f{frame:000}.png"), tex.EncodeToPNG());
+            if (Probe != null) probeLog.AppendLine($"{frame:000} {Probe()}");
             frame++;
             clock = frame / (float)Fps;
             if (frame >= Frames)
             {
                 Done = true;
                 Time.captureFramerate = 0;
+                if (Probe != null) File.WriteAllText(Path.Combine(Folder, "probe.txt"), probeLog.ToString());
             }
         }
 

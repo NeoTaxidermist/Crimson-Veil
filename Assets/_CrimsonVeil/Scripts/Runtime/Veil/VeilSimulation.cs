@@ -150,6 +150,10 @@ namespace CrimsonVeil.Veil
         /// somersault let go (1 at once, gone after 0.5 s; 0 if it hasn't been wound).</summary>
         public static float UnwindBoost(float since) => since >= 0.5f ? 0f : 1f - Mathf.SmoothStep(0f, 1f, since / 0.5f);
 
+        /// <summary>0..1 how rigidly a node of hardness <paramref name="hardness"/> is held on the weapon's shape: not at
+        /// all while it is cloth, fully once set.</summary>
+        public static float RigidHold(float hardness) => Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.77f, 0.9f, hardness)); // (the whip, set at 0.75, stays supple)
+
         public static Vector2 WrapPoint(Vector2 centre, Vector2 neck, float along, float length, float trail)
         {
             Vector2 n0 = neck - centre;
@@ -418,6 +422,20 @@ namespace CrimsonVeil.Veil
                         Positions[i + 1] -= corr * 0.5f;
                     }
                 }
+            }
+
+            // 6b) A set weapon is a solid thing in the hand: once a node has hardened it sits exactly on the weapon's
+            // shape (the blade goes with the fist through the fastest swing instead of trailing behind it); only
+            // the half-set cloth in between stays soft. Its previous position moves along, so no speed is invented.
+            for (int i = 1; i < Count; i++)
+            {
+                float rigid = RigidHold(H(i));
+                if (rigid <= 0f) continue;
+                Vector3 want = Targets[i] + targetOffset;
+                want.z = Positions[i].z;
+                Vector3 shift = (want - Positions[i]) * rigid;
+                Positions[i] += shift;
+                previous[i] += shift;
             }
 
             // 7) 2.5D: keep the ribbon just behind the hero with a little depth flutter; a weapon in the hand is

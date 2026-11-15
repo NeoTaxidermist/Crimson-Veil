@@ -112,6 +112,16 @@ namespace CrimsonVeil.Tests
         }
 
         [Test]
+        public void ASetWeapon_IsHeldRigidly_TheWhipStaysSupple()
+        {
+            Assert.AreEqual(1f, VeilSimulation.RigidHold(VeilFormLibrary.Hardness(VeilForm.Sword)), 1e-3f, "the blade goes with the fist");
+            Assert.AreEqual(1f, VeilSimulation.RigidHold(VeilFormLibrary.Hardness(VeilForm.Spear)), 1e-3f);
+            Assert.AreEqual(1f, VeilSimulation.RigidHold(VeilFormLibrary.Hardness(VeilForm.Bow)), 1e-3f);
+            Assert.AreEqual(0f, VeilSimulation.RigidHold(VeilFormLibrary.Hardness(VeilForm.Whip)), 1e-3f, "a whip rolls and lags");
+            Assert.AreEqual(0f, VeilSimulation.RigidHold(0.3f), 1e-3f, "cloth stays cloth");
+        }
+
+        [Test]
         public void Sword_EndsInASharpPoint()
         {
             Assert.AreEqual(1f, VeilRenderer.TipProfile(VeilForm.Sword, 0.6f), 1e-4f, "full blade");

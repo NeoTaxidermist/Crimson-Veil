@@ -5,6 +5,20 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.16.16] – 2026-11-15
+Zbraň drží v ruce i během animace útoku.
+
+### Opraveno
+- **Ztvrdlá zbraň se pohybuje přesně s rukou.**
+  - Simulace dosud táhla zbraň za jejím tvarem s malým zpožděním, takže při rychlém švihu meč zaostával za pěstí o 7–19 cm.
+  - Nově sedí ztvrdlé uzly po výpočtu fyziky přesně na tvaru zbraně (`RigidHold`): meč, kopí, luk a štít jdou s pěstí jako pevný předmět.
+  - Měkká zůstává jen látka v přechodu a bič, který má vlnu po celé délce.
+  - Změřeno po snímcích: meč 0 mm od dlaně během celého seknutí (dříve až 19 cm), až na jeden snímek s rázem zásahu.
+- **PlayMode test „zbraň zůstává v ruce“ hlídá skutečnou polohu rukojeti proti středu dlaně s tolerancí 4 cm.** Dřív hlídal jen cílovou polohu s tolerancí 12 cm, a proto chybu nezachytil.
+
+### Přidáno
+- `ClipRecorder.Probe`: měření zapsané u každého nahraného snímku do `probe.txt`.
+
 ## [0.16.15] – 2026-11-15
 Meč s jílcem a zbraně v dlani.
 

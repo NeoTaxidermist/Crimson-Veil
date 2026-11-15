@@ -63,6 +63,129 @@ namespace CrimsonVeil.Tests
             Assert.AreEqual(0f, P.y, 0.2f);
         }
 
+        /// <summary>
+        /// Up a wall-jump shaft: in under its pillar (going <paramref name="dir"/> until past <paramref name="inX"/>),
+        /// kicking from wall to wall (a hand may catch a lip: then climb), until at <paramref name="topY"/>; then out
+        /// <paramref name="outDir"/> onto the top.
+        /// </summary>
+        IEnumerator Shaft(int dir, float inX, float topY, int outDir, float exitX = float.NaN)
+        {
+            input.moveX = dir;
+            float end = Time.time + 2f;
+            while (Time.time < end && (P.x - inX) * dir < 0f) yield return null;
+            int wall = dir;
+            input.jump = true; input.jumpHeld = true;
+            end = Time.time + 14f;
+            while (Time.time < end && P.y < topY - 0.1f)
+            {
+                var m = pc.Motor;
+                if (m.State == MotorState.LedgeHang || m.State == MotorState.Climbing) { input.aimY = 1f; yield return null; continue; }
+                if (m.State == MotorState.WallSlide && m.AttachSide == wall)
+                {
+                    wall = -wall;                          // kick off and steer to the other wall
+                    input.jump = true;
+                    input.moveX = wall;
+                }
+                yield return null;
+            }
+            // a hand may have caught the pillar's lip: let the climb finish
+            end = Time.time + 2f;
+            while (Time.time < end && pc.Motor.State != MotorState.Normal) { input.aimY = 1f; yield return null; }
+            input.aimY = 0f;
+            if (!float.IsNaN(exitX) && pc.IsGrounded && (P.x - exitX) * outDir < 0f)
+            {
+                // up on the pillar: the way on is across the shaft's mouth onto the wall's top
+                yield return Hop(outDir, topY, exitX, 0f);
+                yield break;
+            }
+            input.moveX = outDir;
+            yield return Wait(1.0f);
+            input.moveX = 0f;
+            yield return Wait(0.4f);
+        }
+
+        /// <summary>A jump <paramref name="dir"/> to the next platform (top <paramref name="top"/>, beyond <paramref name="pastX"/>):
+        /// climbing its lip if a hand catches it; stopped once standing on it.</summary>
+        IEnumerator Hop(int dir, float top, float pastX, float runUp = 0.12f)
+        {
+            input.moveX = dir;
+            if (runUp > 0f) yield return Wait(runUp);
+            input.jump = true; input.jumpHeld = true;
+            float end = Time.time + 4f;
+            yield return Wait(0.15f);
+            while (Time.time < end)
+            {
+                var m = pc.Motor;
+                input.aimY = m.State == MotorState.LedgeHang ? 1f : 0f;
+                if (m.State == MotorState.Climbing) input.moveX = 0f;
+                // over the platform: let go of the direction (a player does, or he sails past a narrow ledge)
+                if (!pc.IsGrounded && (P.x - pastX) * dir > 0f) input.moveX = 0f;
+                if (pc.IsGrounded && Mathf.Abs(P.y - top) < 0.25f && (P.x - pastX) * dir > 0f) break;
+                yield return null;
+            }
+            input.moveX = 0f; input.jumpHeld = false; input.aimY = 0f;
+            yield return Wait(0.3f);
+            Assert.AreEqual(top, P.y, 0.25f, "on the platform at " + top);
+        }
+
+        [UnityTest]
+        public IEnumerator IntoTheBelfry_UnderItsWall_AndUpItsShaft()
+        {
+            yield return At(218f, 7f);
+            input.moveX = 1f;
+            yield return Wait(1.0f);
+            Assert.Greater(P.x, 224f, "walked in under the belfry's left wall");
+            Assert.AreEqual(7f, P.y, 0.2f);
+            yield return At(232.6f, 27f);                  // on ledge 5
+            yield return Shaft(1, 235.6f, 38f, 1, 238.2f);
+            Assert.AreEqual(38f, P.y, 0.25f, "out of the shaft onto the belfry's top");
+            Assert.Greater(P.x, 238f);
+        }
+
+        [UnityTest]
+        public IEnumerator UpTheBelfryLedges()
+        {
+            yield return At(233f, 11f);                    // ledge 1
+            yield return Hop(-1, 15f, 228.5f);             // to ledge 2
+            yield return At(228.6f, 15f);
+            yield return Hop(1, 19f, 232.5f);              // to ledge 3
+            yield return At(232.4f, 19f);
+            yield return Hop(-1, 23f, 228.5f);             // to ledge 4
+        }
+
+        [UnityTest]
+        public IEnumerator AlongTheRidge_StoneByStone()
+        {
+            yield return At(250.8f, 38f);                  // near the end of the belfry's roof
+            yield return Hop(1, 42f, 254.4f);
+            yield return At(255.8f, 42f);
+            yield return Hop(1, 45f, 259.4f);
+            yield return At(262.8f, 45f);
+            yield return Hop(1, 44f, 268.4f);
+            yield return At(270.8f, 44f);
+            yield return Hop(1, 44f, 276.4f);
+        }
+
+        [UnityTest]
+        public IEnumerator DownTheChasm_LedgeByLedge()
+        {
+            yield return At(281.5f, 44f);
+            yield return Hop(1, 36f, 284.9f);              // ledge 1
+            yield return At(287.1f, 36f);
+            yield return Hop(1, 29f, 291.6f);              // ledge 2
+            yield return At(291.6f, 29f);
+            yield return Hop(-1, 22f, 288.6f);             // ledge 3, back to the left
+        }
+
+        [UnityTest]
+        public IEnumerator OutOfTheChasm_UpItsShaft_IntoTheGarden()
+        {
+            yield return At(303f, -14f);                   // the chasm's floor
+            yield return Shaft(1, 307.6f, 2f, 1, 310.2f);
+            Assert.AreEqual(2f, P.y, 0.25f, "out of the chasm");
+            Assert.Greater(P.x, 310f);
+        }
+
         [UnityTest]
         public IEnumerator UpTheShaft_ToTheTopOfTheTower()
         {

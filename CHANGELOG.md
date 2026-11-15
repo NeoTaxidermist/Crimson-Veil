@@ -5,6 +5,34 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.24.0] – 2026-11-15
+Level je zase delší (konec z x 224 na 340) a mnohem vertikálnější: hlavní cesta vede od −14 m až do 45 m.
+
+### Přidáno
+- **10. Zvonice (x 222–240):**
+  - Vchází se pod její stěnou. Schod a pět říms střídavě vlevo a vpravo vedou 31 m nahoru (od 7 do 38 m).
+  - Šachta na skoky ode zdí u pravé stěny, kruh pro bič.
+  - Vyhlídka nad pilířem s urnou a tajemstvím.
+  - Kořenový běžec nad vchodem, přízrak, můra, kontrolní body.
+- **11. Hřeben (x 240–282, 38–45 m):** ze střechy zvonice po plovoucích kamenech vysoko nad údolím. Papírový drak, havrani, kruh pro bič, mnich na konci.
+- **12. Propast (x 282–310):** sestup po sedmi římsách střídavě vlevo a vpravo z 44 m až na dno v −14 m. Lucerna, kořenový běžec pod římsou, kruh, přízrak.
+- **13. Výstup z propasti:** 16 m vysoká šachta na skoky ode zdí.
+- **14. Zahrada a konec (x 312–340):** mnich, přízrak, urna, koncová zeď.
+- Kamerové zóny pro zvonici a propast.
+- Pozadí do výšky: velké věže, oblouky, prapory, řetězy, klece, vodopád, akvadukt a hrad.
+
+### Testy
+- `LevelExtensionTests`:
+  - všechny šachty jsou správně (vejde se pod pilíř, šířka 2,8–3,6 m, zeď sahá k římse a nahoru k výstupu);
+  - level sahá za x 330;
+  - výškový rozdíl hlavní cesty je přes 50 m.
+- `LevelExtensionPlayTests` (ve skutečné scéně):
+  - vstup do zvonice a výstup její šachtou;
+  - stoupání po římsách zvonice;
+  - přeskoky po kamenech hřebene;
+  - sestup do propasti;
+  - výstup šachtou z propasti do zahrady.
+
 ## [0.23.0] – 2026-11-15
 ### Přidáno
 - **Mapa levelu na TAB** (na gamepadu tlačítko Select / View): otevře se a zavře stejnou klávesou, hra běží dál.

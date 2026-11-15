@@ -57,17 +57,27 @@ namespace CrimsonVeil.Tests
         }
 
         [Test]
-        public void TheShaft_IsAWallJumpShaft()
+        public void EveryShaft_IsAWallJumpShaft()
         {
-            var d = Get("tower ledge D");
-            var pillar = Get("tower pillar");
-            var wall = Get("tower left wall");
-            var top = Get("tower top");
-            Assert.GreaterOrEqual(pillar.Bottom - d.top, 1.95f, "the hero walks in under the pillar");
-            Assert.That(pillar.Left - wall.Right, Is.InRange(2.8f, 3.6f), "as wide as the first shaft (wall jumps reach across)");
-            Assert.LessOrEqual(wall.Left, d.Left, "the shaft's wall stands on the ledge's side");
-            Assert.AreEqual(top.top, pillar.top, 0.01f, "out over the pillar onto the top");
-            Assert.Greater(wall.top, top.top + 2f, "the wall rises past the top: no way out to the left");
+            Assert.AreEqual(PrototypeSceneBuilder.ExtensionRoute.Count(r => r.how == "shaft"), PrototypeSceneBuilder.ExtensionShafts.Length);
+            foreach (var (ledgeName, pillarName, wallName, exitName) in PrototypeSceneBuilder.ExtensionShafts)
+            {
+                var ledge = Get(ledgeName);
+                var pillar = Get(pillarName);
+                var wall = Get(wallName);
+                var exit = Get(exitName);
+                string s = ledgeName + " shaft: ";
+                Assert.IsTrue(PrototypeSceneBuilder.ExtensionRoute.Any(r => r.from == ledgeName && r.to == exitName && r.how == "shaft"), s + "on the way");
+                Assert.GreaterOrEqual(pillar.Bottom - ledge.top, 1.95f, s + "the hero walks in under the pillar");
+                Assert.Less(pillar.Bottom - ledge.top, 3.5f, s + "but no higher: the shaft starts right there");
+                float width = pillar.Left > wall.Right ? pillar.Left - wall.Right : wall.Left - pillar.Right;
+                Assert.That(width, Is.InRange(2.8f, 3.6f), s + "as wide as the first shaft (wall jumps reach across)");
+                Assert.IsTrue(wall.Left <= ledge.Left + 1e-3f || wall.Right >= ledge.Right - 1e-3f, s + "the wall stands at the ledge's end");
+                Assert.GreaterOrEqual(wall.Bottom, float.MinValue);
+                Assert.LessOrEqual(wall.Bottom, ledge.top + 0.05f, s + "the wall reaches down to the ledge");
+                Assert.AreEqual(exit.top, pillar.top, 0.01f, s + "out over the pillar or the wall's top at the same height");
+                Assert.GreaterOrEqual(wall.top, exit.top - 0.01f, s + "the wall rises to the top");
+            }
         }
 
         [Test]
@@ -95,8 +105,10 @@ namespace CrimsonVeil.Tests
             float right = PrototypeSceneBuilder.Extension.Max(b => b.Right);
             float high = PrototypeSceneBuilder.ExtensionRoute.Select(r => Get(r.to).top).Max();
             float low = PrototypeSceneBuilder.ExtensionRoute.Select(r => Get(r.to).top).Min();
-            Assert.Greater(right, 210f, "it went on to x 117 before");
-            Assert.Greater(high - low, 25f, "a climb up a tower and down a well");
+            Assert.Greater(right, 330f, "it went on to x 117, then to 224 before");
+            Assert.Greater(high - low, 50f, "up a tower and a belfry, along a ridge, down a well and a chasm");
+            Assert.Greater(high, 40f);
+            Assert.Less(low, -10f);
         }
     }
 }

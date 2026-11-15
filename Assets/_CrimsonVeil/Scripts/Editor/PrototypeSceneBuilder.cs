@@ -16,6 +16,7 @@ namespace CrimsonVeil.EditorTools
     ///  3. Shaft: two walls — wall slide and wall jump up.
     ///  4. High road: jump down to the crimson tree.
     ///  5. Chasm: shoot the crimson rope, the plank falls as a bridge.
+    ///  6.-9. The tower, the ramparts, the well and the climb out (see Extension).
     /// </summary>
     public static class PrototypeSceneBuilder
     {
@@ -50,9 +51,10 @@ namespace CrimsonVeil.EditorTools
             T(terrain, 69f, 0f, 22f, 12f, TerrainStyle.Rock, 10);            // tree plain  (58 .. 80)
             T(terrain, 55.5f, 2.2f, 3f, 0.8f, TerrainStyle.Rock, 11);        // little ledge down
             T(terrain, 103f, 0f, 24f, 12f, TerrainStyle.Rock, 12);           // far side    (91 .. 115)
-            T(terrain, 116f, 14f, 2f, 18f, TerrainStyle.Ruin, 13, false);   // end wall
             T(terrain, 98.5f, 4.6f, 4.5f, 1f, TerrainStyle.Ruin, 14, false); // overhang (a root crawler hangs under it)
             T(terrain, -11f, 6f, 4f, 1f, TerrainStyle.Ruin, 15, false);     // high perch (-13 .. -9): only the whip swing reaches it
+            // The way on (the tower, the ramparts, the well, the climb out): see Extension.
+            foreach (var b in Extension) T(terrain, b.cx, b.top, b.width, b.height, b.style, b.seed, b.grass);
 
             // ---------------------------------------------------------------- gameplay
             Place("PlayerSpawn", new Vector3(-7f, 0.05f, 0f), LevelLayer.Playfield, play);
@@ -89,6 +91,37 @@ namespace CrimsonVeil.EditorTools
             var shaftZone = Place("CameraZone", new Vector3(28f, 0f, 0f), LevelLayer.Playfield, play).GetComponent<CrimsonVeil.CameraSystem.CameraZone>();
             shaftZone.minX = -5f; shaftZone.maxX = 5f; shaftZone.offset = new Vector3(0f, 4.5f, -17f);
 
+            // ---- 6. The tower: ledges to and fro up its inside, a wall-jump shaft, a ring; out at the top onto the ramparts.
+            Place("Checkpoint", new Vector3(119f, 0f, 0f), LevelLayer.Playfield, play);
+            Place("RootCrawler", new Vector3(119.5f, 5f, 0f), LevelLayer.Playfield, play);    // under ledge B, over the way in
+            Place("Urn", new Vector3(120f, 8f, 0f), LevelLayer.Playfield, play);
+            Place("Wraith", new Vector3(128.5f, 12f, 0f), LevelLayer.Playfield, play);
+            Place("Urn", new Vector3(130f, 12f, 0f), LevelLayer.Playfield, play);
+            Place("GrapplePoint", new Vector3(125f, 21f, 0f), LevelLayer.Playfield, play);    // a swing up to the top ledge, besides the shaft
+            Place("AshMoth", new Vector3(125f, 18f, 0f), LevelLayer.Playfield, play);
+            Place("Checkpoint", new Vector3(128f, 25f, 0f), LevelLayer.Playfield, play);
+            Zone(play, 124f, -9f, 9f, new Vector3(0f, 3.5f, -21f));
+            // ---- 7. The ramparts, high over the valley: gaps, a kite, crows, a monk; a ring over the widest gap.
+            Place("ShieldMonk", new Vector3(138f, 25f, 0f), LevelLayer.Playfield, play);
+            Place("PaperKite", new Vector3(143f, 28f, 0f), LevelLayer.Playfield, play);
+            Place("Urn", new Vector3(147.5f, 26.5f, 0f), LevelLayer.Playfield, play);
+            Place("Checkpoint", new Vector3(158f, 24f, 0f), LevelLayer.Playfield, play);
+            Place("CrowSwarm", new Vector3(160f, 27.5f, 0f), LevelLayer.Playfield, play);
+            Place("GrapplePoint", new Vector3(166f, 30.5f, 0f), LevelLayer.Playfield, play);
+            Place("Wraith", new Vector3(173f, 25f, 0f), LevelLayer.Playfield, play);
+            // ---- 8. The well: down from ledge to ledge into the deep, a crawler under the last one, a wisp at the bottom.
+            Place("RootCrawler", new Vector3(181f, 1.5f, 0f), LevelLayer.Playfield, play);
+            Place("Checkpoint", new Vector3(190f, -4f, 0f), LevelLayer.Playfield, play);
+            Place("Urn", new Vector3(184f, -4f, 0f), LevelLayer.Playfield, play);
+            Place("LanternWisp", new Vector3(191f, -1.5f, 0f), LevelLayer.Playfield, play);
+            Place("Wraith", new Vector3(193f, -4f, 0f), LevelLayer.Playfield, play);
+            Zone(play, 186f, -11f, 11f, new Vector3(0f, 2.5f, -21f));
+            // ---- 9. Out of the well up the steps to the last plateau, the end wall.
+            Place("Checkpoint", new Vector3(206f, 7f, 0f), LevelLayer.Playfield, play);
+            Place("ShieldMonk", new Vector3(211f, 7f, 0f), LevelLayer.Playfield, play);
+            Place("Wraith", new Vector3(217f, 7f, 0f), LevelLayer.Playfield, play);
+            Place("Urn", new Vector3(220f, 7f, 0f), LevelLayer.Playfield, play);
+
             // ---------------------------------------------------------------- decoration: playfield
             Deco("Gallows", new Vector3(-7.5f, 0f, 0f), LevelLayer.Playfield, deco); // clear of the high perch above
             var tree = Deco("CrimsonTree", new Vector3(66f, 0f, 0f), LevelLayer.Playfield, deco);
@@ -108,7 +141,7 @@ namespace CrimsonVeil.EditorTools
             // in the front lip of that ground — the same depth as the rock — so it moves with the ground at any
             // camera angle instead of sliding against it in parallax. Roots sink a little into the lip.
             Physics.SyncTransforms();
-            for (int i = 0; i < 46; i++)
+            for (int i = 0; i < 84; i++)
             {
                 float gx = -16f + i * 2.9f;
                 if (!GroundSpan(gx, 1.5f, out float gy, out float span)) continue;
@@ -122,7 +155,7 @@ namespace CrimsonVeil.EditorTools
                     OnLip(FgModel(fgModel, new Vector3(gx + 0.6f, by - 0.08f, 0f), LevelLayer.Foreground, deco, fgScale, i % 2 == 0), gx + 0.6f, deco);
             }
             // The same weeds and brambles behind the play plane, at the feet of walls and on ledges.
-            for (int i = 0; i < 30; i++)
+            for (int i = 0; i < 54; i++)
             {
                 float gx = -14f + i * 4.4f + (i % 3) * 0.7f;
                 string model = i % 3 == 0 ? "Bramble" : "Weeds";
@@ -133,7 +166,8 @@ namespace CrimsonVeil.EditorTools
                 OnLip(m, gx, deco); // Playfield: the anchor keeps it on the block's top, at this depth
             }
             // Ferns behind the play plane, at the foot of walls and ledges.
-            foreach (var (x, y) in new[] { (-12f, 0f), (11f, 0f), (17.5f, 0.6f), (30f, -1.2f), (57f, 0f), (79f, 0f), (91.5f, 0f), (114f, 0f) })
+            foreach (var (x, y) in new[] { (-12f, 0f), (11f, 0f), (17.5f, 0.6f), (30f, -1.2f), (57f, 0f), (79f, 0f), (91.5f, 0f), (114f, 0f),
+                                           (132f, 0f), (134f, 25f), (176.5f, -4f), (194.5f, -4f), (203.5f, 7f), (221f, 7f) })
             {
                 var fern = F.Fern(new Vector3(x, y, 0f), LevelLayer.Playfield, (int)(x * 7f) + 900, 1.3f, 8);
                 fern.transform.position += new Vector3(0f, 0f, 1.5f);
@@ -144,10 +178,10 @@ namespace CrimsonVeil.EditorTools
 
             // ---------------------------------------------------------------- decoration: near ruins
             float[] nearBreak = { 0f, 0.55f, 0.2f, 0.75f, 0f, 0.4f, 0.65f, 0.1f, 0.5f, 0.3f, 0f, 0.6f, 0.25f };
-            for (int i = 0; i < 13; i++)
+            for (int i = 0; i < 23; i++)
             {
                 float x = -14f + i * 10.5f;
-                F.Arch(new Vector3(x, -1f, 0f), LevelLayer.Near, 3.6f + (i % 3) * 0.6f, 4.5f + (i % 2), nearBreak[i], i).transform.SetParent(deco, true);
+                F.Arch(new Vector3(x, -1f, 0f), LevelLayer.Near, 3.6f + (i % 3) * 0.6f, 4.5f + (i % 2), nearBreak[i % nearBreak.Length], i).transform.SetParent(deco, true);
                 F.Rubble(new Vector3(x + 3.5f, -1f, 0f), LevelLayer.Near, 200 + i, 3.5f, 1.2f).transform.SetParent(deco, true);
                 if (i % 3 == 1) F.Column(new Vector3(x + 5.2f, -1f, 0f), LevelLayer.Near, 7f, i % 2 == 0, i).transform.SetParent(deco, true);
                 FgModel(i % 2 == 0 ? "Bramble" : "Weeds", new Vector3(x + 1.5f, -1f, 0f), LevelLayer.Near, deco, 1.3f, i % 3 == 0);
@@ -167,16 +201,16 @@ namespace CrimsonVeil.EditorTools
             F.Ruin("Aqueduct", new Vector3(-32f, -2f, 0f), LevelLayer.Mid).transform.SetParent(deco, true);
             F.Ruin("CliffRuin", new Vector3(34f, -2f, 0f), LevelLayer.Mid).transform.SetParent(deco, true);
             F.Waterfall(new Vector3(44.6f, 21f, 0f), LevelLayer.Mid, 3.2f, 23f).transform.SetParent(deco, true);
-            for (int i = 0; i < 6; i++)
+            for (int i = 0; i < 14; i++)
                 F.Arch(new Vector3(62f + i * 11f, -2f + (i % 2) * 1.5f, 0f), LevelLayer.Mid, 3.75f, 4.5f + (i % 3) * 0.5f, 0.3f + 0.15f * (i % 3), i + 1).transform.SetParent(deco, true);
             F.Ruin("Aqueduct", new Vector3(128f, -2f, 0f), LevelLayer.Mid).transform.SetParent(deco, true);
-            for (int i = 0; i < 12; i++) // brambles and weeds along the mid ground
+            for (int i = 0; i < 20; i++) // brambles and weeds along the mid ground
                 FgModel(i % 2 == 0 ? "Weeds" : "Bramble", new Vector3(-30f + i * 13f, -2f, 0f), LevelLayer.Mid, deco, 1.6f, i % 3 == 0);
 
             // ---------------------------------------------------------------- decoration: far & sky
             float[] farBreak = { 0f, 0.3f, 0f, 0f, 0.6f, 0f, 0.2f, 0f, 0f, 0.45f, 0f, 0.7f, 0f, 0.25f, 0f };
-            for (int i = 0; i < 15; i++)
-                F.Arch(new Vector3(-60f + i * 13f, -12f + (i % 3) * 1.5f, 0f), LevelLayer.Far, 3.4f, 5.8f, farBreak[i], i).transform.SetParent(deco, true);
+            for (int i = 0; i < 23; i++)
+                F.Arch(new Vector3(-60f + i * 13f, -12f + (i % 3) * 1.5f, 0f), LevelLayer.Far, 3.4f, 5.8f, farBreak[i % farBreak.Length], i).transform.SetParent(deco, true);
             foreach (var (x, y) in new[] { (-22f, -12f), (130f, -11f) })
                 F.Ruin("Tower", new Vector3(x, y, 0f), LevelLayer.Far).transform.SetParent(deco, true);
             // The castle on the horizon and a second aqueduct crossing the far valley.
@@ -203,14 +237,36 @@ namespace CrimsonVeil.EditorTools
 
             // ---------------------------------------------------------------- mist & light
             F.MistBand(new Vector3(50f, -1.6f, 1.2f), LevelLayer.Playfield, 180f, 2.6f).transform.SetParent(deco, true);
-            foreach (var (y, l, w, h, dz) in new[] { (-1f, LevelLayer.Near, 220f, 7f, -4f), (0f, LevelLayer.Mid, 300f, 12f, -10f), (-2f, LevelLayer.Far, 400f, 22f, -20f) })
+            foreach (var (y, l, w, h, dz) in new[] { (-1f, LevelLayer.Near, 320f, 7f, -4f), (0f, LevelLayer.Mid, 420f, 12f, -10f), (-2f, LevelLayer.Far, 520f, 22f, -20f) })
             {
-                var band = F.MistBand(new Vector3(50f, y, 0f), l, w, h);
+                var band = F.MistBand(new Vector3(100f, y, 0f), l, w, h);
                 band.transform.position += new Vector3(0f, 0f, dz);
                 band.transform.SetParent(deco, true);
             }
-            for (int i = 0; i < 6; i++)
+            for (int i = 0; i < 11; i++)
                 F.LightShaft(new Vector3(-6f + i * 21f, 12f, 0f), LevelLayer.Mid, 5f + i % 3, 34f).transform.SetParent(deco, true);
+
+            // ---------------------------------------------------------------- decoration: the tower, the ramparts and the well
+            // Up there the ground-level backdrop is below the view: ruins stand up behind the climb.
+            foreach (var (x, y, sc) in new[] { (126f, -2f, 2.4f), (152f, -2f, 2.0f), (172f, -2f, 2.2f), (200f, -2f, 1.8f) })
+            {
+                var tw = F.Ruin("Tower", new Vector3(x, y, 0f), LevelLayer.Mid);
+                tw.transform.localScale *= sc;
+                tw.transform.SetParent(deco, true);
+            }
+            foreach (var (x, y) in new[] { (139f, 24f), (151f, 25.5f), (161f, 23f), (173f, 24f) })
+                F.Arch(new Vector3(x, y, 0f), LevelLayer.Near, 3.4f, 4.5f, 0.35f, (int)x).transform.SetParent(deco, true);
+            foreach (var (x, y, h) in new[] { (122f, 31f, 4f), (130f, 29f, 3.2f), (148f, 33f, 3.4f), (210f, 15f, 3.6f) })
+                F.Banner(new Vector3(x, y, 0f), LevelLayer.Near, 1.1f, h, (int)x).transform.SetParent(deco, true);
+            foreach (var (x, y) in new[] { (119f, 30f), (128.5f, 33f), (183f, 22f), (192f, 20f) })
+                FgModel("Chain", new Vector3(x, y, 0f), LevelLayer.Near, deco, 1.2f, false);
+            foreach (var (x, y) in new[] { (124f, 34f), (186f, 24f) })
+                F.Ruin("Cage", new Vector3(x, y, 0f), LevelLayer.Near).transform.SetParent(deco, true);
+            F.Ruin("CliffRuin", new Vector3(200f, -2f, 0f), LevelLayer.Mid).transform.SetParent(deco, true);
+            F.Ruin("Tower", new Vector3(212f, -11f, 0f), LevelLayer.Far).transform.SetParent(deco, true);
+            F.Waterfall(new Vector3(163f, 40f, 0f), LevelLayer.Mid, 3f, 44f).transform.SetParent(deco, true);
+            foreach (var x in new[] { 125f, 137f, 159f, 188f, 212f })
+                F.Rubble(new Vector3(x, GroundTop(x), 1.6f), LevelLayer.Playfield, (int)x + 50).transform.SetParent(deco, true);
 
             EditorSceneManager.SaveScene(scene, ScenePath);
             EditorBuildSettings.scenes = new[] { new EditorBuildSettingsScene(ScenePath, true) };
@@ -257,6 +313,71 @@ namespace CrimsonVeil.EditorTools
             go.transform.SetParent(parent, true);
             return go;
         }
+
+        static void Zone(Transform parent, float x, float minX, float maxX, Vector3 offset)
+        {
+            var z = Place("CameraZone", new Vector3(x, 0f, 0f), LevelLayer.Playfield, parent).GetComponent<CrimsonVeil.CameraSystem.CameraZone>();
+            z.minX = minX; z.maxX = maxX; z.offset = offset;
+        }
+
+        /// <summary>A block of the level (centre x and top of the walkable edge, size), as T() builds it.</summary>
+        public struct BlockDef
+        {
+            public string name;
+            public float cx, top, width, height;
+            public TerrainStyle style;
+            public int seed;
+            public bool grass;
+            public float Left => cx - width * 0.5f;
+            public float Right => cx + width * 0.5f;
+            public float Bottom => top - height;
+            public BlockDef(string name, float cx, float top, float width, float height, TerrainStyle style, int seed, bool grass = true)
+            { this.name = name; this.cx = cx; this.top = top; this.width = width; this.height = height; this.style = style; this.seed = seed; this.grass = grass; }
+        }
+
+        /// <summary>
+        /// The level beyond the far side (x 115 on), much of it vertical:
+        /// 6. the tower: ledges to and fro up its inside (4 m apart), a wall-jump shaft by its left wall (3.2 m wide,
+        ///    entered under a hanging pillar) and a whip ring, out at 25 m onto
+        /// 7. the ramparts: high platforms with gaps (the widest, 6 m, with a ring over it), then
+        /// 8. the well: down from ledge to ledge to its floor at -4 m, and
+        /// 9. up the steps out of it to the last plateau and the end wall.
+        /// </summary>
+        public static readonly BlockDef[] Extension =
+        {
+            new BlockDef("tower floor", 124f, 0f, 18f, 12f, TerrainStyle.Rock, 16),               // 115 .. 133
+            new BlockDef("tower left wall", 116.3f, 30f, 1.4f, 27f, TerrainStyle.Ruin, 17, false), // hangs: walk in under it (3 m)
+            new BlockDef("tower ledge A", 128f, 4f, 6f, 4f, TerrainStyle.Ruin, 18),               // 125 .. 131, a step up from the floor
+            new BlockDef("tower ledge B", 119.75f, 8f, 5.5f, 1.2f, TerrainStyle.Ruin, 19),        // 117 .. 122.5
+            new BlockDef("tower ledge C", 128f, 12f, 6f, 1.2f, TerrainStyle.Ruin, 20),
+            new BlockDef("tower ledge D", 119.75f, 16f, 5.5f, 1.2f, TerrainStyle.Ruin, 21),
+            new BlockDef("tower pillar", 120.8f, 25f, 1.2f, 7f, TerrainStyle.Ruin, 22, false),     // 120.2 .. 121.4, hangs 2 m over D
+            new BlockDef("tower top", 126.2f, 25f, 9.6f, 1.4f, TerrainStyle.Ruin, 23),            // 121.4 .. 131
+            new BlockDef("tower right wall", 132f, 25f, 2f, 25f, TerrainStyle.Ruin, 24, false),    // 131 .. 133
+            new BlockDef("rampart 1", 137f, 25f, 8f, 3f, TerrainStyle.Rock, 25),                  // 133 .. 141
+            new BlockDef("rampart 2", 148f, 26.5f, 6f, 1.4f, TerrainStyle.Ruin, 26),              // 145 .. 151
+            new BlockDef("rampart 3", 159f, 24f, 8f, 3f, TerrainStyle.Rock, 27),                  // 155 .. 163
+            new BlockDef("rampart 4", 172.5f, 25f, 7f, 3f, TerrainStyle.Rock, 28),                // 169 .. 176
+            new BlockDef("well left wall", 175.3f, 22f, 1.4f, 26f, TerrainStyle.Ruin, 29, false),  // under rampart 4, down to the floor
+            new BlockDef("well ledge 1", 180f, 17f, 3f, 1.2f, TerrainStyle.Ruin, 30),
+            new BlockDef("well ledge 2", 188f, 10f, 3.5f, 1.2f, TerrainStyle.Ruin, 31),
+            new BlockDef("well ledge 3", 181f, 4f, 4f, 1.2f, TerrainStyle.Ruin, 32),
+            new BlockDef("well floor", 188f, -4f, 24f, 10f, TerrainStyle.Rock, 33),               // 176 .. 200
+            new BlockDef("step 1", 197f, 0f, 4f, 4f, TerrainStyle.Rock, 34),                      // 195 .. 199
+            new BlockDef("step 2", 201f, 3.5f, 4f, 7.5f, TerrainStyle.Rock, 35),                  // 199 .. 203
+            new BlockDef("plateau", 212.5f, 7f, 19f, 12f, TerrainStyle.Rock, 36),                 // 203 .. 222
+            new BlockDef("end wall", 223f, 26f, 2f, 30f, TerrainStyle.Ruin, 37, false),
+        };
+
+        /// <summary>How the main way goes through <see cref="Extension"/>: (from, to, how).</summary>
+        public static readonly (string from, string to, string how)[] ExtensionRoute =
+        {
+            ("tower floor", "tower ledge A", "climb"), ("tower ledge A", "tower ledge B", "climb"), ("tower ledge B", "tower ledge C", "climb"),
+            ("tower ledge C", "tower ledge D", "climb"), ("tower ledge D", "tower top", "shaft"), ("tower top", "rampart 1", "walk"),
+            ("rampart 1", "rampart 2", "jump"), ("rampart 2", "rampart 3", "drop"), ("rampart 3", "rampart 4", "double"),
+            ("rampart 4", "well ledge 1", "drop"), ("well ledge 1", "well ledge 2", "drop"), ("well ledge 2", "well ledge 3", "drop"),
+            ("well ledge 3", "well floor", "drop"), ("well floor", "step 1", "climb"), ("step 1", "step 2", "climb"), ("step 2", "plateau", "climb"),
+        };
 
         static Transform Group(Transform parent, string name)
         {

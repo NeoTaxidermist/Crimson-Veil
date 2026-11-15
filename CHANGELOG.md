@@ -5,6 +5,41 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.22.0] – 2026-11-15
+Level je skoro dvakrát delší (konec z x 117 na 224) a hodně vertikální: stoupá do 25 m a klesá do studny v hloubce −4 m.
+
+### Přidáno
+- **6. Věž (x 115–133):**
+  - Vchází se pod její stěnou.
+  - Uvnitř se po čtyřech římsách stoupá střídavě vlevo a vpravo, vždy o 4 m.
+  - Pak šachta na skoky ode zdí (3,2 m široká, vchází se pod visícím pilířem) až na vrchol ve 25 m.
+  - Navíc kruh pro švih bičem.
+  - Kořenový běžec pod římsou nad vchodem, přízrak, popelavá můra, urny a dva kontrolní body.
+- **7. Hradby (x 133–176, 24–26,5 m):**
+  - Vysoké plošiny s mezerami nad propastí. Nejširší mezera (6 m) se přeskočí dvojskokem, nebo se dá přelétnout švihem z kruhu.
+  - Mnich se štítem, papírový drak, havraní roj, přízrak.
+- **8. Studna (x 176–200):** sestup z římsy na římsu až na dno v −4 m. Kořenový běžec pod poslední římsou, lucerna, přízrak.
+- **9. Výstup:** po schodech ze studny nahoru na poslední plošinu s mnichem a přízrakem, na konci zeď.
+- **Kamerové zóny** pro věž a studnu se širším záběrem.
+- **Pozadí do výšky:**
+  - zvětšené věže, oblouky hradeb, prapory, řetězy a klece;
+  - vodopád a rozšířené pozadí, mlha a světelné paprsky po celé délce.
+- Tvar nové části je popsaný daty (`PrototypeSceneBuilder.Extension`, `ExtensionRoute`), aby šla hlavní cesta zkontrolovat testy.
+
+### Testy
+- `LevelExtensionTests` (bez hry, z dat levelu):
+  - každý krok hlavní cesty je na dosah hrdiny (výšlap do 4,6 m, mezera při výšlapu do 3 m, skok, dvojskok, seskok);
+  - na žádnou visící římsu se neskáče zespodu;
+  - šachta je správně široká a dá se do ní vejít;
+  - nad každou plošinou je místo, kde stát;
+  - level je delší a vertikální.
+- `LevelExtensionPlayTests` (ve skutečné scéně s řízeným ovládáním):
+  - vstup do věže pod zdí;
+  - výstup šachtou skoky ode zdí až na vrchol;
+  - z věže po hradbách na vyšší hradbu;
+  - dvojskok přes nejširší mezeru;
+  - výstup ze studny po schodech na plošinu.
+
 ## [0.21.2] – 2026-11-15
 ### Opraveno
 - **Vylézání na římsu:** ruce dřív sledovaly ručně klíčovanou pózu a během přítahu se od hrany vzdalovaly. Teď na hraně zůstávají.

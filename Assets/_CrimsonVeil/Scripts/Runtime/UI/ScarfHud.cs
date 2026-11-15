@@ -42,6 +42,7 @@ namespace CrimsonVeil.UI
             rt.sizeDelta = new Vector2(470f, 96f);
             hud.Bar = barGo.AddComponent<ScarfHealthBar>();
             hud.Bar.raycastTarget = false;
+            Minimap.Create(go.transform);   // the map, on TAB
             return hud;
         }
 

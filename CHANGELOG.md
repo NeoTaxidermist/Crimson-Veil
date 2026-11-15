@@ -5,6 +5,31 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.23.0] – 2026-11-15
+### Přidáno
+- **Mapa levelu na TAB** (na gamepadu tlačítko Select / View): otevře se a zavře stejnou klávesou, hra běží dál.
+  - Terén se kreslí světlým inkoustem na tmavém listu. Horní hrany jsou zvýrazněné, aby byly vidět římsy.
+  - Hrdina je karmínový kosočtverec, který se posouvá s ním. Kontrolní body jsou světlé kosočtverce, kruhy pro bič malé čtverečky.
+  - Mapa se kreslí sama z bloků terénu (`TerrainBlock`), takže sedí na každý level a po každé úpravě. Vzniká spolu s HUD, nic se nemusí zapojovat.
+- **Připraveno na mlhu:**
+  - Teď je vidět celý level (`Minimap.revealAll`).
+  - Mapa už si pamatuje, kudy hrdina prošel (do 9 m kolem něj, `revealRadius`).
+  - Po vypnutí `revealAll` zůstane zbytek v mlze a odkryje se až tam, kam hrdina dojde. Značky v mlze se skryjí.
+- Logika mapy je oddělená od UI (`MinimapModel`): mřížka po 25 cm, pevná zem, prozkoumané buňky a převod ze světa do obrázku.
+
+### Testy
+- `MinimapModelTests`:
+  - mřížka pokrývá level, ne hluboké nitro země;
+  - zem je označená;
+  - celá mapa je vidět, a přesto se pamatuje, kam hrdina došel;
+  - v mlze je vidět jen prozkoumané;
+  - převod ze světa do obrázku.
+- `MinimapPlayTests` (ve skutečné scéně):
+  - mapa existuje a je zavřená;
+  - TAB ji otevře a ukáže celý level od začátku do konce;
+  - značka hrdiny jde s ním a sedí na jeho místě;
+  - druhé stisknutí ji zavře.
+
 ## [0.22.0] – 2026-11-15
 Level je skoro dvakrát delší (konec z x 117 na 224) a hodně vertikální: stoupá do 25 m a klesá do studny v hloubce −4 m.
 

@@ -86,10 +86,14 @@ namespace CrimsonVeil.Veil
                     break;
                 case VeilForm.Sword:
                 {
-                    // A straight blade from the fist.
+                    // A sword with its hilt: the pommel just behind the fist, the grip through it, the crossguard
+                    // just in front of it, then the straight blade (SwordLength from the fist to the point).
                     var dir = new Vector2(Mathf.Cos(SwordAngle * Mathf.Deg2Rad), Mathf.Sin(SwordAngle * Mathf.Deg2Rad));
+                    pts[2] = Hand - dir * SwordPommel;
+                    pts.Add(Hand);
+                    pts.Add(Hand + dir * SwordGuard);
                     const int steps = 8;
-                    for (int i = 1; i <= steps; i++) pts.Add(Hand + dir * (SwordLength * i / steps));
+                    for (int i = 1; i <= steps; i++) pts.Add(Hand + dir * (SwordGuard + (SwordLength - SwordGuard) * i / steps));
                     break;
                 }
                 case VeilForm.Spear:
@@ -273,6 +277,28 @@ namespace CrimsonVeil.Veil
 
         /// <summary>The blade: its angle above the forearm's line (degrees) and length (m).</summary>
         public const float SwordAngle = 36f, SwordLength = 1.5f;
+        /// <summary>The hilt: the pommel this far (m) behind the fist, the crossguard this far in front of it.</summary>
+        public const float SwordPommel = 0.13f, SwordGuard = 0.06f;
+
+        static float[] swordHilt;
+
+        /// <summary>
+        /// Where along the veil (0 neck .. 1 end) the sword's hilt lies: the pommel (where the weapon starts), the fist
+        /// (the grip) and the crossguard, where the blade begins.
+        /// </summary>
+        public static void SwordHilt(out float pommel, out float fist, out float guard)
+        {
+            if (swordHilt == null)
+            {
+                var pts = ControlPoints(VeilForm.Sword, out int start);
+                int fistIndex = pts.IndexOf(Hand);
+                float total = 0f;
+                var at = new float[pts.Count];
+                for (int i = 1; i < pts.Count; i++) { total += Vector2.Distance(pts[i - 1], pts[i]); at[i] = total; }
+                swordHilt = new[] { at[start] / total, at[fistIndex] / total, at[fistIndex + 1] / total };
+            }
+            pommel = swordHilt[0]; fist = swordHilt[1]; guard = swordHilt[2];
+        }
 
         /// <summary>Centre of the shield bubble: the middle of the body (the veil anchor is at the neck).</summary>
         public static readonly Vector2 ShieldCenter = new Vector2(0f, -0.58f);

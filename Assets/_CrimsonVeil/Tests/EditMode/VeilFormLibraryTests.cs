@@ -96,7 +96,7 @@ namespace CrimsonVeil.Tests
             Vector2 a = pts[start], b = pts[pts.Count - 1];
             for (int i = start; i < pts.Count; i++)
                 Assert.Less(LineDistance(a, b, pts[i]), 1e-4f, "every point of the blade on one line");
-            Assert.AreEqual(VeilFormLibrary.SwordLength, Vector2.Distance(a, b), 1e-3f);
+            Assert.AreEqual(VeilFormLibrary.SwordLength + VeilFormLibrary.SwordPommel, Vector2.Distance(a, b), 1e-3f, "from the pommel to the point");
         }
 
         static float LineDistance(Vector2 a, Vector2 b, Vector2 p)

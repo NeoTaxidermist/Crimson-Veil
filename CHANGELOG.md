@@ -5,6 +5,25 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.16.15] – 2026-11-15
+Meč s jílcem a zbraně v dlani.
+
+### Přidáno
+- **Meč má jílec:**
+  - hlavice 13 cm za pěstí;
+  - úzká rukojeť procházející dlaní (0,32 šířky čepele);
+  - příčná záštita 6 cm před pěstí (2,6× šíře čepele);
+  - teprve pak čepel.
+  - Plamenné jazyky meče začínají až od záštity, jílec zůstává čistý.
+  - Dosah meče od pěsti ke špičce je pořád 1,5 m.
+
+### Opraveno
+- **Zbraně se drží ve středu dlaně, ne v zápěstí.**
+  - Kost ruky začíná v zápěstí, takže úchop byl 9–10 cm za pěstí.
+  - Nově je 7,5 cm po kosti ruky (`PalmPoint`), i pro tětivu luku a lano biče.
+  - Změřeno ve hře, vzdálenost úchopu od středu dlaně: meč 1,6 cm, luk 1,6 cm (tažná ruka 2,4 cm), kopí 3,9 cm (násada prochází pěstí), bič asi 4,6 cm.
+  - Štít obepíná tělo volně, tak má být.
+
 ## [0.16.14] – 2026-11-15
 Šála při saltu: obtočí se kolem těla a po dopadu se hned rozbalí.
 

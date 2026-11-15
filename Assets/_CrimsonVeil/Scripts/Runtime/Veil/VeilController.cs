@@ -559,7 +559,7 @@ namespace CrimsonVeil.Veil
                 whipRope.startColor = whipRope.endColor = new Color(0.9f, 0.05f, 0.08f, 0.95f);
             }
             whipRope.enabled = true;
-            whipRope.SetPosition(0, hand != null ? hand.position : player.GripPosition);
+            whipRope.SetPosition(0, hand != null ? PalmPoint(hand) : player.GripPosition);
             // Swinging: to the ring. Catching a ledge: a strand of the scarf to the lip it lashed round.
             whipRope.SetPosition(1, Latched != null ? Latched.transform.position : player.ScarfCatchPoint);
         }
@@ -598,6 +598,12 @@ namespace CrimsonVeil.Veil
         }
 
         public Transform DrawHand { get => drawHand; set => drawHand = value; }
+
+        /// <summary>How far (m) along the hand bone, from the wrist, the palm is where a weapon is gripped.</summary>
+        public const float PalmOffset = 0.075f;
+
+        /// <summary>The middle of the palm of <paramref name="hand"/> (its bone runs from the wrist along +Y).</summary>
+        public static Vector3 PalmPoint(Transform hand) => hand.position + hand.up * PalmOffset;
 
         void UpdateNodeHardness()
         {
@@ -645,7 +651,9 @@ namespace CrimsonVeil.Veil
             if (hand != null)
             {
                 float s = Mathf.Abs(facingScale) < 0.3f ? Facing : facingScale;
-                var lh = new Vector2((hand.position.x - a.x) / s, hand.position.y - a.y);
+                // The weapon is held in the palm: the hand bone starts at the wrist, the fist is a little way along it.
+                Vector3 palm = PalmPoint(hand);
+                var lh = new Vector2((palm.x - a.x) / s, palm.y - a.y);
                 var wanted = lh - VeilFormLibrary.Hand;
                 if (wanted.sqrMagnitude > 1f) wanted = wanted.normalized; // guard against a bad first frame
                 handDelta = wanted; // rigid in the hand: any smoothing here lags a fast swing
@@ -748,7 +756,8 @@ namespace CrimsonVeil.Veil
             if (pull > 0f)
             {
                 float sx = Mathf.Abs(facingScale) < 0.3f ? Facing : facingScale;
-                var draw = new Vector2((drawHand.position.x - a.x) / sx, drawHand.position.y - a.y);
+                Vector3 drawPalm = PalmPoint(drawHand); // the string is pulled by the fingers, not the wrist
+                var draw = new Vector2((drawPalm.x - a.x) / sx, drawPalm.y - a.y);
                 var range = VeilFormLibrary.BowStringRange;
                 for (int i = 0; i < n; i++)
                 {

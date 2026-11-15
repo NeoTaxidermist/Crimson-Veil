@@ -275,6 +275,12 @@ namespace CrimsonVeil.Veil
             float shieldCut = Mathf.Ceil(hf * (n - 1)) / (n - 1) + 0.002f;
             Vector3 shieldCentre = p[0] + new Vector3(VeilFormLibrary.ShieldCenter.x * facing, VeilFormLibrary.ShieldCenter.y, 0f);
             float gripFraction = Mathf.Max(hf, VeilFormLibrary.GripFraction(veil.ShapeForm));
+            // A sword's flame tongues run along its blade, from the crossguard: the hilt stays a clean hilt.
+            if (veil.ShapeForm == VeilForm.Sword)
+            {
+                VeilFormLibrary.SwordHilt(out _, out _, out float guardAt);
+                gripFraction = Mathf.Max(gripFraction, guardAt);
+            }
 
             // Per-sample frame, width and alpha of the scarf body.
             for (int i = 0; i < samples; i++)
@@ -538,7 +544,17 @@ namespace CrimsonVeil.Veil
                     return 1f - Mathf.SmoothStep(0f, 1f, (t - 0.96f) / 0.04f) * 0.6f;
                 case VeilForm.Sword:
                 {
-                    // Last 16% of the veil: the edges sweep into a point.
+                    // The hilt: a knob of a pommel, a slim grip through the fist, a broad crossguard; then the blade,
+                    // whose last 16% sweeps into a point.
+                    VeilFormLibrary.SwordHilt(out float pommel, out float fist, out float guard);
+                    float span = Mathf.Max(1e-4f, guard - pommel);
+                    if (t < guard + span * 0.35f)
+                    {
+                        float knob = SwordPommelWidth * Mathf.Exp(-Mathf.Pow((t - pommel) / (span * 0.12f), 2f));
+                        float cross = SwordGuardWidth * Mathf.Exp(-Mathf.Pow((t - guard) / (span * 0.1f), 2f));
+                        float grip = t < guard ? SwordGripWidth : Mathf.Lerp(SwordGripWidth, 1f, Mathf.SmoothStep(0f, 1f, (t - guard) / (span * 0.35f)));
+                        return Mathf.Max(grip, Mathf.Max(knob, cross));
+                    }
                     float x = Mathf.Clamp01((t - 0.84f) / 0.16f);
                     return Mathf.Pow(1f - x, 0.7f) * (1f + 0.15f * Mathf.Sin(x * Mathf.PI));
                 }
@@ -554,6 +570,9 @@ namespace CrimsonVeil.Veil
                     return 1f - Mathf.SmoothStep(0f, 1f, (t - 0.86f) / 0.14f) * 0.85f;
             }
         }
+
+        /// <summary>The sword's hilt, in blade widths: the grip in the fist, the pommel's knob, the crossguard.</summary>
+        public const float SwordGripWidth = 0.32f, SwordPommelWidth = 0.6f, SwordGuardWidth = 2.6f;
 
         /// <summary>The spearhead's widest point, in shaft widths.</summary>
         public const float SpearHeadWidth = 3.2f;

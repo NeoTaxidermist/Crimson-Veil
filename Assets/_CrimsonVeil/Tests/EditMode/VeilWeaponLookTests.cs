@@ -82,8 +82,33 @@ namespace CrimsonVeil.Tests
                 if (st.start <= 0f) continue;
                 Assert.Greater(VeilRenderer.StrandEnd(st, false, false, 1f, grip), grip, "tongues flare in front of the hand");
             }
-            Assert.AreEqual(VeilFormLibrary.BuildShape(VeilForm.Sword, shape), VeilFormLibrary.GripFraction(VeilForm.Sword), 0.02f,
-                "a sword is gripped where the blade starts");
+            float swordStart = VeilFormLibrary.BuildShape(VeilForm.Sword, shape), swordGrip = VeilFormLibrary.GripFraction(VeilForm.Sword);
+            Assert.That(swordGrip - swordStart, Is.InRange(0.02f, 0.09f), "a sword is gripped by its hilt, just in front of the pommel");
+        }
+
+        [Test]
+        public void Sword_HasAHilt_PommelGripAndCrossguard()
+        {
+            VeilFormLibrary.SwordHilt(out float pommel, out float fist, out float guard);
+            Assert.Less(pommel, fist); Assert.Less(fist, guard);
+            Assert.Less(VeilRenderer.TipProfile(VeilForm.Sword, Mathf.Lerp(pommel, guard, 0.55f)), 0.45f, "a slim grip in the fist");
+            Assert.Greater(VeilRenderer.TipProfile(VeilForm.Sword, guard), 2f, "a broad crossguard in front of the fist");
+            Assert.Greater(VeilRenderer.TipProfile(VeilForm.Sword, pommel), 0.5f, "a knob of a pommel behind it");
+            Assert.AreEqual(1f, VeilRenderer.TipProfile(VeilForm.Sword, guard + (guard - pommel) * 2f), 1e-3f, "then the full blade");
+        }
+
+        [Test]
+        public void Weapons_AreGrippedInThePalm_NotAtTheWrist()
+        {
+            var go = new GameObject("hand");
+            try
+            {
+                go.transform.rotation = Quaternion.Euler(0f, 0f, 180f); // the hand hangs down
+                var palm = CrimsonVeil.Veil.VeilController.PalmPoint(go.transform);
+                Assert.AreEqual(-CrimsonVeil.Veil.VeilController.PalmOffset, palm.y, 1e-4f, "a little way along the hand from the wrist");
+                Assert.That(CrimsonVeil.Veil.VeilController.PalmOffset, Is.InRange(0.05f, 0.1f), "the middle of the palm (the hand is ~0.1 m to the fingertips)");
+            }
+            finally { Object.DestroyImmediate(go); }
         }
 
         [Test]

@@ -95,6 +95,38 @@ namespace CrimsonVeil.Tests
         }
 
         [Test]
+        public void ShieldMelt_SpinsTheRingOpenAtTheBack()
+        {
+            var from = new Vector2[N];
+            from[0] = Vector2.zero; // the neck
+            var c = VeilFormLibrary.ShieldCenter;
+            for (int i = 1; i < N; i++)
+            {
+                float a = -20f * Mathf.Deg2Rad + (float)(i - 1) / (N - 2) * Mathf.PI * 2f * 0.97f; // starts at the hand, in front
+                from[i] = c + new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * VeilFormLibrary.ShieldRadius;
+            }
+            float spin = VeilTransform.ShieldOpenSpin(from, 1, c);
+            Assert.That(spin, Is.InRange(0f, 360f), "turned on in the ring's own sense");
+            var into = new Vector2[N];
+            VeilTransform.SpinRing(from, into, 1, c, spin);
+            Vector2 d = into[1] - c;
+            Assert.AreEqual(180f, Mathf.Abs(Mathf.Atan2(d.y, d.x) * Mathf.Rad2Deg), 1f, "the ring opens at the hero's back");
+            Assert.AreEqual(from[0], into[0], "the neck stays put");
+            Assert.AreEqual(Vector2.Distance(from[5], c), Vector2.Distance(into[5], c), 1e-4f, "a spin, not a squash");
+        }
+
+        [Test]
+        public void ShieldMelt_UncurlsAllAtOnce_OtherWeaponsNeckFirst()
+        {
+            float shieldGap = VeilTransform.MeltProgress(0.5f, 0f, VeilTransform.MeltSpread(VeilForm.Shield))
+                              - VeilTransform.MeltProgress(0.5f, 1f, VeilTransform.MeltSpread(VeilForm.Shield));
+            float bowGap = VeilTransform.MeltProgress(0.5f, 0f, VeilTransform.MeltSpread(VeilForm.Bow))
+                           - VeilTransform.MeltProgress(0.5f, 1f, VeilTransform.MeltSpread(VeilForm.Bow));
+            Assert.Less(shieldGap, 0.3f, "the ring opens as one spring: no tight coil left at its end");
+            Assert.Greater(bowGap, 0.5f, "a bow melts from the neck");
+        }
+
+        [Test]
         public void NeckBand_StaysUntilTheWeaponHasTakenShape()
         {
             // On the first frame of a shield cast the band vanished and the scarf hung torn off the neck.

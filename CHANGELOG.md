@@ -5,6 +5,26 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.17.2] – 2026-11-15
+Úklid vizuálních dluhů: kopí nahoru, šála u zdi, návrat ze štítu a rukojeť biče.
+
+### Opraveno
+- **Kopí mířené nahoru už nemá přes hlavu vodorovný pruh.** Úsek šály od krku k patě kopí se s mířením neotáčel a jeho poslední kus se natáhl do dlouhé, napůl průhledné čáry. Teď se otáčí spolu se zbraní, plynule od krku, a končí vždy u paty.
+- **Šála u zdi nedělá kudrnatý chuchvalec.** Konec šály opřený o zeď nevytváří víry a kudrlinky, látka se přitiskne a splývá po zdi.
+- **Návrat ze štítu:**
+  - Kruh se nejdřív dotočí, až se otevře za zády, a šála z něj vyteče dozadu. Dřív visela svisle přes přední stranu těla.
+  - Kruh se rozvine naráz jako pružina, ne od krku. Jeho konec tak nezůstane stočený do cívky a nevznikne chuchvalec.
+  - Návrat ze štítu trvá 0,7 s.
+  - Vedená látka se fyzice předává až na čáře vlající šály (u 88 % cesty místo 70 %).
+- **Rukojeť biče je vidět.** Násada je delší (0,26 m) a silnější, s výraznou hlavicí a objímkou.
+
+### Změněno
+- Stránka s animacemi: přenahrané klipy šály, luku, štítu, salta a biče. Staré byly natočené nahrávačem, který kreslil tělo o snímek pozadu.
+
+### Testy
+- Kruh štítu se otevře za zády, krk zůstane na místě a kruh se jen otočí.
+- Štít se rozvine naráz, luk od krku.
+
 ## [0.17.1] – 2026-11-15
 Přirozené pózy pro míření nahoru a dolů.
 

@@ -159,7 +159,9 @@ namespace CrimsonVeil.Veil
         /// <summary>The current weapon came from a cast (it melts back into cloth after the blow).</summary>
         public bool IsCast => castMode;
 
-        Vector2[] shape, fromShape, current, meltFrom, meltPath;
+        Vector2[] shape, fromShape, current, meltFrom, meltPath, meltSpun;
+        VeilForm meltForm;
+        int meltRingStart;
         float morph = 1f;
         float meltT = -1f;
         /// <summary>0..1 how far the veil has morphed into the current weapon's shape.</summary>
@@ -300,6 +302,8 @@ namespace CrimsonVeil.Veil
             {
                 Array.Copy(current, meltFrom, current.Length);
                 meltT = 0f;
+                meltForm = ShapeForm;
+                meltRingStart = Mathf.Clamp(Mathf.CeilToInt(HandFraction * (Simulation.Count - 1)), 1, Simulation.Count - 1);
             }
             Form = form;
             if (form != VeilForm.Flow)
@@ -752,14 +756,27 @@ namespace CrimsonVeil.Veil
         void UpdateMelt(Vector3 a, float dt)
         {
             if (meltT < 0f) return;
-            meltT += dt / VeilTransform.MeltGuideTime;
+            bool shield = meltForm == VeilForm.Shield;
+            meltT += dt / (shield ? VeilTransform.ShieldMeltTime : VeilTransform.MeltGuideTime);
             if (meltT >= 1f) { StopMelt(); return; }
             float s = Mathf.Abs(facingScale) < 0.3f ? Facing : facingScale;
             int n = Simulation.Count;
             float length = Simulation.Settings.length;
             var gt = Simulation.GuideTargets;
-            if (meltPath == null || meltPath.Length != n) meltPath = new Vector2[n];
-            VeilTransform.MeltChain(meltFrom, meltT, length, time, meltPath, Simulation.GuideWeight);
+            if (meltPath == null || meltPath.Length != n) { meltPath = new Vector2[n]; meltSpun = new Vector2[n]; }
+            var from = meltFrom;
+            float chainT = meltT;
+            if (shield)
+            {
+                // The ring first spins on round the body until it opens at the hero's back, then the scarf runs out
+                // of it backwards (unrolled from the front, it hung down across the body).
+                float spin = VeilTransform.ShieldOpenSpin(meltFrom, meltRingStart, VeilFormLibrary.ShieldCenter);
+                VeilTransform.SpinRing(meltFrom, meltSpun, meltRingStart, VeilFormLibrary.ShieldCenter,
+                    spin * Mathf.SmoothStep(0f, 1f, meltT / VeilTransform.ShieldSpinShare));
+                from = meltSpun;
+                chainT = Mathf.Clamp01((meltT - VeilTransform.ShieldSpinShare * 0.7f) / (1f - VeilTransform.ShieldSpinShare * 0.7f));
+            }
+            VeilTransform.MeltChain(from, chainT, length, time, meltPath, Simulation.GuideWeight, VeilTransform.MeltSpread(meltForm));
             for (int i = 1; i < n; i++) gt[i] = a + new Vector3(meltPath[i].x * s, meltPath[i].y, 0f);
         }
 
@@ -861,7 +878,13 @@ namespace CrimsonVeil.Veil
                 rest += weapon ? handDelta * follow : handDelta * (HandFraction > 0f ? f / HandFraction : 1f);
                 if (weapon && armDriven && !whip) rest = VeilWeaponPose.Rotate(rest, grip, forearmTurn);
                 // Aim: the bow follows up/down, the spear turns straight down for a thrust from the air.
-                if (weapon && !whip && Mathf.Abs(aimTilt) > 0.01f) rest = VeilWeaponPose.Rotate(rest, grip, aimTilt);
+                // The band from the neck turns along, more towards the weapon, so it always ends at the weapon's butt:
+                // left behind, its last stretch was pulled into a long half-faded line across the head.
+                if (!whip && Mathf.Abs(aimTilt) > 0.01f)
+                {
+                    float share = weapon ? 1f : Mathf.SmoothStep(0f, 1f, HandFraction > 0f ? f / HandFraction : 1f);
+                    if (share > 0f) rest = VeilWeaponPose.Rotate(rest, grip, aimTilt * share);
+                }
                 // A downward thrust is driven straight under the hero (both hands on the shaft at the belly).
                 if (weapon && ThrustingDown) rest += new Vector2(-grip.x, -0.25f) * Mathf.Clamp01(Mathf.Abs(aimTilt) / 80f);
                 restBuf[i] = rest;

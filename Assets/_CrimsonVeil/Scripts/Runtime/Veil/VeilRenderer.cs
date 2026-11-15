@@ -243,6 +243,10 @@ namespace CrimsonVeil.Veil
             if (speed > 40f) speed = 0f; // teleport
             speedSmoothed = Mathf.Lerp(speedSmoothed, speed, 1f - Mathf.Exp(-3f * dt));
             float unroll = Mathf.Lerp(1f, 0.62f, Mathf.Clamp01(speedSmoothed / 8f));
+            // Against a wall the end hangs down it: no spirals curling round in the pile of cloth (they made a ball of it).
+            float walled = 0f;
+            for (int i = n / 2; i < n; i++) walled = Mathf.Max(walled, sim.WallContact(i));
+            unroll *= 1f - 0.8f * walled;
 
             // Smooth centre line + per-sample hardness.
             for (int seg = 0; seg < n - 1; seg++)
@@ -440,7 +444,7 @@ namespace CrimsonVeil.Veil
                 float turns = Mathf.Lerp(st.curlSign * 0.2f * flicker, LooseCurl(st) * breathe * unroll, looseEnd);
                 // A pointed weapon ends in its point: the core gets no flame tongue curling off the tip.
                 float tongue = main && Pointed(veil.ShapeForm) ? 0f : FlameTongueLength(main) * (1f - coiled);
-                float length = Mathf.Lerp(tongue * flicker, st.curlLength * curlScale, looseEnd) * Mathf.Lerp(0.5f, 1f, reach);
+                float length = Mathf.Lerp(tongue * flicker, st.curlLength * curlScale * (1f - 0.6f * walled), looseEnd) * Mathf.Lerp(0.5f, 1f, reach);
                 lastTan.z = 0f;
                 Vector3 dir = lastTan.sqrMagnitude > 1e-10f ? lastTan.normalized : Vector3.down;
                 // Flames rise: a weapon's tongues bend up and back, away from the direction of the blow.
@@ -602,7 +606,7 @@ namespace CrimsonVeil.Veil
         public const float SwordGripWidth = 0.32f, SwordPommelWidth = 0.6f, SwordGuardWidth = 2.6f;
 
         /// <summary>The whip, in its width: the stock of the handle, the knob at its butt, the collar, the lash.</summary>
-        public const float WhipStockWidth = 0.8f, WhipButtWidth = 1.15f, WhipCollarWidth = 1.05f, WhipLashWidth = 0.62f;
+        public const float WhipStockWidth = 1.3f, WhipButtWidth = 1.9f, WhipCollarWidth = 1.7f, WhipLashWidth = 0.62f; // a stout stock, so the handle reads at play zoom
 
         /// <summary>The spearhead's widest point, in shaft widths.</summary>
         public const float SpearHeadWidth = 3.2f;

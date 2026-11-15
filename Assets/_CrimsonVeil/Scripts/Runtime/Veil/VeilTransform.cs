@@ -69,16 +69,52 @@ namespace CrimsonVeil.Veil
         /// <summary>Seconds the cloth is led from a released weapon's shape back into the streaming scarf.</summary>
         public const float MeltGuideTime = 0.5f;
 
-        /// <summary>Per-node progress of the melt (0..1 overall): the neck lets go first, the tip follows.</summary>
-        public static float MeltProgress(float melt, float f)
+        /// <summary>The shield's melt: the ring spins open at the back first (this share of it), then runs out.</summary>
+        public const float ShieldMeltTime = 0.7f;
+        public const float ShieldSpinShare = 0.4f;
+
+        /// <summary>
+        /// How far (degrees, the ring's own spin sense) the ring must turn on round <paramref name="center"/> for its
+        /// start — where the scarf joins it — to come round to the hero's back (local -x).
+        /// </summary>
+        public static float ShieldOpenSpin(Vector2[] shape, int ringStart, Vector2 center)
         {
-            float x = Mathf.Clamp01(melt) * 1.7f - Mathf.Clamp01(f) * 0.7f;
+            Vector2 d = shape[Mathf.Clamp(ringStart, 0, shape.Length - 1)] - center;
+            float a = Mathf.Atan2(d.y, d.x) * Mathf.Rad2Deg;
+            return Mathf.Repeat(180f - a, 360f); // the ring spins anticlockwise (VeilFormLibrary.ShieldSpin)
+        }
+
+        /// <summary>
+        /// The ring spun on by <paramref name="degrees"/> round <paramref name="center"/>; the band from the neck to it
+        /// turns along more and more towards the ring, the neck stays put.
+        /// </summary>
+        public static void SpinRing(Vector2[] from, Vector2[] into, int ringStart, Vector2 center, float degrees)
+        {
+            float rad = degrees * Mathf.Deg2Rad;
+            for (int i = 0; i < from.Length; i++)
+            {
+                float share = i >= ringStart ? 1f : Mathf.SmoothStep(0f, 1f, (float)i / Mathf.Max(1, ringStart));
+                float r = rad * share, c = Mathf.Cos(r), sn = Mathf.Sin(r);
+                Vector2 d = from[i] - center;
+                into[i] = center + new Vector2(d.x * c - d.y * sn, d.x * sn + d.y * c);
+            }
+        }
+
+        /// <summary>Per-node progress of the melt (0..1 overall): the neck lets go first, the tip follows.</summary>
+        public static float MeltProgress(float melt, float f, float spread = 0.7f)
+        {
+            float x = Mathf.Clamp01(melt) * (1f + spread) - Mathf.Clamp01(f) * spread;
             return Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(x));
         }
 
+        /// <summary>How far the neck leads the tip in a weapon's melt: the shield's long ring uncurls all at once,
+        /// like a spring letting go (melted neck first, its far end stayed a tight coil, a lump).</summary>
+        public static float MeltSpread(VeilForm form) => form == VeilForm.Shield ? 0.12f : 0.7f;
+
         /// <summary>How firmly a melting node is led along its path: fully until it nearly reaches the scarf, then
         /// handed over to the cloth (which is pulled to the same shape), so nothing jumps or bunches up.</summary>
-        public static float MeltGuide(float m) => 1f - Mathf.SmoothStep(0.7f, 1f, m);
+        public static float MeltGuide(float m) => 1f - Mathf.SmoothStep(0.88f, 1f, m); // let go only once on the scarf's
+                                                                                      // line: handed over still curled, it fell into a lump
 
         /// <summary>The streaming scarf's centre line in facing-normalised local space (behind the hero = -x),
         /// as the cloth is pulled to it (see VeilSimulation.RestReach and VeilRestShape).</summary>
@@ -94,11 +130,11 @@ namespace CrimsonVeil.Veil
         /// chain is laid out from the neck. Nothing is squeezed together, so the cloth can't crumple into a lump.
         /// <paramref name="from"/> is the weapon's shape, <paramref name="pts"/> receives the path (local space).
         /// </summary>
-        public static void MeltChain(Vector2[] from, float melt, float length, float time, Vector2[] pts, float[] guide)
+        public static void MeltChain(Vector2[] from, float melt, float length, float time, Vector2[] pts, float[] guide, float spread = 0.7f)
         {
             int n = from.Length;
             Vector2 r0 = ClothRestPoint(0f, length, time);
-            float m0 = MeltProgress(melt, 0f);
+            float m0 = MeltProgress(melt, 0f, spread);
             pts[0] = Vector2.Lerp(from[0], r0, m0);
             guide[0] = 0f;
             float prevF = 0f, prevR = 0f, offset = 0f;
@@ -117,11 +153,11 @@ namespace CrimsonVeil.Veil
                 ar = i == 0 ? ar : prevR + Mathf.DeltaAngle(prevR, ar);
                 if (i == 0) offset = 360f * Mathf.Round((af - ar) / 360f); // start the scarf's angles nearest the weapon's
                 prevF = af; prevR = ar;
-                float m = MeltProgress(melt, 0.5f * (fa + fb));
+                float m = MeltProgress(melt, 0.5f * (fa + fb), spread);
                 float ang = Mathf.Lerp(af, ar + offset, m) * Mathf.Deg2Rad;
                 float len = Mathf.Lerp(df.magnitude, dr.magnitude, m);
                 pts[i + 1] = pts[i] + new Vector2(Mathf.Cos(ang), Mathf.Sin(ang)) * len;
-                guide[i + 1] = MeltGuide(MeltProgress(melt, fb));
+                guide[i + 1] = MeltGuide(MeltProgress(melt, fb, spread));
             }
         }
 

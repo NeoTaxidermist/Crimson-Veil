@@ -201,7 +201,7 @@ namespace CrimsonVeil.Veil
         }
 
         /// <summary>The whip's handle: its butt this far (m) behind the fist, its stock ending this far in front of it.</summary>
-        public const float WhipPommel = 0.07f, WhipHandle = 0.17f;
+        public const float WhipPommel = 0.07f, WhipHandle = 0.26f; // a real whip stock is a hand and a half long
 
         static float[] whipHandle;
 

@@ -66,11 +66,25 @@ namespace CrimsonVeil.Tests
             var level = HeroAttackChoreography.Apply(basePose, VeilForm.Sword, 0.5f, 0f, 0f);
             var up = HeroAttackChoreography.Apply(basePose, VeilForm.Sword, 0.5f, 0f, 90f);
             var down = HeroAttackChoreography.Apply(basePose, VeilForm.Sword, 0.5f, 0f, -90f);
-            Assert.Greater(up.armR, level.armR + 60f, "aimed up: the cut goes up");
-            Assert.Less(down.armR, level.armR - 60f, "aimed down: the cut goes under");
-            var bow = HeroAttackChoreography.Apply(basePose, VeilForm.Bow, 0.5f, 0f, 0f);
-            var bowUp = HeroAttackChoreography.Apply(basePose, VeilForm.Bow, 0.5f, 0f, 60f);
-            Assert.AreEqual(bow.armR, bowUp.armR, 1e-3f, "the bow turns itself, the arm stays level");
+            Assert.Greater(up.armR, level.armR + 60f, "aimed up: a rising cut ends over the head");
+            Assert.Less(up.chest, level.chest, "the body leans back into a rising cut");
+            Assert.Less(down.armR + down.elbowR, 25f, "aimed down: the point goes under the feet");
+            Assert.Greater(down.kneeL, level.kneeL + 20f, "the knees are drawn up for a strike under the feet");
+        }
+
+        [Test]
+        public void AnArcherAimingUp_RaisesBothArmsAndLeansBack()
+        {
+            var basePose = new HeroPose();
+            var level = HeroAttackChoreography.Apply(basePose, VeilForm.Bow, 0.3f, 0f, 0f);
+            var up = HeroAttackChoreography.Apply(basePose, VeilForm.Bow, 0.3f, 0f, 90f);
+            var down = HeroAttackChoreography.Apply(basePose, VeilForm.Bow, 0.3f, 0f, -45f);
+            Assert.Greater(up.armR, level.armR + 50f, "the bow arm rises along the arrow");
+            Assert.Greater(up.armL, level.armL + 50f, "and the drawing arm with it");
+            Assert.Less(up.spine + up.chest, level.spine + level.chest - 10f, "the body leans back");
+            Assert.Greater(up.head, level.head, "eyes up");
+            Assert.Less(down.armR, level.armR, "aiming down the arms go down");
+            Assert.Greater(down.spine + down.chest, level.spine + level.chest, "and the body leans over");
         }
 
         [Test]

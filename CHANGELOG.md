@@ -5,6 +5,23 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.17.1] – 2026-11-15
+Přirozené pózy pro míření nahoru a dolů.
+
+### Opraveno
+- **Mířené údery mají vlastní pózy.** Dřív se jen pootočilo rameno nebo samotná zbraň a zbytek těla zůstal stejný. Například luk mířený nahoru držel hrdina vodorovně u pasu. Teď:
+  - **Meč nahoru:** sek zespodu. Čepel jde od boku nahoru před tělem a skončí svisle nad hlavou. Hrdina se vytáhne na špičky a zakloní.
+  - **Meč dolů ve vzduchu:** meč zvednutý, kolena skrčená, pak úder s hrotem kolmo pod nohy. Zápěstí se při úderu stočí (`SwordDownWrist`).
+  - **Kopí nahoru / dolů:** přitažení k hrudi a bodnutí nad hlavu. Ve vzduchu zvednutí a vražení pod nohy.
+  - **Bič nahoru / dolů:** ruka dole za bokem a šleh vzhůru. Dolů nápřah přes rameno a šleh nízko před sebe.
+  - **Luk:** obě paže se zvednou podél šípu a tělo se zakloní (dolů předkloní), pohled jde se směrem. Šíp vylétá ze skutečné ruky s lukem.
+  - Šikmé směry plynule míchají pózu dopředu a pózu nahoru nebo dolů.
+- Meč se drží s čepelí asi 64° nad osou předloktí. Proto sek nahoru končí s paží šikmo vpřed nahoře, ne svisle, kdy by čepel ležela přes hlavu dozadu.
+
+### Testy
+- Sek nahoru končí nad hlavou se záklonem. Sek dolů míří hrotem pod nohy se skrčenými koleny.
+- Lukostřelec mířící nahoru zvedá obě paže, zaklání se a dívá se nahoru. Mířící dolů se předkloní.
+
 ## [0.17.0] – 2026-11-15
 Míření v osmi směrech bez myši, s přichycením na cíl.
 

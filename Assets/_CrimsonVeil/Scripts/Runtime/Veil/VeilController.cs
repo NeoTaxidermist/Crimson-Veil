@@ -371,10 +371,17 @@ namespace CrimsonVeil.Veil
             bool armDriven = hand != null && hand.parent != null;
             bool turnsItself = ShapeForm == VeilForm.Bow || ShapeForm == VeilForm.Spear || !armDriven;
             aimTiltTarget = ThrustingDown ? VeilCasting.DownThrustTilt : turnsItself ? AttackAim : 0f;
+            // A sword driven down turns the wrist too, so the point goes straight down (the blade otherwise sits
+            // well up off the forearm, as it is gripped); it turns over the wind-up.
+            if (armDriven && ShapeForm == VeilForm.Sword && AttackAim < 0f)
+                aimTiltTarget = SwordDownWrist * Mathf.Clamp01(-AttackAim / 90f);
             // (the spear swings round onto its line during the draw-back instead of jumping there)
             if (ThrustingDown || (turnsItself && ShapeForm != VeilForm.Spear)) aimTilt = aimTiltTarget;
             Attacked?.Invoke(Form);
         }
+
+        /// <summary>Wrist turn (degrees) of a sword driven straight down: the point goes under the feet.</summary>
+        public const float SwordDownWrist = -40f;
 
         /// <summary>Direction (degrees from the facing, +up) the current blow is aimed in, aim assist included.</summary>
         public float AttackAim { get; private set; }
@@ -962,10 +969,16 @@ namespace CrimsonVeil.Veil
                 into[i] = new Vector2((p[i].x - a.x) / s, p[i].y - a.y);
         }
 
-        static Vector3 ArrowOrigin(Vector3 a, int facing)
+        /// <summary>Where an arrow leaves: the bow hand (raised with the aim), or the canonical grip without a rig.</summary>
+        Vector3 ArrowOrigin(Vector3 a, int facing)
         {
-            var hand = VeilFormLibrary.Hand;
-            return a + new Vector3((hand.x + 0.35f) * facing, hand.y, 0f);
+            if (hand != null)
+            {
+                Vector3 p = PalmPoint(hand);
+                return new Vector3(p.x, p.y, a.z);
+            }
+            var grip = VeilFormLibrary.Hand;
+            return a + new Vector3((grip.x + 0.35f) * facing, grip.y, 0f);
         }
 
         void FireArrow(Vector3 a, int facing)

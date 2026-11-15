@@ -79,20 +79,5 @@ namespace CrimsonVeil.Veil
             }
             return Mathf.Clamp(bestAngle, -limit, limit);
         }
-
-        /// <summary>
-        /// How much of the aim the sword arm takes (added to the shoulder through the whole blow, so the swing and
-        /// the weapon in the hand turn together). The bow turns the bow itself instead (the arm stays level).
-        /// </summary>
-        public static float ArmShare(VeilForm form)
-        {
-            switch (form)
-            {
-                case VeilForm.Sword: return 0.85f;
-                case VeilForm.Spear: return 1f;
-                case VeilForm.Whip: return 0.8f;
-                default: return 0f;
-            }
-        }
     }
 }

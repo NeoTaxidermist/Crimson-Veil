@@ -92,6 +92,124 @@ namespace CrimsonVeil.Player
             At(Hold, 1f),
         };
 
+        // ---- Aimed blows: their own poses, not the level blow turned round. A diagonal blends the level blow with
+        // these. (Keys: t, armR, elbowR, armL, elbowL, spine, chest, head, thighL, kneeL, thighR, kneeR; the spine and
+        // chest lean forward with +, the head looks up with +.)
+
+        // A rising cut against things above: the blade swept low past the hip, then up in front of the body to
+        // over the head; the body rises and leans back into it, eyes up.
+        static readonly Key[] SwordUp =
+        {
+            At(Hold, 0f),
+            K(0.24f, -25f, 35f, 25f, 95f, 8f, 10f, -2f, 18f, 35f, -10f, 35f),   // blade down past the hip, a little crouch
+            // (the blade sits ~64° up off the forearm, as a sword is gripped: a forearm raised forward-up to ~120°
+            // holds it straight up; an arm straight up would lay it back over the head)
+            K(0.48f, 112f, 6f, -10f, 75f, -8f, -12f, 16f, 22f, 15f, -12f, 8f),   // rising cut, up on the toes, lean back
+            K(0.66f, 118f, 2f, -12f, 70f, -10f, -14f, 18f, 20f, 15f, -10f, 10f),  // follow-through: the blade straight up
+            K(0.82f, 70f, 25f, -5f, 45f, 0f, -2f, 4f, 10f, 15f, -5f, 12f),
+            At(Hold, 1f),
+        };
+
+        // In the air, under the feet: the sword raised, the knees drawn up, then driven straight down past the
+        // tucked legs with the point down; held there for the bounce.
+        static readonly Key[] SwordDown =
+        {
+            At(Hold, 0f),
+            K(0.24f, 125f, 45f, 35f, 95f, -6f, -6f, 4f, 60f, 85f, 45f, 85f),    // raised, knees drawn up
+            K(0.46f, 12f, 2f, -20f, 70f, 22f, 18f, -16f, 65f, 95f, 50f, 95f),   // driven down, point under the feet
+            K(0.70f, 6f, 2f, -20f, 70f, 20f, 16f, -14f, 60f, 90f, 45f, 90f),    // held for the bounce
+            K(0.86f, 30f, 15f, -5f, 40f, 8f, 6f, -4f, 25f, 40f, 10f, 30f),
+            At(Hold, 1f),
+        };
+
+        // Thrust overhead: drawn down to the chest, then driven straight up with the arm, the body stretched up.
+        static readonly Key[] SpearUp =
+        {
+            At(Hold, 0f),
+            K(0.30f, -30f, 110f, 40f, 60f, 4f, 6f, -2f, 12f, 30f, -10f, 30f),   // drawn down to the chest, crouched
+            K(0.45f, 172f, 0f, -30f, 20f, -10f, -10f, 16f, 15f, 10f, -12f, 6f),  // driven straight up, stretched
+            K(0.65f, 168f, 5f, -25f, 20f, -8f, -8f, 14f, 15f, 10f, -10f, 8f),   // hold the reach
+            At(Hold, 1f),
+        };
+
+        // Thrust under the feet from the air: lifted to the chest, then rammed straight down, knees drawn up.
+        static readonly Key[] SpearDown =
+        {
+            At(Hold, 0f),
+            K(0.30f, 140f, 80f, 40f, 90f, -4f, -4f, 4f, 55f, 80f, 40f, 80f),    // lifted high, knees drawn up
+            K(0.45f, 8f, 0f, -15f, 60f, 20f, 16f, -16f, 60f, 90f, 45f, 90f),    // rammed down
+            K(0.65f, 6f, 0f, -15f, 60f, 18f, 14f, -14f, 55f, 85f, 40f, 85f),
+            At(Hold, 1f),
+        };
+
+        // Lashing upwards: the hand drawn back low behind the hip, then driven up and stopped over the head.
+        static readonly Key[] WhipUp =
+        {
+            At(Hold, 0f),
+            K(0.38f, -25f, 60f, 25f, 30f, 8f, 10f, -4f, 12f, 30f, -8f, 30f),    // hand back low behind the hip
+            K(0.50f, 170f, 6f, -20f, 20f, -10f, -12f, 16f, 20f, 15f, -12f, 10f), // driven up, stopped over the head
+            K(0.70f, 165f, 8f, -20f, 20f, -8f, -10f, 14f, 20f, 15f, -12f, 10f),  // hold while it cracks
+            K(0.86f, 90f, 18f, -10f, 20f, 0f, -2f, 4f, 12f, 20f, -6f, 15f),
+            At(Hold, 1f),
+        };
+
+        // Lashing downwards: the usual wind-up over the shoulder, then driven down and stopped low in front.
+        static readonly Key[] WhipDown =
+        {
+            At(Hold, 0f),
+            K(0.38f, 165f, 70f, 25f, 30f, -14f, -12f, 8f, 6f, 15f, -6f, 20f),
+            K(0.50f, 25f, 6f, -25f, 20f, 24f, 18f, -16f, 35f, 45f, -20f, 20f),  // driven down, stopped low in front
+            K(0.70f, 20f, 8f, -25f, 20f, 22f, 16f, -14f, 35f, 45f, -20f, 20f),
+            K(0.86f, 30f, 18f, -10f, 20f, 8f, 6f, -4f, 18f, 25f, -10f, 15f),
+            At(Hold, 1f),
+        };
+
+        static Key[] Aimed(VeilForm form, bool up)
+        {
+            switch (form)
+            {
+                case VeilForm.Sword: return up ? SwordUp : SwordDown;
+                case VeilForm.Spear: return up ? SpearUp : SpearDown;
+                case VeilForm.Whip: return up ? WhipUp : WhipDown;
+                default: return null;
+            }
+        }
+
+        /// <summary>
+        /// The blow aimed <paramref name="aim"/> degrees off level (+up): straight up / down plays that direction's
+        /// own blow, a diagonal is half way between it and the level one. An archer doesn't hold the bow at the
+        /// waist and point it up: both arms rise along the arrow and the body leans back (forward, aiming down).
+        /// </summary>
+        public static Key Sample(VeilForm form, float t, float aim)
+        {
+            var k = Sample(form, t);
+            float a = Mathf.Clamp(aim / 90f, -1f, 1f);
+            if (Mathf.Abs(a) < 1e-3f) return k;
+            if (form == VeilForm.Bow)
+            {
+                // the bow comes up into the aim as it is raised to the string
+                float raise = Mathf.SmoothStep(0f, 1f, t / 0.12f) * (1f - Mathf.SmoothStep(0f, 1f, (t - 0.7f) / 0.3f));
+                float lean = 0.25f * aim * raise;   // the body takes a quarter of it (leaning back / forward)...
+                float arms = aim * raise - lean;    // ...the shoulders the rest (they ride on the leaning chest)
+                k.armR += arms;
+                k.armL += arms;
+                k.spine -= lean * 0.45f;
+                k.chest -= lean * 0.55f;
+                k.head += aim * raise * 0.3f;
+                return k;
+            }
+            var keys = Aimed(form, a > 0f);
+            if (keys == null) return k;
+            return Blend(k, SampleKeys(form, keys, t), Mathf.Abs(a));
+        }
+
+        static Key Blend(Key a, Key b, float u) => new Key(a.t,
+            Mathf.Lerp(a.armR, b.armR, u), Mathf.Lerp(a.elbowR, b.elbowR, u),
+            Mathf.Lerp(a.armL, b.armL, u), Mathf.Lerp(a.elbowL, b.elbowL, u),
+            Mathf.Lerp(a.spine, b.spine, u), Mathf.Lerp(a.chest, b.chest, u), Mathf.Lerp(a.head, b.head, u),
+            Mathf.Lerp(a.thighL, b.thighL, u), Mathf.Lerp(a.kneeL, b.kneeL, u),
+            Mathf.Lerp(a.thighR, b.thighR, u), Mathf.Lerp(a.kneeR, b.kneeR, u));
+
         public static Key[] For(VeilForm form)
         {
             switch (form)
@@ -110,6 +228,11 @@ namespace CrimsonVeil.Player
         {
             var keys = For(form);
             if (keys == null) return Hold;
+            return SampleKeys(form, keys, t);
+        }
+
+        static Key SampleKeys(VeilForm form, Key[] keys, float t)
+        {
             t = Mathf.Clamp01(t);
             int last = keys.Length - 1;
             for (int i = 0; i < last; i++)
@@ -141,14 +264,8 @@ namespace CrimsonVeil.Player
         public static HeroPose Apply(HeroPose pose, VeilForm form, float t, float run, float aim = 0f)
         {
             if (t < 0f || For(form) == null) return pose;
-            var k = Sample(form, t);
+            var k = Sample(form, t, aim); // aimed blows have their own poses (see Sample(form, t, aim))
             float w = 1f - Mathf.SmoothStep(0f, 1f, (t - 0.85f) / 0.15f); // hand back to locomotion at the end
-            // Aimed blows: the whole swing turns with the shoulder (the weapon follows the forearm), the chest and
-            // the gaze go with it. It comes in over the wind-up, so the hold pose doesn't jump.
-            float aimed = aim * VeilAim.ArmShare(form) * Mathf.SmoothStep(0f, 1f, t / 0.18f);
-            k.armR = Mathf.Clamp(k.armR + aimed, -100f, 215f);
-            k.chest += aimed * 0.12f;
-            k.head += aimed * 0.25f;
             float legs = w * (1f - Mathf.Clamp01(run) * 0.75f);
             pose.armR = Mathf.Lerp(pose.armR, k.armR, w);
             pose.elbowR = Mathf.Lerp(pose.elbowR, k.elbowR, w);

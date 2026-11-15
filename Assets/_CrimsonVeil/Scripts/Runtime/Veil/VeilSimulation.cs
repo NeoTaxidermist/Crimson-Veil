@@ -109,6 +109,9 @@ namespace CrimsonVeil.Veil
         /// </summary>
         public float[] NodeHardness { get; private set; }
         public bool UseNodeHardness { get; set; }
+        /// <summary>Optional path the cloth is led along (world space) and how firmly (0..1) per node: a weapon melting back.</summary>
+        public Vector3[] GuideTargets { get; private set; }
+        public float[] GuideWeight { get; private set; }
         public Vector2 Wind { get; set; }
 
         /// <summary>0 = cloth behind the hero, 1 = weapon in front of the hero, by node hardness.</summary>
@@ -213,6 +216,8 @@ namespace CrimsonVeil.Veil
             Targets = new Vector3[Count];
             TargetRest = new float[Count - 1];
             NodeHardness = new float[Count];
+            GuideTargets = new Vector3[Count];
+            GuideWeight = new float[Count];
             FlowRestLength = Settings.length / (Count - 1);
             Reset(anchor);
         }
@@ -443,6 +448,19 @@ namespace CrimsonVeil.Veil
                 Vector3 want = Targets[i] + targetOffset;
                 want.z = Positions[i].z;
                 Vector3 shift = (want - Positions[i]) * rigid;
+                Positions[i] += shift;
+                previous[i] += shift;
+            }
+
+            // 6c) A weapon melting back into cloth is led along a path (VeilTransform.MeltProgress) instead of
+            // collapsing on its own; the previous position moves along, so it neither springs nor bunches up.
+            for (int i = 1; i < Count; i++)
+            {
+                float guide = GuideWeight[i];
+                if (guide <= 0f) continue;
+                Vector3 want = GuideTargets[i];
+                want.z = Positions[i].z;
+                Vector3 shift = (want - Positions[i]) * guide;
                 Positions[i] += shift;
                 previous[i] += shift;
             }

@@ -157,8 +157,11 @@ namespace CrimsonVeil.Veil
         /// <summary>The current weapon came from a cast (it melts back into cloth after the blow).</summary>
         public bool IsCast => castMode;
 
-        Vector2[] shape, fromShape, current;
+        Vector2[] shape, fromShape, current, meltFrom, meltPath;
         float morph = 1f;
+        float meltT = -1f;
+        /// <summary>True while a released weapon is being led back into the streaming scarf.</summary>
+        public bool Melting => meltT >= 0f;
         float progressVel;
         float facingScale = 1f;
         float attackTime = -1f;
@@ -178,6 +181,7 @@ namespace CrimsonVeil.Veil
             shape = new Vector2[Simulation.Count];
             fromShape = new Vector2[Simulation.Count];
             current = new Vector2[Simulation.Count];
+            meltFrom = new Vector2[Simulation.Count];
             facingScale = Facing;
             foreach (var f in startUnlocked) unlocked.Add(f);
             if (player != null)
@@ -279,9 +283,16 @@ namespace CrimsonVeil.Veil
             Drawing = false;
             aimTiltTarget = 0f;
             if (form == VeilForm.Flow && TransformProgress > 0.05f) releaseTime = 0f; // start exhaling
+            // Back to cloth: the weapon's shape is led, neck first, into the streaming scarf.
+            if (form == VeilForm.Flow && TransformProgress > 0.05f && ShapeForm != VeilForm.Flow)
+            {
+                Array.Copy(current, meltFrom, current.Length);
+                meltT = 0f;
+            }
             Form = form;
             if (form != VeilForm.Flow)
             {
+                StopMelt();
                 // Morph from what the veil looks like right now: the previous weapon, or the loose cloth.
                 morphFromCloth = !(TransformProgress > 0.05f && ShapeForm != VeilForm.Flow);
                 if (!morphFromCloth) Array.Copy(current, fromShape, current.Length);
@@ -419,7 +430,7 @@ namespace CrimsonVeil.Veil
             // A cast snaps into shape (the transformation is the blow's wind-up) and melts back into cloth quickly.
             float tTime = Form == VeilForm.Flow ? VeilCasting.MeltTime
                 : castMode ? VeilCasting.CastTransformTime : transformTime;
-            float mTime = castMode ? VeilCasting.CastMorphTime : morphTime;
+            float mTime = VeilTransform.FormMorphTime(ShapeForm, castMode ? VeilCasting.CastMorphTime : morphTime);
             TransformProgress = Mathf.SmoothDamp(TransformProgress, goal, ref progressVel, tTime * 0.4f, Mathf.Infinity, dt);
             if (Mathf.Abs(TransformProgress - goal) < 0.002f) { TransformProgress = goal; progressVel = 0f; }
             Hardness = VeilFormLibrary.Hardness(ShapeForm) * TransformProgress;
@@ -456,6 +467,7 @@ namespace CrimsonVeil.Veil
 
             UpdateNodeHardness();
             if (TransformProgress > 0f && ShapeForm != VeilForm.Flow) UpdateTargets(a, dt);
+            UpdateMelt(a, dt);
             if (attackTime < 0f) { AttackProgress = -1f; CurrentSwing = 0f; }
 
             Simulation.Hardness = Hardness;
@@ -624,6 +636,28 @@ namespace CrimsonVeil.Veil
             }
         }
 
+        void StopMelt()
+        {
+            meltT = -1f;
+            Array.Clear(Simulation.GuideWeight, 0, Simulation.GuideWeight.Length);
+        }
+
+        /// <summary>Leads a released weapon back into the scarf: each node travels from where it was in the weapon
+        /// to its place on the streaming scarf's centre line, neck first, and is handed to the cloth on arrival.</summary>
+        void UpdateMelt(Vector3 a, float dt)
+        {
+            if (meltT < 0f) return;
+            meltT += dt / VeilTransform.MeltGuideTime;
+            if (meltT >= 1f) { StopMelt(); return; }
+            float s = Mathf.Abs(facingScale) < 0.3f ? Facing : facingScale;
+            int n = Simulation.Count;
+            float length = Simulation.Settings.length;
+            var gt = Simulation.GuideTargets;
+            if (meltPath == null || meltPath.Length != n) meltPath = new Vector2[n];
+            VeilTransform.MeltChain(meltFrom, meltT, length, time, meltPath, Simulation.GuideWeight);
+            for (int i = 1; i < n; i++) gt[i] = a + new Vector3(meltPath[i].x * s, meltPath[i].y, 0f);
+        }
+
         void UpdateTargets(Vector3 a, float dt)
         {
             float t = -1f;
@@ -777,6 +811,11 @@ namespace CrimsonVeil.Veil
                     restBuf[i] = Vector2.Lerp(restBuf[i], draw, (1f - Mathf.Abs(2f * u - 1f)) * pull);
                 }
             }
+
+            // The shield is thrown round the body from the hand like a loop, not conjured whole.
+            if (ShapeForm == VeilForm.Shield && morph < 1f)
+                VeilTransform.SweepRing(restBuf, Mathf.Clamp(Mathf.CeilToInt(HandFraction * (n - 1)), 0, n - 1),
+                    VeilFormLibrary.ShieldCenter, grip, Mathf.SmoothStep(0f, 1f, morph));
 
             for (int i = 0; i < n; i++)
             {

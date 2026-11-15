@@ -1,0 +1,105 @@
+using CrimsonVeil.Veil;
+using NUnit.Framework;
+using UnityEngine;
+
+namespace CrimsonVeil.Tests
+{
+    /// <summary>The transformations between the scarf and the big weapons (shield, bow) are continuous.</summary>
+    public class VeilMeltTests
+    {
+        const int N = 40;
+        const float Length = 3.2f;
+
+        static Vector2[] Ring()
+        {
+            var p = new Vector2[N];
+            for (int i = 0; i < N; i++)
+            {
+                float a = (float)i / (N - 1) * Mathf.PI * 2f * 0.97f;
+                p[i] = VeilFormLibrary.ShieldCenter + new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * VeilFormLibrary.ShieldRadius;
+            }
+            return p;
+        }
+
+        [Test]
+        public void MeltChain_StartsAtTheWeaponAndEndsOnTheScarf()
+        {
+            var from = Ring();
+            var pts = new Vector2[N];
+            var guide = new float[N];
+            VeilTransform.MeltChain(from, 0f, Length, 0f, pts, guide);
+            for (int i = 0; i < N; i++) Assert.Less(Vector2.Distance(pts[i] - pts[0], from[i] - from[0]), 1e-3f, "starts as the weapon");
+            VeilTransform.MeltChain(from, 1f, Length, 0f, pts, guide);
+            for (int i = 0; i < N; i++)
+                Assert.Less(Vector2.Distance(pts[i], VeilTransform.ClothRestPoint((float)i / (N - 1), Length, 0f)), 1e-3f, "ends on the scarf");
+            for (int i = 1; i < N; i++) Assert.AreEqual(0f, guide[i], 1e-4f, "handed over to the cloth at the end");
+        }
+
+        [Test]
+        public void MeltChain_NeverSqueezesTheCloth()
+        {
+            // The crumpled lump came from nodes travelling in straight lines: segments shrank to nothing.
+            var from = Ring();
+            var pts = new Vector2[N];
+            var guide = new float[N];
+            float minCloth = float.MaxValue;
+            for (int i = 0; i < N - 1; i++)
+                minCloth = Mathf.Min(minCloth, Vector2.Distance(VeilTransform.ClothRestPoint((float)i / (N - 1), Length, 0f), VeilTransform.ClothRestPoint((float)(i + 1) / (N - 1), Length, 0f)));
+            for (int k = 0; k <= 20; k++)
+            {
+                VeilTransform.MeltChain(from, k / 20f, Length, 0f, pts, guide);
+                for (int i = 0; i < N - 1; i++)
+                    Assert.GreaterOrEqual(Vector2.Distance(pts[i], pts[i + 1]), minCloth * 0.99f, $"segment {i} at melt {k / 20f}");
+            }
+        }
+
+        [Test]
+        public void MeltChain_MovesSmoothly()
+        {
+            var from = Ring();
+            var a = new Vector2[N]; var b = new Vector2[N];
+            var g = new float[N];
+            for (int k = 0; k < 50; k++)
+            {
+                VeilTransform.MeltChain(from, k / 50f, Length, 0f, a, g);
+                VeilTransform.MeltChain(from, (k + 1) / 50f, Length, 0f, b, g);
+                for (int i = 0; i < N; i++) Assert.Less(Vector2.Distance(a[i], b[i]), 0.6f, $"node {i} jumps at melt {k / 50f}");
+            }
+        }
+
+        [Test]
+        public void MeltProgress_NeckLetsGoFirst()
+        {
+            Assert.Greater(VeilTransform.MeltProgress(0.4f, 0f), VeilTransform.MeltProgress(0.4f, 1f));
+            Assert.AreEqual(1f, VeilTransform.MeltProgress(1f, 1f), 1e-4f);
+            Assert.AreEqual(0f, VeilTransform.MeltProgress(0f, 0f), 1e-4f);
+        }
+
+        [Test]
+        public void ShieldRing_UnfurlsFromTheHand()
+        {
+            var ring = Ring();
+            var grip = VeilFormLibrary.Hand;
+            var p = (Vector2[])ring.Clone();
+            VeilTransform.SweepRing(p, 0, VeilFormLibrary.ShieldCenter, grip, 0f);
+            for (int i = 0; i < N; i++) Assert.Less(Vector2.Distance(p[i], grip), 1e-3f, "gathered at the palm");
+            p = (Vector2[])ring.Clone();
+            VeilTransform.SweepRing(p, 0, VeilFormLibrary.ShieldCenter, grip, 0.5f);
+            float reach = 0f;
+            Vector2 c = VeilFormLibrary.ShieldCenter;
+            for (int i = 1; i < N; i++) reach += Mathf.Abs(Vector2.SignedAngle(p[i - 1] - c, p[i] - c));
+            Assert.AreEqual(0.97f * 360f * 0.5f, reach, 10f, "half way round at half way");
+            p = (Vector2[])ring.Clone();
+            VeilTransform.SweepRing(p, 0, VeilFormLibrary.ShieldCenter, grip, 1f);
+            for (int i = 0; i < N; i++) Assert.AreEqual(ring[i], p[i], "closed ring at the end");
+        }
+
+        [Test]
+        public void BigShapes_TakeAFewFramesToForm()
+        {
+            Assert.GreaterOrEqual(VeilTransform.FormMorphTime(VeilForm.Shield, VeilCasting.CastMorphTime), 0.3f);
+            Assert.GreaterOrEqual(VeilTransform.FormMorphTime(VeilForm.Bow, VeilCasting.CastMorphTime), 0.24f);
+            Assert.AreEqual(VeilCasting.CastMorphTime, VeilTransform.FormMorphTime(VeilForm.Sword, VeilCasting.CastMorphTime));
+        }
+    }
+}

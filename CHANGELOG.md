@@ -5,6 +5,26 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.16.18] – 2026-11-15
+Plynulé přechody mezi šálou, štítem a lukem.
+
+### Opraveno
+- **Návrat zbraně do šály už se nezmuchlá do chuchvalce.**
+  - Dřív šála po puštění štítu či luku na několik snímků zkolabovala do pomačkaného klubka za tělem a teprve pak naskočila do vlající podoby.
+  - Nově se zbraň odvine jako řetěz (`VeilTransform.MeltChain`): každý úsek se otočí ze směru ve zbrani do směru ve vlající šále, od krku ke špičce, a délku mění plynule. Nic se nestlačí.
+  - Látka je po dobu 0,5 s vedena po této dráze (`VeilSimulation.GuideTargets/GuideWeight`) a na konci plynule předána fyzice šály.
+- **Štít se rozvine z ruky.** Dřív stál celý kruh hotový za tři snímky. Teď se z dlaně rozvine kolem těla jako hozená smyčka (`VeilTransform.SweepRing`).
+- **Velké tvary mají na vznik o pár snímků víc.** Štít 0,3 s, luk 0,24 s (`FormMorphTime`). Tvrdnutí a s ním herní načasování (parry, výstřel) zůstává beze změny.
+
+### Testy
+- `VeilMeltTests`:
+  - odvíjení začíná ve tvaru zbraně a končí na šále;
+  - nikdy nestlačí látku;
+  - nikde neskočí;
+  - krk se pouští první;
+  - štít se rozvíjí z dlaně;
+  - časy vzniku.
+
 ## [0.16.17] – 2026-11-15
 Meč sedí v pěsti po celé seknutí a bič má rukojeť.
 

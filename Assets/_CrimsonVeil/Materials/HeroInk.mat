@@ -37,19 +37,20 @@ Material:
     - _EdgeLight: 0
     - _FootHeight: 2
     - _FootShade: 0
+    - _FormLift: 0.03
     - _FormShade: 0
     - _GrainScale: 0.6
     - _GrainStrength: 0.15
     - _MistStrength: 0.12
     - _PinTop: 0
     - _Relief: 0
-    - _RimLight: 0
-    - _RimWidth: 3
+    - _RimLight: 0.06
+    - _RimWidth: 4
     - _VertexTint: 0
     - _Wind: 0
     - _WindWeight: 1
     m_Colors:
     - _BaseColor: {r: 0.012, g: 0.012, b: 0.014, a: 1}
-    - _RimColor: {r: 0.62, g: 0.62, b: 0.65999997, a: 1}
+    - _RimColor: {r: 0.5, g: 0.52, b: 0.56, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

@@ -14,6 +14,7 @@ Shader "CrimsonVeil/Silhouette"
         _CrackScale ("Crack Scale", Float) = 1.2
         _EdgeLight ("Top Edge Light", Range(0, 1)) = 0.08
         _FormShade ("Form Shading (moonlight)", Range(0, 1)) = 0
+        _FormLift ("Moonlit Form (light added on near-black ink)", Range(0, 0.3)) = 0
         _Relief ("Stone Relief (moonlit tops, shaded sides)", Range(0, 1.5)) = 0
         _VertexTint ("Vertex Tone (stones / mortar)", Range(0, 1)) = 0
         _RimLight ("Rim Light", Range(0, 1)) = 0
@@ -49,6 +50,7 @@ Shader "CrimsonVeil/Silhouette"
             float _CrackScale;
             float _EdgeLight;
             float _FormShade;
+            float _FormLift;
             float _Relief;
             float _VertexTint;
             float _RimLight;
@@ -153,6 +155,16 @@ Shader "CrimsonVeil/Silhouette"
                     float3 moon = normalize(float3(0.35, 0.85, -0.4));
                     float lit = saturate(dot(n, moon) * 0.5 + 0.5);
                     col *= lerp(1.0, lerp(0.55, 1.9, lit), _FormShade);
+                }
+                // The hero: still ink-black, but the moon catches the planes turned up towards it (shoulders, the
+                // top of the head and arms, the folds of the tunic) - a few percent of cool grey, added rather than
+                // multiplied (on near-black a multiply changes nothing), so the body reads as a 3D form.
+                if (_FormLift > 0.0001)
+                {
+                    float3 moon = normalize(float3(0.35, 0.85, -0.4));
+                    float lit = saturate(dot(n, moon));
+                    float wrap = saturate(dot(n, moon) * 0.5 + 0.5);
+                    col += _FormLift * (lit * lit * 0.8 + wrap * wrap * 0.2) * float3(0.82, 0.85, 0.95);
                 }
                 // Environment relief: faces towards the camera keep the layer's flat value; stone tops, ledges
                 // and the upper sides of carved blocks catch the moon, undersides and left sides fall into shade,

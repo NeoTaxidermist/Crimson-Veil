@@ -72,7 +72,7 @@ namespace CrimsonVeil.EditorTools
                 banner = Tinted(Wind(Sil("BannerCrimson", sil, new Color(0.66f, 0.015f, 0.03f), 0.3f, 0.6f), 1.6f, true)),
                 crimson = Sil("RuinCrimson", sil, new Color(0.7f, 0.02f, 0.035f), 0.25f, 0.6f),
                 leaf = Clip(Wind(Sil("LeafCrimson", sil, new Color(0.78f, 0.02f, 0.035f), 0.2f, 0.7f), 0.6f, false), maple),
-                hero = Sil("HeroInk", sil, new Color(0.012f, 0.012f, 0.014f), 0.12f, 0.15f),
+                hero = HeroLook(Sil("HeroInk", sil, new Color(0.012f, 0.012f, 0.014f), 0.12f, 0.15f)),
                 // Creatures: dark grey, modelled by the moonlight, with a pale rim so they read on any background.
                 wraith = Creature(Sil("WraithInk", sil, new Color(0.075f, 0.075f, 0.082f), 0.15f, 0.3f), 0.8f, 0.55f, 3f, 0.6f),
                 shadowInk = Creature(Sil("ShadowInk", sil, new Color(0.006f, 0.006f, 0.008f), 0.15f, 0.25f), 0f, 0.22f, 4f, 0f),
@@ -107,6 +107,18 @@ namespace CrimsonVeil.EditorTools
             m.SetFloat("_MistStrength", mist);
             m.SetFloat("_GrainStrength", grain);
             m.SetFloat("_EdgeLight", color.grayscale > 0.15f && color.r - color.g < 0.1f ? 0.03f : 0f);
+            return m;
+        }
+
+        /// <summary>The hero stays ink-black, but the moon picks out his form a little and a faint rim edges him.</summary>
+        public const float HeroFormLift = 0.03f, HeroRim = 0.06f;
+
+        static Material HeroLook(Material m)
+        {
+            m.SetFloat("_FormLift", HeroFormLift);
+            m.SetFloat("_RimLight", HeroRim);
+            m.SetFloat("_RimWidth", 4f);
+            m.SetColor("_RimColor", new Color(0.5f, 0.52f, 0.56f));
             return m;
         }
 

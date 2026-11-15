@@ -31,7 +31,8 @@ namespace CrimsonVeil.Tests
         public void Environment_IsUntouched()
         {
             var m = LevelKitMaterials.Get();
-            foreach (var mat in new[] { m.inkPlay, m.inkFG, m.inkNear, m.hero })
+            // (the hero has his own faint moonlit form: HeroLookTests)
+            foreach (var mat in new[] { m.inkPlay, m.inkFG, m.inkNear })
             {
                 Assert.AreEqual(0f, mat.GetFloat("_RimLight"), 1e-4f, mat.name);
                 Assert.AreEqual(0f, mat.GetFloat("_FormShade"), 1e-4f, mat.name);

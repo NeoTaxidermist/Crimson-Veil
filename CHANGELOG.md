@@ -5,6 +5,19 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.18.1] – 2026-11-15
+Hrdina je nepatrně nasvícený měsícem.
+
+### Změněno
+- **Hrdina zůstává inkoustově černý, ale je u něj vidět 3D tvar.**
+  - Shader siluety má nový parametr `_FormLift`. Ke skoro černé barvě přidá trochu chladné šedé tam, kam svítí měsíc: na ramena, temeno, horní strany paží a záhyby tuniky.
+  - Násobení barvy, které dosud používali tvorové (`_FormShade`), by na skoro černé nic neudělalo.
+  - Hrdina má k tomu slabý okraj (`_RimLight`).
+  - Hodnoty jsou nastavené tak, aby byl ve hře pořád tmavší než tráva v popředí: lift 0,03, okraj 0,06 (`LevelKitMaterials.HeroLook`).
+
+### Testy
+- `HeroLookTests`: hrdina je černý a nasvícený jen nepatrně. Materiál ve hře odpovídá generátoru materiálů.
+
 ## [0.18.0] – 2026-11-15
 Celé tělo v pohybu: pánev, krk, klíční kosti, zápěstí, špičky a natáčení trupu.
 

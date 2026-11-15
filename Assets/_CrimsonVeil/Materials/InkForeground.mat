@@ -37,6 +37,7 @@ Material:
     - _EdgeLight: 0
     - _FootHeight: 2
     - _FootShade: 0
+    - _FormLift: 0
     - _FormShade: 0
     - _GrainScale: 0.6
     - _GrainStrength: 0.3

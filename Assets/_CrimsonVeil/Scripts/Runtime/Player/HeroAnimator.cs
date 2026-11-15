@@ -33,6 +33,11 @@ namespace CrimsonVeil.Player
             if (veil == null && player != null) veil = player.GetComponent<VeilController>();
             if (model == null) model = transform;
             IsReady = Setup();
+            if (IsReady)
+            {
+                var hands = new HeroHands(model, hips); // (in the bind pose: the fingers' rest is measured here)
+                Hands = hands.IsReady ? hands : null;
+            }
         }
 
         bool Setup()
@@ -107,29 +112,24 @@ namespace CrimsonVeil.Player
             };
             var p = Solver.Step(Time.deltaTime, s);
             Apply(p);
-            ClenchFist(Mathf.MoveTowards(fist, HeroPoseSolver.FistWeight(s.weaponHeld), Time.deltaTime / 0.08f));
+            if (Hands != null)
+            {
+                // the drawing hand pinches the string from the moment it reaches it until it lets go
+                bool drawing = veil != null && veil.ShapeForm == VeilForm.Bow
+                               && (veil.Drawing || (veil.IsAttacking && veil.AttackProgress > 0.1f && veil.AttackProgress < 0.4f));
+                HeroHands.Targets(s.attackForm, s.weaponHeld, drawing, out float r, out float l);
+                Hands.Apply(r, l, Time.deltaTime);
+            }
 
             if (veilAnchor != null)
                 veilAnchor.position = neck.position + veilAnchorOffset;
         }
 
-        SkinnedMeshRenderer body;
-        int fistShape = -2; // -2 not looked up yet, -1 the model has none
-        float fist;
+        /// <summary>The fingers (null when the model has no finger bones).</summary>
+        public HeroHands Hands { get; private set; }
 
-        /// <summary>The sword hand closes round what it holds (the model's Fist.R shape key), 0 open .. 1 clenched.</summary>
-        public float Fist => fist;
-
-        void ClenchFist(float w)
-        {
-            fist = w;
-            if (fistShape == -2)
-            {
-                body = model != null ? model.GetComponentInChildren<SkinnedMeshRenderer>() : GetComponentInChildren<SkinnedMeshRenderer>();
-                fistShape = body != null && body.sharedMesh != null ? body.sharedMesh.GetBlendShapeIndex("Fist.R") : -1;
-            }
-            if (fistShape >= 0) body.SetBlendShapeWeight(fistShape, 100f * w);
-        }
+        /// <summary>The sword hand's grip, 0 relaxed .. 1 a fist.</summary>
+        public float Fist => Hands != null ? Hands.RightGrip : 0f;
 
         void Apply(in HeroPose p)
         {

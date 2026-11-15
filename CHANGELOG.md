@@ -5,6 +5,25 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.17.4] – 2026-11-15
+Kosti prstů v obou rukou.
+
+### Přidáno
+- **Kostra má prsty.** Každá ruka má 14 kostí: `Finger.<strana>.<prst>.<článek>` (čtyři prsty po třech článcích, 0 = ukazováček vpředu) a `Thumb.<strana>.<článek>`. Prsty jsou na ně navázané, na kloubech napůl s předchozím článkem (`hero_build.py`).
+- **`HeroHands`: ruce svírají, co drží.**
+  - Pravá ruka se sevře kolem jílce, násady biče, ratiště kopí a rukojeti luku.
+  - U štítu, který se vznáší kolem těla, zůstává dlaň otevřená.
+  - Levá ruka sevře tětivu od chvíle, kdy na ni sáhne, do výstřelu.
+  - Volná ruka je uvolněná.
+  - Osa ohybu každého kloubu se počítá z klidové pózy (směr prstu a dlaně), takže nezávisí na tom, jak exportem prošly lokální osy kostí.
+
+### Změněno
+- Tvar `Fist.R` (shape key) nahradily kosti prstů.
+
+### Testy
+- Model má v obou rukou všech 28 kostí prstů a při sevření se prsty sbalí dovnitř dlaně (konec prstu blíž k zápěstí i k tělu).
+- Která ruka co svírá: meč, štít, luk s natahováním, volná šála.
+
 ## [0.17.3] – 2026-11-15
 Ruka svírá zbraň v pěsti a bič má skutečnou rukojeť.
 

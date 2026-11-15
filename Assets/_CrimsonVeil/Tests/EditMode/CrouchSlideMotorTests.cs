@@ -108,8 +108,20 @@ namespace CrimsonVeil.Tests
             var crouch = HeroPoseSolver.CrouchPose(0f, 0f, 0f);
             Assert.Less(crouch.bob, -0.4f, "the hips sink");
             Assert.Greater(crouch.kneeL, 100f, "deep knees");
-            var crawl = HeroPoseSolver.CrouchPose(2.6f, 0.1f, 0f);
+            var crawl = HeroPoseSolver.CrouchPose(2.0f, 0.1f, 0f);
             Assert.AreNotEqual(crouch.thighL, crawl.thighL, "crawling, the legs move");
+            // flat on the soles, not on tiptoe: the foot undoes the shin's slope
+            Assert.AreEqual(HeroPoseSolver.FlatFoot(crouch.thighL, crouch.kneeL), crouch.footL, 1e-3f);
+            Assert.AreEqual(HeroPoseSolver.FlatFoot(crouch.thighR, crouch.kneeR), crouch.footR, 1e-3f);
+            Assert.Greater(crouch.footL, 0f, "a deep knee tips the shin back: the toes come up to stay level");
+            // long steps: one stride per gait cycle (the legs swap after half a cycle, not after a fraction of it)
+            var q1 = HeroPoseSolver.CrouchPose(2.0f, 0.25f, 0f);
+            var q3 = HeroPoseSolver.CrouchPose(2.0f, 0.75f, 0f);
+            Assert.Greater(q1.thighL, q1.thighR + 30f, "a quarter in: the left leg forward");
+            Assert.Greater(q3.thighR, q3.thighL + 30f, "three quarters in: the right one");
+            // unhurried: at the crawling speed, no more than ~3 steps a second (it was a patter of almost 4)
+            float stepsPerSecond = 2f * new MotorSettings().crouchSpeed / HeroPoseSolver.CrouchStride;
+            Assert.LessOrEqual(stepsPerSecond, 3f);
             var slide = HeroPoseSolver.SlidePose(0.2f);
             Assert.Less(slide.bob, crouch.bob, "a slide is lower still");
             Assert.Less(slide.spine, 0f, "leaning back");

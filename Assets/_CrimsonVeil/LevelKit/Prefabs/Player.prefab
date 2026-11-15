@@ -148,7 +148,7 @@ MonoBehaviour:
     dashDuration: 0.16
     dashCooldown: 0.35
     dashEndSpeedFactor: 0.55
-    crouchSpeed: 2.6
+    crouchSpeed: 2
     slideSpeed: 13
     slideEndSpeed: 3
     slideDuration: 0.5

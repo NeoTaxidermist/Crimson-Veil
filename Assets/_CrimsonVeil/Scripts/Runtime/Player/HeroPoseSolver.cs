@@ -149,6 +149,7 @@ namespace CrimsonVeil.Player
 
             float run = Mathf.Clamp01(s.speed / Mathf.Max(0.01f, s.maxSpeed));
             float stride = Mathf.Lerp(walkStride, runStride, run);
+            if (s.crouching && !s.sliding) stride = CrouchStride;   // a crouch-walk: long, unhurried steps
             if (s.grounded) Phase = Mathf.Repeat(Phase + s.speed * dt / stride, 1f);
 
             if (s.grounded && !wasGrounded) landTimer = landDuration;
@@ -275,27 +276,42 @@ namespace CrimsonVeil.Player
         /// <summary>How far the hips sink crouched (m): the body fits under a ceiling a metre up.</summary>
         public const float CrouchDrop = 0.5f;
 
+        /// <summary>Distance (m) per gait cycle crouch-walking: two steps of 0.8 m (at 2 m/s about 2.5 steps a second).</summary>
+        public const float CrouchStride = 1.6f;
+
         /// <summary>
         /// Crouched low: deep knees, the body bent over them, the head up to see ahead, the hands ready near the
-        /// knees. Moving, a low crawl: short steps from the crouch, the knees working, a hand brushing the ground.
-        /// The phase advances with the distance crawled (the stride is short), so the feet don't slide.
+        /// knees. Moving, a low crouch-walk: long, low steps (one stride per gait cycle, as in the walk, the phase
+        /// following the distance), the soles flat on the ground, the swinging foot lifted clear, the heel rising
+        /// as the leg pushes off behind - not a patter on tiptoe.
         /// </summary>
         public static HeroPose CrouchPose(float speed, float phase, float time)
         {
-            float move = Mathf.Clamp01(speed / 2.6f);
-            float a = phase * Mathf.PI * 2f * 2.2f;               // short steps: more of them per stride
+            float move = Mathf.Clamp01(speed / 2.0f);
+            float a = phase * Mathf.PI * 2f;
             float sinA = Mathf.Sin(a), cosA = Mathf.Cos(a);
             float breathe = Mathf.Sin(time * 1.8f) * (1f - move);
+            float thighL = Mathf.Lerp(92f, 86f, move) + 28f * sinA * move;
+            float thighR = Mathf.Lerp(80f, 86f, move) - 28f * sinA * move;
+            // the leg swinging forward lifts its foot clear (more knee); the one behind pushes off
+            float kneeL = Mathf.Lerp(122f, 116f, move) + 24f * Mathf.Max(0f, cosA) * move;
+            float kneeR = Mathf.Lerp(128f, 116f, move) + 24f * Mathf.Max(0f, -cosA) * move;
+            float pushL = Mathf.Max(0f, -sinA) * move, pushR = Mathf.Max(0f, sinA) * move;
             return new HeroPose
             {
-                spine = 30f + 4f * move + breathe, chest = 12f, head = 22f + 4f * move, neck = 8f,
-                bob = -CrouchDrop + Mathf.Abs(sinA) * 0.03f * move,
-                thighL = 92f + 20f * sinA * move, kneeL = 122f - 18f * Mathf.Max(0f, cosA) * move, footL = -18f + 10f * sinA * move,
-                thighR = 78f - 20f * sinA * move, kneeR = 128f - 18f * Mathf.Max(0f, -cosA) * move, footR = -14f - 10f * sinA * move,
-                armL = 38f - 22f * sinA * move, elbowL = 48f, armR = 26f + 22f * sinA * move, elbowR = 40f,
-                toeL = 14f, toeR = 18f,
+                spine = 30f + 6f * move + breathe, chest = 10f, head = 22f + 3f * move, neck = 8f,
+                bob = -CrouchDrop - 0.03f * Mathf.Abs(sinA) * move,          // lowest with the legs apart
+                thighL = thighL, kneeL = kneeL, thighR = thighR, kneeR = kneeR,
+                // the soles flat on the ground; the heel lifts as the leg pushes off behind, the toes bend with it
+                footL = FlatFoot(thighL, kneeL) - 16f * pushL, footR = FlatFoot(thighR, kneeR) - 16f * pushR,
+                toeL = 8f + 26f * pushL, toeR = 8f + 26f * pushR,
+                armL = 32f - 18f * sinA * move, elbowL = 55f, armR = 24f + 18f * sinA * move, elbowR = 50f,
             };
         }
+
+        /// <summary>The foot angle (+ toes up) that keeps the sole level with the ground for a thigh and knee: the
+        /// shin slopes by thigh - knee, the foot turns that back.</summary>
+        public static float FlatFoot(float thigh, float knee) => knee - thigh;
 
         /// <summary>
         /// A slide: leaning back, the hips low over the ground, the front leg stretched out ahead, the back one tucked

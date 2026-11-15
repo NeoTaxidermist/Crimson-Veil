@@ -227,7 +227,7 @@ namespace CrimsonVeil.Tests
             Assert.IsTrue(slid, "it slid");
             Assert.IsTrue(lowInside, "low under the roof");
             Assert.Greater(P.x, 325.5f, "through the tunnel");
-            Assert.Less(Time.time - start, 6f / 2.6f, "quicker than crawling the 6 m");
+            Assert.Less(Time.time - start, 6f / 2.0f, "quicker than crawling the 6 m");
             input.aimY = 0f; input.moveX = 0f;
         }
 

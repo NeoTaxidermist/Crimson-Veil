@@ -41,7 +41,7 @@ namespace CrimsonVeil.Player
 
         [Header("Crouch & slide")]
         [Tooltip("Crawling speed while crouched (down held on the ground, or under a low ceiling).")]
-        public float crouchSpeed = 2.6f;
+        public float crouchSpeed = 2.0f;
         [Tooltip("Speed at the start of a slide (down + dash on the ground); it slows to slideEndSpeed.")]
         public float slideSpeed = 13f;
         public float slideEndSpeed = 3f;

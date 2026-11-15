@@ -5,6 +5,20 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.26.2] – 2026-11-15
+### Opraveno
+- **Plížení už není cupitání po špičkách.**
+  - Chodidla stojí naplocho, protože úhel chodidla vyrovnává sklon holeně (`HeroPoseSolver.FlatFoot`). Dřív byla špičkou dolů o 50–60°.
+  - Krok je delší a pomalejší: jeden cyklus na 1,6 m (`CrouchStride`) místo 2,2× zrychleného cyklu. Plížení je pomalejší (2 m/s místo 2,6), takže vychází asi 2,5 kroku za sekundu místo skoro 4.
+  - Noha vpředu se zvedá nad zem, pata vzadu se při odrazu zvedne a prsty se ohnou. Tělo je nejníž, když jsou nohy od sebe.
+- Na stránce s animacemi přibyl klip plížení a skluz je přetočený s novým plížením na konci.
+
+### Testy
+- `CrouchSlideMotorTests`:
+  - chodidla naplocho;
+  - nohy se střídají po půl cyklu;
+  - nejvýš 3 kroky za sekundu.
+
 ## [0.26.1] – 2026-11-15
 ### Změněno
 - **Ctrl + šipka dolů míří, nepřikrčuje.** S držením Ctrl (útok z místa) šipka dolů slouží k míření rány dolů, hrdina se nepřikrčí. Pod nízkým stropem zůstává přikrčený i tak.

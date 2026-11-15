@@ -20,9 +20,13 @@ namespace CrimsonVeil.Tests
         PlayerController pc;
         ScriptedInput input;
 
+        [TearDown]
+        public void TearDown() => CrimsonVeil.UI.PlaytestLog.WriteFiles = true;
+
         [UnitySetUp]
         public IEnumerator SetUp()
         {
+            CrimsonVeil.UI.PlaytestLog.WriteFiles = false;   // test runs are no playtests
             yield return EditorSceneManager.LoadSceneAsyncInPlayMode(ScenePath, new LoadSceneParameters(LoadSceneMode.Single));
             yield return null;
             pc = Object.FindFirstObjectByType<PlayerController>();

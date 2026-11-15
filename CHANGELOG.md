@@ -5,6 +5,33 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.25.0] – 2026-11-15
+### Přidáno
+- **Měření playtestu** (`PlaytestLog`, vzniká s HUD):
+  - Každá hra se měří: kdy hrdina poprvé vstoupil do kterého úseku levelu, jak dlouho v něm byl, kolikrát v něm zemřel nebo spadl, a celkový čas. Hra končí u koncové zdi.
+  - Tabulka se průběžně ukládá do `Playtests/playtest_<datum>_<čas>.txt` ve složce projektu (ve hře mimo editor do datové složky hráče). Zapisuje se při každém novém úseku, smrti, konci a každých 30 s, takže přežije i zastavený Play.
+  - Neukládá se hra kratší než 10 s ani hra, ve které hrdinu někdo přesunul (testy, ladicí teleporty). Automatické testy zápis vypínají.
+  - Složka `Playtests/` je v `.gitignore`.
+- **Čas, smrti a aktuální úsek** jsou vidět v titulku mapy (TAB).
+- 13 pojmenovaných úseků levelu: od startu přes věž, hradby, studnu, zvonici, hřeben a propast po zahradu (`PlaytestModel.PrototypeSections`).
+- `PlayerController.Fell`: událost pádu pod level, počítá se jako smrt.
+
+### Opraveno
+- Mapa a měření se po načtení nového levelu nebo nového hrdiny napojí na něj, místo aby sahaly na zničený objekt.
+
+### Testy
+- `PlaytestModelTests`:
+  - časy úseků od prvního vstupu;
+  - konec hry zastaví hodiny;
+  - smrti se počítají po úsecích;
+  - čitelná tabulka;
+  - úseky levelu jsou správně seřazené.
+- `PlaytestLogPlayTests` (ve skutečné scéně):
+  - úseky se zaznamenávají;
+  - pád se počítá jako smrt;
+  - přesunutý hrdina zneplatní běh;
+  - smrti jsou vidět na mapě.
+
 ## [0.24.0] – 2026-11-15
 Level je zase delší (konec z x 224 na 340) a mnohem vertikálnější: hlavní cesta vede od −14 m až do 45 m.
 

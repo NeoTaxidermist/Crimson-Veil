@@ -35,6 +35,8 @@ namespace CrimsonVeil.UI
         public RectTransform HeroMarker => hero;
 
         RectTransform panel, picture, hero;
+        Text titleText;
+        PlaytestLog playtest;
         RawImage image;
         Texture2D tex;
         Transform player;
@@ -69,7 +71,7 @@ namespace CrimsonVeil.UI
             title.pivot = new Vector2(0.5f, 1f);
             title.sizeDelta = new Vector2(0f, 48f);
             title.anchoredPosition = new Vector2(0f, -8f);
-            var text = title.gameObject.AddComponent<Text>();
+            var text = titleText = title.gameObject.AddComponent<Text>();
             text.text = "MAPA  ·  TAB";
             text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
             text.fontSize = 26;
@@ -185,7 +187,11 @@ namespace CrimsonVeil.UI
             if (player == null)
             {
                 var pc = FindFirstObjectByType<PlayerController>();
-                if (pc != null) player = pc.transform;
+                if (pc != null)
+                {
+                    player = pc.transform;
+                    Model = null;           // a (new) level with its hero: read it again
+                }
             }
             if (Model == null && player != null) Scan();
             if (Model == null || player == null) return;
@@ -199,8 +205,20 @@ namespace CrimsonVeil.UI
             }
         }
 
+        /// <summary>The map's title: with the playtest's time and deaths when it is measured.</summary>
+        public string Title()
+        {
+            if (playtest == null) playtest = GetComponentInParent<PlaytestLog>();
+            var m = playtest != null ? playtest.Model : null;
+            if (m == null) return "MAPA  ·  TAB";
+            string time = PlaytestModel.Clock(m.Finished ? m.FinishedAt : m.Elapsed);
+            string where = m.Current >= 0 ? m.Records[m.Current].name : "";
+            return "MAPA  ·  " + time + "  ·  smrti " + m.Deaths + (where.Length > 0 ? "  ·  " + where : "") + "  ·  TAB";
+        }
+
         void Place()
         {
+            if (titleText != null) titleText.text = Title();
             if (Model == null) return;
             var size = picture.sizeDelta;
             if (player != null)

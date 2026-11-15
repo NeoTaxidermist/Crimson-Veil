@@ -43,6 +43,7 @@ namespace CrimsonVeil.UI
             hud.Bar = barGo.AddComponent<ScarfHealthBar>();
             hud.Bar.raycastTarget = false;
             Minimap.Create(go.transform);   // the map, on TAB
+            PlaytestLog.Create(go);         // the playtest's times and deaths, written to Playtests/
             return hud;
         }
 

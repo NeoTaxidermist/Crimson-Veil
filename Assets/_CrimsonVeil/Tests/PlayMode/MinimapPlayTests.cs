@@ -13,9 +13,13 @@ namespace CrimsonVeil.Tests
     /// <summary>The map in the real level: it opens and closes, shows the whole level and the hero where he is.</summary>
     public class MinimapPlayTests
     {
+        [TearDown]
+        public void TearDown() => CrimsonVeil.UI.PlaytestLog.WriteFiles = true;
+
         [UnityTest]
         public IEnumerator TheMap_ShowsTheWholeLevel_AndTheHeroOnIt()
         {
+            CrimsonVeil.UI.PlaytestLog.WriteFiles = false;   // test runs are no playtests
             yield return EditorSceneManager.LoadSceneAsyncInPlayMode("Assets/_CrimsonVeil/Scenes/Prototype_Ruins.unity", new LoadSceneParameters(LoadSceneMode.Single));
             for (int i = 0; i < 5; i++) yield return null;
             var map = Object.FindFirstObjectByType<Minimap>(FindObjectsInactive.Include);

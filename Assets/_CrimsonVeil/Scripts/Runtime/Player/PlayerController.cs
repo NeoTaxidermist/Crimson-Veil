@@ -42,6 +42,8 @@ namespace CrimsonVeil.Player
         public System.Func<bool> ScarfLedgeReach;
         /// <summary>The scarf caught a ledge out of the hands' reach and is pulling the hero up to it.</summary>
         public event System.Action ScarfCaught;
+        /// <summary>The hero fell out of the level (below the kill plane) and is put back at the last checkpoint.</summary>
+        public event System.Action Fell;
         public bool ScarfCatching => scarfPull > 0f;
         /// <summary>The lip of the ledge the scarf caught.</summary>
         public Vector3 ScarfCatchPoint { get; private set; }
@@ -170,7 +172,7 @@ namespace CrimsonVeil.Player
                 p.z = planeZ;
                 SetPosition(p);
             }
-            if (p.y < killY) Respawn();
+            if (p.y < killY) { Fell?.Invoke(); Respawn(); }
 
             UpdateFlip(dt);
             UpdateVisual(dt);

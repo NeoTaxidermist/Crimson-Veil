@@ -5,6 +5,48 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.20.1] – 2026-11-15
+### Opraveno
+- Do changelogu chyběl zápis k verzi 0.20.0, je doplněný níže.
+
+## [0.20.0] – 2026-11-15
+Nové 3D modely všech nepřátel ve stejném stylu jako přízrak.
+
+### Přidáno
+- **Mnich se štítem** (`ArtSource/monk_build.py`) má kostru a skinovaný model.
+  - Hábit se záhyby a roztrhaným lemem, plášť přes ramena, kápě s očima.
+  - Karmínový provazový pás se šňůrami, růženec.
+  - Velký štít ve tvaru draka s okrajem, puklicí a karmínovým okem se stékajícími kapkami.
+  - Lem, cípy pláště, šňůry a růženec visí na řetězech kostí, které rozhýbávají `SpringBones`.
+- **Oběšenec** (`ArtSource/hanged_build.py`): vychrtlá mrtvola s žebry v roztrhané košili a otrhaných kalhotách, bosá.
+  - Má karmínovou smyčku na krku, zlomený krk a hlavu svěšenou na stranu.
+  - Na kotníku má železné pouto s utrženým řetězem.
+  - Ruce, nohy, hlava i cípy košile jsou volné řetězy kostí. Při houpání se opožďují a při pádu se bezvládně zhroutí.
+- **Sdílená sada `ArtSource/rig_kit.py`** pro riggované nestvůry: lofty s váhami kostí, kostra, látkové a končetinové řetězy, export a náhledy.
+- **`creature_kit.blade`:** tenká prohnutá plocha se skutečným objemem (peří, blány, papír, kouřové stuhy).
+- **`LevelKitFactory.RiggedCreature`** vloží riggovaný model pod `Visual`, natočí ho po směru hry a přidá `SpringBones`.
+
+### Změněno
+- **Havran** je modelovaný pero po peru: obrysové peří po celém těle, krční a šíjové peří, dvoudílný zobák se štětinami a oči v důlcích. Ocas tvoří vějíř 10 per a nohy mají šupiny, 3+1 prsty a drápy. Křídlo má ruční a loketní letky a tři řady krovek.
+- **Popelavá můra:** chlupatá hruď s límcem, kroužkovaný zadeček s chomáčem, fasetové oči, stočený sosák a šest kloubových chlupatých nohou. Křídla jsou prohnuté blány, žilky, pásy, skvrny a oko se drží jejich zakřivení a po roztrhaném okraji visí třásně šupin.
+- **Kořenolez:** propletený uzel silných kořenů s trnitou tlamou a šesti očima v důlcích. Kořeny jsou tři spletené prameny s větvičkami, vlásečnicemi, trny a hákovitým koncem.
+- **Papírový drak:** papír se mezi výztuhami vzdouvá a je zmačkaný. Obličej, záplaty i znaky leží na zvlněném povrchu a z úsměvu stéká barva. Roztržené rohy se kroutí, bambus má kolénka a luk je prohnutý. Na koncích visí modlitební proužky.
+- **Lucerna:** kroucené pruty, gotické oblouky s kružbami, žebrovaná střecha s ostny, trnitá koruna pod dnem a delší řetěz. Plamen má jazyky a prázdné oči a z lucerny se točí stuhy karmínového kouře.
+- **Přízrak** má širší, pomačkané rukávy místo tenkých „hůlek“.
+- Mnich přesune štít z modelu pod `Visual` až za běhu. Uvnitř vnořeného prefabu to v editoru nejde.
+
+### Testy
+- `BestiaryModelTests`:
+  - mnich má štít a řetězy;
+  - oběšenec má volné končetiny a hlavu;
+  - prefaby mají `SpringBones`;
+  - kitové nestvůry mají své díly a dost detailů;
+  - křídla havrana mají kloub v rameni.
+- `BestiaryModelPlayTests`:
+  - mnichův štít je ve hře pod `Visual`, před ním a ve výšce hrudi;
+  - končetiny oběšence visí z boků a neodletí.
+- `CreatureModelTests` a `EnvironmentDetailTests` počítají i skinované modely.
+
 ## [0.19.0] – 2026-11-15
 Nový 3D model přízraku (Wraith).
 

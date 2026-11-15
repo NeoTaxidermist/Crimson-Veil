@@ -118,6 +118,7 @@ namespace CrimsonVeil.Player
                 input.jumpPressed = InputSource.JumpPressed;
                 input.jumpHeld = InputSource.JumpHeld;
                 input.dashPressed = InputSource.DashPressed;
+                input.stand = InputSource.StandHeld;
             }
 
             var state = Motor.State;
@@ -265,9 +266,9 @@ namespace CrimsonVeil.Player
         /// <summary>Up first, then over the lip — a mantle, not a diagonal slide.</summary>
         public static Vector3 ClimbPath(Vector3 start, Vector3 target, float t)
         {
-            float up = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(t / 0.6f));
-            float over = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((t - 0.35f) / 0.65f));
-            return new Vector3(Mathf.Lerp(start.x, target.x, over), Mathf.Lerp(start.y, target.y, up), Mathf.Lerp(start.z, target.z, over));
+            // (keyed with the mantle pose: pull up, press over the lip, knee on top, then over and stand)
+            var k = HeroPoseSolver.ClimbRiseOver(t);
+            return new Vector3(Mathf.Lerp(start.x, target.x, k.y), Mathf.Lerp(start.y, target.y, k.x), Mathf.Lerp(start.z, target.z, k.y));
         }
 
         void SetPosition(Vector3 p)

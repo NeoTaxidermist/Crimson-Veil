@@ -209,8 +209,8 @@ namespace CrimsonVeil.Tests
         public void Hanging_RaisesBothArms_ClimbEndsStanding()
         {
             var hang = Run(new HeroPoseSolver(), 0.5f, new HeroState { hanging = true, maxSpeed = 8f });
-            Assert.Greater(hang.armL, 150f);
-            Assert.Greater(hang.armR, 150f);
+            Assert.That(hang.armL, Is.InRange(135f, 165f), "up and forward to the lip, which is in front of him");
+            Assert.That(hang.armR, Is.InRange(135f, 165f));
             var end = HeroPoseSolver.ClimbPose(1f);
             Assert.Less(Mathf.Abs(end.armL), 30f);
             Assert.Less(end.kneeL, 30f);

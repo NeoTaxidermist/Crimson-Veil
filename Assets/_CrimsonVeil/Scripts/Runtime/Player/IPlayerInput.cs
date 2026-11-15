@@ -21,5 +21,8 @@ namespace CrimsonVeil.Player
         /// <summary>Deliberate camera look up/down (-1..1): the right stick. Kept apart from aiming, so aiming a
         /// blow never moves the camera.</summary>
         float LookY => 0f;
+        /// <summary>Planted (Ctrl / the left stick pressed): on the ground the direction only turns and aims the hero,
+        /// he doesn't run (an attack up and forward from the spot).</summary>
+        bool StandHeld => false;
     }
 }

@@ -79,8 +79,9 @@ namespace CrimsonVeil.Tests
             var level = HeroAttackChoreography.Apply(basePose, VeilForm.Bow, 0.3f, 0f, 0f);
             var up = HeroAttackChoreography.Apply(basePose, VeilForm.Bow, 0.3f, 0f, 90f);
             var down = HeroAttackChoreography.Apply(basePose, VeilForm.Bow, 0.3f, 0f, -45f);
-            Assert.Greater(up.armR, level.armR + 50f, "the bow arm rises along the arrow");
-            Assert.Greater(up.armL, level.armL + 50f, "and the drawing arm with it");
+            // (rising along the arrow, but held back from it overhead: straight up the bow stands over the brow, not behind the head)
+            Assert.Greater(up.armR, level.armR + 30f, "the bow arm rises along the arrow");
+            Assert.Greater(up.armL, level.armL + 30f, "and the drawing arm with it");
             Assert.Less(up.spine + up.chest, level.spine + level.chest - 10f, "the body leans back");
             Assert.Greater(up.head, level.head, "eyes up");
             Assert.Less(down.armR, level.armR, "aiming down the arms go down");

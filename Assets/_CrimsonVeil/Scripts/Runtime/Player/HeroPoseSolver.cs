@@ -292,17 +292,43 @@ namespace CrimsonVeil.Player
             return HeroPose.Lerp(rise, fall, f);
         }
 
-        /// <summary>Both hands on the lip above, body hanging, legs gently swinging.</summary>
+        /// <summary>
+        /// Both hands gripping the lip above, the arms almost straight, the body close to the wall: one foot braced
+        /// against the stone, the other leg hanging and swinging a little, the head tipped back to the lip.
+        /// </summary>
         public static HeroPose HangPose(float time)
         {
-            float swing = Mathf.Sin(time * 2.2f) * 6f;
+            float swing = Mathf.Sin(time * 2.2f) * 5f;
+            float breathe = Mathf.Sin(time * 1.6f) * 1.5f;
             return new HeroPose
             {
-                spine = -6f, chest = -8f, head = 10f, bob = 0f,
-                thighL = 8f + swing, kneeL = 18f, footL = -15f,
-                thighR = -4f + swing, kneeR = 28f, footR = -20f,
-                armL = 172f, elbowL = 8f, armR = 168f, elbowR = 12f,
+                spine = 8f + breathe, chest = -2f, head = 16f, neck = 6f, bob = 0f,
+                thighL = 42f, kneeL = 78f, footL = 18f, toeL = 20f,          // braced against the wall
+                thighR = 2f + swing, kneeR = 22f + swing * 0.5f, footR = -22f,
+                armL = 150f, elbowL = 10f, armR = 146f, elbowR = 14f,      // reaching forward-up to the lip (it is ~0.3 m ahead)
+                shoulderL = -4f, shoulderR = -4f, wristL = 30f, wristR = 30f, // hooked over the lip
             };
+        }
+
+        /// <summary>Keys of the mantle (progress of the climb): the pull-up, the press over the lip, the knee on top, standing.</summary>
+        public const float ClimbPullEnd = 0.35f, ClimbPressEnd = 0.6f, ClimbKneeEnd = 0.8f;
+
+        /// <summary>
+        /// How far up (0..1 of the rise) and over (0..1 onto the top) the hero is at climb progress <paramref name="t"/>:
+        /// the pull-up lifts the shoulders to the lip, the press lifts the hips over it, the knee comes up onto the top
+        /// and only then (feet clear of the stone) the body moves over the lip and stands.
+        /// </summary>
+        public static Vector2 ClimbRiseOver(float t)
+        {
+            t = Mathf.Clamp01(t);
+            float rise = t < ClimbPullEnd ? Mathf.Lerp(0f, 0.26f, Mathf.SmoothStep(0f, 1f, t / ClimbPullEnd))
+                       : t < ClimbPressEnd ? Mathf.Lerp(0.26f, 0.55f, Mathf.SmoothStep(0f, 1f, (t - ClimbPullEnd) / (ClimbPressEnd - ClimbPullEnd)))
+                       : t < ClimbKneeEnd ? Mathf.Lerp(0.55f, 1f, Mathf.SmoothStep(0f, 1f, (t - ClimbPressEnd) / (ClimbKneeEnd - ClimbPressEnd)))
+                       : 1f;
+            float over = t < ClimbPressEnd + 0.1f ? 0f
+                       : t < ClimbKneeEnd ? Mathf.Lerp(0f, 0.4f, Mathf.SmoothStep(0f, 1f, (t - ClimbPressEnd - 0.1f) / (ClimbKneeEnd - ClimbPressEnd - 0.1f)))
+                       : Mathf.Lerp(0.4f, 1f, Mathf.SmoothStep(0f, 1f, (t - ClimbKneeEnd) / (1f - ClimbKneeEnd)));
+            return new Vector2(rise, over);
         }
 
         /// <summary>
@@ -322,21 +348,55 @@ namespace CrimsonVeil.Player
             };
         }
 
-        /// <summary>Mantle: pull up (arms push down), knee comes over the lip, then stand.</summary>
+        /// <summary>
+        /// Mantle, keyed to <see cref="ClimbRiseOver"/> so the hands stay on the lip: the pull-up (elbows bend, the chin
+        /// comes to the lip, the legs kick), the press (arms lock straight down onto the lip, the chest leans over it),
+        /// the knee swung up onto the top, then standing up.
+        /// </summary>
         public static HeroPose ClimbPose(float t)
         {
-            float pull = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(t / 0.5f));
-            float stand = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((t - 0.55f) / 0.45f));
+            t = Mathf.Clamp01(t);
             var hang = HangPose(0f);
-            var mid = new HeroPose
+            var chin = new HeroPose
             {
-                spine = 35f, chest = 15f, head = -10f, bob = -0.1f,
-                thighL = 95f, kneeL = 120f, footL = -10f,
-                thighR = 10f, kneeR = 40f, footR = -20f,
-                armL = 40f, elbowL = 70f, armR = 30f, elbowR = 80f,
+                spine = 10f, chest = 6f, head = -4f, neck = -4f,
+                thighL = 30f, kneeL = 70f, footL = 10f, thighR = 12f, kneeR = 45f, footR = -15f,
+                armL = 112f, elbowL = 118f, armR = 106f, elbowR = 124f,
+                shoulderL = 4f, shoulderR = 4f, wristL = 45f, wristR = 45f,
             };
-            var up = new HeroPose { spine = 6f, chest = 2f, thighL = 10f, kneeL = 15f, thighR = -5f, kneeR = 10f, armL = 10f, elbowL = 20f, armR = 5f, elbowR = 25f };
-            return HeroPose.Lerp(HeroPose.Lerp(hang, mid, pull), up, stand);
+            var press = new HeroPose
+            {
+                spine = 34f, chest = 16f, head = -12f, neck = -8f, bob = -0.04f,
+                thighL = 48f, kneeL = 95f, footL = 5f, thighR = 8f, kneeR = 40f, footR = -20f,
+                armL = -14f, elbowL = 10f, armR = -18f, elbowR = 12f,
+                shoulderL = -12f, shoulderR = -12f, wristL = -70f, wristR = -70f,   // the palms flat on the top
+            };
+            var knee = new HeroPose
+            {
+                spine = 40f, chest = 18f, head = -14f, neck = -8f, bob = -0.06f,
+                thighL = 112f, kneeL = 138f, footL = 12f, toeL = 10f, thighR = 18f, kneeR = 64f, footR = -10f,
+                armL = -6f, elbowL = 28f, armR = -10f, elbowR = 32f,
+                shoulderL = -6f, shoulderR = -6f, wristL = -60f, wristR = -60f,
+            };
+            var up = new HeroPose
+            {
+                spine = 6f, chest = 2f, thighL = 12f, kneeL = 16f, thighR = -5f, kneeR = 10f,
+                armL = 10f, elbowL = 20f, armR = 5f, elbowR = 25f,
+            };
+            if (t < ClimbPullEnd) return HeroPose.Lerp(hang, chin, Mathf.SmoothStep(0f, 1f, t / ClimbPullEnd));
+            if (t < ClimbPressEnd) return HeroPose.Lerp(chin, press, Mathf.SmoothStep(0f, 1f, (t - ClimbPullEnd) / (ClimbPressEnd - ClimbPullEnd)));
+            if (t < ClimbKneeEnd) return HeroPose.Lerp(press, knee, Mathf.SmoothStep(0f, 1f, (t - ClimbPressEnd) / (ClimbKneeEnd - ClimbPressEnd)));
+            return HeroPose.Lerp(knee, up, Mathf.SmoothStep(0f, 1f, (t - ClimbKneeEnd) / (1f - ClimbKneeEnd)));
+        }
+
+        /// <summary>How tightly the hands grip while hanging or climbing (they hold the lip until the knee is on top).</summary>
+        public static float LedgeGrip(bool hanging, bool climbing, float climbProgress)
+        {
+            if (hanging) return 0.8f;
+            if (!climbing) return 0f;
+            if (climbProgress < ClimbPullEnd) return 0.85f;
+            // pressing down on the top the fingers open flat, then let go
+            return Mathf.Lerp(0.15f, 0f, Mathf.InverseLerp(ClimbKneeEnd, 1f, climbProgress));
         }
 
         /// <summary>Facing the wall: one hand braced high, a foot against the stone.</summary>

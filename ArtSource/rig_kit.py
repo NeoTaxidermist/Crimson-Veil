@@ -119,9 +119,24 @@ def bone_tail(n):
     return next(t for b, h, t, p in BONES if b == n)
 
 
-def chain_ribbon(prefix, n, pts, width, thick, root, mat=None, taper=0.6, point=0.12):
+def folds(n_folds, amp, start, ring, count, phase=0.0):
+    """disp for a loft of `count` sections with `ring` points: cloth falling in folds, the ring rippled in and out,
+    more and more from section `start` down to the last one."""
+    def f(i, k, p, c):
+        g = max(0.0, (i - start) / max(1.0, count - 1 - start))
+        th = 2 * math.pi * k / ring
+        r = p - c
+        r.z = 0.0
+        if r.length < 1e-6:
+            return V(0, 0, 0)
+        return r.normalized() * (amp * g * math.sin(n_folds * th + phase + 0.7 * math.sin(3 * th)))
+    return f
+
+
+def chain_ribbon(prefix, n, pts, width, thick, root, mat=None, taper=0.6, point=0.12, along=None):
     """A ribbon of cloth (or a limb of rope) along pts (len k+1) with a bone chain <prefix><n>.<j> parented to root,
-    wide (width) in the front-back plane, thin (thick) across. Swings on SpringBones."""
+    wide (width) in the front-back plane, thin (thick) across - or, with along=(ax, ay), wide along that horizontal
+    direction (a strip of a hem lies along the hem). Swings on SpringBones."""
     mat = INK if mat is None else mat
     parent = root
     k = len(pts) - 1
@@ -133,7 +148,10 @@ def chain_ribbon(prefix, n, pts, width, thick, root, mat=None, taper=0.6, point=
         for u in ((0.0, 0.5, 1.0) if j == 0 else (0.5, 1.0)):
             f = (j + u) / k
             w = width * (1.0 - taper * f) * (point if j == k - 1 and u == 1.0 else 1.0)
-            secs.append((pts[j].lerp(pts[j + 1], u), thick, w))
+            if along is None:
+                secs.append((pts[j].lerp(pts[j + 1], u), thick, w))
+            else:
+                secs.append((pts[j].lerp(pts[j + 1], u), max(thick, w * abs(along[0])), max(thick, w * abs(along[1]))))
             sw.append({root: 0.6, "%s%d.0" % (prefix, n): 0.4} if (j == 0 and u == 0.0) else {"%s%d.%d" % (prefix, n, j): 1.0})
     loft(secs, lambda p, s, sw=sw: sw[min(len(sw) - 1, int(round(s * (len(sw) - 1))))], mat=mat, n=8)
 

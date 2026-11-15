@@ -38,57 +38,78 @@ def zone(p, s):
 
 
 # ---------------------------------------------------------------- robe
-# Heavy and broad, a little bell at the hem; it falls straight (he walks), slightly back at the bottom.
-# (z, half width, half depth, centre y)
+# Heavy and broad, a bell at the hem, falling in deep folds; slightly back at the bottom. (z, half width, half depth, centre y)
 ROBE = [(1.70, 0.20, 0.15, -0.07), (1.60, 0.27, 0.18, -0.05), (1.45, 0.28, 0.19, -0.03), (1.28, 0.26, 0.18, -0.01),
-        (1.12, 0.25, 0.18, 0.0), (0.95, 0.28, 0.20, 0.01), (0.75, 0.31, 0.22, 0.02), (0.55, 0.34, 0.24, 0.03),
-        (0.35, 0.36, 0.26, 0.04)]
+        (1.12, 0.25, 0.18, 0.0), (0.95, 0.29, 0.21, 0.01), (0.75, 0.33, 0.235, 0.02), (0.55, 0.37, 0.26, 0.03),
+        (0.35, 0.40, 0.28, 0.04)]
+RING = 40
+_robe_folds = folds(11, 0.04, 4, RING, len(ROBE))
 
 
-def robe_hem(i, k, p, c):
-    if i != len(ROBE) - 1:
-        return V(0, 0, 0)
-    return V(0, 0, -0.06 * ((k * 5) % 3) / 2.0)
+def robe_disp(i, k, p, c):
+    d = _robe_folds(i, k, p, c)
+    if i == 3:   # gathered by the belt
+        d = d + (p - c) * (-0.04)
+    if i == len(ROBE) - 1:
+        d = d + V(0, 0, -0.07 * ((k * 5) % 3) / 2.0 - 0.02 * math.sin(k * 1.7))
+    return d
 
 
-loft([(V(0, cy, z), rx, ry) for z, rx, ry, cy in ROBE], zone, n=28, cap0=False, cap1=False, disp=robe_hem)
-# folds: a few heavy vertical pleats down the front and the back
-for fx in (-0.12, 0.0, 0.12):
-    for fy, sgn in ((-0.20, 1), (0.21, -1)):
-        loft([(V(fx, fy * (1.0 + 0.15 * (1.1 - z)), z), 0.018, 0.02) for z in (1.05, 0.8, 0.55, 0.38)], zone, n=8)
+loft([(V(0, cy, z), rx, ry) for z, rx, ry, cy in ROBE], zone, n=RING, cap0=False, cap1=False, disp=robe_disp)
 
-# The torn hem: strips of the robe down to the ground, swinging as he walks.
+# The torn hem: strips of the robe down to the ground, lying along the hem, swinging as he walks.
 n_strip = 0
-for k in range(10):
-    ang = math.radians(-180 + k * 36 + (8 if k % 2 else 0))
-    top = V(0.33 * math.cos(ang), 0.04 + 0.24 * math.sin(ang), 0.38)
-    length = 0.28 + 0.1 * ((k * 3) % 4) / 3.0
+for k in range(12):
+    ang = math.radians(-180 + k * 30 + (8 if k % 2 else 0))
+    top = V(0.37 * math.cos(ang), 0.04 + 0.26 * math.sin(ang), 0.36)
+    length = 0.26 + 0.1 * ((k * 3) % 4) / 3.0
     bottom = top + V(0.03 * math.cos(ang), 0.04, -length)
-    chain_ribbon("Tatter.", n_strip, [top.lerp(bottom, j / 3.0) for j in range(4)], 0.11, 0.012, "Hips")
+    chain_ribbon("Tatter.", n_strip, [top.lerp(bottom, j / 3.0) for j in range(4)], 0.1, 0.012, "Hips",
+                 along=(math.sin(ang), math.cos(ang)))
     n_strip += 1
 
-# ---------------------------------------------------------------- mantle (a short cape over the shoulders)
-MANTLE = [(1.76, 0.17, 0.13, -0.08), (1.70, 0.30, 0.19, -0.06), (1.58, 0.36, 0.22, -0.04), (1.44, 0.37, 0.23, -0.02)]
-loft([(V(0, cy, z), rx, ry) for z, rx, ry, cy in MANTLE], W("Chest"), n=28, cap0=False, cap1=False,
-     disp=lambda i, k, p, c: V(0, 0, -0.05 * ((k * 7) % 3) / 2.0) if i == 3 else V(0, 0, 0))
+# ---------------------------------------------------------------- mantle (a cape over the shoulders, longer behind)
+MANTLE = [(1.78, 0.17, 0.14, -0.08), (1.72, 0.30, 0.2, -0.06), (1.62, 0.37, 0.24, -0.04), (1.50, 0.39, 0.26, -0.02),
+          (1.40, 0.40, 0.27, 0.0)]
+_mantle_folds = folds(8, 0.035, 1, RING, len(MANTLE), 0.6)
+
+
+def mantle_disp(i, k, p, c):
+    d = _mantle_folds(i, k, p, c)
+    if i == len(MANTLE) - 1:
+        th = 2 * math.pi * k / RING
+        d = d + V(0, 0, -0.06 * ((k * 7) % 3) / 2.0 - 0.12 * max(0.0, math.sin(th)) ** 2)   # longer at the back
+    return d
+
+
+loft([(V(0, cy, z), rx, ry) for z, rx, ry, cy in MANTLE], W("Chest"), n=RING, cap0=False, cap1=False, disp=mantle_disp)
 for sx in (1, -1):  # its torn tails behind
-    top = V(0.18 * sx, 0.2, 1.46)
-    chain_ribbon("Tatter.", n_strip, [top.lerp(top + V(0.04 * sx, 0.1, -0.62), j / 3.0) for j in range(4)], 0.13, 0.012, "Chest")
+    top = V(0.18 * sx, 0.24, 1.36)
+    chain_ribbon("Tatter.", n_strip, [top.lerp(top + V(0.04 * sx, 0.1, -0.62), j / 3.0) for j in range(4)], 0.13, 0.012, "Chest",
+                 along=(0.6, 0.8))
     n_strip += 1
 
-# ---------------------------------------------------------------- belt: a rope, its ends hanging
-loft([(V(0.31 * math.cos(a), 0.0 + 0.2 * math.sin(a), 1.12), 0.022, 0.022) for a in [2 * math.pi * k / 24 for k in range(25)]],
+# ---------------------------------------------------------------- belt: a thick rope, a knot, its ends hanging
+loft([(V(0.27 * math.cos(a), 0.0 + 0.19 * math.sin(a), 1.12 + 0.01 * math.sin(3 * a)), 0.026, 0.026) for a in [2 * math.pi * k / 32 for k in range(33)]],
      W("Hips"), mat=EYES, n=8, cap0=False, cap1=False)
+blob(V(0.17, -0.17, 1.11), 0.045, W("Hips"), mat=EYES, seg=10, rings=8)
 for dx in (0.06, 0.12):
     top = V(0.18 + dx * 0.4, -0.2, 1.1)
     chain_ribbon("Tatter.", n_strip, [top.lerp(top + V(dx * 0.3, -0.03, -0.48), j / 3.0) for j in range(4)], 0.035, 0.02,
                  "Hips", mat=EYES, taper=0.2, point=0.8)
     n_strip += 1
 
-# ---------------------------------------------------------------- hood
+# ---------------------------------------------------------------- hood: an open cowl, a dark hollow for a face
 loft([(bone_head("Neck").lerp(bone_tail("Neck"), u), 0.06, 0.06) for u in (0.0, 1.0)], W("Neck"), n=10)
-HOOD = [(1.70, 0.22, 0.17, -0.08), (1.78, 0.19, 0.17, -0.11), (1.86, 0.17, 0.18, -0.15), (1.94, 0.165, 0.185, -0.18),
-        (2.02, 0.155, 0.175, -0.19), (2.09, 0.13, 0.15, -0.18), (2.14, 0.09, 0.11, -0.16), (2.17, 0.035, 0.04, -0.14)]
+HOOD_KEYS = [(1.70, 0.22, 0.17, -0.08), (1.77, 0.2, 0.18, -0.10), (1.85, 0.185, 0.2, -0.13), (1.93, 0.18, 0.21, -0.16),
+             (2.01, 0.17, 0.2, -0.18), (2.08, 0.15, 0.18, -0.19), (2.13, 0.115, 0.145, -0.2), (2.165, 0.07, 0.09, -0.22),
+             (2.18, 0.02, 0.03, -0.24)]
+HOOD = []
+for j in range(len(HOOD_KEYS) - 1):
+    for u in (0.0, 0.5):
+        a0, b0 = HOOD_KEYS[j], HOOD_KEYS[j + 1]
+        HOOD.append(tuple(a0[q] + (b0[q] - a0[q]) * u for q in range(4)))
+HOOD.append(HOOD_KEYS[-1])
 
 
 def hood_w(p, s):
@@ -99,30 +120,44 @@ def hood_w(p, s):
     return {"Head": 1.0}
 
 
-def hood_brim(i, k, p, c):
-    th = 2 * math.pi * k / 24
-    front = max(0.0, -math.sin(th)) ** 2
-    return V(0, -0.07 * front * math.exp(-((i - 5.0) / 1.2) ** 2) + 0.05 * front * math.exp(-((i - 3.0) / 0.9) ** 2),
-             -0.02 * front * math.exp(-((i - 5.0) / 1.2) ** 2))
+def cowl(i, k, p, c):
+    th = 2 * math.pi * k / 32
+    fy = -math.sin(th)
+    side = math.cos(th)
+    z = p.z
+    face = math.exp(-((z - 1.93) / 0.1) ** 2) * max(0.0, fy) ** 1.8 * math.exp(-(side / 0.62) ** 2)
+    rim = math.exp(-((z - 2.06) / 0.05) ** 2) * max(0.0, fy) ** 2
+    back = math.exp(-((z - 1.76) / 0.06) ** 2) * max(0.0, -fy) * math.sin(7 * th)
+    return V(0, 0.2 * face - 0.06 * rim, -0.025 * rim) + (p - c).normalized() * 0.014 * back
 
 
 _h0 = len(verts)
-loft([(V(0, cy, z), rx, ry) for z, rx, ry, cy in HOOD], hood_w, n=24, disp=hood_brim, cap0=False)
+loft([(V(0, cy, z), rx, ry) for z, rx, ry, cy in HOOD], hood_w, n=32, disp=cowl, cap0=False)
 _hood = verts[_h0:]
+blob(V(0, -0.1, 1.93), 0.08, W("Head"), seg=14, rings=10, scale=(1.0, 0.8, 1.15))   # the dark mass in the hollow
 for sx in (1, -1):
-    near = [v.y for v in _hood if abs(v.x - 0.055 * sx) < 0.035 and abs(v.z - 1.93) < 0.045]
-    blob(V(0.055 * sx, min(near) - 0.004, 1.93), 0.022, W("Head"), mat=EYES, seg=10, rings=8, scale=(1.2, 0.6, 0.75))
+    near = [v.y for v in _hood if abs(v.x - 0.05 * sx) < 0.035 and abs(v.z - 1.94) < 0.045]
+    blob(V(0.05 * sx, min(near) - 0.006, 1.94), 0.022, W("Head"), mat=EYES, seg=10, rings=8, scale=(1.3, 0.6, 0.7))
 
-# ---------------------------------------------------------------- arms in wide sleeves, heavy hands
+# ---------------------------------------------------------------- arms in wide, folded sleeves, heavy fists
 for side in ("L", "R"):
     ua, la, ha = "UpperArm." + side, "LowerArm." + side, "Hand." + side
     a, b = bone_head(ua), bone_tail(ua)
-    loft([(a.lerp(b, u), r, r) for u, r in ((0.0, 0.085), (0.5, 0.08), (1.0, 0.075))], along(a, b, ua, la, 0.8), n=14)
+    loft([(a.lerp(b, u), r, r) for u, r in ((0.0, 0.095), (0.35, 0.09), (0.7, 0.085), (1.0, 0.085))], along(a, b, ua, la, 0.8), n=24,
+         disp=lambda i, k, p, c: (p - c) * (0.13 * math.sin(k * 6 * math.pi / 24 + i)))
+    blob(b, 0.085, lambda p, s, ua=ua, la=la: {ua: 0.5, la: 0.5}, seg=12, rings=8)          # the elbow, bunched cloth
     a, b = bone_head(la), bone_tail(la)
-    loft([(a.lerp(b, u), r, r) for u, r in ((0.0, 0.075), (0.6, 0.09), (1.0, 0.115))], along(a, b, la, ha, 0.9), n=16, cap1=False,
-         disp=lambda i, k, p, c: V(0, 0, -0.04 * ((k * 5) % 3) / 2.0) if i == 2 else V(0, 0, 0))
+    sleeve = lambda i, k, p, c: ((p - c) * (0.15 * (i / 4.0) * math.sin(k * 7 * math.pi / 28))
+                                 + V(0, 0, -(0.12 * max(0.0, math.sin(2 * math.pi * k / 28)) + 0.04 * ((k * 5) % 3) / 2.0) * (1.0 if i == 4 else 0.3 * i / 4.0)))
+    loft([(a.lerp(b, u), r, r) for u, r in ((0.0, 0.085), (0.3, 0.095), (0.6, 0.11), (0.85, 0.13), (1.0, 0.145))],
+         along(a, b, la, ha, 0.9), n=28, cap1=False, disp=sleeve)
+    loft([(a.lerp(b, u), r, r) for u, r in ((0.6, 0.045), (1.0, 0.04))], W(la), n=10)          # the wrist inside
     a, b = bone_head(ha), bone_tail(ha)
-    blob(a.lerp(b, 0.55), 0.05, W(ha), seg=12, rings=8, scale=(0.7, 1.0, 1.0))      # a big gloved fist
+    d = (b - a).normalized()
+    blob(a.lerp(b, 0.4), 0.05, W(ha), seg=12, rings=8, scale=(0.75, 1.0, 1.0))      # a heavy fist
+    for f in range(4):                                                               # its knuckles
+        blob(a.lerp(b, 0.75) + V(0, 0, 0.03 - 0.02 * f) + d * 0.01, 0.02, W(ha), seg=8, rings=6)
+    blob(a.lerp(b, 0.3) + V(0.03 if side == "L" else -0.03, -0.02, 0.02), 0.022, W(ha), seg=8, rings=6, scale=(1, 1, 1.4))   # thumb
 
 # ---------------------------------------------------------------- rosary from the right hand
 hr = bone_tail("Hand.R")

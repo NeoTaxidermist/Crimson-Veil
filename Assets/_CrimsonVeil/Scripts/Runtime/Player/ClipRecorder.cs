@@ -38,13 +38,14 @@ namespace CrimsonVeil.Player
         float moveX, aimY;
         bool jumpPulse, jumpHeld, dashPulse;
         VeilForm? castPulse, held;
+        bool stand;
         int frame;
         float clock;
         RenderTexture rt;
         Texture2D tex;
 
         /// <summary>At <paramref name="time"/> s into the clip: "move:1", "move:0", "jump", "hold-jump", "release-jump",
-        /// "dash", "aim:1" (up) / "aim:-1" / "aim:0", "cast:Sword", "hold:Shield", "release".</summary>
+        /// "dash", "aim:1" (up) / "aim:-1" / "aim:0", "cast:Sword", "hold:Shield", "release", "stand:1" / "stand:0" (Ctrl).</summary>
         public void At(float time, string action) => cues.Add(new Cue { time = time, action = action });
 
         public float MoveX => moveX;
@@ -52,6 +53,7 @@ namespace CrimsonVeil.Player
         public bool JumpPressed { get { bool v = jumpPulse; jumpPulse = false; return v; } }
         public bool JumpHeld => jumpHeld;
         public bool DashPressed { get { bool v = dashPulse; dashPulse = false; return v; } }
+        public bool StandHeld => stand;
         public VeilForm? CastPressed { get { var v = castPulse; castPulse = null; return v; } }
         public bool CastHeld(VeilForm form) => held == form;
 
@@ -90,6 +92,7 @@ namespace CrimsonVeil.Player
                 case "cast": castPulse = (VeilForm)System.Enum.Parse(typeof(VeilForm), parts[1]); break;
                 case "hold": held = (VeilForm)System.Enum.Parse(typeof(VeilForm), parts[1]); castPulse = held; break;
                 case "release": held = null; break;
+                case "stand": stand = parts[1] == "1"; break;
             }
         }
 

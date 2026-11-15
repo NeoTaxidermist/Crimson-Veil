@@ -188,9 +188,11 @@ namespace CrimsonVeil.Tests
             var b = new Vector3(1f, 2f, 0f);
             Assert.AreEqual(a, PlayerController.ClimbPath(a, b, 0f));
             Assert.AreEqual(b, PlayerController.ClimbPath(a, b, 1f));
-            var early = PlayerController.ClimbPath(a, b, 0.3f);
-            Assert.Greater(early.y, 0.6f);
+            var early = PlayerController.ClimbPath(a, b, 0.5f);
+            Assert.Greater(early.y, 0.6f, "the pull-up and the press lift him first");
             Assert.Less(early.x, 0.05f, "doesn't clip into the ledge corner");
+            var knee = PlayerController.ClimbPath(a, b, HeroPoseSolver.ClimbKneeEnd);
+            Assert.AreEqual(2f, knee.y, 1e-3f, "the feet are up at the lip before he goes over");
         }
     }
 }

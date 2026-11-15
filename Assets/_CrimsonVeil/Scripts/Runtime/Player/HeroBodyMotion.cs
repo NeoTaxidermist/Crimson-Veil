@@ -26,8 +26,8 @@ namespace CrimsonVeil.Player
             p.pelvis += Mathf.Lerp(2f, 7f, run) * gait + 2f * idle;
 
             // The collarbones go with the arms (a shoulder reaches forward into a thrust, draws back on the wind-up).
-            p.shoulderL += Mathf.Clamp(p.armL * 0.12f, -10f, 18f);
-            p.shoulderR += Mathf.Clamp(p.armR * 0.12f, -10f, 18f);
+            p.shoulderL += ShoulderReach(p.armL);
+            p.shoulderR += ShoulderReach(p.armR);
 
             // The arms hang a little out from the body, further when they swing far forward / back or go overhead,
             // so they pass by the hips and the head instead of through them.
@@ -60,6 +60,18 @@ namespace CrimsonVeil.Player
             p.wristL += 8f;
             p.wristR += s.weaponHeld > 0.3f ? 0f : 8f;
             return p;
+        }
+
+        /// <summary>
+        /// The collarbone going with the arm (degrees, + the shoulder forward): it reaches forward into a thrust and draws
+        /// back on a wind-up - but an arm raised overhead must not take it along: turning the collarbone forward there
+        /// tips the raised arm back over the head (the hands would hang from a ledge behind the head, the bow would be
+        /// drawn behind it), so the reach fades out as the arm goes up past the horizontal.
+        /// </summary>
+        public static float ShoulderReach(float arm)
+        {
+            float reach = Mathf.Clamp(arm * 0.12f, -10f, 18f);
+            return reach * (1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(95f, 140f, arm)));
         }
 
         static float ArmOut(float arm, float run) => 6f + 5f * run + Mathf.Clamp((Mathf.Abs(arm - 20f) - 45f) * 0.14f, 0f, 14f);

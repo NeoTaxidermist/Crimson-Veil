@@ -151,6 +151,8 @@ namespace CrimsonVeil.Player
                 bool drawing = veil != null && veil.ShapeForm == VeilForm.Bow
                                && (veil.Drawing || (veil.IsAttacking && veil.AttackProgress > 0.1f && veil.AttackProgress < 0.4f));
                 HeroHands.Targets(s.attackForm, s.weaponHeld, drawing, out float r, out float l);
+                // hanging and mantling, both hands grip the lip (then lie flat on the top as he presses over it)
+                if (s.hanging || s.climbing) r = l = HeroPoseSolver.LedgeGrip(s.hanging, s.climbing, s.climbProgress);
                 Hands.Apply(r, l, Time.deltaTime);
             }
 

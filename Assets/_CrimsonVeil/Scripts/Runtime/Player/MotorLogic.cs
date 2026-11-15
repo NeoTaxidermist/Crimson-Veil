@@ -48,7 +48,7 @@ namespace CrimsonVeil.Player
         public float wallCoyoteTime = 0.1f;
 
         [Header("Ledge")]
-        public float climbDuration = 0.34f;
+        public float climbDuration = 0.8f;
         public float ledgeRegrabDelay = 0.3f;
 
         [Header("Whip swing")]
@@ -94,6 +94,8 @@ namespace CrimsonVeil.Player
         public bool jumpPressed;
         public bool jumpHeld;
         public bool dashPressed;
+        /// <summary>Planted (Ctrl held): on the ground the direction keys only turn the hero (and aim his blows), he doesn't step.</summary>
+        public bool stand;
     }
 
     public struct MotorContacts
@@ -427,6 +429,13 @@ namespace CrimsonVeil.Player
 
             bool locked = inputLockTimer > 0f;
             if (hasInput && !IsDashing && !locked) Facing = inputSide;
+            // Planted: he stands his ground, turned the way the keys point (an attack from the spot), and doesn't step.
+            if (input.stand && IsGrounded && !IsDashing)
+            {
+                moveX = 0f;
+                hasInput = false;
+                inputSide = 0;
+            }
 
             // Ledge grab: falling or near the apex, pushing into a ledge.
             if (!IsGrounded && contacts.ledgeSide != 0 && regrabTimer <= 0f && Velocity.y <= 2f && !IsDashing

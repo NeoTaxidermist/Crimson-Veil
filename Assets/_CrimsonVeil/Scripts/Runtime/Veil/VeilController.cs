@@ -862,12 +862,12 @@ namespace CrimsonVeil.Veil
                     }
                     FireArrow(a, Facing);
                 }
-                // Step into the blow.
+                // Step into the blow (not when planted: Ctrl held, he strikes from the spot).
                 if (!lunged && player != null && player.Motor != null
                     && HeroAttackChoreography.Lunge(ShapeForm, out float lungeSpeed, out float lungeAt) && t >= lungeAt)
                 {
                     lunged = true;
-                    player.Motor.Lunge(lungeSpeed);
+                    if (!(input != null && input.StandHeld && player.IsGrounded)) player.Motor.Lunge(lungeSpeed);
                 }
                 if (t >= 1f)
                 {

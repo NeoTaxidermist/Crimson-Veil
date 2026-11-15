@@ -5,6 +5,63 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.21.0] – 2026-11-15
+Útok z místa (Ctrl), opravené šplhání a luk nad hlavou, mnich otáčí štít a propracovanější modely přízraku, mnicha a oběšence.
+
+### Přidáno
+- **Útok z místa:** dokud držíš Ctrl (na gamepadu stisk levé páčky), hrdina na zemi stojí. Šipky ho jen otáčejí a míří, takže jde seknout nahoru a dopředu bez rozběhu.
+  - Při držení Ctrl se ruší i výpad vpřed u seku.
+  - `IPlayerInput.StandHeld`, `MotorInput.stand`; `ClipRecorder` má povel `stand:1` / `stand:0`.
+
+### Opraveno
+- **Vis na římse:**
+  - Obě ruce drží hranu před hrdinou (dřív mířily kolmo nahoru za hlavu).
+  - Tělo je u zdi, jedna noha se opírá o kámen, druhá volně visí a hlava je zakloněná k hraně.
+  - Prsty se kolem hrany sevřou.
+- **Vylézání na římsu:** dřív hrdina jen vyjel rovně nahoru a hned stál. Teď je to 0,8 s dlouhý přítah ve čtyřech fázích:
+  1. přítah na rukou s pokrčenými lokty, brada k hraně;
+  2. vzepření na napjatých pažích s dlaněmi naplocho na horní ploše;
+  3. koleno přes hranu;
+  4. teprve pak přenesení těla nahoru a postavení.
+  - Dráha těla (`HeroPoseSolver.ClimbRiseOver`) je sladěná s pózou, takže nohy neprojdou kamenem a ruce zůstávají na hraně.
+- **Luk mířený nahoru** byl za hlavou, teď je nad čelem, kousek před obličejem.
+  - Příčina: klíční kost se při zvednuté paži natáčela dopředu a tím paži stáčela dozadu přes hlavu. Teď se to při paži nad vodorovnou postupně vypíná (`HeroBodyMotion.ShoulderReach`).
+  - Paže luku se při míření kolmo nahoru drží o kousek zpět (`BowOverheadTrim`).
+- **Mnich otáčí štít:** štít drží v prostoru světa čelem ke směru, kam se dívá, a natočený ke kameře. Při otočce ho přenese obloukem před tělem. Ze žádné strany už není vidět jen zadní strana štítu (`ShieldMonk.ShieldHold`).
+
+### Změněno
+- **Přízrak:**
+  - Kulatá kápě se špičkou svěšenou dopředu a hlubokou tmavou dutinou místo obličeje, v níž hoří oči.
+  - Přes ramena roztrhaná pelerína, delší vzadu.
+  - Rubáš padá v hlubokých záhybech.
+  - Široké řasené rukávy s dlouhým cípem visícím za předloktím.
+  - Stuhy rubáše leží podél lemu.
+- **Mnich:**
+  - Otevřená kápě s dutinou a očima.
+  - Hábit v záhybech místo tyček sklad, stažený provazem s uzlem.
+  - Pelerína v záhybech, vzadu delší.
+  - Široké řasené rukávy, těžké pěsti s klouby a palcem.
+  - Stuhy lemu leží podél lemu.
+- **Oběšenec:**
+  - Vychrtlý trup: žebra, propadlé břicho, kosti hrudní a lopatky.
+  - Košile roztržená vpředu a v záhybech.
+  - Obličej s nadočnicovým obloukem, lícními kostmi, nosem, ušima a pokleslou čelistí.
+  - Smyčka ze dvou pramenů s katovským uzlem.
+  - Ruce se čtyřmi prsty a palcem, kostnatá chodidla s prsty.
+  - Řetěz na pouti z dalších článků.
+- **Sdílená sada `rig_kit.py`:** `folds` pro záhyby a `chain_ribbon(along=...)` pro stuhy ležící podél lemu.
+
+### Testy
+- `LedgeStanceBowTests`:
+  - z místa se hrdina otočí, ale nerozběhne, a ve vzduchu Ctrl nebrzdí;
+  - přítah jde nejdřív nahoru a pak přes hranu;
+  - pózy přítahu, vzepření a kolena;
+  - úchop hrany;
+  - klíční kost u zvednuté paže;
+  - luk nahoru je nad čelem;
+  - štít mnicha je čelem ven z obou stran.
+- `WallLedgeMotorTests`, `HeroPoseSolverTests` a `VeilAimTests` jsou upravené na nové chování.
+
 ## [0.20.1] – 2026-11-15
 ### Opraveno
 - Do changelogu chyběl zápis k verzi 0.20.0, je doplněný níže.

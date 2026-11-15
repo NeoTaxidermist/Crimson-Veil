@@ -7,13 +7,14 @@ namespace CrimsonVeil.Player
     /// <summary>
     /// Keyboard + gamepad bindings built in code (no asset wiring needed). Every weapon button casts its
     /// weapon: the veil forms it, strikes and melts back into cloth.
-    /// Keyboard: A/D or arrows move, W/S (+ A/D) aim in eight directions, PgUp/PgDn look, Space jump, Shift dash;
+    /// Keyboard: A/D or arrows move, W/S (+ A/D) aim in eight directions, PgUp/PgDn look, Space jump, Shift dash,
+    ///   Ctrl held: planted (the arrows only turn and aim, no running);
     ///   J / LMB sword · K spear · L whip · U shield (hold) · I bow (hold to draw) — or 1-5.
     /// Gamepad: left stick move/aim, right stick look, South jump, East/RB dash; West sword · North spear · RT whip · LT shield · LB bow (D-pad too).
     /// </summary>
     public sealed class PlayerInputReader : MonoBehaviour, IPlayerInput
     {
-        InputAction move, aim, look, jump, dash;
+        InputAction move, aim, look, jump, dash, stand;
         InputAction whip, sword, spear, shield, bow;
 
         void Awake()
@@ -34,6 +35,7 @@ namespace CrimsonVeil.Player
 
             jump = Button("Jump", "<Keyboard>/space", "<Gamepad>/buttonSouth");
             dash = Button("Dash", "<Keyboard>/leftShift", "<Gamepad>/buttonEast", "<Gamepad>/rightShoulder");
+            stand = Button("Stand", "<Keyboard>/leftCtrl", "<Keyboard>/rightCtrl", "<Gamepad>/leftStickPress");
 
             sword = Button("Sword", "<Keyboard>/j", "<Mouse>/leftButton", "<Keyboard>/2", "<Gamepad>/buttonWest", "<Gamepad>/dpad/up");
             spear = Button("Spear", "<Keyboard>/k", "<Keyboard>/3", "<Gamepad>/buttonNorth", "<Gamepad>/dpad/right");
@@ -49,7 +51,7 @@ namespace CrimsonVeil.Player
             return action;
         }
 
-        InputAction[] All => new[] { move, aim, look, jump, dash, whip, sword, spear, shield, bow };
+        InputAction[] All => new[] { move, aim, look, jump, dash, stand, whip, sword, spear, shield, bow };
 
         void OnEnable() { foreach (var a in All) a.Enable(); }
         void OnDisable() { foreach (var a in All) a.Disable(); }
@@ -61,6 +63,7 @@ namespace CrimsonVeil.Player
         public bool JumpPressed => jump.WasPressedThisFrame();
         public bool JumpHeld => jump.IsPressed();
         public bool DashPressed => dash.WasPressedThisFrame();
+        public bool StandHeld => stand.IsPressed();
 
         InputAction For(VeilForm form)
         {

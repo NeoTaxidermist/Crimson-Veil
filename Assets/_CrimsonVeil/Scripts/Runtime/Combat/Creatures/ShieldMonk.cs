@@ -38,10 +38,27 @@ namespace CrimsonVeil.Combat
             shield = CreatureParts.Find(transform, "Shield");
             // (a rigged model brings its shield inside the model: it is moved in the Visual's frame, so it goes there)
             if (shield != null && visual != null && shield.parent != visual) shield.SetParent(visual, true);
-            if (shield != null) shieldRest = shield.localRotation;
+            // (its rest is taken in the world: facing +x, the shield's face towards the camera)
+            if (shield != null) shieldRest = shield.rotation;
         }
 
         Quaternion shieldRest = Quaternion.identity;
+
+        /// <summary>How far (degrees) the shield's face is turned from the camera towards the way he faces.</summary>
+        public const float ShieldTurn = 40f;
+
+        /// <summary>
+        /// Where the shield is held, in the world, for a body turned <paramref name="fx"/> (+1 facing +x .. -1 facing -x,
+        /// in between while he turns round): in front of him on the side he faces, kept on the camera's side of the body
+        /// (swung wide in front of it as he turns), its face turned towards his front - so whichever way he faces, the
+        /// hero sees the shield's face, never its back.
+        /// </summary>
+        public static void ShieldHold(Vector3 local, float fx, Quaternion rest, out Vector3 offset, out Quaternion rotation)
+        {
+            float side = Mathf.Abs(fx);
+            offset = new Vector3(fx * local.x, local.y, local.z - 0.3f * (1f - side));
+            rotation = Quaternion.Euler(0f, -ShieldTurn * fx, 0f) * rest;
+        }
 
         protected override void Tick(float dt)
         {
@@ -135,10 +152,14 @@ namespace CrimsonVeil.Combat
             // Up in front; raised for the bash; torn away and hanging low when disarmed.
             Vector3 up = new Vector3(0.55f, 1.05f, -0.15f), raised = new Vector3(0.75f, 1.3f, -0.15f), down = new Vector3(-0.1f, 0.35f, 0.25f);
             Vector3 targetPos = !ShieldUp ? down : Current == State.Windup ? Vector3.Lerp(up, raised, stateTime / windupTime) : Current == State.Bash ? up + Vector3.right * 0.3f : up;
-            shield.localPosition = Vector3.Lerp(shield.localPosition, targetPos, 1f - Mathf.Exp(-12f * dt));
-            // Torn away, it tips over; otherwise it keeps the angle it was modelled (or built) with.
+            // Held in the world frame: it goes round in front of him as he turns, its face always towards his front.
+            float fx = visual != null ? visual.TransformDirection(Vector3.right).x : Facing;
+            ShieldHold(targetPos, fx, shieldRest, out var offset, out var hold);
+            // Torn away, it tips over (away from where he faces).
             float tilt = ShieldUp ? 0f : 70f;
-            shield.localRotation = Quaternion.Slerp(shield.localRotation, Quaternion.Euler(0f, 0f, tilt) * shieldRest, 1f - Mathf.Exp(-10f * dt));
+            var wantRot = Quaternion.Euler(0f, 0f, tilt * (fx >= 0f ? 1f : -1f)) * hold;
+            shield.position = Vector3.Lerp(shield.position, transform.position + (visual != null ? visual.localPosition : Vector3.zero) + offset, 1f - Mathf.Exp(-12f * dt));
+            shield.rotation = Quaternion.Slerp(shield.rotation, wantRot, 1f - Mathf.Exp(-10f * dt));
         }
 
         /// <summary>Builds the monk's silhouette under <paramref name="root"/>.</summary>

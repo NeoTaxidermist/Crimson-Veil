@@ -46,6 +46,8 @@ namespace CrimsonVeil.Player
         public bool attacking;
         public CrimsonVeil.Veil.VeilForm attackForm;
         public float attackT;
+        /// <summary>Where the blow is aimed, degrees from the facing (+up), see VeilAim.</summary>
+        public float attackAim;
         public bool wallSliding;
         public bool hanging;
         public bool climbing;
@@ -162,7 +164,7 @@ namespace CrimsonVeil.Player
 
             bool attacking = s.attacking && s.attackT >= 0f && !s.hanging && !s.climbing && !s.swinging;
             if (attacking)
-                target = HeroAttackChoreography.Apply(target, s.attackForm, s.attackT, run);
+                target = HeroAttackChoreography.Apply(target, s.attackForm, s.attackT, run, s.attackAim);
 
             if (!initialised)
             {

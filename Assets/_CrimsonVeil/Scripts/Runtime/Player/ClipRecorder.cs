@@ -32,7 +32,7 @@ namespace CrimsonVeil.Player
         struct Cue { public float time; public string action; }
         readonly List<Cue> cues = new List<Cue>();
 
-        float moveX;
+        float moveX, aimY;
         bool jumpPulse, jumpHeld, dashPulse;
         VeilForm? castPulse, held;
         int frame;
@@ -41,11 +41,11 @@ namespace CrimsonVeil.Player
         Texture2D tex;
 
         /// <summary>At <paramref name="time"/> s into the clip: "move:1", "move:0", "jump", "hold-jump", "release-jump",
-        /// "dash", "cast:Sword", "hold:Shield", "release".</summary>
+        /// "dash", "aim:1" (up) / "aim:-1" / "aim:0", "cast:Sword", "hold:Shield", "release".</summary>
         public void At(float time, string action) => cues.Add(new Cue { time = time, action = action });
 
         public float MoveX => moveX;
-        public float AimY => 0f;
+        public float AimY => aimY;
         public bool JumpPressed { get { bool v = jumpPulse; jumpPulse = false; return v; } }
         public bool JumpHeld => jumpHeld;
         public bool DashPressed { get { bool v = dashPulse; dashPulse = false; return v; } }
@@ -83,6 +83,7 @@ namespace CrimsonVeil.Player
                 case "hold-jump": jumpHeld = true; break;
                 case "release-jump": jumpHeld = false; break;
                 case "dash": dashPulse = true; break;
+                case "aim": aimY = float.Parse(parts[1], System.Globalization.CultureInfo.InvariantCulture); break;
                 case "cast": castPulse = (VeilForm)System.Enum.Parse(typeof(VeilForm), parts[1]); break;
                 case "hold": held = (VeilForm)System.Enum.Parse(typeof(VeilForm), parts[1]); castPulse = held; break;
                 case "release": held = null; break;

@@ -18,6 +18,7 @@ namespace CrimsonVeil.CameraSystem
     public sealed class CameraFollow25D : MonoBehaviour
     {
         [SerializeField] PlayerController target;
+        CrimsonVeil.Veil.VeilController veil;
         [SerializeField] Vector3 offset = new Vector3(0f, 2f, -15f);
         [SerializeField] float leadDistance = 2.2f;
         [SerializeField] float followSmoothX = 0.18f;
@@ -140,10 +141,18 @@ namespace CrimsonVeil.CameraSystem
             currentOffset = snapped ? DesiredOffset(tp.x)
                 : Vector3.Lerp(currentOffset, DesiredOffset(tp.x), 1f - Mathf.Exp(-2.5f * dt));
 
-            // Deliberate look up/down: hold W/S while standing still.
+            // Deliberate look up/down: the right stick (PgUp/PgDn) at any time, or holding W/S while standing still
+            // with the scarf loose. With a weapon out W/S aim: aiming never moves the camera.
             float lookInput = 0f;
             var input = target.InputSource;
-            if (input != null && motor.IsGrounded && Mathf.Abs(input.MoveX) < 0.1f && Mathf.Abs(input.AimY) > 0.5f)
+            if (veil == null) veil = target.GetComponent<CrimsonVeil.Veil.VeilController>();
+            bool armed = veil != null && (veil.Form != CrimsonVeil.Veil.VeilForm.Flow || veil.IsAttacking);
+            if (input != null && Mathf.Abs(input.LookY) > 0.3f)
+            {
+                lookHeld = 0f;
+                lookInput = input.LookY;
+            }
+            else if (input != null && !armed && motor.IsGrounded && Mathf.Abs(input.MoveX) < 0.1f && Mathf.Abs(input.AimY) > 0.5f)
             {
                 lookHeld += dt;
                 if (lookHeld > lookHoldDelay) lookInput = input.AimY;

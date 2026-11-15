@@ -7,13 +7,13 @@ namespace CrimsonVeil.Player
     /// <summary>
     /// Keyboard + gamepad bindings built in code (no asset wiring needed). Every weapon button casts its
     /// weapon: the veil forms it, strikes and melts back into cloth.
-    /// Keyboard: A/D or arrows move, W/S aim, Space jump, Shift dash;
+    /// Keyboard: A/D or arrows move, W/S (+ A/D) aim in eight directions, PgUp/PgDn look, Space jump, Shift dash;
     ///   J / LMB sword · K spear · L whip · U shield (hold) · I bow (hold to draw) — or 1-5.
-    /// Gamepad: stick move/aim, South jump, East/RB dash; West sword · North spear · RT whip · LT shield · LB bow (D-pad too).
+    /// Gamepad: left stick move/aim, right stick look, South jump, East/RB dash; West sword · North spear · RT whip · LT shield · LB bow (D-pad too).
     /// </summary>
     public sealed class PlayerInputReader : MonoBehaviour, IPlayerInput
     {
-        InputAction move, aim, jump, dash;
+        InputAction move, aim, look, jump, dash;
         InputAction whip, sword, spear, shield, bow;
 
         void Awake()
@@ -27,6 +27,10 @@ namespace CrimsonVeil.Player
             aim.AddCompositeBinding("1DAxis").With("Negative", "<Keyboard>/s").With("Positive", "<Keyboard>/w");
             aim.AddCompositeBinding("1DAxis").With("Negative", "<Keyboard>/downArrow").With("Positive", "<Keyboard>/upArrow");
             aim.AddBinding("<Gamepad>/leftStick/y").WithProcessor("axisDeadzone(min=0.3,max=0.95)");
+
+            look = new InputAction("Look", InputActionType.Value, expectedControlType: "Axis");
+            look.AddBinding("<Gamepad>/rightStick/y").WithProcessor("axisDeadzone(min=0.3,max=0.95)");
+            look.AddCompositeBinding("1DAxis").With("Negative", "<Keyboard>/pageDown").With("Positive", "<Keyboard>/pageUp");
 
             jump = Button("Jump", "<Keyboard>/space", "<Gamepad>/buttonSouth");
             dash = Button("Dash", "<Keyboard>/leftShift", "<Gamepad>/buttonEast", "<Gamepad>/rightShoulder");
@@ -45,7 +49,7 @@ namespace CrimsonVeil.Player
             return action;
         }
 
-        InputAction[] All => new[] { move, aim, jump, dash, whip, sword, spear, shield, bow };
+        InputAction[] All => new[] { move, aim, look, jump, dash, whip, sword, spear, shield, bow };
 
         void OnEnable() { foreach (var a in All) a.Enable(); }
         void OnDisable() { foreach (var a in All) a.Disable(); }
@@ -53,6 +57,7 @@ namespace CrimsonVeil.Player
 
         public float MoveX => move.ReadValue<float>();
         public float AimY => aim.ReadValue<float>();
+        public float LookY => look.ReadValue<float>();
         public bool JumpPressed => jump.WasPressedThisFrame();
         public bool JumpHeld => jump.IsPressed();
         public bool DashPressed => dash.WasPressedThisFrame();

@@ -144,8 +144,12 @@ namespace CrimsonVeil.Tests
             var rope = Track(new GameObject("Rope")).AddComponent<CuttableRope>();
             rope.Configure(a, b, hinge, null);
 
-            input.aimY = 1f;
-            yield return CastAfterSettling(VeilForm.Bow);
+            input.aimY = 1f; // up and ahead: the diagonal (up alone shoots straight up); the assist finds the rope
+            yield return Wait(0.3f);
+            input.moveX = 1f;
+            input.cast = VeilForm.Bow;
+            yield return Wait(0.25f);
+            input.moveX = 0f;
             yield return Wait(1.2f);
             Assert.IsTrue(rope.IsCut, "an upward arrow should reach the high rope");
             Assert.IsTrue(hinge.Released);

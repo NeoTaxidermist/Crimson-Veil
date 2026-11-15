@@ -138,11 +138,17 @@ namespace CrimsonVeil.Player
         }
 
         /// <summary>Overlays the attack on a locomotion pose. Legs only take over when standing, so you can attack on the run.</summary>
-        public static HeroPose Apply(HeroPose pose, VeilForm form, float t, float run)
+        public static HeroPose Apply(HeroPose pose, VeilForm form, float t, float run, float aim = 0f)
         {
             if (t < 0f || For(form) == null) return pose;
             var k = Sample(form, t);
             float w = 1f - Mathf.SmoothStep(0f, 1f, (t - 0.85f) / 0.15f); // hand back to locomotion at the end
+            // Aimed blows: the whole swing turns with the shoulder (the weapon follows the forearm), the chest and
+            // the gaze go with it. It comes in over the wind-up, so the hold pose doesn't jump.
+            float aimed = aim * VeilAim.ArmShare(form) * Mathf.SmoothStep(0f, 1f, t / 0.18f);
+            k.armR = Mathf.Clamp(k.armR + aimed, -100f, 215f);
+            k.chest += aimed * 0.12f;
+            k.head += aimed * 0.25f;
             float legs = w * (1f - Mathf.Clamp01(run) * 0.75f);
             pose.armR = Mathf.Lerp(pose.armR, k.armR, w);
             pose.elbowR = Mathf.Lerp(pose.elbowR, k.elbowR, w);

@@ -5,6 +5,43 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.17.0] – 2026-11-15
+Míření v osmi směrech bez myši, s přichycením na cíl.
+
+### Přidáno
+- **Míření v 8 směrech** (`VeilAim`), stejně na klávesnici i na gamepadu.
+  - Šipky / W-S spolu s A/D, na gamepadu levá páčka.
+  - Směry: nahoru, šikmo nahoru, dopředu, šikmo dolů a dolů. Přímo dolů jde jen ve vzduchu.
+  - Na zemi míří dolů jen luk a bič (šikmo dolů). Meč a kopí do podlahy nesekají.
+- **Směrové údery všech zbraní.**
+  - Meč a bič: celý švih se otočí s ramenem a zbraň jde s předloktím. Hrudník a pohled jdou se směrem.
+  - Kopí a luk se natočí samy a paže jen dosáhne daným směrem.
+  - Směr se přidává během nápřahu, takže póza neskočí.
+- **Sek dolů ve vzduchu s odrazem.** Meč i kopí mířené pod nohy (`DownStrike`) odrazí hrdinu od zásahu nahoru.
+- **Přichycení na cíl.** V kuželu ±22° kolem zvoleného směru a v dosahu zbraně se úder stočí na nejbližší cíl: nepřítele, tvora, rozbitné, lano. Přednost má cíl na linii, pak bližší.
+  - Dosah: meč 2,6 m, kopí 3,2 m, bič 4,6 m, luk 14 m.
+  - Luk míří z místa, odkud šíp vylétá, a v okamžiku výstřelu přichycení dorovná, protože hrdina se mezitím mohl posunout.
+- **Rozhlížení kamerou je oddělené od míření.**
+  - Pravá páčka nebo PgUp/PgDn kdykoliv.
+  - W/S ve stoji jen s volnou šálou. Se zbraní W/S míří a kamera se nehne.
+- `ClipRecorder`: příkaz `aim:1` / `aim:-1` / `aim:0`.
+
+### Změněno
+- Luk: samotné „nahoru“ teď střílí kolmo vzhůru. Šikmo nahoru je nahoru + dopředu. Dřív měl luk jen náklon ±55°.
+
+### Testy
+- `VeilAimTests`:
+  - 8 směrů;
+  - štít se nemíří;
+  - přichycení v kuželu, ignoruje cíle za zády a mimo dosah, upřednostní cíl na linii;
+  - mířený švih otočí paži, luk ne;
+  - směr naroste během nápřahu.
+- PlayMode:
+  - meč mířený nahoru seká nad hlavou;
+  - přichycení stočí bodnutí na nepřítele;
+  - meč dolů ve vzduchu je sek pod nohy.
+- Test šípu na vysoké lano míří šikmo nahoru a přichycením trefí lano.
+
 ## [0.16.21] – 2026-11-15
 Šála neprochází zdmi.
 

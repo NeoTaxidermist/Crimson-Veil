@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using CrimsonVeil.Core;
 using CrimsonVeil.Player;
 using UnityEngine;
@@ -270,10 +271,11 @@ namespace CrimsonVeil.Veil
         public void NotifyHitLanded()
         {
             Charge.OnHitLanded();
-            if (ThrustingDown && player != null)
+            if ((ThrustingDown || DownStrike) && player != null && player.Motor != null)
             {
                 player.Motor.Bounce();
                 ThrustingDown = false;
+                DownStrike = false;
             }
         }
 
@@ -289,6 +291,7 @@ namespace CrimsonVeil.Veil
             castMode = false;
             pendingAttack = null;
             ThrustingDown = false;
+            DownStrike = false;
             Drawing = false;
             aimTiltTarget = 0f;
             if (form == VeilForm.Flow && TransformProgress > 0.05f) releaseTime = 0f; // start exhaling
@@ -356,13 +359,57 @@ namespace CrimsonVeil.Veil
             whipCracked = false;
             Drawing = false;
             drawTime = 0f;
-            float aim = input != null ? input.AimY : 0f;
             bool airborne = player != null && player.Motor != null && !player.IsGrounded;
-            ThrustingDown = ShapeForm == VeilForm.Spear && airborne && aim < -0.5f;
-            aimTiltTarget = ThrustingDown ? VeilCasting.DownThrustTilt
-                : ShapeForm == VeilForm.Bow ? Mathf.Clamp(aim, -1f, 1f) * VeilCasting.BowAimRange : 0f;
-            if (ThrustingDown || ShapeForm == VeilForm.Bow) aimTilt = aimTiltTarget;
+            AttackAim = AimNow(ShapeForm, airborne);
+            ThrustingDown = ShapeForm == VeilForm.Spear && airborne && AttackAim <= -80f;
+            // A strike under the feet in the air (sword or spear) bounces the hero up off what it hits.
+            DownStrike = airborne && AttackAim <= -60f && (ShapeForm == VeilForm.Sword || ShapeForm == VeilForm.Spear);
+            // The sword, spear and whip are aimed by the arm (HeroAttackChoreography); the bow turns itself.
+            // (Without an arm rig, e.g. a bare test body, the weapon itself is turned instead.)
+            // The spear and the bow don't turn with the forearm (VeilFormLibrary.ForearmFollow): they turn themselves,
+            // the arm only reaches that way.
+            bool armDriven = hand != null && hand.parent != null;
+            bool turnsItself = ShapeForm == VeilForm.Bow || ShapeForm == VeilForm.Spear || !armDriven;
+            aimTiltTarget = ThrustingDown ? VeilCasting.DownThrustTilt : turnsItself ? AttackAim : 0f;
+            // (the spear swings round onto its line during the draw-back instead of jumping there)
+            if (ThrustingDown || (turnsItself && ShapeForm != VeilForm.Spear)) aimTilt = aimTiltTarget;
             Attacked?.Invoke(Form);
+        }
+
+        /// <summary>Direction (degrees from the facing, +up) the current blow is aimed in, aim assist included.</summary>
+        public float AttackAim { get; private set; }
+        /// <summary>The current blow is a strike under the feet in the air (it bounces the hero off a hit).</summary>
+        public bool DownStrike { get; private set; }
+
+        readonly Collider[] aimBuffer = new Collider[32];
+        readonly List<Vector2> aimTargets = new List<Vector2>();
+
+        float aimKeyed; // the eight-way direction chosen for the current blow (before the assist)
+
+        /// <summary>The eight-way aim from the direction keys / stick, turned onto a target in the assist cone.</summary>
+        float AimNow(VeilForm form, bool airborne, float? keyed = null)
+        {
+            float limit = VeilAim.Limit(form);
+            if (limit <= 0f || input == null) return 0f;
+            float angle = Mathf.Clamp(keyed ?? VeilAim.Direction(input.MoveX, input.AimY, airborne, form), -limit, limit);
+            aimKeyed = angle;
+            float reach = VeilAim.Reach(form);
+            Vector3 a = anchor != null ? anchor.position : transform.position;
+            aimTargets.Clear();
+            int count = Physics.OverlapSphereNonAlloc(a, reach, aimBuffer, ~0, QueryTriggerInteraction.Collide);
+            var root = transform.root;
+            for (int i = 0; i < count; i++)
+            {
+                var c = aimBuffer[i];
+                if (c == null || !c.enabled || c.transform.IsChildOf(root)) continue;
+                if (c.GetComponentInParent<CrimsonVeil.Combat.IDamageable>() == null) continue;
+                aimTargets.Add(c.bounds.center);
+            }
+            int facing = Facing;
+            if (Mathf.Abs(input.MoveX) > 0.3f) facing = input.MoveX > 0f ? 1 : -1; // the hero turns into the blow
+            // Aim from where the blow leaves: an arrow flies from the bow hand, not the neck.
+            Vector3 from = form == VeilForm.Bow ? ArrowOrigin(a, facing) : a;
+            return VeilAim.Assist(angle, from, facing, aimTargets, reach, limit);
         }
 
         /// <summary>Pending blows, held weapons, follow-ups, and melting back into cloth after a cast.</summary>
@@ -388,7 +435,9 @@ namespace CrimsonVeil.Veil
                     attackTime = hold;
                     Drawing = true;
                     drawTime += dt;
-                    aimTiltTarget = Mathf.Clamp(input.AimY, -1f, 1f) * VeilCasting.BowAimRange;
+                    // drawn, the bow follows the eight-way aim (and settles on a target in the assist cone)
+                    AttackAim = AimNow(VeilForm.Bow, player != null && player.Motor != null && !player.IsGrounded);
+                    aimTiltTarget = AttackAim;
                 }
             }
             // Shield held: it guards (and drains the scarf); in the air it is held overhead and slows the fall.
@@ -717,6 +766,12 @@ namespace CrimsonVeil.Veil
                 if (ShapeForm == VeilForm.Bow && !arrowFired && t >= 0.3f)
                 {
                     arrowFired = true;
+                    // The hero may have moved since the draw began: settle the assist from where the arrow leaves now.
+                    if (!Drawing && Mathf.Abs(aimTiltTarget - AttackAim) < 0.01f)
+                    {
+                        AttackAim = AimNow(VeilForm.Bow, player != null && player.Motor != null && !player.IsGrounded, aimKeyed);
+                        aimTiltTarget = AttackAim;
+                    }
                     FireArrow(a, Facing);
                 }
                 // Step into the blow.
@@ -732,6 +787,7 @@ namespace CrimsonVeil.Veil
                     t = -1f;
                     recoverTimer = VeilCasting.Recovery(ShapeForm);
                     ThrustingDown = false;
+                    DownStrike = false;
                     aimTiltTarget = 0f;
                 }
                 AttackProgress = t;
@@ -906,11 +962,16 @@ namespace CrimsonVeil.Veil
                 into[i] = new Vector2((p[i].x - a.x) / s, p[i].y - a.y);
         }
 
-        void FireArrow(Vector3 a, int facing)
+        static Vector3 ArrowOrigin(Vector3 a, int facing)
         {
             var hand = VeilFormLibrary.Hand;
-            var pos = a + new Vector3((hand.x + 0.35f) * facing, hand.y, 0f);
-            // Aim with up/down (held or at the moment of the cast): up to 55° — needed to reach high ropes.
+            return a + new Vector3((hand.x + 0.35f) * facing, hand.y, 0f);
+        }
+
+        void FireArrow(Vector3 a, int facing)
+        {
+            var pos = ArrowOrigin(a, facing);
+            // Aimed in eight directions (held or at the moment of the cast), turned onto a target by the aim assist.
             float aim = Mathf.Abs(aimTiltTarget) > 1f ? aimTiltTarget * Mathf.Deg2Rad : 0.06f;
             Vector3 dir = new Vector3(facing * Mathf.Cos(aim), Mathf.Sin(aim), 0f);
             VeilArrow.Spawn(pos, dir.normalized * arrowSpeed, arrowMaterial, gameObject);

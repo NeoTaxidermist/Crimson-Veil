@@ -95,6 +95,7 @@ namespace CrimsonVeil.Player
                 attacking = veil != null && veil.IsAttacking && veil.AttackProgress >= 0f,
                 attackForm = veil != null ? veil.ShapeForm : VeilForm.Flow,
                 attackT = veil != null ? veil.AttackProgress : -1f,
+                attackAim = veil != null ? veil.AttackAim : 0f,
                 wallSliding = player.Motor.State == MotorState.WallSlide,
                 hanging = player.Motor.State == MotorState.LedgeHang,
                 climbing = player.Motor.State == MotorState.Climbing,

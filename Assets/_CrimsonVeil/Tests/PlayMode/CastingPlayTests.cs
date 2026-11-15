@@ -132,6 +132,51 @@ namespace CrimsonVeil.Tests
         }
 
         [UnityTest]
+        public IEnumerator SwordAimedUp_CutsAboveTheHead()
+        {
+            yield return Wait(0.3f);
+            input.aimY = 1f;
+            input.cast = VeilForm.Sword;
+            yield return Wait(0.12f);
+            Assert.IsTrue(veil.IsAttacking);
+            Assert.Greater(veil.AttackAim, 80f, "up: straight up");
+            var sim = veil.Simulation;
+            float highest = float.MinValue;
+            while (veil.IsAttacking)
+            {
+                highest = Mathf.Max(highest, sim.Positions[sim.Count - 1].y);
+                yield return null;
+            }
+            Assert.Greater(highest, veil.Anchor.position.y + 0.6f, "the blade cuts above the head");
+        }
+
+        [UnityTest]
+        public IEnumerator AimAssist_TurnsTheBlowOntoAnEnemyNearTheLine()
+        {
+            SpawnEnemy(new Vector3(2f, 0f, 0f)); // its body a little below the line from the neck
+            yield return Wait(0.3f);
+            input.cast = VeilForm.Spear;
+            yield return Wait(0.2f);
+            Assert.IsTrue(veil.IsAttacking);
+            Assert.Less(veil.AttackAim, -5f, "the thrust is turned down onto the enemy");
+            Assert.Greater(veil.AttackAim, -VeilAim.AssistCone - 1f);
+        }
+
+        [UnityTest]
+        public IEnumerator SwordAimedDownInTheAir_IsAStrikeUnderTheFeet()
+        {
+            yield return Wait(0.3f);
+            input.jump = true; input.jumpHeld = true;
+            yield return Wait(0.15f);
+            input.aimY = -1f;
+            input.cast = VeilForm.Sword;
+            yield return Wait(0.15f);
+            Assert.IsTrue(veil.IsAttacking);
+            Assert.Less(veil.AttackAim, -80f);
+            Assert.IsTrue(veil.DownStrike, "it bounces the hero off what it hits");
+        }
+
+        [UnityTest]
         public IEnumerator MashingEarlyInABlow_DoesNotChainBlows()
         {
             int blows = 0;

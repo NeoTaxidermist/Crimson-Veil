@@ -5,6 +5,15 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.17.5] – 2026-11-15
+Štít s napůl otevřenou dlaní.
+
+### Změněno
+- **Ruka pod štítem je napůl otevřená** (`HeroHands.ShieldGrip` = 0,45). Kruh štítu se vznáší kousek od dlaně, takže ruka ho nesvírá v pěsti, ale ani nezůstává úplně otevřená.
+
+### Testy
+- Pod štítem je dlaň napůl otevřená.
+
 ## [0.17.4] – 2026-11-15
 Kosti prstů v obou rukou.
 

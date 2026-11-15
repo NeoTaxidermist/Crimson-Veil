@@ -16,7 +16,7 @@ namespace CrimsonVeil.Tests
             Assert.AreEqual(1f, r, 1e-4f, "the sword hand clenches round the hilt");
             Assert.AreEqual(0f, l, 1e-4f, "the free hand stays relaxed");
             HeroHands.Targets(VeilForm.Shield, 1f, false, out r, out l);
-            Assert.AreEqual(0f, r, 1e-4f, "the shield floats round the body: the hand stays open");
+            Assert.That(r, Is.InRange(0.3f, 0.6f), "under the floating shield the palm is half open");
             HeroHands.Targets(VeilForm.Bow, 1f, true, out r, out l);
             Assert.AreEqual(1f, r, 1e-4f, "the bow hand grips the bow");
             Assert.Greater(l, 0.7f, "the drawing hand pinches the string");

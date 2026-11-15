@@ -106,13 +106,16 @@ namespace CrimsonVeil.Player
             return new Joint { bone = b, rest = b.localRotation, axis = b.InverseTransformDirection(axisWorld) };
         }
 
+        /// <summary>Grip of the hand that raises the shield: half open, the ring floats off the palm.</summary>
+        public const float ShieldGrip = 0.45f;
+
         /// <summary>
-        /// How far each hand closes: the sword hand round a formed weapon (not round the shield, which floats round
-        /// the body: that hand stays open), the other hand round the bow string while it is drawn.
+        /// How far each hand closes: the sword hand round a formed weapon (half open under the shield, which floats
+        /// round the body off the palm), the other hand round the bow string while it is drawn.
         /// </summary>
         public static void Targets(VeilForm form, float weaponHeld, bool drawingString, out float rightGrip, out float leftGrip)
         {
-            rightGrip = form == VeilForm.Shield ? 0f : HeroPoseSolver.FistWeight(weaponHeld);
+            rightGrip = HeroPoseSolver.FistWeight(weaponHeld) * (form == VeilForm.Shield ? ShieldGrip : 1f);
             leftGrip = drawingString ? 0.85f : 0f;
         }
 

@@ -52,9 +52,8 @@ namespace CrimsonVeil.Tests
         {
             Assert.AreEqual(0f, Somersault.Wrap(-1f, -1f), 1e-4f);
             Assert.AreEqual(1f, Somersault.Wrap(0.3f, -1f), 1e-4f);
-            Assert.Greater(Somersault.Wrap(-1f, 0.1f), 0.5f, "still wound just after the turn");
             Assert.AreEqual(0f, Somersault.Wrap(-1f, 0.5f), 1e-4f, "unwound");
-            Assert.AreEqual(0f, Somersault.Wrap(-1f, 0.31f), 1e-4f, "lets go within 0.3 s of landing (no ball of cloth hanging beside the hero)");
+            Assert.AreEqual(0f, Somersault.Wrap(-1f, 0.13f), 1e-4f, "landed: the scarf unwraps at once");
         }
 
         [Test]
@@ -67,6 +66,33 @@ namespace CrimsonVeil.Tests
             Assert.AreEqual(0f, v.x, 1e-3f, "on the ring: no pull in or out");
             Assert.Less(VeilSimulation.SwirlVelocity(new Vector2(2f, 0f), c, 0f, 0.5f).x, 0f, "far out: drawn in");
             Assert.Greater(VeilSimulation.SwirlVelocity(new Vector2(0.1f, 0f), c, 0f, 0.5f).x, 0f, "too close: pushed out");
+        }
+
+        [Test]
+        public void WrappedScarf_IsASpiralRoundTheBody_FromTheNeck()
+        {
+            var c = new Vector2(0f, 0.95f);
+            var neck = c + new Vector2(0f, 0.6f);
+            Assert.AreEqual(0f, Vector2.Distance(VeilSimulation.WrapPoint(c, neck, 0f, 3.2f, 1f), neck), 1e-4f, "starts at the neck");
+            float lastAngle = 90f;
+            for (float d = 0.4f; d <= 3.2f; d += 0.4f)
+            {
+                var p = VeilSimulation.WrapPoint(c, neck, d, 3.2f, 1f) - c;
+                Assert.That(p.magnitude, Is.InRange(0.59f, 0.86f), "close round the body");
+                float ang = Mathf.Atan2(p.y, p.x) * Mathf.Rad2Deg;
+                if (ang < lastAngle - 1f) ang += 360f;
+                Assert.Greater(ang, lastAngle, "winds on round the body (anticlockwise for a clockwise turn)");
+                lastAngle = ang;
+            }
+            Assert.Greater(lastAngle - 90f, 200f, "the 3.2 m scarf wraps most of the way round");
+        }
+
+        [Test]
+        public void AfterLanding_TheScarfUnwindsAtOnce()
+        {
+            Assert.AreEqual(1f, VeilSimulation.UnwindBoost(0f), 1e-4f, "pulled back hard the moment it lets go");
+            Assert.AreEqual(0f, VeilSimulation.UnwindBoost(0.5f), 1e-4f, "then the usual shape");
+            Assert.AreEqual(0f, VeilSimulation.UnwindBoost(10f), 1e-4f, "never wound: nothing extra");
         }
 
         [Test]

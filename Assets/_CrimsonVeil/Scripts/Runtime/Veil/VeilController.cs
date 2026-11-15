@@ -448,11 +448,9 @@ namespace CrimsonVeil.Veil
                 Simulation.SwirlCenter = (Vector2)player.transform.position + Vector2.up * Somersault.Pivot;
                 // Whirl with the body as it turns (slow-fast-slow), and run down smoothly as it lets go.
                 float bodySpin = Somersault.AngularVelocity(player.FlipProgress, player.FlipFacing);
-                // While turning the whirl keeps pace with the body; once it has landed the whirl runs on and slows
-                // (it doesn't stop dead), so the wound cloth is carried on round and peels off behind instead of
-                // hanging as a still ball beside the hero while it lets go.
-                bool turning = Somersault.Active(player.FlipProgress);
-                Simulation.SwirlSpeed = Mathf.Lerp(Simulation.SwirlSpeed, turning ? bodySpin : 0f, 1f - Mathf.Exp(-(turning ? 14f : 2.5f) * dt));
+                Simulation.SwirlSpeed = Mathf.Lerp(Simulation.SwirlSpeed, bodySpin, 1f - Mathf.Exp(-14f * dt));
+                // the cloth trails the turn: facing right the body turns clockwise, the scarf winds anticlockwise
+                Simulation.WrapTrail = player.FlipFacing;
             }
             else Simulation.SwirlSpeed = 0f;
 

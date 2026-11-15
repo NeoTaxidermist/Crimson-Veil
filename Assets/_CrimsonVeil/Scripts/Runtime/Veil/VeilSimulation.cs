@@ -132,6 +132,33 @@ namespace CrimsonVeil.Veil
         public float SwirlRadius { get; set; } = 0.75f;
         public float SwirlWeight { get; set; }
         /// <summary>
+        /// Which way the scarf trails round the body while it is wound in the somersault (+1 anticlockwise,
+        /// -1 clockwise; 0 = against <see cref="SwirlSpeed"/>). The body turns one way, the cloth lags the other.
+        /// </summary>
+        public float WrapTrail { get; set; }
+        /// <summary>How far (m) the wrapped scarf's spiral widens from the neck to its end.</summary>
+        public const float WrapWiden = 0.25f;
+        /// <summary>How fast (1/s) the loose cloth is laid onto the wrap while it is wound.</summary>
+        public const float WrapRate = 38f;
+
+        /// <summary>
+        /// Where node at <paramref name="along"/> metres from the neck lies when the scarf is wound round the body:
+        /// a spiral round <paramref name="centre"/> that starts at the neck and winds on, trailing the turn, widening
+        /// by <see cref="WrapWiden"/> to its end.
+        /// </summary>
+        /// <summary>0..1: how much harder the scarf is pulled back into its shape <paramref name="since"/> s after the
+        /// somersault let go (1 at once, gone after 0.5 s; 0 if it hasn't been wound).</summary>
+        public static float UnwindBoost(float since) => since >= 0.5f ? 0f : 1f - Mathf.SmoothStep(0f, 1f, since / 0.5f);
+
+        public static Vector2 WrapPoint(Vector2 centre, Vector2 neck, float along, float length, float trail)
+        {
+            Vector2 n0 = neck - centre;
+            float r0 = Mathf.Max(n0.magnitude, 0.3f);
+            float r = r0 + WrapWiden * Mathf.Clamp01(along / Mathf.Max(length, 1e-3f));
+            float angle = Mathf.Atan2(n0.y, n0.x) + Mathf.Sign(trail) * along / (0.5f * (r0 + r));
+            return centre + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * r;
+        }
+        /// <summary>
         /// 0..1: how firmly the loose cloth keeps the shape of its animation sheet (VeilRestShape): streaming back
         /// level in an S behind the hero (towards <see cref="DriftDirection"/>). Full at rest, eased off when the hero
         /// runs or somersaults, so the cloth's own physics shows through.
@@ -163,6 +190,7 @@ namespace CrimsonVeil.Veil
         float shedPhase;
         int nextSign = 1;
         float time;
+        float sinceWrap = 10f;
         Vector3 lastAnchor;
 
         public VeilSimulation(VeilSettings settings, Vector3 anchor)
@@ -261,6 +289,10 @@ namespace CrimsonVeil.Veil
 
             // 3) Verlet integration with drag towards the local air velocity.
             Vector3 g = Gravity * s.gravityScale;
+            // Just after the somersault the scarf unwinds at once: for a moment it is pulled back into its shape
+            // much harder and may move up and down freely (it lies wound round the legs as the hero lands).
+            sinceWrap = SwirlWeight > 0.01f ? 0f : sinceWrap + h;
+            float unwind = UnwindBoost(sinceWrap);
             var bodyVel = new Vector2(anchorVel.x, anchorVel.y);
             float bodySpeed = bodyVel.magnitude;
             float wavePhase = s.undulationSpeed * time;
@@ -292,8 +324,8 @@ namespace CrimsonVeil.Veil
                     // back ~RestReach of d (a straighter target would pull the S flat).
                     float dAlong = f * s.length;
                     var target = new Vector3(a.x + Mathf.Sign(DriftDirection) * dAlong * RestReach, a.y + VeilRestShape.Height(dAlong, time), p.z);
-                    Vector3 pull = (target - p) * s.restShapeStiffness;
-                    Vector3 still = new Vector3(anchorVel.x - vel.x, anchorVel.y - vel.y, 0f) * s.restShapeDamping;
+                    Vector3 pull = (target - p) * (s.restShapeStiffness * (1f + 3f * unwind));
+                    Vector3 still = new Vector3(anchorVel.x - vel.x, anchorVel.y - vel.y, 0f) * (s.restShapeDamping * (1f + 1.5f * unwind));
                     acc += new Vector3(pull.x + still.x, pull.y + still.y, 0f) * shaped;
                 }
 
@@ -323,7 +355,7 @@ namespace CrimsonVeil.Veil
                     Vector3 relV = (next - p) / h - anchorVel;
                     // A breath (weapon melting back) may lift it faster than the normal limit.
                     float limit = relV.y > 0f ? s.maxRelativeFall + Mathf.Max(0f, Breath.y) * 0.25f : s.maxRelativeFall;
-                    limit += SwirlWeight * 40f; // winding round the body needs to move up and down freely
+                    limit += (SwirlWeight + unwind) * 40f; // winding round the body (and off it) moves up and down freely
                     if (Mathf.Abs(relV.y) > limit)
                     {
                         relV.y = Mathf.Lerp(relV.y, Mathf.Sign(relV.y) * limit, loose);
@@ -346,6 +378,25 @@ namespace CrimsonVeil.Veil
                 float f = 1f - Mathf.Exp(-s.hardenRate * hi * h);
                 Positions[i] = Vector3.Lerp(Positions[i], Targets[i] + targetOffset, f);
                 previous[i] = Vector3.Lerp(previous[i], Positions[i], f * 0.5f);
+            }
+
+            // 5b) The somersault: the loose cloth is laid round the body as a spiral from the neck, trailing the
+            // turn, so it wraps the hero as the body turns (rather than tangling in the whirl beside him).
+            if (SwirlWeight > 0.001f)
+            {
+                float trail = WrapTrail != 0f ? WrapTrail : -Mathf.Sign(SwirlSpeed);
+                if (trail != 0f)
+                {
+                    float rate = 1f - Mathf.Exp(-WrapRate * SwirlWeight * h);
+                    for (int i = 1; i < Count; i++)
+                    {
+                        float loose = 1f - H(i);
+                        if (loose <= 0.001f) continue;
+                        Vector2 w = WrapPoint(SwirlCenter, a, (float)i / (Count - 1) * s.length, s.length, trail);
+                        var target = new Vector3(w.x, w.y, Positions[i].z);
+                        Positions[i] = Vector3.Lerp(Positions[i], target, rate * loose);
+                    }
+                }
             }
 
             // 6) Distance constraints (rest length morphs from cloth to weapon shape, node by node).

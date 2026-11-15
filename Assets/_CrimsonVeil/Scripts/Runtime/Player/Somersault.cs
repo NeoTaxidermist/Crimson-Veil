@@ -48,7 +48,7 @@ namespace CrimsonVeil.Player
         }
 
         /// <summary>Seconds after the turn over which the whirl lets go of the scarf.</summary>
-        public const float LetGo = 0.3f;
+        public const float LetGo = 0.12f; // landed: the scarf unwraps at once
 
         /// <summary>0..1 how strongly the scarf is wound round the body: eases in with the turn, lets go gently.</summary>
         public static float Wrap(float progress, float sinceEnd)

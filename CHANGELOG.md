@@ -5,6 +5,19 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.16.14] – 2026-11-15
+Šála při saltu: obtočí se kolem těla a po dopadu se hned rozbalí.
+
+### Změněno
+- **Během salta se šála ovine kolem těla jako spirála.**
+  - Začíná u krku, vede dokola kolem boků a rozšiřuje se z poloměru krku o 0,25 m.
+  - Opožďuje se za otáčkou, takže 3,2 m šály obepne tělo asi ze tří čtvrtin.
+  - Látka se na spirálu klade rychle (`WrapRate` 38/s) a otáčí se s tělem. Už se nezamotává do klubka ve víru vedle hrdiny.
+- **Po dopadu se šála hned rozbalí.**
+  - Víření ji pustí za 0,12 s (dřív za 0,45 s) a po dopadu už nepokračuje.
+  - Dalších 0,5 s ji tvar ze sešitu stahuje zpět až čtyřnásobnou silou a látka se smí volně hýbat nahoru i dolů.
+  - Za zhruba čtvrt sekundy zase vlaje za hrdinou.
+
 ## [0.16.13] – 2026-11-15
 Štít, salto a zbraně podle záběrů ze hry.
 

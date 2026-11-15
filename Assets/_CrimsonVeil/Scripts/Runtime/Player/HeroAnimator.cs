@@ -110,6 +110,9 @@ namespace CrimsonVeil.Player
                 var t = Find(bone);
                 return t == null ? null : RigJoint.Create(t, lateral, () => t.position + t.up * reach, measure);
             }
+            upperArmL = upperL; upperArmR = upperR;
+            lowerArmL = Find("LowerArm.L"); lowerArmR = Find("LowerArm.R");
+            handL = Find("Hand.L"); handR = Find("Hand.R");
             wristL = Tip("Hand.L", 0.08f, forward);
             wristR = Tip("Hand.R", 0.08f, forward);
             toeL = Tip("Toe.L", 0.05f, up);
@@ -118,6 +121,31 @@ namespace CrimsonVeil.Player
         }
 
         RigJoint pelvis, neckJ, shoulderL, shoulderR, wristL, wristR, toeL, toeR;
+        Transform upperArmL, upperArmR, lowerArmL, lowerArmR, handL, handR;
+
+        /// <summary>
+        /// Hanging and mantling, the hands stay on the lip while the body moves: the pose only roughly places the arms,
+        /// a two-bone reach puts the wrists on the stone - hooked over the lip while hanging and pulling up, flat on
+        /// the top while pressing over it - until the knee is up and they let go.
+        /// </summary>
+        void ReachLip(in HeroState s)
+        {
+            float weight = HeroPoseSolver.LipHold(s.hanging, s.climbing, s.climbProgress);
+            if (weight <= 0f) return;
+            int dir = player.Motor.AttachSide != 0 ? player.Motor.AttachSide : player.Motor.Facing;
+            Vector2 off = HeroPoseSolver.LipHandOffset(s.hanging ? 0f : s.climbProgress);
+            var lip = player.LipPoint;
+            Reach(upperArmL, lowerArmL, handL, lip, off, dir, weight);
+            Reach(upperArmR, lowerArmR, handR, lip, off, dir, weight);
+        }
+
+        static void Reach(Transform upper, Transform lower, Transform hand, Vector3 lip, Vector2 off, int dir, float weight)
+        {
+            if (upper == null) return;
+            var target = new Vector3(lip.x + dir * off.x, lip.y + off.y, upper.position.z);
+            var pole = upper.position + new Vector3(-dir * 1f, -0.6f, 0f);   // the elbows bend back and down, away from the wall
+            LimbReach.Solve(upper, lower, hand, target, pole, weight);
+        }
 
         void LateUpdate()
         {
@@ -151,6 +179,7 @@ namespace CrimsonVeil.Player
             }
             var p = Solver.Step(Time.deltaTime, s);
             Apply(p);
+            if (s.hanging || s.climbing) ReachLip(s);
             if (Hands != null)
             {
                 // the drawing hand pinches the string from the moment it reaches it until it lets go

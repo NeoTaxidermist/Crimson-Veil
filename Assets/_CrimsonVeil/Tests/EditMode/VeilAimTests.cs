@@ -73,7 +73,7 @@ namespace CrimsonVeil.Tests
         }
 
         [Test]
-        public void AnArcherAimingUp_RaisesBothArmsAndLeansBack()
+        public void AnArcherAimingUp_RaisesBothArms_AndStaysUpright()
         {
             var basePose = new HeroPose();
             var level = HeroAttackChoreography.Apply(basePose, VeilForm.Bow, 0.3f, 0f, 0f);
@@ -82,7 +82,7 @@ namespace CrimsonVeil.Tests
             // (rising along the arrow, but held back from it overhead: straight up the bow stands over the brow, not behind the head)
             Assert.Greater(up.armR, level.armR + 30f, "the bow arm rises along the arrow");
             Assert.Greater(up.armL, level.armL + 30f, "and the drawing arm with it");
-            Assert.Less(up.spine + up.chest, level.spine + level.chest - 10f, "the body leans back");
+            Assert.That((level.spine + level.chest) - (up.spine + up.chest), Is.InRange(0f, 6f), "the body stays upright (it does not lean back), the arms raise the bow");
             Assert.Greater(up.head, level.head, "eyes up");
             Assert.Less(down.armR, level.armR, "aiming down the arms go down");
             Assert.Greater(down.spine + down.chest, level.spine + level.chest, "and the body leans over");

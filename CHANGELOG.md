@@ -5,6 +5,25 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.21.2] – 2026-11-15
+### Opraveno
+- **Vylézání na římsu:** ruce dřív sledovaly ručně klíčovanou pózu a během přítahu se od hrany vzdalovaly. Teď na hraně zůstávají.
+  - Nová dvoukloubová IK paže (`LimbReach`) drží zápěstí na skutečné hraně:
+    - při visu a přítahu prsty zahnuté přes roh;
+    - při vzepření dlaně naplocho na horní ploše.
+  - Lokty se ohýbají dozadu a dolů, od zdi.
+  - Hranu ruce pustí po vzepření, kdy jde koleno nahoru a tělo už je mimo dosah (`HeroPoseSolver.LipHold`, `LipHandOffset`).
+  - Ve hře změřeno: ruce jsou od hrany nejvýš 8 cm.
+- **Luk mířený nahoru:** postava se už nezaklání, stojí rovně a luk zvedají jen paže (`BowUpLean`). Mířením dolů se tělo dál sklání do rány.
+
+### Testy
+- `LimbReachTests`:
+  - kloub drží délky kostí a ohýbá se k pólu;
+  - mimo dosah se paže natáhne;
+  - řešení postaví ruku na cíl s loktem od zdi;
+  - ruce drží hranu do konce vzepření.
+- `VeilAimTests`: lučištník při míření nahoru zůstává vzpřímený.
+
 ## [0.21.1] – 2026-11-15
 ### Opraveno
 - **Hrdina visel na římse rukama ve vzduchu, asi půl metru od skály.**

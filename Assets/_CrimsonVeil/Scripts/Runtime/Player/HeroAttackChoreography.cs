@@ -189,8 +189,10 @@ namespace CrimsonVeil.Player
             {
                 // the bow comes up into the aim as it is raised to the string
                 float raise = Mathf.SmoothStep(0f, 1f, t / 0.12f) * (1f - Mathf.SmoothStep(0f, 1f, (t - 0.7f) / 0.3f));
-                float lean = 0.25f * aim * raise;   // the body takes a quarter of it (leaning back / forward)...
-                float arms = aim * raise - lean;    // ...the shoulders the rest (they ride on the leaning chest)
+                // Aiming down the body bends over into it; aiming up it stays upright (an archer doesn't lean back -
+                // the arms alone raise the bow, the chest just lifts a touch).
+                float lean = (aim > 0f ? BowUpLean : 0.25f) * aim * raise;
+                float arms = aim * raise - lean;    // the shoulders take the rest (they ride on the chest)
                 // The level draw already holds the bow arm ~20° up: aiming high, that would carry the bow past the
                 // vertical and back over the head. Straight up, the bow stands over the brow, a little in front.
                 arms -= BowOverheadTrim * Mathf.Max(0f, a) * Mathf.Max(0f, a) * raise;
@@ -208,6 +210,9 @@ namespace CrimsonVeil.Player
 
         /// <summary>Degrees the bow arms are held back from the aim when shooting straight up (see Sample).</summary>
         public const float BowOverheadTrim = 30f;
+
+        /// <summary>The share of an upward aim the body takes by leaning back (almost none: it stays upright).</summary>
+        public const float BowUpLean = 0.04f;
 
         static Key Blend(Key a, Key b, float u) => new Key(a.t,
             Mathf.Lerp(a.armR, b.armR, u), Mathf.Lerp(a.elbowR, b.elbowR, u),

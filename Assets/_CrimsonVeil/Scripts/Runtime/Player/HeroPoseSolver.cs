@@ -410,6 +410,28 @@ namespace CrimsonVeil.Player
             return HeroPose.Lerp(knee, up, Mathf.SmoothStep(0f, 1f, (t - ClimbKneeEnd) / (1f - ClimbKneeEnd)));
         }
 
+        /// <summary>How firmly the hands are kept on the lip (0..1): all the way while hanging, pulling up and pressing over;
+        /// they let go as the knee comes up and the hero stands.</summary>
+        public static float LipHold(bool hanging, bool climbing, float climbProgress)
+        {
+            if (hanging) return 1f;
+            if (!climbing) return 0f;
+            // (past the press the body rises out of the arms' reach: they push off and let go as the knee comes up)
+            return 1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(ClimbPressEnd, ClimbPressEnd + 0.12f, climbProgress));
+        }
+
+        /// <summary>
+        /// Where the wrists are on the lip (x towards the ledge, y up, from the lip's corner) at climb progress
+        /// <paramref name="t"/> (0 = hanging): just short of the corner, the fingers hooked over it; then, pressing over
+        /// it, palms flat on the top.
+        /// </summary>
+        public static Vector2 LipHandOffset(float t)
+        {
+            var grip = new Vector2(-0.03f, 0.0f);
+            var flat = new Vector2(0.08f, 0.04f);
+            return Vector2.Lerp(grip, flat, Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(ClimbPullEnd - 0.05f, ClimbPressEnd - 0.05f, t)));
+        }
+
         /// <summary>How tightly the hands grip while hanging or climbing (they hold the lip until the knee is on top).</summary>
         public static float LedgeGrip(bool hanging, bool climbing, float climbProgress)
         {

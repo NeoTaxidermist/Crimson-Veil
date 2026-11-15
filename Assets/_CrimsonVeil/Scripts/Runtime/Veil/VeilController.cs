@@ -501,6 +501,7 @@ namespace CrimsonVeil.Veil
             // (Only once the ring has been thrown round: cut loose earlier, the scarf hung torn off the neck.)
             Simulation.DetachedAfter = ShapeForm == VeilForm.Shield && TransformProgress > 0.3f && morph > 0.6f
                 ? Mathf.Clamp(Mathf.CeilToInt(HandFraction * (Simulation.Count - 1)) - 1, 0, Simulation.Count - 2) : -1;
+            GatherObstacles(a);
             Simulation.Step(dt, a);
             UpdateBowString();
             UpdateWhipRope();
@@ -648,6 +649,40 @@ namespace CrimsonVeil.Veil
                 float f = (float)i / (n - 1);
                 nh[i] = h * VeilTransform.Wave(TransformProgress, f) * (ShapeForm == VeilForm.Bow || ShapeForm == VeilForm.Sword || ShapeForm == VeilForm.Spear ? 1f : VeilTransform.TipSoftness(f)); // bows end in a limb, blades and spears in a firm point
             }
+        }
+
+        readonly Collider[] obstacleBuffer = new Collider[48];
+
+        /// <summary>
+        /// The walls, floors and pillars in reach of the scarf, as rectangles in the picture plane: solid level
+        /// geometry in the hero's plane. Triggers, characters (the hero, enemies) and moving bodies are ignored.
+        /// </summary>
+        void GatherObstacles(Vector3 a)
+        {
+            var list = Simulation.Obstacles;
+            list.Clear();
+            float reach = Simulation.Settings.length + 0.6f;
+            int count = Physics.OverlapBoxNonAlloc(a, new Vector3(reach, reach, 0.6f), obstacleBuffer, Quaternion.identity, ~0, QueryTriggerInteraction.Ignore);
+            for (int i = 0; i < count; i++)
+            {
+                var c = obstacleBuffer[i];
+                if (!IsObstacle(c, transform.root)) continue;
+                var b = c.bounds;
+                if (a.z < b.min.z - 0.2f || a.z > b.max.z + 0.2f) continue; // not in the hero's plane (background)
+                list.Add(Rect.MinMaxRect(b.min.x, b.min.y, b.max.x, b.max.y));
+            }
+        }
+
+        /// <summary>Is this collider solid level geometry the scarf should drape against?</summary>
+        public static bool IsObstacle(Collider c, Transform hero)
+        {
+            if (c == null || c.isTrigger || !c.enabled) return false;
+            if (c is CharacterController) return false; // the hero, walking creatures
+            if (hero != null && c.transform.IsChildOf(hero)) return false;
+            var body = c.attachedRigidbody;
+            if (body != null && !body.isKinematic) return false; // loose props, arrows
+            if (c.GetComponentInParent<CrimsonVeil.Combat.Enemy>() != null) return false;
+            return true;
         }
 
         void StopMelt()

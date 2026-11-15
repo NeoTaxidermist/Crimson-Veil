@@ -5,6 +5,25 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.16.21] – 2026-11-15
+Šála neprochází zdmi.
+
+### Opraveno
+- **Šála koliduje se zdmi, sloupy a podlahou.**
+  - Simulace šály dosud o scéně nevěděla, takže u zdi vlála skrz a její konec vykoukl z druhé strany sloupu.
+  - `VeilController` teď každý snímek sesbírá pevnou geometrii kolem hrdiny v jeho rovině. Spouště (triggery), postavy, nepřátelé a volné předměty se ignorují.
+  - Volná látka se ze zdi vrací tam, kudy do ní vnikla, tedy na stranu, odkud šála přišla. Nikdy ne na protější stěnu silného sloupu.
+  - Šála u zdi ztratí rychlost do zdi a s mírným třením klouže podél ní.
+- **Šála u zdi splývá.** Látka za místem dotyku přestane vlát do zdi a spadne podél ní, místo aby se o zeď tlačila.
+- Zbraně v ruce se kolizí neřídí.
+
+### Testy
+- `VeilCollisionTests`:
+  - šála vlající do sloupu se zastaví o jeho stěnu a nevyjde na druhé straně;
+  - bez zdí vlaje volně;
+  - vstupní bod leží na stěně, kterou úsek protnul;
+  - hrdina ani spoušť nejsou zeď.
+
 ## [0.16.20] – 2026-11-15
 Útoky nejdou spamovat ani přerušit.
 

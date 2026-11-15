@@ -218,6 +218,7 @@ namespace CrimsonVeil.Veil
             NodeHardness = new float[Count];
             GuideTargets = new Vector3[Count];
             GuideWeight = new float[Count];
+            wallContact = new float[Count];
             FlowRestLength = Settings.length / (Count - 1);
             Reset(anchor);
         }
@@ -231,6 +232,7 @@ namespace CrimsonVeil.Veil
                 if (i < Count - 1) TargetRest[i] = FlowRestLength;
             }
             vortices.Clear();
+            if (wallContact != null) Array.Clear(wallContact, 0, wallContact.Length);
             shedPhase = 0f;
             lastAnchor = anchor;
             AnchorVelocity = Vector3.zero;
@@ -312,12 +314,16 @@ namespace CrimsonVeil.Veil
             var bodyVel = new Vector2(anchorVel.x, anchorVel.y);
             float bodySpeed = bodyVel.magnitude;
             float wavePhase = s.undulationSpeed * time;
+            // Cloth beyond a point that touches a wall no longer streams into it: it hangs and drapes down the wall.
+            float blocked = 0f;
             for (int i = 1; i < Count; i++)
             {
+                wallContact[i] = Mathf.Max(0f, wallContact[i] - h * 2.5f);
+                blocked = Mathf.Max(blocked, wallContact[i]);
                 Vector3 p = Positions[i];
                 Vector3 vel = (p - previous[i]) / h;
                 float f = (float)i / (Count - 1);
-                float loose = 1f - H(i);
+                float loose = (1f - H(i)) * (1f - 0.85f * blocked);
 
                 // Feel the run wind only up to a point: the scarf trails, it doesn't become a taut sheet.
                 Vector2 airV = SampleAirVelocity(p);
@@ -465,6 +471,9 @@ namespace CrimsonVeil.Veil
                 previous[i] += shift;
             }
 
+            // 6d) The loose cloth can't pass through walls: it drapes against them (see CollideWithObstacles).
+            CollideWithObstacles();
+
             // 7) 2.5D: keep the ribbon just behind the hero with a little depth flutter; a weapon in the hand is
             // held in front of the body, so the torso never hides it.
             for (int i = 1; i < Count; i++)
@@ -478,6 +487,92 @@ namespace CrimsonVeil.Veil
                 Positions[i].z = z;
                 previous[i].z = z;
             }
+        }
+
+        /// <summary>
+        /// Solid level geometry near the scarf, as rectangles in the picture plane (min.xy, max.xy). Filled each
+        /// frame by the owner (VeilController gathers the walls and floors around the hero).
+        /// </summary>
+        public readonly List<Rect> Obstacles = new List<Rect>();
+        float[] wallContact;
+        /// <summary>0..1 how recently node <paramref name="i"/> was stopped by a wall.</summary>
+        public float WallContact(int i) => wallContact[i];
+
+        /// <summary>How far off a wall the cloth stays (m), so its width doesn't sink into the surface.</summary>
+        public const float WallSkin = 0.06f;
+
+        /// <summary>
+        /// Keeps the loose cloth out of the obstacles. Walked from the neck to the tip, a node that ended up in a
+        /// wall is put back where its segment entered it (the side the scarf came from), not at the nearest face —
+        /// a node deep in a thick pillar would otherwise pop out on its far side, as if the scarf ran through it.
+        /// It loses its speed into the wall and slides along it with a little friction. Set weapons are left alone
+        /// (they are held in the hand).
+        /// </summary>
+        void CollideWithObstacles()
+        {
+            if (Obstacles.Count == 0) return;
+            for (int i = 1; i < Count; i++)
+            {
+                float loose = 1f - Mathf.Max(RigidHold(H(i)), GuideWeight[i]);
+                if (loose <= 0.01f) continue;
+                Vector2 p = Positions[i];
+                Vector2 from = Positions[i - 1];
+                for (int o = 0; o < Obstacles.Count; o++)
+                {
+                    Rect r = Obstacles[o];
+                    Rect grown = new Rect(r.xMin - WallSkin, r.yMin - WallSkin, r.width + 2f * WallSkin, r.height + 2f * WallSkin);
+                    if (!grown.Contains(p)) continue;
+                    Vector2 outP = grown.Contains(from) ? NearestOutside(grown, p) : EntryPoint(grown, from, p);
+                    Vector2 push = outP - p;
+                    Vector3 shift = new Vector3(push.x, push.y, 0f) * loose;
+                    Positions[i] += shift;
+                    wallContact[i] = 1f;
+                    // velocity: drop the part into the wall, keep most of the slide along it
+                    Vector2 v = (Vector2)(Positions[i] - previous[i]);
+                    Vector2 n = push.sqrMagnitude > 1e-10f ? push.normalized : Vector2.zero;
+                    float vn = Vector2.Dot(v, n);
+                    Vector2 slide = (v - n * vn) * 0.85f + n * Mathf.Max(0f, vn);
+                    Vector2 newPrev = (Vector2)Positions[i] - Vector2.Lerp(v, slide, loose);
+                    previous[i] = new Vector3(newPrev.x, newPrev.y, previous[i].z);
+                    p = Positions[i];
+                }
+            }
+        }
+
+        /// <summary>Where the segment from <paramref name="from"/> (outside) to <paramref name="to"/> (inside) enters the rectangle.</summary>
+        public static Vector2 EntryPoint(Rect r, Vector2 from, Vector2 to)
+        {
+            Vector2 d = to - from;
+            float tEnter = 0f;
+            // slab test: the latest entry over both axes
+            for (int axis = 0; axis < 2; axis++)
+            {
+                float o = from[axis], dir = d[axis];
+                float min = axis == 0 ? r.xMin : r.yMin, max = axis == 0 ? r.xMax : r.yMax;
+                if (Mathf.Abs(dir) < 1e-8f) continue;
+                float t0 = (min - o) / dir, t1 = (max - o) / dir;
+                tEnter = Mathf.Max(tEnter, Mathf.Min(t0, t1));
+            }
+            tEnter = Mathf.Clamp01(tEnter);
+            Vector2 e = from + d * tEnter;
+            // just outside the face it crossed
+            Vector2 c = r.center;
+            float dx = Mathf.Min(Mathf.Abs(e.x - r.xMin), Mathf.Abs(e.x - r.xMax));
+            float dy = Mathf.Min(Mathf.Abs(e.y - r.yMin), Mathf.Abs(e.y - r.yMax));
+            if (dx <= dy) e.x = e.x < c.x ? r.xMin - 1e-3f : r.xMax + 1e-3f;
+            else e.y = e.y < c.y ? r.yMin - 1e-3f : r.yMax + 1e-3f;
+            return e;
+        }
+
+        /// <summary>The closest point just outside the rectangle.</summary>
+        public static Vector2 NearestOutside(Rect r, Vector2 p)
+        {
+            float l = p.x - r.xMin, ri = r.xMax - p.x, b = p.y - r.yMin, t = r.yMax - p.y;
+            float m = Mathf.Min(Mathf.Min(l, ri), Mathf.Min(b, t));
+            if (m == l) return new Vector2(r.xMin - 1e-3f, p.y);
+            if (m == ri) return new Vector2(r.xMax + 1e-3f, p.y);
+            if (m == b) return new Vector2(p.x, r.yMin - 1e-3f);
+            return new Vector2(p.x, r.yMax + 1e-3f);
         }
 
         void Shed(Vector3 anchor, Vector2 rel, float speed)

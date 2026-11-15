@@ -473,6 +473,8 @@ namespace CrimsonVeil.Veil
                 float behind = s.depthOffset + Mathf.Sin(time * 2.3f + i * 0.55f) * s.depthWobble * t;
                 float z = a.z + Mathf.Lerp(behind, -s.weaponDepth, WeaponDepthBlend(H(i)));
                 if (HeldWeight > 0f && t >= HeldFrom && t <= HeldTo) z = Mathf.Lerp(z, a.z - s.weaponDepth + HeldTuck, HeldWeight);
+                // A weapon melting back passes over the body: drawn in front, so the torso doesn't swallow it.
+                z = Mathf.Lerp(z, a.z - s.weaponDepth, GuideWeight[i]);
                 Positions[i].z = z;
                 previous[i].z = z;
             }

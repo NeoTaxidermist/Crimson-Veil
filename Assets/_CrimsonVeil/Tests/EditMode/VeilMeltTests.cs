@@ -95,6 +95,28 @@ namespace CrimsonVeil.Tests
         }
 
         [Test]
+        public void NeckBand_StaysUntilTheWeaponHasTakenShape()
+        {
+            // On the first frame of a shield cast the band vanished and the scarf hung torn off the neck.
+            Assert.AreEqual(0f, VeilRenderer.NeckBandShaped(0f), 1e-4f);
+            Assert.AreEqual(0f, VeilRenderer.NeckBandShaped(0.4f), 1e-4f);
+            Assert.AreEqual(1f, VeilRenderer.NeckBandShaped(1f), 1e-4f);
+        }
+
+        [Test]
+        public void MeltingCloth_IsDrawnInFrontOfTheBody()
+        {
+            var sim = new VeilSimulation(new VeilSettings(), Vector3.zero);
+            for (int i = 0; i < sim.Count; i++) { sim.GuideWeight[i] = 1f; sim.GuideTargets[i] = new Vector3(0.1f, -0.1f * i, 0f); }
+            sim.Step(1f / 60f, Vector3.zero);
+            for (int i = 1; i < sim.Count; i++)
+            {
+                Assert.Less(sim.Positions[i].z, 0f, $"node {i} in front of the hero (not hidden behind the torso)");
+                Assert.Less(Vector2.Distance(sim.Positions[i], sim.GuideTargets[i]), 1e-3f, $"node {i} on its path");
+            }
+        }
+
+        [Test]
         public void BigShapes_TakeAFewFramesToForm()
         {
             Assert.GreaterOrEqual(VeilTransform.FormMorphTime(VeilForm.Shield, VeilCasting.CastMorphTime), 0.3f);

@@ -22,8 +22,9 @@ namespace CrimsonVeil.Veil
         [SerializeField] float transformTime = 0.36f;
         [Tooltip("Seconds for one weapon shape to morph into another.")]
         [SerializeField] float morphTime = 0.42f;
-        [Tooltip("Which way the scarf winds into the palm (+1 / -1).")]
-        [SerializeField] float spiralDirection = 1f;
+        [Tooltip("Which way the scarf winds into the palm: -1 swings the cloth up over the shoulder into the hand " +
+                 "(+1 would sweep it down past the feet).")]
+        [SerializeField] float spiralDirection = -1f;
         [SerializeField] float turnSpeed = 7f;
         [SerializeField] float idleDriftSpeed = 0.75f;
         [SerializeField] Vector2 wind = new Vector2(-0.3f, 0.05f);
@@ -160,6 +161,8 @@ namespace CrimsonVeil.Veil
         Vector2[] shape, fromShape, current, meltFrom, meltPath;
         float morph = 1f;
         float meltT = -1f;
+        /// <summary>0..1 how far the veil has morphed into the current weapon's shape.</summary>
+        public float ShapeMorph => morph;
         /// <summary>True while a released weapon is being led back into the streaming scarf.</summary>
         public bool Melting => meltT >= 0f;
         float progressVel;
@@ -485,7 +488,8 @@ namespace CrimsonVeil.Veil
             Simulation.RestShapeWeight = (1f - wrap) * Mathf.Lerp(1f, 0.45f, Mathf.Clamp01(bodySpeed / 7f)) * Mathf.Abs(facingScale)
                                          * (1f - Mathf.SmoothStep(0f, 1f, HintPull)) * (1f - 0.5f * Danger);
             // The shield's ring circles round the body on its own: once it has formed it is not tied to the hand.
-            Simulation.DetachedAfter = ShapeForm == VeilForm.Shield && TransformProgress > 0.3f
+            // (Only once the ring has been thrown round: cut loose earlier, the scarf hung torn off the neck.)
+            Simulation.DetachedAfter = ShapeForm == VeilForm.Shield && TransformProgress > 0.3f && morph > 0.6f
                 ? Mathf.Clamp(Mathf.CeilToInt(HandFraction * (Simulation.Count - 1)) - 1, 0, Simulation.Count - 2) : -1;
             Simulation.Step(dt, a);
             UpdateBowString();

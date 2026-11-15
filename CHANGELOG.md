@@ -5,6 +5,21 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.16.19] – 2026-11-15
+Přechody šála ↔ štít ↔ luk bez utržení, schování a průchodu u nohou.
+
+### Opraveno
+- **Šála se při vzniku zbraně zvedá přes rameno, ne dolů kolem nohou.** Vír, kterým se látka stahuje do dlaně, se točil opačným směrem a táhl šálu nízko za nohama (`spiralDirection` = -1).
+- **Šála se na začátku vzniku štítu neutrhne od krku.**
+  - Úsek od krku k ruce mizel podle vlastní tvrdosti. Tvrdnutí začíná u krku, takže první snímek ukázal utržený kus šály.
+  - Teď úsek zmizí, až je zbraň ztvrdlá u ruky a zformovaná (`NeckBandShaped`).
+  - Kruh štítu se od ruky oddělí, až když je hozený kolem těla.
+- **Odvíjející se zbraň je vidět.** Při návratu do šály látka přechází přes tělo. Dosud byla kreslená za trupem a na pár snímků se ztratila, teď je po dobu vedení vpředu.
+
+### Testy
+- Krční úsek zůstane, dokud zbraň nemá tvar.
+- Vedená látka je před tělem a na své dráze.
+
 ## [0.16.18] – 2026-11-15
 Plynulé přechody mezi šálou, štítem a lukem.
 

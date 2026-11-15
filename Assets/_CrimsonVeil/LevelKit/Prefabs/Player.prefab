@@ -230,7 +230,7 @@ MonoBehaviour:
   player: {fileID: 2947942836197595002}
   transformTime: 0.36
   morphTime: 0.42
-  spiralDirection: 1
+  spiralDirection: -1
   turnSpeed: 7
   idleDriftSpeed: 0.75
   wind: {x: -0.3, y: 0.05}

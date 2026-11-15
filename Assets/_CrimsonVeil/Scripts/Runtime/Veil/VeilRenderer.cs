@@ -282,6 +282,12 @@ namespace CrimsonVeil.Veil
                 gripFraction = Mathf.Max(gripFraction, guardAt);
             }
 
+            // How far the weapon has set where it leaves the hand (the neck band only melts away after that).
+            float handHard = Mathf.SmoothStep(0f, 1f, hardAt[Mathf.Clamp(Mathf.RoundToInt(Mathf.Min(1f, hf + 0.03f) * (samples - 1)), 0, samples - 1)]);
+            // ... and once the weapon has taken its shape (the shield's ring is thrown round first): until then the
+            // band is what joins the forming weapon to the neck. Releasing, the band comes back with the hardness.
+            float bandShaped = veil.Form == VeilForm.Flow ? 1f : NeckBandShaped(veil.ShapeMorph);
+
             // Per-sample frame, width and alpha of the scarf body.
             for (int i = 0; i < samples; i++)
             {
@@ -317,9 +323,12 @@ namespace CrimsonVeil.Veil
                 alphaAt[i] = Mathf.Lerp(fray, 1f, hard) * Mathf.Lerp(0.6f, 1f, vit) * Mathf.SmoothStep(0f, 1f, t * 12f + 0.3f);
                 // A weapon is the whole veil transformed: the band from the neck to the hand melts away as it
                 // sets (and comes back as the weapon softens), so the weapon isn't tied to the neck.
-                alphaAt[i] *= 1f - NeckBandFade(t, hf, hard);
+                // It goes once the weapon has set *at the hand*: the hardening starts at the neck, and fading the band
+                // by its own hardness cut the scarf off at the neck on the first frame of a cast.
+                float bandSet = Mathf.Min(Mathf.Min(hard, handHard), bandShaped);
+                alphaAt[i] *= 1f - NeckBandFade(t, hf, bandSet);
                 // The shield's ring floats free of the hand: nothing may be drawn across the gap to it.
-                if (shield && t < shieldCut) alphaAt[i] *= 1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.3f, 0.8f, hard));
+                if (shield && t < shieldCut) alphaAt[i] *= 1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.3f, 0.8f, bandSet));
             }
 
             int per = perStrand * 2;
@@ -483,6 +492,9 @@ namespace CrimsonVeil.Veil
         /// How much of the neck → hand band is hidden (0..1) at veil fraction <paramref name="t"/>: nothing on loose
         /// cloth, all of it once that part has set into the weapon form; the weapon itself (past the hand) stays.
         /// </summary>
+        /// <summary>How far the neck band may melt away given the weapon's morph (0..1): not before it is mostly formed.</summary>
+        public static float NeckBandShaped(float morph) => Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.45f, 0.9f, morph));
+
         public static float NeckBandFade(float t, float handFraction, float hard)
         {
             float beforeHand = Mathf.SmoothStep(0f, 1f, (handFraction - t) / 0.05f);

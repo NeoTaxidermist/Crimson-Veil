@@ -126,6 +126,22 @@ namespace CrimsonVeil.Tests
         }
 
         [Test]
+        public void ShieldFlames_AreBroadTongues_NotNeedles()
+        {
+            int lit = 0, n = 0;
+            for (int i = 0; i <= 400; i++, n++)
+                if (VeilRenderer.ShieldFlameLick(0.2f + 0.8f * i / 400f, 1.3f, 0.8f, 0.12f) > 0.2f) lit++;
+            Assert.Greater(lit / (float)n, 0.22f, "each tongue is a broad stroke licking out (needle spikes read as a zigzag)");
+        }
+
+        [Test]
+        public void AfterASomersault_TheScarfSwingsBack_InsteadOfBeingFoldedFlat()
+        {
+            Assert.AreEqual(0f, VeilRenderer.SettleAfterSwirl(0.1f), 1e-4f, "just after the whirl: no folding against the chest");
+            Assert.AreEqual(1f, VeilRenderer.SettleAfterSwirl(1f), 1e-4f, "back to normal a moment later");
+        }
+
+        [Test]
         public void Spear_HasALeafShapedHead()
         {
             float max = 0f;

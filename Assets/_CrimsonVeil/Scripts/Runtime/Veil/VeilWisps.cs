@@ -17,9 +17,9 @@ namespace CrimsonVeil.Veil
         [SerializeField] float sampleInterval = 0.025f;
         [SerializeField] float baseRate = 0f; // the loose scarf sheds none (its sheet: one sheaf of strands); weapons do
         [SerializeField] float speedRate = 0f;
-        [SerializeField] float weaponRate = 5f;
-        [SerializeField] float swingRate = 16f;
-        [SerializeField] float lifetime = 1.9f;
+        [SerializeField] float weaponRate = 2f;
+        [SerializeField] float swingRate = 2.5f;
+        [SerializeField] float lifetime = 1.1f;
         [SerializeField] Vector2 widthRange = new Vector2(0.015f, 0.045f);
         [SerializeField] float followSharpness = 1.6f;
         [Tooltip("Base turn rate of a curl (rad/s); grows as the curl ages, so strokes wind into spirals.")]

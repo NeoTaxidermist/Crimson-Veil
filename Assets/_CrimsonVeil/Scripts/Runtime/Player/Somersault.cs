@@ -47,12 +47,15 @@ namespace CrimsonVeil.Player
             return Mathf.Sin(Mathf.PI * Mathf.SmoothStep(0f, 1f, progress));
         }
 
+        /// <summary>Seconds after the turn over which the whirl lets go of the scarf.</summary>
+        public const float LetGo = 0.3f;
+
         /// <summary>0..1 how strongly the scarf is wound round the body: eases in with the turn, lets go gently.</summary>
         public static float Wrap(float progress, float sinceEnd)
         {
             if (progress >= 0f && progress < 1f) return Mathf.SmoothStep(0f, 1f, progress / 0.25f);
             if (sinceEnd < 0f) return 0f;
-            return 1f - Mathf.SmoothStep(0f, 1f, sinceEnd / 0.45f);
+            return 1f - Mathf.SmoothStep(0f, 1f, sinceEnd / LetGo);
         }
     }
 }

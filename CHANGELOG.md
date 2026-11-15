@@ -5,6 +5,21 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.16.13] – 2026-11-15
+Štít, salto a zbraně podle záběrů ze hry.
+
+### Změněno
+- **Zbraně jsou ze stejné rudé tuše jako šála** (meč, kopí, bič, luk i štít). Jsou z plné tuše a v jádru mají trochu žáru (`_WeaponInk` 0,85), už nemají starý plamenný vzhled.
+- **Štít je kulatý kruh z tuše s oblými jazyky plamene.**
+  - Jazyky jsou široké tahy štětce, ne jehlové špičky: je jich 6 místo 9 a jsou oblé, ne ostré.
+  - Odlétají jen 0,3 m místo 0,6 m a v plameni se nezužují na linku.
+  - Kruh se vlní pomaleji, takže už není hranatý.
+- **Po saltu se šála nezmuchlá před hrdinou.**
+  - Víření po dopadu dál běží a zpomaluje, takže šálu odnese dokola dolů a dozadu.
+  - Šálu pustí za 0,3 s místo 0,45 s.
+  - Po saltu se 0,2–0,9 s nesklápí látka před hrudí, šála se vrátí sama.
+- Rudých čárek kolem zbraní je méně a mizí dřív (2 místo 5 za sekundu, při švihu 2,5 místo 16, životnost 1,1 s místo 1,9 s).
+
 ## [0.16.12] – 2026-11-14
 Nahrávač krátkých klipů ze hry.
 

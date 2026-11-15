@@ -54,6 +54,7 @@ namespace CrimsonVeil.Tests
             Assert.AreEqual(1f, Somersault.Wrap(0.3f, -1f), 1e-4f);
             Assert.Greater(Somersault.Wrap(-1f, 0.1f), 0.5f, "still wound just after the turn");
             Assert.AreEqual(0f, Somersault.Wrap(-1f, 0.5f), 1e-4f, "unwound");
+            Assert.AreEqual(0f, Somersault.Wrap(-1f, 0.31f), 1e-4f, "lets go within 0.3 s of landing (no ball of cloth hanging beside the hero)");
         }
 
         [Test]

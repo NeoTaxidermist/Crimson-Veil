@@ -279,9 +279,9 @@ MonoBehaviour:
   sampleInterval: 0.025
   baseRate: 0
   speedRate: 0
-  weaponRate: 5
-  swingRate: 16
-  lifetime: 1.9
+  weaponRate: 2
+  swingRate: 2.5
+  lifetime: 1.1
   widthRange: {x: 0.015, y: 0.045}
   followSharpness: 1.6
   curl: 3.6

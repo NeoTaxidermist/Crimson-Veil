@@ -77,6 +77,7 @@ namespace CrimsonVeil.Veil
         int samples, perStrand;
         Vector3 lastAnchor;
         float speedSmoothed;
+        float sinceSwirl = 10f;
 
         /// <summary>
         /// Width (m) of the loose scarf <paramref name="d"/> metres from the neck, measured on its animation sheet
@@ -234,6 +235,9 @@ namespace CrimsonVeil.Veil
             float dt = Mathf.Max(Time.deltaTime, 1e-4f);
 
             // Speed of the hero: curls stretch open a little at a run and wind up again at rest.
+            // After a somersault the cloth is still wound round in front: it swings back behind on its own (the
+            // rest shape pulls it) instead of being folded flat against the chest into a crumpled ball.
+            sinceSwirl = sim.SwirlWeight > 0.01f ? 0f : sinceSwirl + dt;
             float speed = (p[0] - lastAnchor).magnitude / dt;
             lastAnchor = p[0];
             if (speed > 40f) speed = 0f; // teleport
@@ -387,12 +391,12 @@ namespace CrimsonVeil.Veil
                         Vector3 outward = c - shieldCentre;
                         outward.z = 0f;
                         if (outward.sqrMagnitude > 1e-6f)
-                            c += outward.normalized * (lick * (main ? 0.16f : 0.6f) + (main ? 0f : 0.05f * set));
+                            c += outward.normalized * (lick * (main ? 0.05f : 0.3f) + (main ? 0f : 0.04f * set));
                     }
 
                     // Tendrils emerge from the ribbon: thin where they split, then full.
                     float sw = w * Mathf.Lerp(st.width, main ? 1f : 0.3f, hard) * burn;
-                    if (!main) sw *= (1f + 1.6f * set) * (1f - 0.7f * lick); // bold tongues, each narrowing to its tip
+                    if (!main) sw *= (1f + 1.6f * set) * (1f - 0.3f * lick); // bold tongues, broad brush strokes
                     if (branch) sw *= Mathf.Lerp(Mathf.Lerp(0.45f, 0.25f, hard), Mathf.Lerp(1.2f, 0.51f, hard), Mathf.SmoothStep(0f, 1f, u))
                                       * Mathf.Lerp(1f - 0.15f * Mathf.SmoothStep(0.6f, 1f, u), 1f, hard); // a broad stroke into its whorl
                     // a tongue grows out of the band from nothing (no square-cut start where it branches off)
@@ -447,7 +451,8 @@ namespace CrimsonVeil.Veil
             // out in front of the body. Anything past the chest line is softly folded back (not cut).
             // Only once the hero faces one way — while turning round the scarf swings freely across.
             // (Not while it is wound round the body in a somersault: there it must go round the front too.)
-            float settle = Mathf.InverseLerp(0.85f, 1f, Mathf.Abs(veil.FacingBlend)) * (1f - sim.SwirlWeight);
+            float settle = Mathf.InverseLerp(0.85f, 1f, Mathf.Abs(veil.FacingBlend)) * (1f - sim.SwirlWeight)
+                           * SettleAfterSwirl(sinceSwirl);
             if (settle > 0f)
             {
                 float ax = p[0].x;
@@ -478,6 +483,10 @@ namespace CrimsonVeil.Veil
             return beforeHand * Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.45f, 0.95f, hard));
         }
 
+        /// <summary>How firmly the cloth may be folded back off the chest <paramref name="since"/> s after a somersault's
+        /// whirl let go: not at first (it swings back by itself instead of being crumpled), fully after ~0.9 s.</summary>
+        public static float SettleAfterSwirl(float since) => Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.2f, 0.9f, since));
+
         /// <summary>How far (m) in front of the neck the loose scarf may reach (about the chest line).</summary>
         public const float FrontLimit = 0.15f;
 
@@ -499,15 +508,16 @@ namespace CrimsonVeil.Veil
         /// </summary>
         public static float ShieldFlameLick(float f, float time, float phase, float seed)
         {
-            float s = Mathf.Sin(f * 2f * Mathf.PI * 9f + phase * 2.3f - time * 10f);
-            float spike = Mathf.Pow(Mathf.Max(0f, s), 5f);
+            // broad, rounded tongues (a brush stroke licking out), not needle spikes
+            float s = Mathf.Sin(f * 2f * Mathf.PI * 6f + phase * 2.3f - time * 8f);
+            float spike = Mathf.Pow(Mathf.Max(0f, s), 2f);
             float gust = 0.55f + 0.45f * Mathf.Sin(f * 31f - time * 6.5f + seed * 17f);
             return Mathf.Clamp01(spike * gust * 1.2f);
         }
 
         /// <summary>Flickering thickness of the burning ring (about 0.65..1.3).</summary>
         public static float ShieldFlicker(float f, float time, float phase)
-            => 0.98f + 0.2f * Mathf.Sin(f * 47f - time * 13f + phase) + 0.13f * Mathf.Sin(f * 19f + time * 7f + phase * 1.7f);
+            => 0.98f + 0.2f * Mathf.Sin(f * 23f - time * 11f + phase) + 0.13f * Mathf.Sin(f * 11f + time * 6f + phase * 1.7f);
 
         /// <summary>Weapons that end in a point (no flame curl at the tip).</summary>
         public static bool Pointed(VeilForm form) => form == VeilForm.Sword || form == VeilForm.Spear;

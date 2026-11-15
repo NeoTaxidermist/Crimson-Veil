@@ -5,6 +5,32 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.19.0] – 2026-11-15
+Nový 3D model přízraku (Wraith).
+
+### Přidáno
+- **Nový Wraith** postavený skriptem `ArtSource/wraith_build.py`, stejně jako hrdina, takže jde znovu vygenerovat a ladit.
+  - Shrbený vychrtlý přízrak asi 2,1 m, vznáší se nad zemí.
+  - Hluboká kápě se štítem vystrčeným nad obličej, ve stínu pod ním dvě karmínové oči. Jejich poloha se měří z povrchu kápě, aby nikdy nezapadly dovnitř.
+  - Široký rubáš od ramen se při vznášení vleče dozadu a jeho lem je roztrhaný.
+  - Dlouhé rukávy se zvonovitě rozšiřují a končí roztřepeným okrajem. Z nich vychází kostnaté předloktí a ruce se třemi dlouhými drápy a palcem.
+  - Dole se rubáš trhá na 10 stuh inkoustu, další 2 vlají od ramen. Stuhy jsou široké v boční rovině, kterou vidí hra.
+- **Kostra:** původní kosti (`EnemyAnimator` ho dál ovládá), krk, kosti drápů (`Finger.<strana>.<dráp>.<článek>`, `Thumb`) a řetězy stuh (`Tatter.<n>.<článek>`).
+- **Stuhy se pohybují pomocí `SpringBones`** (předpona `Tatter.`, volnější a těžší než vlasy hrdiny). Přidává je `LevelKitFactory.WraithStrips` i prefab.
+- **Drápy:** při klouzání jsou zahnuté, při nápřahu se rozevřou dokořán (telegraf útoku), úderem se sevřou (`EnemyAnimator.ClawGrip`).
+  - `HeroHands` teď zvládne libovolný počet prstů a záporné sevření, kdy se prsty natáhnou a rozevřou.
+
+### Změněno
+- Náklony přízraku v `EnemyAnimator` jsou menší. Nový model je už sám shrbený a se starými hodnotami se při pronásledování a úderu sklápěl skoro vodorovně.
+
+### Testy
+- `WraithModelTests`:
+  - model má tělo, drápy a aspoň 10 stuh;
+  - je vysoký kolem 2 m;
+  - drápy se sevřou;
+  - na nápřah se rozevřou, při úderu sevřou;
+  - prefab má na stuhy `SpringBones`.
+
 ## [0.18.1] – 2026-11-15
 Hrdina je nepatrně nasvícený měsícem.
 

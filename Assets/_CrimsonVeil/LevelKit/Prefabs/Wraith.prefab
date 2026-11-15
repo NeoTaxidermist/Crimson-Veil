@@ -44,6 +44,7 @@ GameObject:
   - component: {fileID: 6209759398023378256}
   - component: {fileID: 355611278233775478}
   - component: {fileID: 8094574656996177580}
+  - component: {fileID: 7236929559255744482}
   m_Layer: 0
   m_Name: Wraith
   m_TagString: Untagged
@@ -141,6 +142,25 @@ MonoBehaviour:
   eyeColor: {r: 1.2, g: 0.03, b: 0.05, a: 1}
   eyeFlare: 4
   sharpness: 14
+--- !u!114 &7236929559255744482
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4784963606827938747}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 19f39d87c02a376469407a67d4a90111, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CrimsonVeil.Runtime::CrimsonVeil.Player.SpringBones
+  root: {fileID: 7523368730665315383}
+  prefix: Tatter.
+  stiffness: 5
+  tipStiffness: 1.2
+  damping: 0.9
+  gravity: {x: 0, y: -3, z: 0}
+  drag: 1.1
 --- !u!1001 &4612663878388219793
 PrefabInstance:
   m_ObjectHideFlags: 0

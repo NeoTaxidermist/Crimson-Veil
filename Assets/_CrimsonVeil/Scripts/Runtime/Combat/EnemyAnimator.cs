@@ -40,6 +40,30 @@ namespace CrimsonVeil.Combat
             block = new MaterialPropertyBlock();
             enemy.Hurt += _ => hurtFlash = 1f;
             IsReady = Setup();
+            if (IsReady)
+            {
+                // The claws (in the bind pose: their rest is measured here). The torn strips swing on SpringBones.
+                var c = new CrimsonVeil.Player.HeroHands(model, RigJoint.FindDeep(model, "Hips"));
+                claws = c.IsReady ? c : null;
+            }
+        }
+
+        CrimsonVeil.Player.HeroHands claws;
+
+        /// <summary>How the claws hold for each state: hooked while drifting, thrown wide open on the wind-up (the
+        /// telegraph), raked shut through the strike.</summary>
+        public static float ClawGrip(EnemyState state, float windup)
+        {
+            switch (state)
+            {
+                case EnemyState.Chase: return 0.1f;
+                case EnemyState.Windup: return Mathf.Lerp(0.2f, -0.55f, Mathf.SmoothStep(0f, 1f, windup));
+                case EnemyState.Strike: return 1f;
+                case EnemyState.Recover: return 0.6f;
+                case EnemyState.Hurt: return -0.3f;
+                case EnemyState.Dead: return -0.45f;
+                default: return 0.3f;
+            }
         }
 
         bool Setup()
@@ -74,20 +98,21 @@ namespace CrimsonVeil.Combat
             var state = enemy.Brain.State;
             float windup = enemy.WindupProgress;
 
-            // Target pose per state.
-            float sp = 12f, ch = 4f, hd = -4f, aL = 15f + Mathf.Sin(t * 2.1f) * 8f, eL = 25f, aR = 10f - Mathf.Sin(t * 2.1f) * 8f, eR = 30f;
+            // Target pose per state. (The model already hunches ~17° forward; these lean it further only a little, so
+            // it stoops and lunges rather than tipping over flat.)
+            float sp = 4f, ch = 2f, hd = -3f, aL = 15f + Mathf.Sin(t * 2.1f) * 8f, eL = 25f, aR = 10f - Mathf.Sin(t * 2.1f) * 8f, eR = 30f;
             switch (state)
             {
-                case EnemyState.Chase: sp = 26f; ch = 8f; hd = -12f; aL = -25f; aR = -35f; eL = eR = 20f; break;
+                case EnemyState.Chase: sp = 5f; ch = 2f; hd = -4f; aL = -25f; aR = -35f; eL = eR = 20f; break;
                 case EnemyState.Windup:
                     float w = Mathf.SmoothStep(0f, 1f, windup);
-                    sp = Mathf.Lerp(10f, -18f, w); ch = Mathf.Lerp(4f, -10f, w); hd = Mathf.Lerp(-4f, 8f, w);
+                    sp = Mathf.Lerp(4f, -16f, w); ch = Mathf.Lerp(2f, -8f, w); hd = Mathf.Lerp(-3f, 8f, w);
                     aL = aR = Mathf.Lerp(20f, 165f, w); eL = eR = Mathf.Lerp(30f, 50f, w);
                     break;
-                case EnemyState.Strike: sp = 38f; ch = 16f; hd = -10f; aL = aR = 55f; eL = eR = 5f; break;
-                case EnemyState.Recover: sp = 30f; ch = 10f; hd = 6f; aL = aR = 5f; eL = eR = 10f; break;
-                case EnemyState.Hurt: sp = -22f; ch = -14f; hd = 18f; aL = -40f; aR = 30f; eL = eR = 60f; break;
-                case EnemyState.Dead: sp = -10f; ch = -20f; hd = 30f; aL = aR = 120f; eL = eR = 10f; break;
+                case EnemyState.Strike: sp = 12f; ch = 5f; hd = -6f; aL = aR = 55f; eL = eR = 5f; break;
+                case EnemyState.Recover: sp = 7f; ch = 3f; hd = 4f; aL = aR = 5f; eL = eR = 10f; break;
+                case EnemyState.Hurt: sp = -16f; ch = -10f; hd = 14f; aL = -40f; aR = 30f; eL = eR = 60f; break;
+                case EnemyState.Dead: sp = -8f; ch = -14f; hd = 24f; aL = aR = 120f; eL = eR = 10f; break;
             }
 
             float k = 1f - Mathf.Exp(-(state == EnemyState.Strike ? sharpness * 2.5f : sharpness) * dt);
@@ -97,6 +122,11 @@ namespace CrimsonVeil.Combat
 
             spine?.Set(spineA); chest?.Set(chestA); head?.Set(headA);
             armL?.Set(armA); elbowL?.Set(elbowA); armR?.Set(armB); elbowR?.Set(elbowB);
+            if (claws != null)
+            {
+                float g = ClawGrip(state, windup);
+                claws.Apply(g, g, dt);
+            }
 
             // Facing, hover bob, hurt shudder, death dissolve.
             yaw = Mathf.LerpAngle(yaw, enemy.Facing > 0 ? 90f : -90f, 1f - Mathf.Exp(-10f * dt));

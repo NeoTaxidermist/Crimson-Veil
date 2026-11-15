@@ -216,7 +216,25 @@ namespace CrimsonVeil.EditorTools
             var anim = go.AddComponent<EnemyAnimator>();
             SetRef(anim, "visualRoot", visual);
             if (eyes != null) SetRef(anim, "eyes", eyes);
+            WraithStrips(go, visual);
             return go;
+        }
+
+        /// <summary>The wraith's torn shroud: its strips (Tatter.N.k bones) swing like the hero's hair, looser and heavier.</summary>
+        public static SpringBones WraithStrips(GameObject wraith, Transform visual)
+        {
+            var springs = wraith.GetComponent<SpringBones>();
+            if (springs == null) springs = wraith.AddComponent<SpringBones>();
+            var so = new SerializedObject(springs);
+            so.FindProperty("root").objectReferenceValue = visual;
+            so.FindProperty("prefix").stringValue = "Tatter.";
+            so.FindProperty("stiffness").floatValue = 5f;
+            so.FindProperty("tipStiffness").floatValue = 1.2f;
+            so.FindProperty("damping").floatValue = 0.9f;
+            so.FindProperty("gravity").vector3Value = new Vector3(0f, -3f, 0f);
+            so.FindProperty("drag").floatValue = 1.1f;
+            so.ApplyModifiedPropertiesWithoutUndo();
+            return springs;
         }
 
         // ------------------------------------------------------------------ bestiary

@@ -56,30 +56,34 @@ namespace CrimsonVeil.Player
         {
             var handBone = Find(root, "Hand." + side);
             if (handBone == null) return null;
-            var bones = new Transform[4][];
-            for (int i = 0; i < 4; i++)
+            // As many three-jointed fingers as the hand has (the hero four, the wraith's claws three), front to back.
+            var list = new System.Collections.Generic.List<Transform[]>();
+            for (int i = 0; i < 8; i++)
             {
-                bones[i] = new Transform[3];
-                for (int k = 0; k < 3; k++)
-                {
-                    bones[i][k] = Find(handBone, $"Finger.{side}.{i}.{k}");
-                    if (bones[i][k] == null) return null;
-                }
+                var f = new Transform[3];
+                for (int k = 0; k < 3; k++) f[k] = Find(handBone, $"Finger.{side}.{i}.{k}");
+                if (f[0] == null || f[1] == null || f[2] == null) break;
+                list.Add(f);
             }
+            if (list.Count < 2) return null;
+            var bones = list.ToArray();
+            int count = bones.Length;
             var t0 = Find(handBone, $"Thumb.{side}.0");
             var t1 = Find(handBone, $"Thumb.{side}.1");
             if (t0 == null || t1 == null) return null;
 
             // The palm's frame in the rest pose: down the hand, front (index side) and towards the palm.
-            Vector3 down = ((bones[1][0].position + bones[2][0].position) * 0.5f - handBone.position).normalized;
-            Vector3 front = (bones[0][0].position - bones[3][0].position).normalized;
+            Vector3 mid = Vector3.zero;
+            foreach (var f in bones) mid += f[0].position;
+            Vector3 down = (mid / count - handBone.position).normalized;
+            Vector3 front = (bones[0][0].position - bones[count - 1][0].position).normalized;
             Vector3 palmIn = Vector3.Cross(front, down).normalized;
             Vector3 toBody = bodyCentre != null ? bodyCentre.position - handBone.position : -handBone.right;
             toBody -= Vector3.Project(toBody, down);
             if (Vector3.Dot(palmIn, toBody) < 0f) palmIn = -palmIn; // the palm faces the body
 
-            var hand = new Hand { fingers = new Joint[4][] };
-            for (int i = 0; i < 4; i++)
+            var hand = new Hand { fingers = new Joint[count][] };
+            for (int i = 0; i < count; i++)
             {
                 hand.fingers[i] = new Joint[3];
                 for (int k = 0; k < 3; k++)
@@ -129,9 +133,10 @@ namespace CrimsonVeil.Player
         static void Pose(Hand h, float target, float dt)
         {
             if (h == null) return;
-            h.grip = Mathf.MoveTowards(h.grip, Mathf.Clamp01(target), dt / 0.08f);
+            // (below 0 the fingers straighten and splay back: a claw thrown open)
+            h.grip = Mathf.MoveTowards(h.grip, Mathf.Clamp(target, -0.6f, 1f), dt / 0.08f);
             float g = h.grip;
-            for (int i = 0; i < 4; i++)
+            for (int i = 0; i < h.fingers.Length; i++)
                 for (int k = 0; k < 3; k++)
                 {
                     var j = h.fingers[i][k];

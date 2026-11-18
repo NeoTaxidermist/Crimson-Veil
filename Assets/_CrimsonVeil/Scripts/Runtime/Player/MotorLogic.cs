@@ -48,7 +48,23 @@ namespace CrimsonVeil.Player
         public float slideDuration = 0.5f;
 
         [Header("Wall")]
+        [Tooltip("Pushing into a wall he first grips it, sliding this slowly...")]
         public float wallSlideSpeed = 2.3f;
+        [Tooltip("...for this long (s); then his grip gives and he slides faster and faster, up to wallSlideMaxSpeed.")]
+        public float wallGripTime = 0.5f;
+        public float wallSlideMaxSpeed = 8f;
+        [Tooltip("Seconds from the grip giving to the full slide speed.")]
+        public float wallSlideRamp = 0.9f;
+
+        /// <summary>
+        /// How fast (m/s, down) he may slide <paramref name="t"/> s into a wall slide: slowly while he grips it, then
+        /// faster as the grip gives - a tall wall is not a slow lift all the way down (still slower than a free fall).
+        /// </summary>
+        public float WallSlideCap(float t)
+        {
+            float slip = wallSlideRamp > 1e-4f ? Mathf.Clamp01((t - wallGripTime) / wallSlideRamp) : (t > wallGripTime ? 1f : 0f);
+            return Mathf.Lerp(wallSlideSpeed, Mathf.Min(wallSlideMaxSpeed, maxFallSpeed), slip * slip);
+        }
         public float wallJumpHeight = 3.3f;
         public float wallJumpPush = 7.5f;
         [Tooltip("After a wall jump, horizontal input is ignored this long so the push carries.")]
@@ -141,6 +157,8 @@ namespace CrimsonVeil.Player
         public float SlideProgress => Settings.slideDuration > 0f ? 1f - Mathf.Clamp01(slideTimer / Settings.slideDuration) : 1f;
         public event Action Slid;
         float slideTimer;
+        /// <summary>Seconds into the current wall slide (0 when not sliding down a wall).</summary>
+        public float WallSlideTime { get; private set; }
         public bool IsJumping { get; private set; }
         public bool IsStunned => stunTimer > 0f;
         public int Facing { get; private set; } = 1;
@@ -476,6 +494,7 @@ namespace CrimsonVeil.Player
             // Wall slide: airborne, falling, pushing into a wall.
             bool sliding = !IsGrounded && contacts.wallSide != 0 && inputSide == contacts.wallSide && Velocity.y <= 0f && !IsDashing;
             State = sliding ? MotorState.WallSlide : MotorState.Normal;
+            WallSlideTime = sliding ? WallSlideTime + dt : 0f;
             if (sliding)
             {
                 AttachSide = contacts.wallSide;
@@ -640,7 +659,11 @@ namespace CrimsonVeil.Player
                     if (GlideTime > 0f && held) GlideTime = Mathf.Max(0f, GlideTime - dt);
                     if (Velocity.y < -GlideFallSpeed) Velocity.y = Mathf.MoveTowards(Velocity.y, -GlideFallSpeed, s.Gravity * 3f * dt);
                 }
-                if (State == MotorState.WallSlide && Velocity.y < -s.wallSlideSpeed) Velocity.y = -s.wallSlideSpeed;
+                if (State == MotorState.WallSlide)
+                {
+                    float cap = s.WallSlideCap(WallSlideTime);
+                    if (Velocity.y < -cap) Velocity.y = -cap;
+                }
             }
 
             if (contacts.ceiling && Velocity.y > 0f) Velocity.y = 0f;

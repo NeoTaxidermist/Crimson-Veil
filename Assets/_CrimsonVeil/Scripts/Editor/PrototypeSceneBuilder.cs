@@ -315,6 +315,10 @@ namespace CrimsonVeil.EditorTools
             foreach (var x in new[] { 125f, 137f, 159f, 188f, 212f, 246f, 279f, 296f, 325f })
                 F.Rubble(new Vector3(x, GroundTop(x), 1.6f), LevelLayer.Playfield, (int)x + 50).transform.SetParent(deco, true);
 
+            // Chains, cages and banners hang from stone in their own layer (or go).
+            var hung = HangingProps.Anchor(deco);
+            Debug.Log("[CrimsonVeil] Hanging props anchored: " + hung.x + ", removed (nothing to hang from): " + hung.y);
+
             EditorSceneManager.SaveScene(scene, ScenePath);
             EditorBuildSettings.scenes = new[] { new EditorBuildSettingsScene(ScenePath, true) };
             AssetDatabase.SaveAssets();

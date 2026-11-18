@@ -153,6 +153,9 @@ MonoBehaviour:
     slideEndSpeed: 3
     slideDuration: 0.5
     wallSlideSpeed: 2.3
+    wallGripTime: 0.5
+    wallSlideMaxSpeed: 8
+    wallSlideRamp: 0.9
     wallJumpHeight: 3.3
     wallJumpPush: 7.5
     wallJumpInputLock: 0.12

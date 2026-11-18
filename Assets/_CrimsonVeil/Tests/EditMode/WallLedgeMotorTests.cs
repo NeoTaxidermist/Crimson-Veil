@@ -27,10 +27,27 @@ namespace CrimsonVeil.Tests
         [Test]
         public void PushingIntoWall_WhileFalling_Slides()
         {
-            FallInto(1);
+            FallInto(1, 25);
             Assert.AreEqual(MotorState.WallSlide, m.State);
-            Assert.AreEqual(-s.wallSlideSpeed, m.Velocity.y, 1e-3f, "fall speed is capped by friction");
+            Assert.AreEqual(-s.wallSlideSpeed, m.Velocity.y, 1e-3f, "fall speed is capped by friction (gripping)");
             Assert.AreEqual(1, m.Facing, "faces the wall");
+        }
+
+        [Test]
+        public void HeldAgainstAWall_TheGripGives_HeSlidesFasterAndFaster_NotALiftForever()
+        {
+            Assert.AreEqual(s.wallSlideSpeed, s.WallSlideCap(0f), 1e-4f);
+            Assert.AreEqual(s.wallSlideSpeed, s.WallSlideCap(s.wallGripTime), 1e-4f, "grips at first");
+            Assert.AreEqual(s.wallSlideMaxSpeed, s.WallSlideCap(s.wallGripTime + s.wallSlideRamp + 1f), 1e-4f);
+            for (float t = 0f; t < 3f; t += 0.05f) Assert.LessOrEqual(s.WallSlideCap(t), s.WallSlideCap(t + 0.05f) + 1e-5f, "never slows again");
+            Assert.Less(s.wallSlideMaxSpeed, s.maxFallSpeed, "still slower than a free fall");
+
+            FallInto(1, 150);   // 2.5 s against the wall
+            Assert.AreEqual(MotorState.WallSlide, m.State);
+            Assert.AreEqual(-s.wallSlideMaxSpeed, m.Velocity.y, 1e-3f, "the grip gave: sliding fast now");
+            // let go of the wall and grab it again: a fresh grip
+            m.Tick(Dt, new MotorInput(), Wall(1));
+            Assert.AreEqual(0f, m.WallSlideTime, 1e-5f);
         }
 
         [Test]

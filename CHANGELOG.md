@@ -5,6 +5,21 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.26.5] – 2026-11-18
+### Opraveno
+- **Klouzání po zdi už není nekonečný pomalý výtah.** Když se hrdina tlačí do zdi, nejdřív se drží a klouže pomalu (2,3 m/s), ale jen 0,5 s. Pak mu stisk povolí a klouže rychleji a rychleji, za 0,9 s až 8 m/s, pořád pomaleji než volný pád. Když se od zdi pustí a chytí ji znovu, drží se zase. Odraz od zdi funguje kdykoli.
+- **Řetězy, klece a prapory v pozadí už nevisí ze vzduchu.** Byly rozmístěné od oka podle věží ve vzdálenější vrstvě. Vrstvy se ale při pohybu kamery posouvají různě, takže věci visely v prázdnu. Generátor levelu je teď ukotvuje (`HangingProps`):
+  - každá věc hledá nad sebou kámen ve své vrstvě a řetěz k němu dosáhne;
+  - když tam nic není, posune se kousek do strany nebo se přesune do vrstvy věže za ní, před její zeď;
+  - prapor může viset přímo na zdi, ale jen když má zeď za sebou po celé ploše;
+  - věc, která nemá kde viset, zmizí (12 z 37).
+
+### Testy
+- `WallLedgeMotorTests`: hrdina se nejdřív drží, pak klouže rychleji, nikdy nezpomalí, a po znovuchycení se zase drží.
+- `HangingPropsTests`:
+  - délky článků řetězu (jen stlačené, nikdy natažené);
+  - každý řetěz, klec a prapor ve scéně má vršek v kameni své vrstvy nebo zeď za sebou.
+
 ## [0.26.4] – 2026-11-18
 ### Odstraněno
 - **Šála už nechytá hrany.** Hrany chytají jen ruce (do 2,1 m nad chodidly). Šála se jako bič zachytává jen o kruhy. Zmizelo vytahování šálou k vyšší hraně, jeho cena v síle šály (`LedgeCatchCost`) i šňůra kreslená k hraně.

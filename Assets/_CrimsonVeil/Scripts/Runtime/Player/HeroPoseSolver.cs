@@ -200,6 +200,11 @@ namespace CrimsonVeil.Player
             if (attacking)
                 target = HeroAttackChoreography.Apply(target, s.attackForm, s.attackT, run, s.attackAim);
 
+            // Hanging from a ledge with a weapon cast: the left hand keeps the lip, the right lets go and wields it.
+            float free = HangFreeArm(s.hanging, s.weaponHeld);
+            bool hangBlow = free > 0f && s.attacking && s.attackT >= 0f;
+            if (free > 0f) target = OneHandedHang(target, s, free, time);
+
             // The rest of the body: pelvis and chest turning in the stride, collarbones, arms clear of the body, the
             // neck, the toes, turning into a blow.
             target = HeroBodyMotion.Layer(target, s, Phase, run, time, attacking);
@@ -212,7 +217,7 @@ namespace CrimsonVeil.Player
             else
             {
                 // Attacks need snap: follow the choreography much more tightly than locomotion.
-                float sharp = attacking || flipping ? sharpness * 2.6f : (s.grounded ? sharpness : sharpness * 0.6f);
+                float sharp = attacking || hangBlow || flipping ? sharpness * 2.6f : (s.grounded ? sharpness : sharpness * 0.6f);
                 var prev = Current;
                 var next = HeroPose.Lerp(Current, target, MovementMath.Damp(sharp, dt));
                 // The wrists trail the arms' swing (a beat behind, like loose hands).
@@ -364,6 +369,41 @@ namespace CrimsonVeil.Player
         /// Both hands gripping the lip above, the arms almost straight, the body close to the wall: one foot braced
         /// against the stone, the other leg hanging and swinging a little, the head tipped back to the lip.
         /// </summary>
+        /// <summary>
+        /// Hanging on a ledge, how far the right hand has let go of the lip to hold the weapon (0 both hands on the
+        /// stone .. 1 the weapon in hand). Only hanging; climbing and swinging keep both hands busy.
+        /// </summary>
+        public static float HangFreeArm(bool hanging, float weaponHeld)
+            => hanging ? Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(weaponHeld / 0.5f)) : 0f;
+
+        /// <summary>
+        /// The hang with the right arm free: the weapon held out from the wall, and a blow swung with that arm alone
+        /// (the left keeps the body on the lip, the legs stay braced).
+        /// </summary>
+        public static HeroPose OneHandedHang(HeroPose hang, in HeroState s, float free, float time)
+        {
+            WeaponHold(s.attackForm, 0f, out float hold, out float holdElbow);
+            var arm = hang;
+            arm.armR = hold + Mathf.Sin(time * 1.4f) * 3f;
+            arm.elbowR = holdElbow;
+            arm.shoulderR = 0f;
+            arm.wristR = 0f;
+            if (s.attacking && s.attackT >= 0f)
+            {
+                var blow = HeroAttackChoreography.Apply(arm, s.attackForm, s.attackT, 0f, s.attackAim);
+                arm.armR = blow.armR;
+                arm.elbowR = blow.elbowR;
+                // the body twists a little into the one-armed blow
+                arm.chest = hang.chest + (blow.chest - hang.chest) * 0.35f;
+            }
+            hang.armR = Mathf.Lerp(hang.armR, arm.armR, free);
+            hang.elbowR = Mathf.Lerp(hang.elbowR, arm.elbowR, free);
+            hang.shoulderR = Mathf.Lerp(hang.shoulderR, arm.shoulderR, free);
+            hang.wristR = Mathf.Lerp(hang.wristR, arm.wristR, free);
+            hang.chest = Mathf.Lerp(hang.chest, arm.chest, free);
+            return hang;
+        }
+
         public static HeroPose HangPose(float time, float arm = DefaultHangArm)
         {
             if (arm <= 0f) arm = DefaultHangArm;

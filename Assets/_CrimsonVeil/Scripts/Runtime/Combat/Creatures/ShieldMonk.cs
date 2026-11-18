@@ -40,6 +40,44 @@ namespace CrimsonVeil.Combat
             if (shield != null && visual != null && shield.parent != visual) shield.SetParent(visual, true);
             // (its rest is taken in the world: facing +x, the shield's face towards the camera)
             if (shield != null) shieldRest = shield.rotation;
+            SetupRig();
+            lastX = transform.position.x;
+        }
+
+        CrimsonVeil.Core.RigJoint spineJ, chestJ, headJ, armLJ, elbowLJ, armRJ, elbowRJ;
+        CreaturePose posed;
+        float phase, lastX, moving;
+
+        /// <summary>The rigged model's body joints (none on the primitive stand-in).</summary>
+        void SetupRig()
+        {
+            var model = visual != null ? CreatureParts.Find(visual, "Model") : null;
+            if (model == null) return;
+            Transform F(string n) => CrimsonVeil.Core.RigJoint.FindDeep(model, n);
+            Vector3 up = model.up, forward = model.forward;
+            Vector3 lateral = Vector3.Cross(up, forward).normalized;
+            CrimsonVeil.Core.RigJoint J(string bone, string child)
+            {
+                var b = F(bone); var c = F(child);
+                return b == null || c == null ? null : CrimsonVeil.Core.RigJoint.Create(b, lateral, () => c.position, forward);
+            }
+            spineJ = J("Spine", "Chest"); chestJ = J("Chest", "Head");
+            var h = F("Head");
+            headJ = h == null ? null : CrimsonVeil.Core.RigJoint.Create(h, lateral, () => h.position + h.up * 0.2f, forward);
+            armLJ = J("UpperArm.L", "LowerArm.L"); armRJ = J("UpperArm.R", "LowerArm.R");
+            elbowLJ = J("LowerArm.L", "Hand.L"); elbowRJ = J("LowerArm.R", "Hand.R");
+        }
+
+        /// <summary>0..1 through the current wind-up / bash / recovery.</summary>
+        float StateProgress()
+        {
+            switch (Current)
+            {
+                case State.Windup: return Mathf.Clamp01(stateTime / windupTime);
+                case State.Bash: return Mathf.Clamp01(stateTime / 0.25f);
+                case State.Recover: return Mathf.Clamp01(stateTime / 0.7f);
+                default: return 0f;
+            }
         }
 
         Quaternion shieldRest = Quaternion.identity;
@@ -141,13 +179,34 @@ namespace CrimsonVeil.Combat
 
         void Animate(float dt)
         {
+            // The heavy walk is driven by the distance walked; blows are staged (see CreatureAnimation.Monk).
+            float x = transform.position.x, moved = Mathf.Abs(x - lastX);
+            lastX = x;
+            moving = Mathf.Lerp(moving, dt > 0f ? Mathf.Clamp01(moved / dt / walkSpeed) : 0f, 1f - Mathf.Exp(-6f * dt));
+            phase = Mathf.Repeat(phase + moved / CreatureAnimation.MonkStride, 1f);
+            var pose = CreatureAnimation.Monk(Current, StateProgress(), moving, phase, ShieldUp, Time.time);
+            float k = 1f - Mathf.Exp(-(Current == State.Bash ? 30f : 12f) * dt);
+            posed.spine = Mathf.Lerp(posed.spine, pose.spine, k); posed.chest = Mathf.Lerp(posed.chest, pose.chest, k);
+            posed.head = Mathf.Lerp(posed.head, pose.head, k);
+            posed.armL = Mathf.Lerp(posed.armL, pose.armL, k); posed.elbowL = Mathf.Lerp(posed.elbowL, pose.elbowL, k);
+            posed.armR = Mathf.Lerp(posed.armR, pose.armR, k); posed.elbowR = Mathf.Lerp(posed.elbowR, pose.elbowR, k);
+            posed.lift = Mathf.Lerp(posed.lift, pose.lift, k); posed.lunge = Mathf.Lerp(posed.lunge, pose.lunge, k);
+
             if (visual != null)
             {
                 // He turns his whole body round (heavy, slow), not a mirrored flip.
                 visual.localRotation = turn.Step(Facing, dt, 0.5f);
-                // A heavy, swaying gait.
-                visual.localPosition = new Vector3(0f, Mathf.Abs(Mathf.Sin(Time.time * 3f)) * 0.04f, 0f);
+                visual.localPosition = new Vector3(posed.lunge * Facing, posed.lift, 0f);
             }
+            // The shield arm is the one on the camera's side (the right facing +x, the left facing -x).
+            float side = visual != null ? visual.TransformDirection(Vector3.right).x : Facing;
+            var shieldArm = side >= 0f ? armRJ : armLJ;
+            var shieldElbow = side >= 0f ? elbowRJ : elbowLJ;
+            var freeArm = side >= 0f ? armLJ : armRJ;
+            var freeElbow = side >= 0f ? elbowLJ : elbowRJ;
+            spineJ?.Set(posed.spine); chestJ?.Set(posed.chest); headJ?.Set(posed.head);
+            shieldArm?.Set(posed.armL); shieldElbow?.Set(posed.elbowL);
+            freeArm?.Set(posed.armR); freeElbow?.Set(posed.elbowR);
             if (shield == null) return;
             // Up in front; raised for the bash; torn away and hanging low when disarmed.
             Vector3 up = new Vector3(0.55f, 1.05f, -0.15f), raised = new Vector3(0.75f, 1.3f, -0.15f), down = new Vector3(-0.1f, 0.35f, 0.25f);

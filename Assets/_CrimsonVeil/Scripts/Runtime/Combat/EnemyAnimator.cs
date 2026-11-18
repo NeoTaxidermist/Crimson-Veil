@@ -26,6 +26,23 @@ namespace CrimsonVeil.Combat
         RigJoint spine, chest, head, armL, elbowL, armR, elbowR;
         float spineA, chestA, headA, armA, elbowA, armB, elbowB;
         float yaw = -90f;
+        float liftA, lungeA, phase, lastX, speedSmooth;
+
+        /// <summary>0..1 through the brain's current timed state (wind-up, strike, recover, hurt); 0 otherwise.</summary>
+        public static float StateProgress(EnemyBrain brain)
+        {
+            var c = brain.Settings;
+            float d;
+            switch (brain.State)
+            {
+                case EnemyState.Windup: d = c.windupTime; break;
+                case EnemyState.Strike: d = c.strikeTime; break;
+                case EnemyState.Recover: d = c.recoverTime; break;
+                case EnemyState.Hurt: d = c.hurtTime; break;
+                default: return 0f;
+            }
+            return Mathf.Clamp01(brain.StateTime / Mathf.Max(0.01f, d));
+        }
         float dissolve;
         float hurtFlash;
         MaterialPropertyBlock block;
@@ -35,6 +52,7 @@ namespace CrimsonVeil.Combat
         void Awake()
         {
             enemy = GetComponent<Enemy>();
+            lastX = transform.position.x;
             if (visualRoot == null) visualRoot = transform.Find("Visual");
             if (model == null && visualRoot != null && visualRoot.childCount > 0) model = visualRoot.GetChild(0);
             block = new MaterialPropertyBlock();
@@ -98,27 +116,21 @@ namespace CrimsonVeil.Combat
             var state = enemy.Brain.State;
             float windup = enemy.WindupProgress;
 
-            // Target pose per state. (The model already hunches ~17° forward; these lean it further only a little, so
-            // it stoops and lunges rather than tipping over flat.)
-            float sp = 4f, ch = 2f, hd = -3f, aL = 15f + Mathf.Sin(t * 2.1f) * 8f, eL = 25f, aR = 10f - Mathf.Sin(t * 2.1f) * 8f, eR = 30f;
-            switch (state)
-            {
-                case EnemyState.Chase: sp = 5f; ch = 2f; hd = -4f; aL = -25f; aR = -35f; eL = eR = 20f; break;
-                case EnemyState.Windup:
-                    float w = Mathf.SmoothStep(0f, 1f, windup);
-                    sp = Mathf.Lerp(4f, -16f, w); ch = Mathf.Lerp(2f, -8f, w); hd = Mathf.Lerp(-3f, 8f, w);
-                    aL = aR = Mathf.Lerp(20f, 165f, w); eL = eR = Mathf.Lerp(30f, 50f, w);
-                    break;
-                case EnemyState.Strike: sp = 12f; ch = 5f; hd = -6f; aL = aR = 55f; eL = eR = 5f; break;
-                case EnemyState.Recover: sp = 7f; ch = 3f; hd = 4f; aL = aR = 5f; eL = eR = 10f; break;
-                case EnemyState.Hurt: sp = -16f; ch = -10f; hd = 14f; aL = -40f; aR = 30f; eL = eR = 60f; break;
-                case EnemyState.Dead: sp = -8f; ch = -14f; hd = 24f; aL = aR = 120f; eL = eR = 10f; break;
-            }
+            // Target pose per state: staged blows (anticipation, action, follow-through), claws stroking with the
+            // distance drifted (see CreatureAnimation.Wraith).
+            Vector3 at = transform.position;
+            float moved = dt > 0f ? Mathf.Abs(at.x - lastX) : 0f;
+            lastX = at.x;
+            float speed = dt > 0f ? moved / dt : 0f;
+            speedSmooth = Mathf.Lerp(speedSmooth, speed, 1f - Mathf.Exp(-8f * dt));
+            phase = Mathf.Repeat(phase + moved / CreatureAnimation.WraithStride, 1f);
+            var pose = CreatureAnimation.Wraith(state, StateProgress(enemy.Brain), speedSmooth / Mathf.Max(0.1f, enemy.Brain.Settings.chaseSpeed), phase, t);
 
-            float k = 1f - Mathf.Exp(-(state == EnemyState.Strike ? sharpness * 2.5f : sharpness) * dt);
-            spineA = Mathf.Lerp(spineA, sp, k); chestA = Mathf.Lerp(chestA, ch, k); headA = Mathf.Lerp(headA, hd, k);
-            armA = Mathf.Lerp(armA, aL, k); elbowA = Mathf.Lerp(elbowA, eL, k);
-            armB = Mathf.Lerp(armB, aR, k); elbowB = Mathf.Lerp(elbowB, eR, k);
+            float k = 1f - Mathf.Exp(-(state == EnemyState.Strike || state == EnemyState.Hurt ? sharpness * 2.5f : sharpness) * dt);
+            spineA = Mathf.Lerp(spineA, pose.spine, k); chestA = Mathf.Lerp(chestA, pose.chest, k); headA = Mathf.Lerp(headA, pose.head, k);
+            armA = Mathf.Lerp(armA, pose.armL, k); elbowA = Mathf.Lerp(elbowA, pose.elbowL, k);
+            armB = Mathf.Lerp(armB, pose.armR, k); elbowB = Mathf.Lerp(elbowB, pose.elbowR, k);
+            liftA = Mathf.Lerp(liftA, pose.lift, k); lungeA = Mathf.Lerp(lungeA, pose.lunge, k);
 
             spine?.Set(spineA); chest?.Set(chestA); head?.Set(headA);
             armL?.Set(armA); elbowL?.Set(elbowA); armR?.Set(armB); elbowR?.Set(elbowB);
@@ -133,7 +145,7 @@ namespace CrimsonVeil.Combat
             hurtFlash = Mathf.MoveTowards(hurtFlash, 0f, dt * 4f);
             float shudder = hurtFlash * Mathf.Sin(t * 70f) * 0.06f;
             visualRoot.localRotation = Quaternion.Euler(0f, yaw, 0f);
-            visualRoot.localPosition = new Vector3(shudder, 0.18f + Mathf.Sin(t * 2.6f) * 0.08f, 0f);
+            visualRoot.localPosition = new Vector3(shudder + lungeA * enemy.Facing, 0.18f + liftA + Mathf.Sin(t * 2.6f) * 0.08f, 0f);
 
             if (state == EnemyState.Dead)
             {

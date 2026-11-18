@@ -223,5 +223,39 @@ namespace CrimsonVeil.Tests
             var p = solver.Step(5f, new HeroState { speed = 1000f, maxSpeed = 0f, verticalVelocity = float.MaxValue / 2f });
             Assert.IsTrue(p.IsFinite());
         }
+
+        [Test]
+        public void HangingWithAWeapon_TheRightHandLetsGoOfTheLip_AndSwingsTheBlow_TheLeftHolds()
+        {
+            Assert.AreEqual(0f, HeroPoseSolver.HangFreeArm(false, 1f), "only hanging");
+            Assert.AreEqual(0f, HeroPoseSolver.HangFreeArm(true, 0f), "no weapon: both hands on the lip");
+            Assert.AreEqual(1f, HeroPoseSolver.HangFreeArm(true, 1f), 1e-5f);
+
+            var hang = new HeroState { hanging = true, hangArm = HeroPoseSolver.DefaultHangArm };
+            var bare = Run(new HeroPoseSolver(), 0.6f, hang);
+
+            var armed = hang;
+            armed.weaponHeld = 1f;
+            armed.attackForm = CrimsonVeil.Veil.VeilForm.Sword;
+            var held = Run(new HeroPoseSolver(), 0.6f, armed);
+            Assert.Greater(Mathf.Abs(held.armR - bare.armR), 40f, "the sword arm comes down off the lip to hold the blade");
+            Assert.AreEqual(bare.armL, held.armL, 2f, "the left hand still holds the lip");
+            Assert.AreEqual(bare.thighL, held.thighL, 2f, "the legs stay braced");
+
+            // a blow: the free arm sweeps through the swing
+            var solver = new HeroPoseSolver();
+            Run(solver, 0.4f, armed);
+            float lo = float.MaxValue, hi = float.MinValue;
+            for (float t = 0f; t <= 1f; t += Dt * 2f)
+            {
+                var s = armed;
+                s.attacking = true;
+                s.attackT = t;
+                var p = solver.Step(Dt, s);
+                lo = Mathf.Min(lo, p.armR); hi = Mathf.Max(hi, p.armR);
+                Assert.AreEqual(bare.armL, p.armL, 2f, "the left hand holds on through the blow");
+            }
+            Assert.Greater(hi - lo, 60f, "hanging, the blow is really swung");
+        }
     }
 }

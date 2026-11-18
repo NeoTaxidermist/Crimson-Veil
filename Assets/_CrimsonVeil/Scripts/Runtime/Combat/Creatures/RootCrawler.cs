@@ -20,7 +20,8 @@ namespace CrimsonVeil.Combat
         public int Facing { get; private set; } = 1;
 
         Vector3 velocity;
-        float stateTime, hopTimer;
+        float stateTime, hopTimer, sinceLanding = 1f, tilt;
+        bool onGround;
         Transform visual;
         Transform[] roots;
 
@@ -75,6 +76,9 @@ namespace CrimsonVeil.Combat
                 {
                     // Short leaps towards the hero.
                     bool grounded = Fall(dt);
+                    if (grounded && !onGround) sinceLanding = 0f;
+                    onGround = grounded;
+                    sinceLanding += dt;
                     hopTimer -= dt;
                     if (grounded && hopTimer <= 0f && HasTarget && Mathf.Abs(dx) < 12f)
                     {
@@ -93,7 +97,7 @@ namespace CrimsonVeil.Combat
 
             if (Current != State.Pinned && Current != State.Cling)
                 TouchDamage(transform.position, 0.6f, contactDamage, new Vector2(Facing * 5f, 3f));
-            Animate();
+            Animate(dt);
         }
 
         /// <summary>Gravity + ground; returns true when standing.</summary>
@@ -129,18 +133,31 @@ namespace CrimsonVeil.Combat
         // Pinned, every blow lands twice as hard.
         protected override float DamageMultiplier(in DamageInfo info) => Current == State.Pinned ? 2f : 1f;
 
-        void Animate()
+        void Animate(float dt)
         {
             if (visual == null) return;
             bool hanging = Current == State.Cling;
-            visual.localRotation = Quaternion.Slerp(visual.localRotation, Quaternion.Euler(0f, 0f, hanging ? 180f : 0f), 0.2f);
+            // Leaping it leans into the leap; it squashes landing and crouching to leap, stretches in flight.
+            bool skitter = Current == State.Skitter;
+            float lean = skitter && !onGround ? Mathf.Clamp(-velocity.x * 4f, -24f, 24f) : 0f;
+            tilt = Mathf.Lerp(tilt, lean, 1f - Mathf.Exp(-12f * dt));
+            visual.localRotation = Quaternion.Slerp(visual.localRotation, Quaternion.Euler(0f, 0f, (hanging ? 180f : 0f) + tilt), 0.2f);
+            float sy = skitter ? CreatureAnimation.HopSquash(onGround, sinceLanding, Mathf.Max(0f, hopTimer), velocity.y)
+                     : Current == State.Drop ? CreatureAnimation.HopSquash(false, 1f, 1f, velocity.y)
+                     : hanging ? 1f + Mathf.Sin(Time.time * 2.4f) * 0.05f : 1f;
+            float sx = 1f / Mathf.Sqrt(Mathf.Max(0.3f, sy));
+            visual.localScale = Vector3.Lerp(visual.localScale, new Vector3(sx, sy, sx), 1f - Mathf.Exp(-20f * dt));
             if (roots == null) return;
-            float speed = Current == State.Pinned ? 18f : Current == State.Skitter ? 9f : 2f;
+            float speed = Current == State.Pinned ? 18f : skitter ? 9f : 2f;
+            // In the air the roots sweep back from the leap and gather; landing they splay out and grip.
+            float gather = skitter && !onGround ? 0.45f : Current == State.Drop ? -0.25f : 0f;
+            float splay = skitter && onGround && sinceLanding < 0.2f ? (1f - sinceLanding / 0.2f) * 0.1f : 0f;
             for (int i = 0; i < roots.Length; i++)
             {
                 // fanned out away from the surface it clings to / stands on, never down into it
                 float wiggle = Mathf.Sin(Time.time * speed + i * 1.7f) * (Current == State.Pinned ? 6f : RootCrawlerLogic.Wiggle);
-                roots[i].localRotation = Quaternion.Euler(0f, 0f, RootCrawlerLogic.RootAngle(i, roots.Length) + wiggle);
+                float a = RootCrawlerLogic.RootAngle(i, roots.Length) * (1f - gather + splay) - tilt * 0.6f;
+                roots[i].localRotation = Quaternion.Euler(0f, 0f, a + wiggle);
             }
         }
 

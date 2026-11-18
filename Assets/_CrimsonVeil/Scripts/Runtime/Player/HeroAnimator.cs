@@ -136,7 +136,9 @@ namespace CrimsonVeil.Player
             Vector2 off = HeroPoseSolver.LipHandOffset(s.hanging ? 0f : s.climbProgress);
             var lip = player.LipPoint;
             Reach(upperArmL, lowerArmL, handL, lip, off, dir, weight);
-            Reach(upperArmR, lowerArmR, handR, lip, off, dir, weight);
+            // hanging with a weapon cast, the right hand has let go of the lip to wield it
+            float free = HeroPoseSolver.HangFreeArm(s.hanging, s.weaponHeld);
+            Reach(upperArmR, lowerArmR, handR, lip, off, dir, weight * (1f - free));
         }
 
         static void Reach(Transform upper, Transform lower, Transform hand, Vector3 lip, Vector2 off, int dir, float weight)
@@ -190,7 +192,12 @@ namespace CrimsonVeil.Player
                                && (veil.Drawing || (veil.IsAttacking && veil.AttackProgress > 0.1f && veil.AttackProgress < 0.4f));
                 HeroHands.Targets(s.attackForm, s.weaponHeld, drawing, out float r, out float l);
                 // hanging and mantling, both hands grip the lip (then lie flat on the top as he presses over it)
-                if (s.hanging || s.climbing) r = l = HeroPoseSolver.LedgeGrip(s.hanging, s.climbing, s.climbProgress);
+                if (s.hanging || s.climbing)
+                {
+                    float grip = HeroPoseSolver.LedgeGrip(s.hanging, s.climbing, s.climbProgress);
+                    r = Mathf.Lerp(grip, r, HeroPoseSolver.HangFreeArm(s.hanging, s.weaponHeld));   // the weapon hand
+                    l = grip;
+                }
                 Hands.Apply(r, l, Time.deltaTime);
             }
 

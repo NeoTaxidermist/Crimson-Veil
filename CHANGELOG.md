@@ -5,6 +5,39 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.27.0] – 2026-11-18
+### Přidáno
+- **Zbraň i při visení na římse.** Seslat zbraň šlo i dřív, ale póza držela obě ruce na hraně, takže čepel jen trčela u římsy a úder se neodehrál. Teď:
+  - levá ruka drží římsu;
+  - pravá se pustí a vezme zbraň (`HeroPoseSolver.HangFreeArm`, `OneHandedHang`);
+  - úder se švihne jen touto rukou, trup se do něj trochu natočí a nohy zůstanou zapřené o zeď;
+  - prsty pravé ruky přejdou z úchopu hrany na úchop zbraně.
+- **Nové animace nepřátel** (`CreatureAnimation`). Pohyb je řízený uraženou vzdáleností, takže končetiny nehrabou na místě. Útoky mají nápřah, úder a dotažení.
+  - **Přízrak:**
+    - při honičce se shrbí a drápy se střídavě natahují a hrabou dozadu;
+    - při nápřahu se vzepne dozadu a nahoru, drápy zvedne nad hlavu dopředu a nahoře se třese;
+    - úder vede nejdřív jedna ruka a druhá ji následuje, tělo se vrhne dopředu a dolů;
+    - po úderu drápy přešvihnou, tělo se zhoupne a sebere se;
+    - zásah ho odhodí a zase pruží zpět.
+  - **Mnich se štítem:**
+    - těžký krok, při kterém váha dosedá na každou nohu;
+    - ruka na straně kamery drží štít a druhá se houpe;
+    - před výpadem se zapře a stáhne za štít;
+    - při výpadu se za štítem vrhne celým tělem a ruku propne;
+    - bez štítu se shrbí a tápe rukama.
+  - **Kořenový běžec:**
+    - před skokem se přikrčí, v letu se natáhne a nakloní do skoku, při dopadu se zmáčkne;
+    - kořeny se v letu stáhnou a při dopadu se rozprostřou;
+    - když visí, dýchá.
+
+### Testy
+- `HeroPoseSolverTests`: při visení se zbraní pravá ruka pustí hranu a úder opravdu švihne, levá ruka a nohy drží.
+- Nové `CreatureAnimationTests`:
+  - drápy přízraka se střídají podle uražené dráhy, ne podle času;
+  - nápřah, úder a dotažení jdou ve správném pořadí a navazují bez skoku;
+  - mnich má těžký krok, stáhne se a vrhne se do výpadu;
+  - kořenový běžec se zmáčkne, natáhne a nikdy se nezdeformuje.
+
 ## [0.26.6] – 2026-11-18
 ### Opraveno
 - **Létající nepřátelé už neprolétají překážkami.** Můra, bludička, papírový drak a vrány se pohybovaly bez kontroly prostředí. Teď se pohybují přes společný `CreatureMotion.Slide`:

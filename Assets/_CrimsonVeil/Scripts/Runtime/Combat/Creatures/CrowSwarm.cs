@@ -96,7 +96,7 @@ namespace CrimsonVeil.Combat
                 Vector3 orbit = new Vector3(Mathf.Cos(c.Phase) * c.Radius * 1.4f, Mathf.Sin(c.Phase * 1.3f) * c.Radius * 0.7f, Mathf.Sin(c.Phase) * 0.3f) * spread;
                 Vector3 want = centre + orbit;
                 Vector3 pos = c.transform.position;
-                Vector3 next = Vector3.Lerp(pos, want, 1f - Mathf.Exp(-4f * dt));
+                Vector3 next = CreatureMotion.Slide(pos, Vector3.Lerp(pos, want, 1f - Mathf.Exp(-4f * dt)) - pos, 0.15f, c.transform);
                 c.Velocity = (next - pos) / dt;
                 c.transform.position = next;
 

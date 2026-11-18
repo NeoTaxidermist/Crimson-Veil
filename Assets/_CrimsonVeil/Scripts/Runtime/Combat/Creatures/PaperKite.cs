@@ -59,6 +59,8 @@ namespace CrimsonVeil.Combat
             angle += angularVelocity * dt;
             angle = Mathf.Clamp(angle, -1.3f, 1.3f);
             Vector3 next = PaperKiteLogic.OnThread(anchor, angle, threadLength);
+            // its swoop stops at a wall or ledge in the way (the thread goes taut short of it)
+            next = CreatureMotion.Slide(pos, next - pos, 0.45f, transform);
             velocity = (next - pos) / dt;
             transform.position = next;
             if (thread != null) thread.Set(anchor, next);
@@ -88,7 +90,9 @@ namespace CrimsonVeil.Combat
             // Tumbling paper: falls slowly, side-slipping.
             velocity.y = Mathf.Max(velocity.y - 9f * dt, -4f);
             velocity.x = Mathf.Lerp(velocity.x, Mathf.Sin(Time.time * 2f) * 2f, 1f - Mathf.Exp(-2f * dt));
-            pos += velocity * dt;
+            var moved = CreatureMotion.Slide(pos, velocity * dt, 0.1f, transform);
+            if (Mathf.Abs(moved.x - pos.x) < Mathf.Abs(velocity.x * dt) * 0.5f) velocity.x = 0f;   // hit a wall
+            pos = moved;
             if (visual != null) visual.localRotation = Quaternion.Euler(0f, 0f, Mathf.Sin(Time.time * 3f) * 50f);
             float g = GroundBelow(pos + Vector3.up * 0.4f, 0.6f);
             if (!float.IsNaN(g) && pos.y <= g + 0.15f)

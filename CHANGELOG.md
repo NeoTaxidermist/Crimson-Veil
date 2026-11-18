@@ -5,6 +5,22 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.26.6] – 2026-11-18
+### Opraveno
+- **Létající nepřátelé už neprolétají překážkami.** Můra, bludička, papírový drak a vrány se pohybovaly bez kontroly prostředí. Teď se pohybují přes společný `CreatureMotion.Slide`:
+  - koule kolem těla se zastaví u zdi, římsy nebo stropu a klouže podél nich;
+  - hrdina, jiní tvorové a cokoli, co jde zasáhnout, překážkou nejsou;
+  - kdo začne uvnitř kamene, smí z něj ven.
+  - Můra (poloměr 0,45 m) se třepetá podél zdi, místo aby jí prolétla.
+  - Drak na niti se při náletu zastaví o překážku.
+  - Sestřelený drak padá a zastaví se o zeď.
+  - Chodci (přízrak, mnich, stín, kořenový běžec) už předtím měli paprsek proti zdi a okraji, u nich se nic nemění.
+
+### Testy
+- `CreaturePlayTests`:
+  - pohyb se zastaví u zdi, klouže podél ní a jiný tvor překážkou není;
+  - můra se třepetá u zdi, ale nikdy jí neprostrčí křídla.
+
 ## [0.26.5] – 2026-11-18
 ### Opraveno
 - **Klouzání po zdi už není nekonečný pomalý výtah.** Když se hrdina tlačí do zdi, nejdřív se drží a klouže pomalu (2,3 m/s), ale jen 0,5 s. Pak mu stisk povolí a klouže rychleji a rychleji, za 0,9 s až 8 m/s, pořád pomaleji než volný pád. Když se od zdi pustí a chytí ji znovu, drží se zase. Odraz od zdi funguje kdykoli.

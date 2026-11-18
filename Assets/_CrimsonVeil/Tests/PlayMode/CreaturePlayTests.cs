@@ -42,6 +42,47 @@ namespace CrimsonVeil.Tests
         }
 
         [UnityTest]
+        public IEnumerator Slide_StopsAtStone_SlidesAlongIt_AndIgnoresCreatures()
+        {
+            var wall = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            wall.transform.position = new Vector3(3f, 3f, 0f);
+            wall.transform.localScale = new Vector3(1f, 6f, 4f);       // face at x 2.5
+            var other = new GameObject("OtherMoth");
+            other.transform.position = new Vector3(1f, 1f, 0f);
+            other.AddComponent<SphereCollider>().radius = 0.5f;
+            other.AddComponent<AshMoth>().enabled = false;            // a creature: no wall
+            other.GetComponent<SphereCollider>().isTrigger = false;
+            yield return new WaitForFixedUpdate();
+
+            var p = CreatureMotion.Slide(new Vector3(0f, 2f, 0f), new Vector3(5f, 0f, 0f), 0.3f);
+            Assert.AreEqual(2.5f - 0.3f, p.x, 0.05f, "stopped at the wall's face");
+            var d = CreatureMotion.Slide(new Vector3(0f, 2f, 0f), new Vector3(5f, 2f, 0f), 0.3f);
+            Assert.LessOrEqual(d.x, 2.25f);
+            Assert.Greater(d.y, 3.5f, "slid up along the wall instead of stopping dead");
+            var through = CreatureMotion.Slide(new Vector3(0f, 1f, 0f), new Vector3(1.8f, 0f, 0f), 0.3f);
+            Assert.AreEqual(1.8f, through.x, 1e-3f, "another creature is no wall");
+            Object.Destroy(wall); Object.Destroy(other);
+        }
+
+        [UnityTest]
+        public IEnumerator AshMoth_FluttersAgainstAWall_NeverThroughIt()
+        {
+            var wall = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            wall.transform.position = new Vector3(1.5f, 3f, 0f);
+            wall.transform.localScale = new Vector3(1f, 6f, 4f);       // face at x 1.0, inside its flutter
+            var go = new GameObject("Moth");
+            go.transform.position = new Vector3(0f, 3f, 0f);
+            AshMoth.BuildVisual(go.transform, null, null);
+            go.AddComponent<AshMoth>();
+            float maxX = float.MinValue;
+            float end = Time.time + 4f;
+            while (Time.time < end) { maxX = Mathf.Max(maxX, go.transform.position.x); yield return null; }
+            Assert.LessOrEqual(maxX + AshMoth.BodyRadius, 1.0f + 0.03f, "its wings stay this side of the stone");
+            Assert.Greater(maxX, 0.2f, "(it does flutter up to it)");
+            Object.Destroy(wall);
+        }
+
+        [UnityTest]
         public IEnumerator ShieldMonk_BlocksTheFront_UntilTheWhipTearsTheShieldAway()
         {
             var go = new GameObject("Monk");

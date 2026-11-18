@@ -19,6 +19,8 @@ namespace CrimsonVeil.Combat
         [SerializeField] float dimSeconds = 4f;
 
         public bool Dusting => cloudTimer > 0f;
+        /// <summary>The moth's body and wings, kept out of the stone.</summary>
+        public const float BodyRadius = 0.45f;
         public Vector3 CloudCentre { get; private set; }
 
         Vector3 home, velocity;
@@ -44,8 +46,7 @@ namespace CrimsonVeil.Combat
             if (IsDead)
             {
                 fall -= 12f * dt;
-                pos.y += fall * dt;
-                transform.position = pos;
+                transform.position = CreatureMotion.Slide(pos, new Vector3(0f, fall * dt, 0f), 0.15f, transform);
                 return;
             }
 
@@ -59,7 +60,10 @@ namespace CrimsonVeil.Combat
             Vector3 flutter = new Vector3(Mathf.Sin(t * 1.3f) * 1.6f + Mathf.Sin(t * 3.7f) * 0.4f, Mathf.Sin(t * 2.1f) * 0.6f + Mathf.Sin(t * 5.3f) * 0.2f, 0f);
             Vector3 want = anchor + flutter;
             velocity = Vector3.Lerp(velocity, (want - pos) * 1.8f, 1f - Mathf.Exp(-3f * dt));
-            pos += velocity * dt;
+            // flutters round walls and ledges, never through them (what the stone stops is lost)
+            var next = CreatureMotion.Slide(pos, velocity * dt, BodyRadius, transform);
+            velocity = (next - pos) / dt;
+            pos = next;
             transform.position = pos;
 
             // Shake the ash out: a cloud settles on the ground under the moth.

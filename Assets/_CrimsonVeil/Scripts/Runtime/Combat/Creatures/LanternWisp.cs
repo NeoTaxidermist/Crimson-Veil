@@ -57,7 +57,7 @@ namespace CrimsonVeil.Combat
             else LureTarget = home;
 
             Vector3 want = LureTarget + new Vector3(Mathf.Sin(t * 0.9f) * 0.3f, Mathf.Sin(t * 1.7f) * 0.25f, 0f);
-            transform.position = Vector3.MoveTowards(pos, want, speed * dt);
+            transform.position = CreatureMotion.Slide(pos, Vector3.MoveTowards(pos, want, speed * dt) - pos, 0.3f, transform);
         }
 
         /// <summary>Any hit catches it instead of hurting it.</summary>

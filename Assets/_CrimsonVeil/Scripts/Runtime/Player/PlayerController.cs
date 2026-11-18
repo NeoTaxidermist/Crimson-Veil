@@ -34,22 +34,9 @@ namespace CrimsonVeil.Player
         /// <summary>Latches the whip onto <paramref name="anchor"/> and starts swinging. False if out of reach.</summary>
         public bool TryGrapple(Vector3 anchor) => Motor.BeginSwing(anchor, GripPosition);
 
-        [Header("Scarf ledge catch")]
-        [Tooltip("The scarf catches ledges up to this height above the feet (the hands alone reach maxLedgeHeight).")]
-        [SerializeField] float scarfLedgeHeight = 3.1f;
-        [SerializeField] float scarfPullTime = 0.22f;
-        /// <summary>Set by the veil: can the scarf reach out for a ledge right now (it is cloth and strong enough)?</summary>
-        public System.Func<bool> ScarfLedgeReach;
-        /// <summary>The scarf caught a ledge out of the hands' reach and is pulling the hero up to it.</summary>
-        public event System.Action ScarfCaught;
+        // (Only the hands catch a ledge: the scarf grapples rings - the whip - never lips.)
         /// <summary>The hero fell out of the level (below the kill plane) and is put back at the last checkpoint.</summary>
         public event System.Action Fell;
-        public bool ScarfCatching => scarfPull > 0f;
-        /// <summary>The lip of the ledge the scarf caught.</summary>
-        public Vector3 ScarfCatchPoint { get; private set; }
-        bool scarfLedge;
-        float scarfPull;
-        Vector3 pullFrom, pullTo;
 
         public MotorLogic Motor { get; private set; }
         public IPlayerInput InputSource { get; set; }
@@ -130,14 +117,7 @@ namespace CrimsonVeil.Player
             if (!attached && !controller.isGrounded && Motor.Velocity.y <= 2f)
             {
                 int dir = Mathf.Abs(input.moveX) > 0.1f ? (input.moveX > 0f ? 1 : -1) : Motor.Facing;
-                scarfLedge = false;
                 if (ProbeLedge(dir, out probedLedgeTop, out probedWallX)) ledge = dir;
-                // Out of the hands' reach, the scarf can still lash round the lip and haul the hero up.
-                else if (ScarfLedgeReach != null && ScarfLedgeReach() && ProbeLedge(dir, scarfLedgeHeight, out probedLedgeTop, out probedWallX))
-                {
-                    ledge = dir;
-                    scarfLedge = true;
-                }
             }
             probedLedgeSide = ledge;
 
@@ -153,17 +133,8 @@ namespace CrimsonVeil.Player
 
             Vector2 v = Motor.Tick(dt, input, contacts);
             SetLow(Motor.IsCrouching || Motor.IsSliding);
-            // The scarf's haul up to a lip lasts only while he hangs from it: kicked off the wall, let go (down), hit
-            // or swinging before it's done, the strand lets go too - or its line would stay drawn from the hand to
-            // the old lip for good, and he'd look tied to it.
-            if (scarfPull > 0f && Motor.State != MotorState.LedgeHang) scarfPull = 0f;
 
-            if (Motor.State == MotorState.LedgeHang && scarfPull > 0f)
-            {
-                scarfPull = Mathf.Max(0f, scarfPull - dt);
-                SetPosition(Vector3.Lerp(pullFrom, pullTo, Mathf.SmoothStep(0f, 1f, 1f - scarfPull / scarfPullTime)));
-            }
-            else if (Motor.State == MotorState.Climbing)
+            if (Motor.State == MotorState.Climbing)
             {
                 SetPosition(ClimbPath(climbStart, climbTarget, Motor.ClimbProgress));
             }
@@ -281,17 +252,7 @@ namespace CrimsonVeil.Player
             var hang = new Vector3(HangX(dir, lipX, probedWallX, controller.radius), probedLedgeTop - hangDrop, planeZ);
             climbTarget = new Vector3(lipX + dir * 0.45f, probedLedgeTop + 0.02f, planeZ);
             squash = new Vector3(0.9f, 1.12f, 0.9f);
-            if (scarfLedge)
-            {
-                // The scarf lashes round the lip and hauls the hero up to hang from it.
-                pullFrom = transform.position;
-                pullTo = hang;
-                scarfPull = scarfPullTime;
-                ScarfCatchPoint = new Vector3(probedWallX, probedLedgeTop, planeZ);
-                scarfLedge = false;
-                ScarfCaught?.Invoke();
-            }
-            else SetPosition(hang);
+            SetPosition(hang);
         }
 
         /// <summary>How far in front of the hero the hands hold the lip while hanging (the hang pose reaches this far).</summary>
@@ -327,7 +288,6 @@ namespace CrimsonVeil.Player
 
         void OnClimbStarted()
         {
-            if (scarfPull > 0f) { SetPosition(pullTo); scarfPull = 0f; }
             climbStart = transform.position;
         }
 

@@ -65,8 +65,6 @@ namespace CrimsonVeil.Veil
         /// <summary>Strength drained per second while the shield is held up or the scarf glides.</summary>
         public const float ShieldHoldDrain = 0.18f;
         public const float GlideDrain = 0.3f;
-        /// <summary>Strength the scarf spends to catch a ledge out of the hands' reach.</summary>
-        public const float LedgeCatchCost = 0.1f;
     }
 
     /// <summary>

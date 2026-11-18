@@ -5,6 +5,14 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.26.4] – 2026-11-18
+### Odstraněno
+- **Šála už nechytá hrany.** Hrany chytají jen ruce (do 2,1 m nad chodidly). Šála se jako bič zachytává jen o kruhy. Zmizelo vytahování šálou k vyšší hraně, jeho cena v síle šály (`LedgeCatchCost`) i šňůra kreslená k hraně.
+
+### Testy
+- `CastingPlayTests`: hrana mimo dosah rukou se nechytí a hrdina spadne zpátky ke zdi.
+- Testy chycení hrany šálou (`ScarfStrandPlayTests` a test pouštění hrany v `TraversalPlayTests`) jsou odstraněné.
+
 ## [0.26.3] – 2026-11-18
 ### Opraveno
 - **Hrdina už nezůstane „přivázaný“ k hraně.** Když šála chytila hranu mimo dosah rukou a hrdina během vytahování (0,22 s) odskočil od zdi, pustil se nebo dostal ránu, vytahování se nikdy neukončilo. Mezi rukou a starou hranou pak zůstala natrvalo nakreslená červená čára. Vytahování teď skončí, jakmile hrdina přestane viset.

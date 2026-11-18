@@ -275,9 +275,9 @@ namespace CrimsonVeil.Veil
             float reach = Mathf.Min(vit, Mathf.Lerp(0.3f, 1f, veil.Charge.Value));
             float facing = veil.Facing;
             bool bow = veil.ShapeForm == VeilForm.Bow;
-            // Pulled out into a rope (the whip round a ring, or the strand round a lip) the scarf runs several times
-            // its length: it must still read as the braided weapon, not a stretched-out red line.
-            bool rope = veil.Latched != null || veil.StrandWeight > 0f;
+            // Pulled out into a rope (the whip round a ring) the scarf runs several times its length: it must still
+            // read as the braided weapon, not a stretched-out red line.
+            bool rope = veil.Latched != null;
             float arc = 0f;
             for (int i = 1; i < samples; i++) arc += Vector3.Distance(centre[i - 1], centre[i]);
             float braidScale = rope ? RopeBraidScale(arc, sim.Settings.length) * RopeBraidTwist : 1f;
@@ -322,7 +322,7 @@ namespace CrimsonVeil.Veil
 
                 float weaponProfile = t < hf ? 0.4f : TipProfile(veil.ShapeForm, t);
                 // the rope keeps the lash's width all the way to the ring (a whip tapering over 7 m read as a thread)
-                if (rope && veil.Latched != null && t >= hf) weaponProfile = Mathf.Max(weaponProfile, RopeWidth);
+                if (rope && t >= hf) weaponProfile = Mathf.Max(weaponProfile, RopeWidth);
                 weaponProfile *= 1f + 0.08f * Mathf.Sin(t * 14f - time * 5f);
                 // The bow's string is part of the same ribbon: a thin glowing thread between the limb tips.
                 if (bow) weaponProfile *= Mathf.Lerp(1f, 0.32f, VeilFormLibrary.BowStringWeight(t));
@@ -337,15 +337,6 @@ namespace CrimsonVeil.Veil
                 // The loose scarf ends where its strength runs out: casting shortens it, it grows back.
                 float fray = 1f - Mathf.SmoothStep(0f, 1f, (t - Mathf.Lerp(0.3f, 1.05f, reach)) / 0.25f);
                 alphaAt[i] = Mathf.Lerp(fray, 1f, hard) * Mathf.Lerp(0.6f, 1f, vit) * Mathf.SmoothStep(0f, 1f, t * 12f + 0.3f);
-                // Lashed out to a lip: that stretch of the scarf is a taut cord - thin as the whip, its strands gathered and
-                // braided like a weapon's, in the scarf's own ink and crimson (not a flat line drawn across).
-                float taut = veil.StrandAt(t);
-                if (taut > 0f)
-                {
-                    widthAt[i] = Mathf.Lerp(widthAt[i], VeilFormLibrary.Width(VeilForm.Whip) * RopeWidth, taut);
-                    hardAt[i] = Mathf.Max(hardAt[i], taut);
-                    alphaAt[i] = Mathf.Max(alphaAt[i], taut);
-                }
                 // A weapon is the whole veil transformed: the band from the neck to the hand melts away as it
                 // sets (and comes back as the weapon softens), so the weapon isn't tied to the neck.
                 // It goes once the weapon has set *at the hand*: the hardening starts at the neck, and fading the band

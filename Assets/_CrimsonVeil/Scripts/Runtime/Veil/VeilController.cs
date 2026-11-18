@@ -191,11 +191,6 @@ namespace CrimsonVeil.Veil
             meltFrom = new Vector2[Simulation.Count];
             facingScale = Facing;
             foreach (var f in startUnlocked) unlocked.Add(f);
-            if (player != null)
-            {
-                player.ScarfLedgeReach = () => Form == VeilForm.Flow && Charge.CanAfford(VeilCasting.LedgeCatchCost);
-                player.ScarfCaught += () => Charge.TrySpend(VeilCasting.LedgeCatchCost);
-            }
         }
 
         public bool IsUnlocked(VeilForm form) => unlocked.Contains(form);
@@ -540,7 +535,6 @@ namespace CrimsonVeil.Veil
             UpdateNodeHardness();
             if (TransformProgress > 0f && ShapeForm != VeilForm.Flow) UpdateTargets(a, dt);
             UpdateMelt(a, dt);
-            UpdateScarfStrand(a, dt);
             if (attackTime < 0f) { AttackProgress = -1f; CurrentSwing = 0f; }
 
             Simulation.Hardness = Hardness;
@@ -629,66 +623,6 @@ namespace CrimsonVeil.Veil
                 if (GrappleCandidate != null) GrappleCandidate.SetHighlighted(false);
                 if (candidate != null) candidate.SetHighlighted(true);
                 GrappleCandidate = candidate;
-            }
-        }
-
-        /// <summary>Where along the scarf (fraction from the neck) the scarf lashed out to a lip turns from the band at the
-        /// neck into the taut cord.</summary>
-        public const float StrandFrom = 0.2f;
-        /// <summary>Seconds for the strand to shoot out to the lip.</summary>
-        public const float StrandLashTime = 0.09f;
-
-        /// <summary>0..1: how much of the scarf is drawn out into the taut strand round a lip (0 when not catching).</summary>
-        public float StrandWeight { get; private set; }
-        float strandTime = -1f;
-
-        /// <summary>How much the scarf at fraction <paramref name="t"/> is the taut strand (the renderer draws it as a
-        /// thin braided cord there, in the scarf's own ink and crimson).</summary>
-        public float StrandAt(float t) => StrandWeight * Mathf.SmoothStep(0f, 1f, (t - (StrandFrom - 0.06f)) / 0.12f);
-
-        /// <summary>
-        /// Out of the hands' reach the scarf catches a lip: not a line drawn across, the scarf itself - its end shoots
-        /// out to the lip, runs taut from the band at the neck and winds round the lip, while it hauls the hero up.
-        /// The cloth is led there by the guides (as when a weapon melts back); when the haul ends it lets go and the
-        /// cloth springs back.
-        /// </summary>
-        void UpdateScarfStrand(Vector3 a, float dt)
-        {
-            bool catching = player != null && player.ScarfCatching && meltT < 0f;
-            var weight = Simulation.GuideWeight;
-            if (!catching)
-            {
-                if (strandTime >= 0f) Array.Clear(weight, 0, weight.Length);
-                strandTime = -1f;
-                StrandWeight = Mathf.MoveTowards(StrandWeight, 0f, dt / 0.15f);
-                return;
-            }
-            strandTime = strandTime < 0f ? 0f : strandTime + dt;
-            float reach = Mathf.SmoothStep(0f, 1f, strandTime / StrandLashTime);
-            StrandWeight = Mathf.Max(StrandWeight, reach);
-            int n = Simulation.Count;
-            var gt = Simulation.GuideTargets;
-            var pos = Simulation.Positions;
-            // It runs from the neck straight to the lip (not from wherever the trailing cloth happens to be, which drew
-            // a V back and up), the band at the neck thinning into the cord.
-            Vector3 start = pos[0];
-            Vector3 lip = player.ScarfCatchPoint;
-            lip.z = start.z;
-            Vector3 span = lip - start;
-            const float wrapFrom = 0.9f;
-            for (int i = 1; i < n; i++)
-            {
-                float f = (float)i / (n - 1);
-                float u = Mathf.Min(1f, f / wrapFrom);
-                // taut under the hero's weight: barely a sag
-                Vector3 p = start + span * (u * reach) + Vector3.down * (Mathf.Sin(u * Mathf.PI) * 0.03f * reach);
-                if (f > wrapFrom && reach > 0.99f)
-                {
-                    float w = (f - wrapFrom) / (1f - wrapFrom) * Mathf.PI * 1.6f;   // the end wound round the lip
-                    p = lip + new Vector3(Mathf.Sin(w) * 0.1f, -Mathf.Cos(w) * 0.1f + 0.02f, 0f);
-                }
-                gt[i] = p;
-                weight[i] = Mathf.SmoothStep(0f, 1f, f / 0.12f) * Mathf.Min(1f, reach * 2f);
             }
         }
 

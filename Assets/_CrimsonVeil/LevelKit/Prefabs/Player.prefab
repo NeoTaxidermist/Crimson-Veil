@@ -180,8 +180,6 @@ MonoBehaviour:
   minLedgeHeight: 1.2
   maxLedgeHeight: 2.1
   gripHeight: 2.05
-  scarfLedgeHeight: 3.1
-  scarfPullTime: 0.22
   crouchHeight: 1
 --- !u!114 &4233667051544647546
 MonoBehaviour:

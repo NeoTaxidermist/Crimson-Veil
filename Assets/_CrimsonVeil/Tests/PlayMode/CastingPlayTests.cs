@@ -10,7 +10,7 @@ using UnityEngine.TestTools;
 namespace CrimsonVeil.Tests
 {
     /// <summary>Weapons cast like spells: one press forms, strikes and melts back; combos, chains, held weapons,
-    /// parry, the scarf's strength and guard, the pogo, the glide, the ledge catch, relics and the scarf's senses.</summary>
+    /// parry, the scarf's strength and guard, the pogo, the glide, relics and the scarf's senses.</summary>
     public class CastingPlayTests
     {
         GameObject root, player;
@@ -302,28 +302,26 @@ namespace CrimsonVeil.Tests
         }
 
         [UnityTest]
-        public IEnumerator ScarfCatchesALedgeTheHandsCannotReach()
+        public IEnumerator ALedgeOutOfTheHandsReach_IsNotCaught_TheScarfGrapplesOnlyRings()
         {
             Box(new Vector3(4f, 3f, 0f), new Vector3(4f, 6f, 4f)); // wall face at x 2, top at y 6
             yield return Wait(0.2f);
             controller.Teleport(new Vector3(1.55f, 0.05f, 0f));
+            veil.Charge.Restore();
             yield return Wait(0.2f);
             input.moveX = 1f;
             input.jump = true;
             input.jumpHeld = true;
-            bool caught = false;
-            float end = Time.time + 2f;
+            bool hung = false;
+            float end = Time.time + 1.5f;
             while (Time.time < end)
             {
-                if (controller.ScarfCatching) caught = true;
-                if (controller.Motor.State == MotorState.LedgeHang) input.jump = true;
-                if (controller.Motor.State == MotorState.Climbing) input.moveX = 0f;
+                if (controller.Motor.State == MotorState.LedgeHang || controller.Motor.State == MotorState.Climbing) hung = true;
                 yield return null;
             }
             input.moveX = 0f;
-            yield return Wait(0.3f);
-            Assert.IsTrue(caught, "the scarf lashed round the lip");
-            Assert.Greater(player.transform.position.y, 5.9f, "hauled up and climbed on top");
+            Assert.IsFalse(hung, "too high for the hands, and the scarf doesn't lash round lips");
+            Assert.Less(player.transform.position.y, 1f, "fell back down at the foot of the wall");
         }
 
         [UnityTest]

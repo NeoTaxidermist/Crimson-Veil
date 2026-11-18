@@ -5,6 +5,28 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.26.3] – 2026-11-18
+### Opraveno
+- **Hrdina už nezůstane „přivázaný“ k hraně.** Když šála chytila hranu mimo dosah rukou a hrdina během vytahování (0,22 s) odskočil od zdi, pustil se nebo dostal ránu, vytahování se nikdy neukončilo. Mezi rukou a starou hranou pak zůstala natrvalo nakreslená červená čára. Vytahování teď skončí, jakmile hrdina přestane viset.
+- **Lano už není dvojité a nevypadá jako červená čára.**
+  - Zmizela samostatná plochá čára (`LineRenderer`), která se kreslila přes látku biče. Lano je teď jen samotná šála.
+  - Při švihu na kruhu je bič napnutý: prohýbá se o 3 cm místo 12, takže vedle sebe nevznikají dvě čáry.
+  - Natažené lano drží vzhled zbraně. Prameny se kolem sebe proplétají po celé délce až ke kruhu s pevnou roztečí v metrech, takže se na 7 m dlouhém laně nerozmáznou do rovné čáry. Lano je stejně silné po celé délce a jen o málo silnější než bič.
+  - Chycení hrany šálou: šála sama vystřelí od krku napnutě k hraně jako spletená šňůra a konec se kolem hrany omotá. Po vytažení se pustí a vrátí se do látky.
+
+### Testy
+- `TraversalPlayTests`: když hrdina během vytahování šálou odskočí, šála hranu pustí.
+- `ScarfStrandPlayTests`:
+  - konec šály je u hrany;
+  - šňůra vede od krku k hraně;
+  - u krku zůstává látka;
+  - po vytažení je šála zase látkou.
+- `VeilWeaponLookTests`:
+  - proplétání lana drží rozteč v metrech;
+  - všechny prameny vedou až ke kruhu;
+  - prameny zůstávají na laně;
+  - šířka lana.
+
 ## [0.26.2] – 2026-11-15
 ### Opraveno
 - **Plížení už není cupitání po špičkách.**

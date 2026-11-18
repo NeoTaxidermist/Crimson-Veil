@@ -153,6 +153,10 @@ namespace CrimsonVeil.Player
 
             Vector2 v = Motor.Tick(dt, input, contacts);
             SetLow(Motor.IsCrouching || Motor.IsSliding);
+            // The scarf's haul up to a lip lasts only while he hangs from it: kicked off the wall, let go (down), hit
+            // or swinging before it's done, the strand lets go too - or its line would stay drawn from the hand to
+            // the old lip for good, and he'd look tied to it.
+            if (scarfPull > 0f && Motor.State != MotorState.LedgeHang) scarfPull = 0f;
 
             if (Motor.State == MotorState.LedgeHang && scarfPull > 0f)
             {

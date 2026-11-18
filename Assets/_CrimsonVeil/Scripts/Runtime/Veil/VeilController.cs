@@ -67,7 +67,6 @@ namespace CrimsonVeil.Veil
         public CrimsonVeil.World.GrapplePoint Latched { get; private set; }
         /// <summary>The ring an attack would catch right now (lit), or null.</summary>
         public CrimsonVeil.World.GrapplePoint GrappleCandidate { get; private set; }
-        LineRenderer whipRope;
 
         void RecordTurn(float at, float turn)
         {
@@ -541,6 +540,7 @@ namespace CrimsonVeil.Veil
             UpdateNodeHardness();
             if (TransformProgress > 0f && ShapeForm != VeilForm.Flow) UpdateTargets(a, dt);
             UpdateMelt(a, dt);
+            UpdateScarfStrand(a, dt);
             if (attackTime < 0f) { AttackProgress = -1f; CurrentSwing = 0f; }
 
             Simulation.Hardness = Hardness;
@@ -564,7 +564,6 @@ namespace CrimsonVeil.Veil
             GatherObstacles(a);
             Simulation.Step(dt, a);
             UpdateBowString();
-            UpdateWhipRope();
             UpdateWhipHandle();
         }
 
@@ -633,31 +632,64 @@ namespace CrimsonVeil.Veil
             }
         }
 
-        /// <summary>A taut crimson core from the hand to the ring while swinging (the cloth follows it).</summary>
-        void UpdateWhipRope()
+        /// <summary>Where along the scarf (fraction from the neck) the scarf lashed out to a lip turns from the band at the
+        /// neck into the taut cord.</summary>
+        public const float StrandFrom = 0.2f;
+        /// <summary>Seconds for the strand to shoot out to the lip.</summary>
+        public const float StrandLashTime = 0.09f;
+
+        /// <summary>0..1: how much of the scarf is drawn out into the taut strand round a lip (0 when not catching).</summary>
+        public float StrandWeight { get; private set; }
+        float strandTime = -1f;
+
+        /// <summary>How much the scarf at fraction <paramref name="t"/> is the taut strand (the renderer draws it as a
+        /// thin braided cord there, in the scarf's own ink and crimson).</summary>
+        public float StrandAt(float t) => StrandWeight * Mathf.SmoothStep(0f, 1f, (t - (StrandFrom - 0.06f)) / 0.12f);
+
+        /// <summary>
+        /// Out of the hands' reach the scarf catches a lip: not a line drawn across, the scarf itself - its end shoots
+        /// out to the lip, runs taut from the band at the neck and winds round the lip, while it hauls the hero up.
+        /// The cloth is led there by the guides (as when a weapon melts back); when the haul ends it lets go and the
+        /// cloth springs back.
+        /// </summary>
+        void UpdateScarfStrand(Vector3 a, float dt)
         {
-            bool catching = player != null && player.ScarfCatching;
-            if (Latched == null && !catching)
+            bool catching = player != null && player.ScarfCatching && meltT < 0f;
+            var weight = Simulation.GuideWeight;
+            if (!catching)
             {
-                if (whipRope != null) whipRope.enabled = false;
+                if (strandTime >= 0f) Array.Clear(weight, 0, weight.Length);
+                strandTime = -1f;
+                StrandWeight = Mathf.MoveTowards(StrandWeight, 0f, dt / 0.15f);
                 return;
             }
-            if (whipRope == null)
+            strandTime = strandTime < 0f ? 0f : strandTime + dt;
+            float reach = Mathf.SmoothStep(0f, 1f, strandTime / StrandLashTime);
+            StrandWeight = Mathf.Max(StrandWeight, reach);
+            int n = Simulation.Count;
+            var gt = Simulation.GuideTargets;
+            var pos = Simulation.Positions;
+            // It runs from the neck straight to the lip (not from wherever the trailing cloth happens to be, which drew
+            // a V back and up), the band at the neck thinning into the cord.
+            Vector3 start = pos[0];
+            Vector3 lip = player.ScarfCatchPoint;
+            lip.z = start.z;
+            Vector3 span = lip - start;
+            const float wrapFrom = 0.9f;
+            for (int i = 1; i < n; i++)
             {
-                var go = new GameObject("WhipRope");
-                go.transform.SetParent(transform, false);
-                whipRope = go.AddComponent<LineRenderer>();
-                whipRope.positionCount = 2;
-                whipRope.widthMultiplier = 0.045f;
-                whipRope.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-                whipRope.sharedMaterial = stringMaterial;
-                whipRope.startColor = whipRope.endColor = new Color(0.9f, 0.05f, 0.08f, 0.95f);
+                float f = (float)i / (n - 1);
+                float u = Mathf.Min(1f, f / wrapFrom);
+                // taut under the hero's weight: barely a sag
+                Vector3 p = start + span * (u * reach) + Vector3.down * (Mathf.Sin(u * Mathf.PI) * 0.03f * reach);
+                if (f > wrapFrom && reach > 0.99f)
+                {
+                    float w = (f - wrapFrom) / (1f - wrapFrom) * Mathf.PI * 1.6f;   // the end wound round the lip
+                    p = lip + new Vector3(Mathf.Sin(w) * 0.1f, -Mathf.Cos(w) * 0.1f + 0.02f, 0f);
+                }
+                gt[i] = p;
+                weight[i] = Mathf.SmoothStep(0f, 1f, f / 0.12f) * Mathf.Min(1f, reach * 2f);
             }
-            whipRope.enabled = true;
-            whipRope.gameObject.layer = gameObject.layer;
-            whipRope.SetPosition(0, hand != null ? PalmPoint(hand) : player.GripPosition);
-            // Swinging: to the ring. Catching a ledge: a strand of the scarf to the lip it lashed round.
-            whipRope.SetPosition(1, Latched != null ? Latched.transform.position : player.ScarfCatchPoint);
         }
 
         /// <summary>A thin crimson string between the bow tips, pulled back by the drawing hand.</summary>
@@ -970,7 +1002,8 @@ namespace CrimsonVeil.Veil
                     if (f < ropeFrom) continue; // the handle stays in the fist
                     float along = (f - ropeFrom) / Mathf.Max(1e-3f, 1f - ropeFrom);
                     float u = Mathf.Min(1f, along / 0.85f);
-                    Vector2 p = grip0 + span * u + side * Mathf.Sin(u * Mathf.PI) * 0.12f;
+                    // taut under the hero's weight: barely a sag (it hung 12 cm off the line and looked doubled)
+                    Vector2 p = grip0 + span * u + side * Mathf.Sin(u * Mathf.PI) * 0.03f;
                     if (along > 0.85f)
                     {
                         float w = (along - 0.85f) / 0.15f * Mathf.PI * 1.6f; // the tip wound round the ring

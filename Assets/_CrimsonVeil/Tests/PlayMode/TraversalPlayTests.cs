@@ -54,6 +54,37 @@ namespace CrimsonVeil.Tests
         }
 
         [UnityTest]
+        public IEnumerator TheScarfsHaul_LetsGo_WhenTheHangEndsEarly()
+        {
+            // a lip (6 m) out of the hands' reach at the top of a jump: the scarf lashes round it
+            // (well away from everything else: a level left loaded by another test must not be in the way)
+            var o = new Vector3(1000f, 200f, 0f);   // (above the kill plane)
+            Box(o + new Vector3(0f, -0.5f, 0f), new Vector3(20f, 1f, 4f));
+            Box(o + new Vector3(4.5f, 3f, 0f), new Vector3(3f, 6f, 4f));
+            controller.ScarfLedgeReach = () => true;
+            controller.Teleport(o + new Vector3(2.3f, 0.05f, 0f));   // at the wall for the whole rise
+            yield return Wait(0.2f);
+            input.moveX = 1f;
+            input.jump = true; input.jumpHeld = true;
+            float end = Time.time + 1.5f;
+            float maxY = o.y; string seen = "";
+            while (Time.time < end && !controller.ScarfCatching)
+            {
+                maxY = Mathf.Max(maxY, player.transform.position.y);
+                if (!seen.EndsWith(controller.Motor.State.ToString())) seen += " " + controller.Motor.State;
+                yield return null;
+            }
+            Assert.IsTrue(controller.ScarfCatching, "the scarf caught the lip (max y " + (maxY - o.y) + ", x " + player.transform.position.x + ", states" + seen + ")");
+            // kicked off the wall while it hauls him up
+            input.moveX = -1f;
+            input.jump = true;
+            yield return Wait(0.4f);
+            Assert.AreNotEqual(MotorState.LedgeHang, controller.Motor.State, "kicked off");
+            Assert.IsFalse(controller.ScarfCatching, "the strand lets go with him (no line left drawn to the old lip)");
+            input.moveX = 0f; input.jumpHeld = false;
+        }
+
+        [UnityTest]
         public IEnumerator HangingFromALedge_TheHandsAreOnTheLip_NotInTheAir()
         {
             yield return Wait(0.3f);

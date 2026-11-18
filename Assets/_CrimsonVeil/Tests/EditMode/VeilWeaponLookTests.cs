@@ -34,6 +34,21 @@ namespace CrimsonVeil.Tests
         }
 
         [Test]
+        public void ARope_KeepsItsBraidTurnsInMetres_NotDrawnOutIntoALine()
+        {
+            Assert.AreEqual(1f, VeilRenderer.RopeBraidScale(2.5f, 2.6f), 1e-5f, "as long as the scarf: the weapon's own braid");
+            Assert.AreEqual(3f, VeilRenderer.RopeBraidScale(7.8f, 2.6f), 1e-4f, "pulled out three times: three times the turns");
+            Assert.AreEqual(1f, VeilRenderer.RopeBraidScale(5f, 0f), 1e-5f);
+            // its strands swell out round it, but still wrap it (no loose loops off a taut rope)
+            Assert.Greater(VeilRenderer.RopeBraidSwell, 1f);
+            Assert.LessOrEqual(Mathf.Abs(VeilRenderer.WeaponBraid(0.3f, 0f, 1.2f, 0.2f, 1f)) * VeilRenderer.RopeBraidSwell, 0.2f * 0.5f);
+            Assert.That(VeilRenderer.RopeWidth, Is.InRange(VeilRenderer.WhipLashWidth, 1.2f), "thin and taut, a little fuller than the lash");
+            // the rope's every strand runs the whole way (braided to the ring), like a bow's
+            foreach (var st in VeilRenderer.Strands)
+                Assert.AreEqual(1f, VeilRenderer.StrandEnd(st, false, true, 1f, 0.3f), 1e-5f);
+        }
+
+        [Test]
         public void FlameTongues_PeelOffAlongTheBlade_NotOnlyAtTheTip()
         {
             const float hand = 0.3f;

@@ -275,6 +275,12 @@ namespace CrimsonVeil.Veil
             float reach = Mathf.Min(vit, Mathf.Lerp(0.3f, 1f, veil.Charge.Value));
             float facing = veil.Facing;
             bool bow = veil.ShapeForm == VeilForm.Bow;
+            // Pulled out into a rope (the whip round a ring, or the strand round a lip) the scarf runs several times
+            // its length: it must still read as the braided weapon, not a stretched-out red line.
+            bool rope = veil.Latched != null || veil.StrandWeight > 0f;
+            float arc = 0f;
+            for (int i = 1; i < samples; i++) arc += Vector3.Distance(centre[i - 1], centre[i]);
+            float braidScale = rope ? RopeBraidScale(arc, sim.Settings.length) * RopeBraidTwist : 1f;
             bool shield = veil.ShapeForm == VeilForm.Shield;
             float shieldCut = Mathf.Ceil(hf * (n - 1)) / (n - 1) + 0.002f;
             Vector3 shieldCentre = p[0] + new Vector3(VeilFormLibrary.ShieldCenter.x * facing, VeilFormLibrary.ShieldCenter.y, 0f);
@@ -315,6 +321,8 @@ namespace CrimsonVeil.Veil
                 flowProfile *= Mathf.Lerp(1f, twist * 0.65f + 0.35f, flutterTwist * t);
 
                 float weaponProfile = t < hf ? 0.4f : TipProfile(veil.ShapeForm, t);
+                // the rope keeps the lash's width all the way to the ring (a whip tapering over 7 m read as a thread)
+                if (rope && veil.Latched != null && t >= hf) weaponProfile = Mathf.Max(weaponProfile, RopeWidth);
                 weaponProfile *= 1f + 0.08f * Mathf.Sin(t * 14f - time * 5f);
                 // The bow's string is part of the same ribbon: a thin glowing thread between the limb tips.
                 if (bow) weaponProfile *= Mathf.Lerp(1f, 0.32f, VeilFormLibrary.BowStringWeight(t));
@@ -329,6 +337,15 @@ namespace CrimsonVeil.Veil
                 // The loose scarf ends where its strength runs out: casting shortens it, it grows back.
                 float fray = 1f - Mathf.SmoothStep(0f, 1f, (t - Mathf.Lerp(0.3f, 1.05f, reach)) / 0.25f);
                 alphaAt[i] = Mathf.Lerp(fray, 1f, hard) * Mathf.Lerp(0.6f, 1f, vit) * Mathf.SmoothStep(0f, 1f, t * 12f + 0.3f);
+                // Lashed out to a lip: that stretch of the scarf is a taut cord - thin as the whip, its strands gathered and
+                // braided like a weapon's, in the scarf's own ink and crimson (not a flat line drawn across).
+                float taut = veil.StrandAt(t);
+                if (taut > 0f)
+                {
+                    widthAt[i] = Mathf.Lerp(widthAt[i], VeilFormLibrary.Width(VeilForm.Whip) * RopeWidth, taut);
+                    hardAt[i] = Mathf.Max(hardAt[i], taut);
+                    alphaAt[i] = Mathf.Max(alphaAt[i], taut);
+                }
                 // A weapon is the whole veil transformed: the band from the neck to the hand melts away as it
                 // sets (and comes back as the weapon softens), so the weapon isn't tied to the neck.
                 // It goes once the weapon has set *at the hand*: the hardening starts at the neck, and fading the band
@@ -357,7 +374,8 @@ namespace CrimsonVeil.Veil
                 float lastW = 0f, lastA = 0f, lastHard = 0f, lastFront = 0f, lastShade = 1f;
                 // As a weapon, each strand ends somewhere along the blade, where its flame tongue peels off.
                 // (On a bow every strand runs the whole way round, so both limbs are equally full.)
-                float end = StrandEnd(st, main, bow || shield, weaponness, gripFraction); // (every layer burns all round the shield)
+                // (every layer burns all round the shield, and runs the whole rope: braided all the way to the ring)
+                float end = StrandEnd(st, main, bow || shield || rope, weaponness, gripFraction);
                 // Keep a pointed weapon's tip clean: the braided strands' tongues flare before the point.
                 if (!main && Pointed(veil.ShapeForm)) end = Mathf.Min(end, Mathf.Lerp(1f, 0.82f, weaponness));
                 // On a weapon the braided strands start at the hand, so the part behind it (a spear's butt) is
@@ -397,7 +415,7 @@ namespace CrimsonVeil.Veil
                     // As a weapon the strands don't vanish into the blade: they braid around it like
                     // twisting flames (a helix running up the blade), wilder while it ignites.
                     if (!main)
-                        off += WeaponBraid(f, time, st.phase, w, hard) * (1f + 1.5f * front) * (1f - coiled);
+                        off += WeaponBraid(f * braidScale, time, st.phase, w, hard) * (1f + 1.5f * front) * (1f - coiled) * (rope ? RopeBraidSwell : 1f);
 
                     Vector3 ov = nrm * off;
                     // The band itself is kept from rising over the head; the tongues further back fan as in the key
@@ -524,6 +542,18 @@ namespace CrimsonVeil.Veil
         /// <summary>Sideways offset of a strand braided around a weapon: a travelling helix, zero for loose cloth.</summary>
         public static float WeaponBraid(float f, float time, float phase, float width, float hard)
             => Mathf.Sin(f * 16f - time * 3.2f + phase) * width * 0.24f * hard;
+
+        /// <summary>How much faster the braid twists along a rope pulled out to <paramref name="arcLength"/> (m) from
+        /// a scarf of <paramref name="restLength"/>: its turns keep their length in metres instead of being drawn out
+        /// (never slower than on the weapon itself).</summary>
+        public static float RopeBraidScale(float arcLength, float restLength)
+            => restLength > 1e-3f ? Mathf.Max(1f, arcLength / restLength) : 1f;
+
+        /// <summary>The rope, in the whip's width: a little fuller than the lash, so it reads as a cord of the scarf.</summary>
+        public const float RopeWidth = 0.9f;
+        /// <summary>The rope's braid twists twice as tight as a weapon's and its strands swell out further round it:
+        /// thin as it is, the crimson and ink strands winding round each other show along its whole length.</summary>
+        public const float RopeBraidTwist = 2f, RopeBraidSwell = 1.8f;
 
         /// <summary>Where along the veil a strand ends once it is a weapon: spread along the blade, so flame
         /// tongues peel off all along it rather than only at the tip.</summary>

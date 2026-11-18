@@ -5,6 +5,19 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.28.1] – 2026-11-18
+### Opraveno
+- **Kamenné oblouky v pozadí už nevisí ve vzduchu.** U věže a hradeb stálo 9 oblouků v blízké vrstvě ve výšce 23–44 m. Byly postavené od oka proti věžím v hlubší vrstvě a v jejich vlastní vrstvě pod nimi nic nebylo. Jakmile se kamera pohnula, vrstvy se rozjely a oblouky visely.
+- Nový průchod builderu scény `GroundedProps.Ground` platí pro oblouky, sloupy, zdi, schody, sochy a mrtvé stromy v pozadí:
+  - kulisa nad podlahou své vrstvy (tam, kde ji neschová mlha) musí mít obě nohy na kameni své vrstvy;
+  - když je nemá, posadí se na nejbližší rovný kamenný vrchol, který ji unese a nad kterým má místo. Přednost má vlastní vrstva, jinak vrchol věže v hlubší vrstvě;
+  - když takový vrchol není, kulisa zmizí.
+  - V prototypu se 5 kulis přesadilo a 2 zmizely.
+- Scéna je přestavěná.
+
+### Testy
+- Nové `GroundedPropsTests`: každý oblouk, sloup a zeď v pozadí stojí na podlaze své vrstvy, nebo oběma nohama na kameni.
+
 ## [0.28.0] – 2026-11-18
 ### Přidáno
 - **Nové animace létajících nepřátel** (`FlyerAnimation`). Křídla mávají podle letu:

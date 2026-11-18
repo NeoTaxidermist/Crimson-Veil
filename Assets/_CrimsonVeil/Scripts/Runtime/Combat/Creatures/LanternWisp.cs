@@ -21,6 +21,34 @@ namespace CrimsonVeil.Combat
         Light glow;
         Vector3 home;
         float flicker;
+        Transform visual, flame;
+        Vector3 flameRest, lastVelocity;
+        float swing, swingVelocity, caughtJolt;
+
+        /// <summary>Where the lantern hangs from (its ring, above the flame).</summary>
+        static readonly Vector3 Ring = new Vector3(0f, 0.29f, 0f);
+
+        /// <summary>The lantern swings from its ring behind the way it is carried; the flame breathes and gutters.</summary>
+        void Animate(Vector3 velocity, float dt)
+        {
+            Vector3 accel = (velocity - lastVelocity) / Mathf.Max(dt, 1e-4f);
+            lastVelocity = velocity;
+            FlyerAnimation.Pendulum(ref swing, ref swingVelocity, Mathf.Clamp(accel.x, -30f, 30f), dt);
+            caughtJolt = Mathf.MoveTowards(caughtJolt, 0f, dt * 1.5f);
+            if (visual != null)
+            {
+                var rot = Quaternion.Euler(0f, 0f, -swing);
+                visual.localRotation = rot;
+                visual.localPosition = Ring - rot * Ring;   // turning about the ring, not the flame
+            }
+            if (flame != null)
+            {
+                float breathe = IsCaught ? 1.15f + caughtJolt * 0.6f : 0.85f + 0.3f * flicker + Mathf.Sin(Time.time * 9f) * 0.05f;
+                // a quick swing drags the flame out long
+                float drag = 1f + Mathf.Min(0.5f, Mathf.Abs(swingVelocity) * 0.004f);
+                flame.localScale = new Vector3(flameRest.x * breathe / Mathf.Sqrt(drag), flameRest.y * breathe * drag, flameRest.z * breathe / Mathf.Sqrt(drag));
+            }
+        }
 
         protected override void Awake()
         {
@@ -29,6 +57,9 @@ namespace CrimsonVeil.Combat
             base.Awake();
             GetComponent<SphereCollider>().isTrigger = true;
             glow = GetComponentInChildren<Light>();
+            visual = CreatureParts.Find(transform, "Visual");
+            flame = CreatureParts.Find(transform, "Flame");
+            if (flame != null) flameRest = flame.localScale;
             home = LureTarget = transform.position;
         }
 
@@ -41,6 +72,7 @@ namespace CrimsonVeil.Combat
             if (IsCaught)
             {
                 transform.position = pos + Vector3.up * Mathf.Sin(t * 1.5f) * 0.002f;
+                Animate(Vector3.zero, dt);
                 return;
             }
 
@@ -57,7 +89,9 @@ namespace CrimsonVeil.Combat
             else LureTarget = home;
 
             Vector3 want = LureTarget + new Vector3(Mathf.Sin(t * 0.9f) * 0.3f, Mathf.Sin(t * 1.7f) * 0.25f, 0f);
-            transform.position = CreatureMotion.Slide(pos, Vector3.MoveTowards(pos, want, speed * dt) - pos, 0.3f, transform);
+            var next = CreatureMotion.Slide(pos, Vector3.MoveTowards(pos, want, speed * dt) - pos, 0.3f, transform);
+            transform.position = next;
+            Animate((next - pos) / dt, dt);
         }
 
         /// <summary>Any hit catches it instead of hurting it.</summary>
@@ -66,6 +100,8 @@ namespace CrimsonVeil.Combat
             if (!IsCaught)
             {
                 IsCaught = true;
+                caughtJolt = 1f;
+                swingVelocity += Mathf.Sign(info.knockback.x + 1e-3f) * -260f;   // struck, it swings hard, then stills
                 CombatFx.Burst(transform.position, Vector2.up, CombatFx.Crimson, 16, 2f);
             }
             return false;

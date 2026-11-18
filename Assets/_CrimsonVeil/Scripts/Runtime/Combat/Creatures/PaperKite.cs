@@ -24,7 +24,12 @@ namespace CrimsonVeil.Combat
         Transform visual;
         LineRenderer tail;
         readonly Vector3[] tailPoints = new Vector3[6];
-        bool landed;
+        bool landed, engaged;
+        float windup, rearAngle;
+        /// <summary>Seconds the kite rears back before its first swoop at a hero come within reach.</summary>
+        public const float SwoopWarning = 0.5f;
+        /// <summary>True while rearing back before the swoop.</summary>
+        public bool Rearing => windup > 0f;
 
         protected override void Awake()
         {
@@ -49,12 +54,21 @@ namespace CrimsonVeil.Combat
             // On the thread: the wind sways it; within reach of the hero it swoops at him.
             float wind = Mathf.Sin(Time.time * 0.7f) * windSway + Mathf.Sin(Time.time * 1.9f) * windSway * 0.3f;
             float want = wind;
+            bool inReach = false;
             if (HasTarget)
             {
                 Vector3 toHero = TargetPos - anchor;
                 if (toHero.magnitude < threadLength + 1.5f && toHero.y > -1f)
+                {
+                    inReach = true;
                     want = PaperKiteLogic.AngleTowards(toHero);
+                    // the hero just came within reach: it first rears back away from him, shuddering, then swoops
+                    if (!engaged) { engaged = true; windup = SwoopWarning; rearAngle = PaperKiteLogic.RearBack(angle, want); }
+                    if (windup > 0f) want = rearAngle;
+                }
             }
+            if (!inReach) engaged = false;
+            windup = Mathf.Max(0f, windup - dt);
             angularVelocity = Mathf.Lerp(angularVelocity, (want - angle) * swoopSpeed, 1f - Mathf.Exp(-4f * dt));
             angle += angularVelocity * dt;
             angle = Mathf.Clamp(angle, -1.3f, 1.3f);
@@ -64,7 +78,17 @@ namespace CrimsonVeil.Combat
             velocity = (next - pos) / dt;
             transform.position = next;
             if (thread != null) thread.Set(anchor, next);
-            if (visual != null) visual.localRotation = Quaternion.Euler(0f, 0f, angle * Mathf.Rad2Deg * 0.6f + Mathf.Sin(Time.time * 6f) * 4f);
+            if (visual != null)
+            {
+                // it banks into its swoop; the paper flutters harder the faster it flies and shudders rearing back
+                float speed = velocity.magnitude;
+                float shudder = windup > 0f ? Mathf.Sin(Time.time * 55f) * 9f : 0f;
+                float flutter = Mathf.Sin(Time.time * (6f + speed * 2.5f)) * (3f + speed * 2f);
+                visual.localRotation = Quaternion.Euler(0f, 0f, angle * Mathf.Rad2Deg * 0.6f - velocity.x * 5f + flutter + shudder);
+                // the sail bellies in the wind of its flight
+                float belly = 1f + Mathf.Min(0.25f, speed * 0.05f) * (0.7f + 0.3f * Mathf.Sin(Time.time * 11f));
+                visual.localScale = new Vector3(1f / belly, belly, 1f);
+            }
 
             if (!IsDead) TouchDamage(next, 0.7f, contactDamage, new Vector2(Mathf.Sign(velocity.x + 1e-3f) * 5f, 2f));
             UpdateTail();
@@ -157,6 +181,13 @@ namespace CrimsonVeil.Combat
         /// <summary>Kite position on a taut thread of <paramref name="length"/> at <paramref name="angle"/> from vertical.</summary>
         public static Vector3 OnThread(Vector3 anchor, float angle, float length)
             => anchor + new Vector3(Mathf.Sin(angle), Mathf.Cos(angle), 0f) * length;
+
+        /// <summary>Rearing back before a swoop: the thread angle pulled away from the target's side (radians).</summary>
+        public static float RearBack(float current, float towards)
+        {
+            float away = towards >= current ? -1f : 1f;
+            return Mathf.Clamp(current + away * 0.45f, -1.3f, 1.3f);
+        }
 
         /// <summary>Thread angle (from vertical) pointing at a target offset from the anchor.</summary>
         public static float AngleTowards(Vector3 offset) => Mathf.Atan2(offset.x, Mathf.Max(0.1f, offset.y + 1.5f));

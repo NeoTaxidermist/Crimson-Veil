@@ -48,16 +48,25 @@ namespace CrimsonVeil.Combat
                 if (transform.localScale.x <= 0.01f) Destroy(gameObject);
                 return;
             }
-            // Flap: fast when climbing, gliding when diving.
-            // Up (0°) … down past the body (~150°); a diving crow holds its wings half-closed.
+            // Flap: a quick power stroke down, slower back up; labouring up, gliding down; stooping in a dive the wings
+            // are tucked half-closed. Up (0) .. down past the body (~150).
+            float windup = Swarm != null ? Swarm.DiveWindup : 0f;
             bool diving = Velocity.y < -2f;
-            float flap = diving ? 60f + Mathf.Sin(Time.time * 6f + Phase) * 10f : 75f + Mathf.Sin(Time.time * 22f + Phase * 7f) * 75f;
+            wingPhase += dt * FlyerAnimation.BeatRate(3.4f, Velocity.y) * (1f + 0.6f * windup);
+            float stroke = FlyerAnimation.Stroke(wingPhase + Phase);
+            float flap = diving ? Mathf.Lerp(flap0, 95f, 1f - Mathf.Exp(-10f * dt)) + Mathf.Sin(Time.time * 30f + Phase) * 4f
+                                : Mathf.Lerp(5f, 5f + 145f * FlyerAnimation.StrokeWidth(Velocity.y), stroke);
+            flap0 = flap;
             if (wingL != null) wingL.localRotation = Quaternion.Euler(-flap, 0f, 0f);
             if (wingR != null) wingR.localRotation = Quaternion.Euler(flap, 0f, 0f);
-            // Banks round in a quick 3D turn, not a mirrored flip; keep the last heading while hovering.
+            // Banks round in a quick 3D turn, not a mirrored flip; keep the last heading while hovering. The body pitches
+            // into its flight: nose down in the dive, up as it climbs out.
             if (Mathf.Abs(Velocity.x) > 0.2f) heading = Velocity.x > 0f ? 1 : -1;
-            transform.localRotation = turn.Step(heading, dt, 0.18f);
+            pitch = Mathf.Lerp(pitch, FlyerAnimation.Pitch(Velocity, 55f), 1f - Mathf.Exp(-10f * dt));
+            transform.localRotation = turn.Step(heading, dt, 0.18f) * Quaternion.Euler(0f, 0f, pitch);
         }
+
+        float wingPhase, flap0, pitch;
 
         public static void BuildVisual(Transform root, Material ink, Material accent)
         {

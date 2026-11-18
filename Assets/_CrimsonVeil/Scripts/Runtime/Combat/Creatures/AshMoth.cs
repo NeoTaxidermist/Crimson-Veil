@@ -47,10 +47,14 @@ namespace CrimsonVeil.Combat
             {
                 fall -= 12f * dt;
                 transform.position = CreatureMotion.Slide(pos, new Vector3(0f, fall * dt, 0f), 0.15f, transform);
+                // wings folded, it spirals down like a dead leaf
+                SetWings(140f + Mathf.Sin(Time.time * 30f) * 6f);
+                if (visual != null) visual.localRotation = Quaternion.Euler(0f, 0f, Time.time * 400f);
                 return;
             }
 
             bool hunting = HasTarget && Vector3.Distance(target.Position, pos) < sightRange;
+            this.hunting = hunting;
             // Erratic moth flight around a point above the hero.
             float height = hoverHeight;
             if (hunting && Physics.Raycast(target.Position + Vector3.up * 1.8f, Vector3.up, out var roof, hoverHeight, ~0, QueryTriggerInteraction.Ignore))
@@ -58,7 +62,8 @@ namespace CrimsonVeil.Combat
             Vector3 anchor = hunting ? target.Position + Vector3.up * height : home;
             float t = Time.time;
             Vector3 flutter = new Vector3(Mathf.Sin(t * 1.3f) * 1.6f + Mathf.Sin(t * 3.7f) * 0.4f, Mathf.Sin(t * 2.1f) * 0.6f + Mathf.Sin(t * 5.3f) * 0.2f, 0f);
-            Vector3 want = anchor + flutter;
+            // rearing up to shake the ash out, it hangs still in the air
+            Vector3 want = anchor + flutter * (1f - DustWindup) + Vector3.up * (0.5f * DustWindup);
             velocity = Vector3.Lerp(velocity, (want - pos) * 1.8f, 1f - Mathf.Exp(-3f * dt));
             // flutters round walls and ledges, never through them (what the stone stops is lost)
             var next = CreatureMotion.Slide(pos, velocity * dt, BodyRadius, transform);
@@ -89,19 +94,63 @@ namespace CrimsonVeil.Combat
             }
 
             TouchDamage(pos, 0.6f, contactDamage, new Vector2(Mathf.Sign(velocity.x + 1e-3f) * 4f, 2f));
-            Animate(t);
+            Animate(dt);
         }
 
-        void Animate(float t)
+        /// <summary>Seconds before the ash is shaken out that the moth rears up and spreads its wings (the telegraph).</summary>
+        public const float DustWarning = 0.7f;
+        /// <summary>0..1 through the telegraph before the ash falls.</summary>
+        public float DustWindup => hunting && !IsDead ? Mathf.Clamp01(1f - dustTimer / DustWarning) : 0f;
+
+        bool hunting;
+        float wingPhase, hurtSpin;
+
+        void SetWings(float beat)
         {
             // 0 = wings up and open to the camera, larger = folded down / foreshortened.
-            float beat = 55f + Mathf.Sin(t * 14f) * 55f + (Dusting ? Mathf.Sin(t * 40f) * 15f : 0f);
             if (wingL != null) wingL.localRotation = Quaternion.Euler(-beat, 0f, 0f);
             if (wingR != null) wingR.localRotation = Quaternion.Euler(beat, 0f, 0f);
-            if (visual != null) visual.localRotation = Quaternion.Euler(0f, 0f, Mathf.Clamp(-velocity.x * 6f, -25f, 25f));
         }
 
-        protected override void OnHurt(in DamageInfo info) => velocity += new Vector3(info.knockback.x, info.knockback.y + 2f, 0f) * 0.5f;
+        void Animate(float dt)
+        {
+            float t = Time.time;
+            float windup = DustWindup;
+            bool shaking = Dusting && cloudTimer > cloudTime - 0.6f;
+            float width;
+            if (shaking)
+            {
+                // the ash shaken out: hard, fast claps of the whole wing
+                wingPhase += dt * 7f;
+                width = 1f;
+            }
+            else
+            {
+                // a quick power stroke down, slower back up; labouring when it climbs, open and gliding sinking
+                wingPhase += dt * FlyerAnimation.BeatRate(2.3f, velocity.y) * (1f - 0.9f * windup);
+                width = FlyerAnimation.StrokeWidth(velocity.y);
+            }
+            float s = FlyerAnimation.Stroke(wingPhase);
+            float beat = Mathf.Lerp(8f, 8f + 112f * width, s);
+            // the telegraph: wings spread wide open, eye-spots full to the hero, trembling
+            beat = Mathf.Lerp(beat, 2f + Mathf.Sin(t * 47f) * 5f, windup);
+            SetWings(beat);
+            hurtSpin = Mathf.MoveTowards(hurtSpin, 0f, dt * 2.5f);
+            if (visual != null)
+            {
+                float bank = Mathf.Clamp(-velocity.x * 6f, -25f, 25f) * (1f - windup);
+                float rear = 18f * windup;
+                visual.localRotation = Quaternion.Euler(0f, 0f, bank + rear + hurtSpin * 360f * Mathf.Sign(velocity.x + 1e-3f));
+                // each downstroke lifts the body, it sinks as the wings come back up
+                visual.localPosition = new Vector3(0f, (s - 0.5f) * 0.09f * width * (1f - windup), 0f);
+            }
+        }
+
+        protected override void OnHurt(in DamageInfo info)
+        {
+            velocity += new Vector3(info.knockback.x, info.knockback.y + 2f, 0f) * 0.5f;
+            hurtSpin = 1f;   // knocked tumbling
+        }
 
         public static void BuildVisual(Transform root, Material ink, Material accent)
         {

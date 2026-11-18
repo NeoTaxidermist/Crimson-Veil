@@ -5,6 +5,39 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.28.0] – 2026-11-18
+### Přidáno
+- **Nové animace létajících nepřátel** (`FlyerAnimation`). Křídla mávají podle letu:
+  - rychlý silový záběr dolů a pomalejší návrat nahoru;
+  - při stoupání mávají rychleji a naplno;
+  - při klesání plachtí s křídly otevřenými a mávají jen mělce.
+- **Můra:**
+  - každý záběr dolů tělo nadzvedne;
+  - zásah ji roztočí;
+  - mrtvá složí křídla a padá ve spirále jako list.
+  - **Nápřah před popelem (0,7 s):** zastaví se ve vzduchu, trochu vystoupá, roztáhne křídla s rudými oky naplno k hrdinovi a chvěje se. Pak popel vytřese prudkým tleskáním křídel.
+- **Vrány:**
+  - tělo se naklání do letu, při střemhlavém náletu zobákem dolů a při vybírání nahoru;
+  - v náletu mají křídla přitažená.
+  - **Nápřah před náletem (0,7 s):** hejno se stáhne těsně k sobě, vystoupá a mává usilovněji.
+- **Bludička:**
+  - lucerna se houpe na svém kroužku a zaostává za směrem, kterým ji bludička nese (kyvadlo);
+  - plamen dýchá a při prudkém zhoupnutí se protáhne;
+  - po zásahu se lucerna prudce rozhoupe, uklidní se a plamen vzplane.
+- **Papírový drak:**
+  - nakloní se do náletu;
+  - papír se třepetá tím víc, čím rychleji letí, a plachta se vydouvá.
+  - **Nápřah (0,5 s):** když se hrdina dostane na dosah, drak se nejdřív zakloní na druhou stranu a třese se, a teprve pak nalétne.
+
+### Testy
+- Nové `FlyerAnimationTests`:
+  - záběr dolů je rychlejší než návrat nahoru;
+  - při stoupání mávají častěji, při klesání plachtí;
+  - náklon jde zobákem dolů v náletu a nahoru při stoupání;
+  - nesená lucerna se zhoupne dozadu a pak se srovná;
+  - drak se zakloní od hrdiny.
+- `CreaturePlayTests`: můra ve hře opravdu mává a záběr dolů je rychlejší než nahoru.
+
 ## [0.27.0] – 2026-11-18
 ### Přidáno
 - **Zbraň i při visení na římse.** Seslat zbraň šlo i dřív, ale póza držela obě ruce na hraně, takže čepel jen trčela u římsy a úder se neodehrál. Teď:

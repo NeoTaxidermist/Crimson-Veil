@@ -18,6 +18,11 @@ namespace CrimsonVeil.Combat
 
         public int Alive => crows.Count;
         public bool IsDiving => diveClock >= 0f;
+        /// <summary>Seconds before a dive that the swarm gathers tight over the hero and beats harder (the telegraph).</summary>
+        public const float DiveWarning = 0.7f;
+        /// <summary>0..1 through the telegraph before the dive.</summary>
+        public float DiveWindup => diveClock < 0f && hunting ? Mathf.Clamp01(1f - diveTimer / DiveWarning) : 0f;
+        bool hunting;
         public System.Action Destroyed;
 
         readonly List<Crow> crows = new List<Crow>();
@@ -58,7 +63,7 @@ namespace CrimsonVeil.Combat
             float dt = Time.deltaTime;
             if (dt <= 0f || crows.Count == 0) return;
             if (!target.IsValid) target = CombatTarget.Find();
-            bool hunting = target.IsValid && target.IsAlive && Vector3.Distance(target.Position, centre) < sightRange;
+            hunting = target.IsValid && target.IsAlive && Vector3.Distance(target.Position, centre) < sightRange;
             Vector3 chest = hunting ? target.Position + Vector3.up * 0.9f : home;
             scatter = Mathf.MoveTowards(scatter, 0f, dt * 0.8f);
             contactCooldown -= dt;
@@ -73,7 +78,7 @@ namespace CrimsonVeil.Combat
             }
             else
             {
-                Vector3 want = hunting ? chest + new Vector3(Mathf.Sin(Time.time * 0.6f) * 1.5f, hoverHeight, 0f) : home;
+                Vector3 want = hunting ? chest + new Vector3(Mathf.Sin(Time.time * 0.6f) * 1.5f * (1f - DiveWindup), hoverHeight + 0.9f * DiveWindup, 0f) : home;   // climbing to stoop
                 centre = Vector3.Lerp(centre, want, 1f - Mathf.Exp(-1.6f * dt));
                 if (hunting)
                 {
@@ -89,7 +94,8 @@ namespace CrimsonVeil.Combat
             }
 
             // Each crow wheels around the centre on its own orbit; scattering throws them wide.
-            float spread = 1f + scatter * 2.2f;
+            // (gathering for the dive they close in tight; struck, they scatter wide)
+            float spread = (1f + scatter * 2.2f) * (1f - 0.55f * DiveWindup);
             foreach (var c in crows)
             {
                 c.Phase += c.Speed * dt;

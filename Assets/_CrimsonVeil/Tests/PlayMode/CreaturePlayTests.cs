@@ -83,6 +83,31 @@ namespace CrimsonVeil.Tests
         }
 
         [UnityTest]
+        public IEnumerator AshMoth_BeatsItsWings_QuickDown_SlowerUp()
+        {
+            var go = new GameObject("Moth");
+            go.transform.position = new Vector3(-10f, 3f, 0f);
+            AshMoth.BuildVisual(go.transform, null, null);
+            go.AddComponent<AshMoth>();
+            var wing = go.transform.Find("Visual/WingR");
+            yield return Wait(0.3f);
+            int down = 0, up = 0;
+            float last = Quaternion.Angle(Quaternion.identity, wing.localRotation), lo = float.MaxValue, hi = float.MinValue;
+            float end = Time.time + 3f;
+            while (Time.time < end)
+            {
+                yield return null;
+                float a = Quaternion.Angle(Quaternion.identity, wing.localRotation);   // how far down the wing is
+                lo = Mathf.Min(lo, a); hi = Mathf.Max(hi, a);
+                float d = a - last;
+                if (d > 0.5f) down++; else if (d < -0.5f) up++;
+                last = a;
+            }
+            Assert.Greater(hi - lo, 50f, "the wings really beat");
+            Assert.Less(down, up, "the power stroke down is quicker than the recovery up");
+        }
+
+        [UnityTest]
         public IEnumerator ShieldMonk_BlocksTheFront_UntilTheWhipTearsTheShieldAway()
         {
             var go = new GameObject("Monk");

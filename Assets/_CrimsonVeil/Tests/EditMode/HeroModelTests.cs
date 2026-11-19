@@ -102,7 +102,7 @@ namespace CrimsonVeil.Tests
         {
             var smr = Hero().GetComponentInChildren<SkinnedMeshRenderer>();
             var mesh = smr.sharedMesh;
-            Assert.AreEqual(2, mesh.subMeshCount, "ink body + crimson scarf, chest trim and sash");
+            Assert.AreEqual(3, mesh.subMeshCount, "ink body + crimson scarf, chest trim and sash + the eyes' whites and the teeth");
             var crimson = mesh.GetSubMesh(1).bounds;
             Assert.Less(crimson.size.magnitude, mesh.bounds.size.magnitude * 0.6f, "crimson only as accents");
             var ink = new Material(Shader.Find("Hidden/InternalErrorShader"));

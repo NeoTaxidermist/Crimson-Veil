@@ -13,7 +13,7 @@ from mathutils import Vector, Matrix
 ROOT = r"C:\Dev\CrimsonVeil"
 bpy.ops.wm.open_mainfile(filepath=ROOT + r"\ArtSource\Hero.blend")
 rig = bpy.data.objects["HeroRig"]
-INK, CRIMSON = 0, 1
+INK, CRIMSON, PALE = 0, 1, 2   # PALE: the eyes' whites and the teeth (see HeroFace's cutscene look)
 
 verts, faces, fmat, vweights = [], [], [], []
 THICK = 1.0  # girth multiplier for lofted parts (limbs are built a little sturdier)
@@ -916,8 +916,8 @@ HEAD = W("Head")
 # The face rig (for the story's cutscenes): the jaw, the eyes in their sockets, the upper and lower lids, the brows.
 # Measured on the head (ArtSource/hero_build.py's HEAD_RINGS + face_bump): the sockets' floor at y -0.126 under
 # x +-0.031, z 1.704; the brow ridge at z 1.722 (y -0.144); the lips meet at z ~1.648.
-EYE_R = 0.0125                                   # an eyeball's radius
-EYE_C = {"L": Vector((0.031, -0.1175, 1.705)), "R": Vector((-0.031, -0.1175, 1.705))}
+EYE_R = 0.0142                                   # an eyeball's radius (a touch large: the eyes must read in a close-up)
+EYE_C = {"L": Vector((0.032, -0.1165, 1.705)), "R": Vector((-0.032, -0.1165, 1.705))}
 LID_R = EYE_R + 0.0012                           # the lids slide over the eyeball
 LID_UP_EDGE, LID_DN_EDGE = 22.0, -32.0           # degrees: where the open lids' edges are (up from the eye's level)
 JAW_HINGE = Vector((0.0, -0.01, 1.668))          # just in front of the ears, at their height
@@ -1114,7 +1114,7 @@ def face_bump(z, ax, fr):
     nose = _g(ax / 0.011) * (0.021 * _g((z - 1.669) / 0.011) * _sig((z - 1.66) / 0.0025)
                              + 0.009 * _g((z - 1.693) / 0.016))
     brow = 0.006 * _g((ax - 0.03) / 0.028) * _g((z - 1.721) / 0.008)
-    eyes = -0.009 * _g((ax - 0.031) / 0.015) * _g((z - 1.704) / 0.01)
+    eyes = -0.012 * _g((ax - 0.032) / 0.018) * _g((z - 1.704) / 0.012)   # the sockets (wide enough for the eyes)
     cheek = 0.006 * _g((ax - 0.05) / 0.02) * _g((z - 1.688) / 0.014)
     lips = 0.005 * _g(ax / 0.02) * _g((z - 1.652) / 0.006) - 0.003 * _g(ax / 0.022) * _g((z - 1.646) / 0.0025)
     chin = 0.007 * _g(ax / 0.02) * _g((z - 1.624) / 0.01)
@@ -1122,25 +1122,40 @@ def face_bump(z, ax, fr):
 
 
 HEAD_AXIS_Y = -0.035  # rings on one upright axis (a shifting centre would tilt them)
-_hs = []
+LIP_Z = 1.648            # where the lips meet: the head is split there across the mouth, so the jaw opens it
+MOUTH_HALF = 0.024       # half the mouth's width
+_zs = []
 _z = HEAD_RINGS[0][0]
 while _z <= HEAD_RINGS[-1][0] + 1e-6:
+    _zs.append(_z)
+    _z += 0.004
+_zs = sorted(set([round(z, 5) for z in _zs] + [LIP_Z]))
+_hs = []
+for _z in _zs:
     rx, yf, yb = head_ring(_z)
     _hs.append(((0.0, HEAD_AXIS_Y, _z), rx, 1.0, {"front": HEAD_AXIS_Y - yf, "back": yb - HEAD_AXIS_Y}))
-    _z += 0.004
 def _ss(u):
     u = max(0.0, min(1.0, u))
     return u * u * (3 - 2 * u)
 
 
-def face_w(p, s):
+def face_w(p, s, part=None):
     """The head's skin: the lower lip, the chin and the jaw go with the jaw (split at the lips, the line rising
-    along the cheeks towards the hinge); the brow ridges with the brows; the rest with the head."""
+    along the cheeks towards the hinge); the brow ridges with the brows; the rest with the head. part "upper" /
+    "lower": which side of the split at the lips (in the mouth the upper lip stays with the head, the lower goes
+    wholly with the jaw - between them the mouth opens; elsewhere the two sides weigh alike, so they stay sealed)."""
     ax = abs(p.x)
     w = {}
     # the jaw's line: at the lips in front, climbing over the cheek to the hinge under the ear
     z_line = 1.649 + 0.016 * _ss((ax - 0.022) / 0.05) + 0.01 * _ss((p.y + 0.09) / 0.07)
     jaw = _ss((z_line - p.z) / 0.008) * _ss((0.015 - p.y) / 0.04)
+    mouth = _ss((MOUTH_HALF + 0.004 - ax) / 0.01) * _ss((-0.09 - p.y) / 0.02)
+    if part == "lower":
+        # the lower lip drops most in the middle and not at all in the corners: the mouth opens as a lens, not a box
+        lens = math.cos(0.5 * math.pi * min(1.0, ax / MOUTH_HALF)) ** 0.6 if ax < MOUTH_HALF else 0.0
+        jaw = max(jaw, mouth * lens * _ss((LIP_Z + 0.012 - p.z) / 0.012))
+    elif part == "upper":
+        jaw *= 1.0 - mouth
     if jaw > 1e-3:
         w["Jaw"] = jaw
     if p.y < -0.11 and 1.708 < p.z < 1.74:
@@ -1154,8 +1169,25 @@ def face_w(p, s):
     return w
 
 
-loft(_hs, face_w, n=72,
-     disp=lambda i, rel: face_bump(_hs[i][0][2], abs(rel.x), -rel.y / max(rel.length, 1e-6)))
+_lo = [h for h in _hs if h[0][2] <= LIP_Z + 1e-6]
+_up = [h for h in _hs if h[0][2] >= LIP_Z - 1e-6]
+_HN = 72
+_lo_start = len(verts)
+loft(_lo, lambda p, s: face_w(p, s, "lower"), n=_HN, cap1=False,
+     disp=lambda i, rel: face_bump(_lo[i][0][2], abs(rel.x), -rel.y / max(rel.length, 1e-6)))
+_up_start = len(verts)
+loft(_up, lambda p, s: face_w(p, s, "upper"), n=_HN, cap0=False,
+     disp=lambda i, rel: face_bump(_up[i][0][2], abs(rel.x), -rel.y / max(rel.length, 1e-6)))
+# seal the two halves all round the head except across the mouth
+_ra = [_lo_start + (len(_lo) - 1) * _HN + k for k in range(_HN)]
+_rb = [_up_start + k for k in range(_HN)]
+_in_mouth = [abs(verts[i].x) < MOUTH_HALF and verts[i].y < -0.05 for i in _ra]
+MOUTH_RING = [i for i, m in zip(_ra, _in_mouth) if m]      # (the lower lip's edge, for the record)
+for k in range(_HN):
+    k1 = (k + 1) % _HN
+    if _in_mouth[k] and _in_mouth[k1]:
+        continue
+    faces.append((_ra[k], _ra[k1], _rb[k1], _rb[k])); fmat.append(INK)
 for sx in (1, -1):  # ears
     blob((sx * 0.074, 0.008, 1.69), (0.012, 0.018, 0.028), HEAD, seg=12, rings=8)
 
@@ -1190,14 +1222,36 @@ def lid(c, r, e0, e1, bone, thick=0.0011, n_az=16, n_el=6, az=80.0):
             quad((outer[j][i], outer[j + 1][i], inner[j + 1][i], inner[j][i]), Vector((0, 0, sgn)) + mid * 0.2)
 
 
+def arc_band(c, r, half_deg, z0, z1, thick, weight, mat, n=14):
+    """A band curved round a vertical axis at c (radius r, +-half_deg either side of straight ahead), from z0 to z1:
+    a row of teeth."""
+    rows = []
+    for j in range(n + 1):
+        a = math.radians(-half_deg + 2 * half_deg * j / n)
+        d = Vector((math.sin(a), -math.cos(a), 0.0))
+        rows.append([add_vert(Vector((c.x, c.y, z)) + d * rr, weight) for rr in (r, r - thick) for z in (z0, z1)])
+    for j in range(n):
+        a0, a1 = rows[j], rows[j + 1]
+        for q in ((a0[0], a1[0], a1[1], a0[1]), (a0[2], a0[3], a1[3], a1[2]), (a0[1], a1[1], a1[3], a0[3]), (a0[0], a0[2], a1[2], a1[0])):
+            faces.append(q); fmat.append(mat)
+
+
+# The mouth's inside: a dark hollow behind the lips (its roof with the head, its floor with the jaw) and two rows of
+# teeth just behind the lips - seen only when the jaw drops.
+_mc = Vector((0.0, -0.094, LIP_Z - 0.002))   # (behind the teeth)
+blob(tuple(_mc), (0.027, 0.027, 0.018), lambda p, s: {"Head": 1.0} if p.z >= LIP_Z - 0.002 else {"Jaw": 1.0}, seg=16, rings=10)
+arc_band(Vector((0.0, -0.098, 0.0)), 0.032, 38.0, LIP_Z - 0.0035, LIP_Z + 0.0035, 0.004, {"Head": 1.0}, PALE)   # (their edges show under the upper lip)
+arc_band(Vector((0.0, -0.097, 0.0)), 0.029, 36.0, LIP_Z - 0.0065, LIP_Z - 0.0010, 0.004, {"Jaw": 1.0}, PALE)
+
+
 # The eyes: a ball in each socket on its own bone (it looks about), the lids over it - the upper from above the
 # eye's top down to just over the iris (LID_UP_EDGE), the lower up to under it; closing, they meet a little below
 # the middle (see HeroFace in the game).
 for _sd in ("L", "R"):
     c = EYE_C[_sd]
-    blob(tuple(c), (EYE_R, EYE_R, EYE_R), W("Eye." + _sd), seg=18, rings=12)
-    # the cornea: a low dome on the front of the ball, so where he looks reads in the light of a close-up
-    blob(tuple(c + Vector((0, -EYE_R * 0.8, 0))), (0.0062, 0.0042, 0.0062), W("Eye." + _sd), seg=14, rings=8)
+    blob(tuple(c), (EYE_R, EYE_R, EYE_R), W("Eye." + _sd), mat=PALE, seg=18, rings=12)
+    # the iris under its cornea: a dark low dome on the front of the ball, so where he looks reads in a close-up
+    blob(tuple(c + Vector((0, -EYE_R * 0.82, 0))), (0.0068, 0.0046, 0.0068), W("Eye." + _sd), seg=14, rings=8)
     lid(c, LID_R, 88.0, LID_UP_EDGE, "Lid.U." + _sd)
     lid(c, LID_R, -84.0, LID_DN_EDGE, "Lid.D." + _sd)
 
@@ -1376,6 +1430,9 @@ crimson = bpy.data.materials.get("HeroCrimson") or bpy.data.materials.new("HeroC
 crimson.diffuse_color = (0.7, 0.02, 0.035, 1)
 me.materials.append(ink)
 me.materials.append(crimson)
+pale = bpy.data.materials.get("HeroPale") or bpy.data.materials.new("HeroPale")
+pale.diffuse_color = (0.85, 0.84, 0.8, 1)
+me.materials.append(pale)
 for poly, m in zip(me.polygons, fmat):
     poly.material_index = m
 ob = bpy.data.objects.new("Hero", me)

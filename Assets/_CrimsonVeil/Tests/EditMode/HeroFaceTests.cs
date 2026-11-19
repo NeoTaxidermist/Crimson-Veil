@@ -70,5 +70,35 @@ namespace CrimsonVeil.Tests
             Assert.Greater(hi, 0.2f, "it opens to speak");
             Assert.Greater(shut, n / 10, "between syllables and in pauses it closes");
         }
+
+        [Test]
+        public void TheCutsceneLook_ModelsTheFace_AndShowsTheEyes_TheGameKeepsTheInk()
+        {
+            HeroFace.LookSettings(0f, out var ink0, out var pale0, out float shade0, out _, out float rim0);
+            HeroFace.LookSettings(1f, out var ink1, out var pale1, out float shade1, out _, out float rim1);
+            Assert.AreEqual(ink0.r, pale0.r, 1e-4f, "in the game the eyes and teeth are ink: the silhouette stays whole");
+            Assert.Less(ink0.grayscale, 0.02f);
+            Assert.Greater(pale1.grayscale, 0.6f, "in a close-up the whites of the eyes and the teeth show");
+            Assert.Greater(ink1.grayscale, ink0.grayscale, "the ink lifts a little");
+            Assert.Greater(shade1, shade0 + 0.5f, "the moon models the face");
+            Assert.Greater(rim1, rim0 + 0.3f, "a stronger rim edges it");
+        }
+
+        [Test]
+        public void TheMouth_OpensBetweenTheLips_WithTeethBehind()
+        {
+            // the lower lip's skin goes wholly with the jaw while the upper lip stays: the mouth can open
+            var hero = AssetDatabase.LoadAssetAtPath<GameObject>(HeroPath);
+            var smr = hero.GetComponentInChildren<SkinnedMeshRenderer>();
+            var mesh = smr.sharedMesh;
+            int jaw = System.Array.FindIndex(smr.bones, b => b.name == "Jaw");
+            Assert.GreaterOrEqual(jaw, 0);
+            int fullJaw = 0;
+            foreach (var w in mesh.boneWeights)
+                if (w.boneIndex0 == jaw && w.weight0 > 0.95f) fullJaw++;
+            Assert.Greater(fullJaw, 200, "the lower lip, the chin and the floor of the mouth go with the jaw");
+            Assert.AreEqual(3, mesh.subMeshCount, "ink, crimson and the pale of the eyes and the teeth");
+            Assert.Greater(mesh.GetSubMesh(2).indexCount, 300, "the eyes' whites and two rows of teeth");
+        }
     }
 }

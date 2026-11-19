@@ -5,6 +5,43 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.32.0] – 2026-11-19
+### Přidáno
+- **Ústa se otevírají.** Hlava je ve výšce rtů rozdělená na dvě části:
+  - v ústech zůstává horní ret s hlavou a spodní jde celý s čelistí, takže se mezi nimi otevře mezera. Mimo ústa jsou obě části sešité a hlava nepraskne;
+  - spodní ret klesá nejvíc uprostřed a v koutcích vůbec, takže ústa se otevírají do tvaru čočky, ne do krabice;
+  - za rty je tmavá ústní dutina (strop jde s hlavou, dno s čelistí) a dvě řady zubů.
+- **Bělmo a zuby.** Model má třetí materiál (`HeroPale`) pro bělma očí a zuby. Duhovka pod rohovkou je tmavá, takže je vidět, kam postava kouká.
+- **Cutscénový vzhled** (`HeroFace.SetCutscene`):
+  - inkoust lehce zesvětlí, měsíc vymodeluje tvar obličeje a obrys zesílí;
+  - bělma a zuby zbělají.
+  - Ve hře zůstává všechno inkoustové, takže silueta se nemění.
+  - Ověřeno snímky z Unity: vztek a údiv jsou v detailu čitelné.
+
+### Změněno
+- **Větší oči** (poloměr 14,2 mm místo 12,5 mm) v hlubších a širších důlcích.
+- **Výraznější výrazy:**
+  - čelist se otevře až o 22°;
+  - obočí se pohne o 9 mm, mračení o 6 mm;
+  - silnější přednastavené výrazy, například údiv s doširoka otevřenýma očima a pusou, nebo vztek se staženým obočím a přimhouřenýma očima.
+- **Vytahování na římsu:**
+  - postava plynule prochází klíčovými pózami (Hermite spline, `HeroPose.Spline`), už se v nich nezastavuje;
+  - při přítahu se nohy střídavě odrážejí od zdi;
+  - při přelézání se zadní noha houpe;
+  - nakonec vykročí a postaví se vedle kolena (nová póza `ClimbStep`).
+- **Houpání na laně:**
+  - nohy už nekopírují rychlost švihu jako tuhé kyvadlo. Dobíhají za ním na pružině, přeběhnou a usadí se (`SwingLegs`);
+  - dopředu jdou do lehkého přednosu se špičkami propnutými, dozadu zůstávají natažené za mírně prohnutým tělem. Dřív se při zpětném švihu kolena ohnula tak, že v obratu vysokého švihu klečel ve vzduchu.
+
+### Testy
+- `HeroFaceTests`:
+  - cutscénový vzhled vymodeluje obličej a ukáže bělma, zatímco hra zůstane inkoustová;
+  - ústa mají spodní ret na čelisti a tři materiály se zuby a bělmy.
+- `HeroModelTests`: tři materiály.
+- `HeroPoseSolverTests`:
+  - vytahování prochází klíčovými pózami bez zastavení, nohy se střídavě odrážejí a zadní noha vykročí;
+  - na laně nohy dobíhají za švihem, přeběhnou, usadí se a nikdy neklečí ve vzduchu.
+
 ## [0.31.0] – 2026-11-19
 ### Přidáno
 - **Obličejová kostra hrdiny** (pro cutscény). Skript `hero_build.py` přidává 9 kostí, všechny visí na hlavě:

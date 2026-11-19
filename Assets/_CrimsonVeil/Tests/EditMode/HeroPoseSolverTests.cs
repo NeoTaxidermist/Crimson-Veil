@@ -340,5 +340,51 @@ namespace CrimsonVeil.Tests
             var a = HeroPoseSolver.IdleLife(1f);
             Assert.AreNotEqual(a.armL, a.armR, "the arms are not mirrored");
         }
+
+        [Test]
+        public void TheMantle_FlowsThroughItsKeys_TheFeetScrabble_TheTrailingLegStepsUp()
+        {
+            // it still passes through each key pose ...
+            var knee = HeroPoseSolver.ClimbPose(HeroPoseSolver.ClimbKneeEnd);
+            Assert.Greater(knee.thighL, 100f);
+            // ... without halting at it: the body keeps moving through the press
+            float a = HeroPoseSolver.ClimbPose(HeroPoseSolver.ClimbPressEnd - 0.01f).spine;
+            float b = HeroPoseSolver.ClimbPose(HeroPoseSolver.ClimbPressEnd + 0.01f).spine;
+            Assert.Greater(Mathf.Abs(b - a), 0.2f, "the torso flows on through the press");
+            // pulling up, the legs work in turns against the wall
+            float lo = float.MaxValue, hi = float.MinValue;
+            for (float t = 0f; t < HeroPoseSolver.ClimbPullEnd; t += 0.005f)
+            {
+                var p = HeroPoseSolver.ClimbPose(t);
+                lo = Mathf.Min(lo, p.thighL - p.thighR); hi = Mathf.Max(hi, p.thighL - p.thighR);
+            }
+            Assert.Greater(hi - lo, 20f, "the feet scrabble, one then the other");
+            // the trailing leg comes through and steps up beside the knee
+            var step = HeroPoseSolver.ClimbPose(HeroPoseSolver.ClimbStep);
+            Assert.Greater(step.thighR, 45f, "the trailing leg swings up");
+        }
+
+        [Test]
+        public void OnTheWhip_TheLegsTrailTheSwing_AndPump()
+        {
+            var forward = HeroPoseSolver.SwingPose(1f, 0f);
+            var back = HeroPoseSolver.SwingPose(-1f, 0f);
+            Assert.Greater(forward.thighL, back.thighL + 30f, "reaching out ahead on the way forward");
+            Assert.Less(back.kneeL, 30f, "trailing behind, the legs stay nearly straight (folded, he knelt in the air)");
+            Assert.Greater(back.thighL - back.kneeL, -35f, "the shins never stick up behind him");
+            Assert.Greater(forward.kneeL, 5f, "the knees never lock straight");
+
+            // the legs lag the swing: a sudden swing forward reaches them only over a few frames, then overshoots
+            var solver = new HeroPoseSolver();
+            var s = new HeroState { swinging = true, swingSpeed = 0f };
+            Run(solver, 0.5f, s);
+            s.swingSpeed = 2.2f;
+            solver.Step(Dt, s);
+            Assert.Less(solver.SwingLegs, 0.2f, "one frame in, the legs have not caught up yet");
+            float peak = 0f;
+            for (int k = 0; k < 90; k++) { solver.Step(Dt, s); peak = Mathf.Max(peak, solver.SwingLegs); }
+            Assert.Greater(peak, 1.02f, "they swing past, then settle");
+            Assert.AreEqual(1f, solver.SwingLegs, 0.05f);
+        }
     }
 }

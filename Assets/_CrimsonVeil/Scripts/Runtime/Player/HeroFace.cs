@@ -35,11 +35,11 @@ namespace CrimsonVeil.Player
         [SerializeField] Transform model;
 
         /// <summary>Degrees the jaw drops wide open.</summary>
-        public const float JawOpenDeg = 16f;
+        public const float JawOpenDeg = 22f;
         /// <summary>Degrees the upper / lower lid turn to shut (they meet a little below the middle of the eye).</summary>
         public const float LidUpperShutDeg = 46f, LidLowerShutDeg = 18f;
         /// <summary>How far (m) a brow rises or falls, and how far a frown draws it in and down.</summary>
-        public const float BrowTravel = 0.006f, FrownTravel = 0.004f;
+        public const float BrowTravel = 0.009f, FrownTravel = 0.006f;
         /// <summary>The furthest the eyes turn (degrees).</summary>
         public const float LookYawMax = 28f, LookPitchMax = 20f;
         /// <summary>Seconds of a blink: shutting fast, a moment shut, opening a little slower.</summary>
@@ -95,12 +95,12 @@ namespace CrimsonVeil.Player
         {
             switch (e)
             {
-                case FaceExpression.Determined: return new FacePose { frown = 0.5f, browL = -0.3f, browR = -0.3f, lidUpper = 0.18f, lidLower = 0.15f };
-                case FaceExpression.Angry: return new FacePose { frown = 1f, browL = -0.7f, browR = -0.7f, lidUpper = 0.3f, lidLower = 0.3f, jaw = 0.08f };
-                case FaceExpression.Surprised: return new FacePose { browL = 1f, browR = 1f, lidUpper = -0.25f, jaw = 0.4f };
-                case FaceExpression.Sad: return new FacePose { browL = 0.45f, browR = 0.45f, frown = 0.35f, lidUpper = 0.35f, lookPitch = -8f };
-                case FaceExpression.Pain: return new FacePose { frown = 1f, browL = -0.4f, browR = -0.2f, lidUpper = 0.6f, lidLower = 0.5f, jaw = 0.25f };
-                case FaceExpression.Weary: return new FacePose { browL = 0.15f, browR = 0.15f, lidUpper = 0.45f, lidLower = 0.1f, jaw = 0.05f, lookPitch = -5f };
+                case FaceExpression.Determined: return new FacePose { frown = 0.6f, browL = -0.45f, browR = -0.45f, lidUpper = 0.25f, lidLower = 0.2f };
+                case FaceExpression.Angry: return new FacePose { frown = 1f, browL = -1f, browR = -1f, lidUpper = 0.35f, lidLower = 0.4f, jaw = 0.2f };
+                case FaceExpression.Surprised: return new FacePose { browL = 1f, browR = 1f, lidUpper = -0.4f, lidLower = -0.1f, jaw = 0.7f };
+                case FaceExpression.Sad: return new FacePose { browL = 0.7f, browR = 0.7f, frown = 0.55f, lidUpper = 0.45f, lookPitch = -12f };
+                case FaceExpression.Pain: return new FacePose { frown = 1f, browL = -0.6f, browR = -0.3f, lidUpper = 0.75f, lidLower = 0.6f, jaw = 0.45f };
+                case FaceExpression.Weary: return new FacePose { browL = 0.25f, browR = 0.25f, lidUpper = 0.55f, lidLower = 0.15f, jaw = 0.1f, lookPitch = -8f };
                 default: return new FacePose();
             }
         }
@@ -149,11 +149,70 @@ namespace CrimsonVeil.Player
         /// <summary>Blinks now.</summary>
         public void Blink() => blinkClock = 0f;
 
+        // ------------------------------------------------------------------ the cutscene look
+
+        /// <summary>
+        /// 0 = the game's ink silhouette .. 1 = the cutscenes' close-up look: the moon models the face (form shading),
+        /// a stronger rim edges it, the ink lifts a little and the whites of the eyes and the teeth show pale.
+        /// </summary>
+        public float CutsceneLook { get; private set; }
+        float lookGoal, lookSpeed = 1f;
+
+        /// <summary>Into (or out of) the cutscene look over <paramref name="seconds"/>.</summary>
+        public void SetCutscene(bool on, float seconds = 0.5f)
+        {
+            lookGoal = on ? 1f : 0f;
+            lookSpeed = seconds <= 0f ? 1e6f : 1f / seconds;
+            if (seconds <= 0f) { CutsceneLook = lookGoal; ApplyLook(); }
+        }
+
+        /// <summary>The ink and the pale (eyes, teeth) material settings at a cutscene look of u (0 game .. 1 close-up).</summary>
+        public static void LookSettings(float u, out Color ink, out Color pale, out float formShade, out float formLift, out float rim)
+        {
+            var gameInk = new Color(0.012f, 0.012f, 0.014f);
+            ink = Color.Lerp(gameInk, new Color(0.075f, 0.075f, 0.085f), u);
+            pale = Color.Lerp(gameInk, new Color(0.8f, 0.78f, 0.74f), u);
+            formShade = Mathf.Lerp(0f, 0.75f, u);
+            formLift = Mathf.Lerp(0.03f, 0.2f, u);
+            rim = Mathf.Lerp(0.06f, 0.5f, u);
+        }
+
+        static readonly int BaseColorId = Shader.PropertyToID("_BaseColor"), FormShadeId = Shader.PropertyToID("_FormShade"),
+                            FormLiftId = Shader.PropertyToID("_FormLift"), RimId = Shader.PropertyToID("_RimLight");
+        SkinnedMeshRenderer skin;
+        MaterialPropertyBlock block;
+        float appliedLook = -1f;
+
+        void ApplyLook()
+        {
+            if (skin == null) skin = model != null ? model.GetComponentInChildren<SkinnedMeshRenderer>() : null;
+            if (skin == null || Mathf.Approximately(appliedLook, CutsceneLook)) return;
+            appliedLook = CutsceneLook;
+            if (block == null) block = new MaterialPropertyBlock();
+            LookSettings(CutsceneLook, out var ink, out var pale, out float shade, out float lift, out float rim);
+            int n = skin.sharedMaterials.Length;
+            for (int i = 0; i < n; i++)
+            {
+                if (i == 1) continue;   // the crimson stays as it is
+                block.Clear();
+                if (CutsceneLook > 0f)
+                {
+                    block.SetColor(BaseColorId, i == 2 ? pale : ink);
+                    block.SetFloat(FormShadeId, shade);
+                    block.SetFloat(FormLiftId, i == 2 ? lift * 0.5f : lift);
+                    block.SetFloat(RimId, rim);
+                }
+                skin.SetPropertyBlock(block, i);
+            }
+        }
+
         void LateUpdate() => Tick(Time.deltaTime);
 
         public void Tick(float dt)
         {
             if (!IsReady || dt <= 0f) return;
+            CutsceneLook = Mathf.MoveTowards(CutsceneLook, lookGoal, dt * lookSpeed);
+            ApplyLook();
             blend = Mathf.Min(1f, blend + dt / blendTime);
             var pose = FacePose.Lerp(from, to, Mathf.SmoothStep(0f, 1f, blend));
 
@@ -202,7 +261,7 @@ namespace CrimsonVeil.Player
             Turn(jaw, jawRest, right, p.jaw * JawOpenDeg);
             // the upper lid follows the gaze up and down; it opens wide (below 0) a little less than it shuts
             float upper = Mathf.Clamp(p.lidUpper, -0.4f, 1f) * LidUpperShutDeg - p.lookPitch * 0.6f;
-            float lower = Mathf.Clamp01(p.lidLower) * LidLowerShutDeg + Mathf.Min(0f, p.lookPitch) * -0.3f;
+            float lower = Mathf.Clamp(p.lidLower, -0.3f, 1f) * LidLowerShutDeg + Mathf.Min(0f, p.lookPitch) * -0.3f;
             Turn(lidUL, lidULRest, right, upper); Turn(lidUR, lidURRest, right, upper);
             Turn(lidDL, lidDLRest, right, -lower); Turn(lidDR, lidDRRest, right, -lower);
             foreach (var (eye, rest) in new[] { (eyeL, eyeLRest), (eyeR, eyeRRest) })

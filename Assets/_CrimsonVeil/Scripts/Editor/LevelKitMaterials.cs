@@ -18,6 +18,9 @@ namespace CrimsonVeil.EditorTools
         public Material crimson;
         /// <summary>Pure ink for the hero's shadow double (the creatures themselves are shaded grey: <see cref="wraith"/>).</summary>
         public Material shadowInk;
+        /// <summary>The whites of the hero's eyes and his teeth: ink in the game (the silhouette stays whole), lit pale by
+        /// <see cref="CrimsonVeil.Player.HeroFace"/>'s cutscene look.</summary>
+        public Material heroPale;
         public Material mistBand, mistLow, waterfall, shaft, moon;
         public Material veil, wisp, leafParticle, inkGrade;
         /// <summary>Simple particle materials (hit bursts, ropes) — the veil shader is for cloth only.</summary>
@@ -73,6 +76,7 @@ namespace CrimsonVeil.EditorTools
                 crimson = Sil("RuinCrimson", sil, new Color(0.7f, 0.02f, 0.035f), 0.25f, 0.6f),
                 leaf = Clip(Wind(Sil("LeafCrimson", sil, new Color(0.78f, 0.02f, 0.035f), 0.2f, 0.7f), 0.6f, false), maple),
                 hero = HeroLook(Sil("HeroInk", sil, new Color(0.012f, 0.012f, 0.014f), 0.12f, 0.15f)),
+                heroPale = HeroLook(Sil("HeroPale", sil, new Color(0.012f, 0.012f, 0.014f), 0.12f, 0.05f)),
                 // Creatures: dark grey, modelled by the moonlight, with a pale rim so they read on any background.
                 wraith = Creature(Sil("WraithInk", sil, new Color(0.075f, 0.075f, 0.082f), 0.15f, 0.3f), 0.8f, 0.55f, 3f, 0.6f),
                 shadowInk = Creature(Sil("ShadowInk", sil, new Color(0.006f, 0.006f, 0.008f), 0.15f, 0.25f), 0f, 0.22f, 4f, 0f),

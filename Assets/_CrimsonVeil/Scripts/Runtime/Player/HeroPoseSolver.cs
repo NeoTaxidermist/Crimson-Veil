@@ -46,6 +46,51 @@ namespace CrimsonVeil.Player
             };
         }
 
+        /// <summary>wa*a + wb*b + wc*c + wd*d, field by field (the weights need not add up to 1: splines, offsets).</summary>
+        public static HeroPose Combine(in HeroPose a, float wa, in HeroPose b, float wb, in HeroPose c, float wc, in HeroPose d, float wd)
+        {
+            float F(float x, float y, float z, float w) => x * wa + y * wb + z * wc + w * wd;
+            return new HeroPose
+            {
+                spine = F(a.spine, b.spine, c.spine, d.spine), chest = F(a.chest, b.chest, c.chest, d.chest),
+                head = F(a.head, b.head, c.head, d.head), bob = F(a.bob, b.bob, c.bob, d.bob),
+                thighL = F(a.thighL, b.thighL, c.thighL, d.thighL), kneeL = F(a.kneeL, b.kneeL, c.kneeL, d.kneeL), footL = F(a.footL, b.footL, c.footL, d.footL),
+                thighR = F(a.thighR, b.thighR, c.thighR, d.thighR), kneeR = F(a.kneeR, b.kneeR, c.kneeR, d.kneeR), footR = F(a.footR, b.footR, c.footR, d.footR),
+                armL = F(a.armL, b.armL, c.armL, d.armL), elbowL = F(a.elbowL, b.elbowL, c.elbowL, d.elbowL),
+                armR = F(a.armR, b.armR, c.armR, d.armR), elbowR = F(a.elbowR, b.elbowR, c.elbowR, d.elbowR),
+                neck = F(a.neck, b.neck, c.neck, d.neck), pelvis = F(a.pelvis, b.pelvis, c.pelvis, d.pelvis),
+                pelvisTurn = F(a.pelvisTurn, b.pelvisTurn, c.pelvisTurn, d.pelvisTurn), twist = F(a.twist, b.twist, c.twist, d.twist),
+                shoulderL = F(a.shoulderL, b.shoulderL, c.shoulderL, d.shoulderL), shoulderR = F(a.shoulderR, b.shoulderR, c.shoulderR, d.shoulderR),
+                armOutL = F(a.armOutL, b.armOutL, c.armOutL, d.armOutL), armOutR = F(a.armOutR, b.armOutR, c.armOutR, d.armOutR),
+                wristL = F(a.wristL, b.wristL, c.wristL, d.wristL), wristR = F(a.wristR, b.wristR, c.wristR, d.wristR),
+                toeL = F(a.toeL, b.toeL, c.toeL, d.toeL), toeR = F(a.toeR, b.toeR, c.toeR, d.toeR),
+            };
+        }
+
+        /// <summary>
+        /// A smooth curve through key poses at the given times (cubic Hermite, each key's tangent from its neighbours,
+        /// still at the first and the last): the body flows through the keys instead of halting at each one.
+        /// </summary>
+        public static HeroPose Spline(HeroPose[] keys, float[] times, float t)
+        {
+            int last = keys.Length - 1;
+            if (t <= times[0]) return keys[0];
+            if (t >= times[last]) return keys[last];
+            int i = 0;
+            while (i < last - 1 && t > times[i + 1]) i++;
+            float h = Mathf.Max(1e-4f, times[i + 1] - times[i]);
+            float u = (t - times[i]) / h;
+            float u2 = u * u, u3 = u2 * u;
+            float h00 = 2f * u3 - 3f * u2 + 1f, h10 = u3 - 2f * u2 + u, h01 = -2f * u3 + 3f * u2, h11 = u3 - u2;
+            const float tension = 0.8f;
+            // tangent at key i: (P[i+1] - P[i-1]) / span, zero at the ends; written as weights on the four poses around
+            float ci = i > 0 ? tension * h / (times[i + 1] - times[i - 1]) : 0f;
+            float cj = i + 1 < last ? tension * h / (times[i + 2] - times[i]) : 0f;
+            var prev = keys[Mathf.Max(i - 1, 0)];
+            var next = keys[Mathf.Min(i + 2, last)];
+            return Combine(prev, -h10 * ci, keys[i], h00 - h11 * cj, keys[i + 1], h01 + h10 * ci, next, h11 * cj);
+        }
+
         public bool IsFinite()
         {
             float s = spine + chest + head + bob + thighL + kneeL + footL + thighR + kneeR + footR + armL + elbowL + armR + elbowR
@@ -217,9 +262,13 @@ namespace CrimsonVeil.Player
             wasGrounded = s.grounded;
             landTimer = Mathf.Max(0f, landTimer - dt);
 
+            // the legs on the whip trail the swing's speed on a spring
+            if (s.swinging) Spring(ref swingLegs, ref swingLegsVel, Mathf.Clamp(s.swingSpeed / 2.2f, -1f, 1f), 6.5f, 0.4f, dt);
+            else { swingLegs = 0f; swingLegsVel = 0f; }
+
             HeroPose target;
             if (s.climbing) target = ClimbPose(s.climbProgress);
-            else if (s.swinging) target = SwingPose(s.swingSpeed, time);
+            else if (s.swinging) target = SwingPose(swingLegs, time);
             else if (s.hanging) target = HangPose(time, s.hangArm);
             else if (s.wallSliding) target = WallSlidePose(time);
             else if (s.dashing) target = DashPose();
@@ -542,18 +591,31 @@ namespace CrimsonVeil.Player
         /// On the whip: both hands high on it (whip hand above), the body a pendulum. Swinging forward the legs
         /// trail and then kick ahead at the far end; swinging back they tuck — the pumping motion.
         /// </summary>
-        public static HeroPose SwingPose(float swingSpeed, float time)
+        /// <summary>
+        /// Hanging from the whip. <paramref name="legs"/> (-1..1) is where the legs have been carried by the swing (see
+        /// <see cref="SwingLegs"/>: they trail it on a spring, not stiffly with it): swinging forward they reach out
+        /// ahead, the body piking a little, the toes pointed; swinging back they trail behind, the knees eased, the back
+        /// arched - a gymnast's pump. Together, the near leg a touch ahead; they never lock straight.
+        /// </summary>
+        public static HeroPose SwingPose(float legs, float time)
         {
-            float k = Mathf.Clamp(swingSpeed / 2.2f, -1f, 1f);
-            float idle = Mathf.Sin(time * 2.4f) * 4f * (1f - Mathf.Abs(k));
+            float k = Mathf.Clamp(legs, -1.2f, 1.2f);
+            float fwd = Mathf.Max(0f, k), back = Mathf.Max(0f, -k);
+            float breathe = Mathf.Sin(time * 1.9f) * 2f;
             return new HeroPose
             {
-                spine = -4f + 10f * k, chest = -6f + 4f * k, head = 8f - 6f * k, bob = 0f,
-                thighL = 14f + 40f * k + idle, kneeL = 20f + 35f * Mathf.Max(0f, -k), footL = -12f,
-                thighR = -2f + 26f * k - idle, kneeR = 34f + 30f * Mathf.Max(0f, -k), footR = -18f,
+                spine = 2f + 9f * fwd - 10f * back + breathe * 0.5f, chest = -4f + 3f * fwd - 6f * back, head = 6f - 4f * fwd + 6f * back,
+                // (trailing behind, the legs stay nearly straight in line with the arched body: thighs swung back with the
+                // knees bent too, the shins stuck up behind him at the top of a high swing, as if kneeling in the air)
+                thighL = 12f + 24f * fwd - 12f * back, kneeL = 16f + 4f * fwd + 8f * back, footL = -28f - 6f * back,
+                thighR = 4f + 20f * fwd - 10f * back, kneeR = 22f + 4f * fwd + 6f * back, footR = -30f - 6f * back,   // (a light pike forward: a deep one sat him in the air)
                 armL = 165f, elbowL = 14f, armR = 176f, elbowR = 6f,
             };
         }
+
+        /// <summary>Where the swing has carried the legs: a spring after the swing's speed (they lag, overshoot, settle).</summary>
+        public float SwingLegs => swingLegs;
+        float swingLegs, swingLegsVel;
 
         /// <summary>
         /// Mantle, keyed to <see cref="ClimbRiseOver"/> so the hands stay on the lip: the pull-up (elbows bend, the chin
@@ -585,16 +647,44 @@ namespace CrimsonVeil.Player
                 armL = -6f, elbowL = 28f, armR = -10f, elbowR = 32f,
                 shoulderL = -6f, shoulderR = -6f, wristL = -60f, wristR = -60f,
             };
+            // rising on the knee, the trailing leg swings through and steps up beside it
+            var step = new HeroPose
+            {
+                spine = 22f, chest = 10f, head = -8f, neck = -4f, bob = -0.03f,
+                thighL = 52f, kneeL = 70f, footL = 4f, thighR = 58f, kneeR = 92f, footR = 8f, toeR = 6f,
+                armL = 4f, elbowL = 26f, armR = -2f, elbowR = 28f,
+            };
             var up = new HeroPose
             {
                 spine = 6f, chest = 2f, thighL = 12f, kneeL = 16f, thighR = -5f, kneeR = 10f,
                 armL = 10f, elbowL = 20f, armR = 5f, elbowR = 25f,
             };
-            if (t < ClimbPullEnd) return HeroPose.Lerp(hang, chin, Mathf.SmoothStep(0f, 1f, t / ClimbPullEnd));
-            if (t < ClimbPressEnd) return HeroPose.Lerp(chin, press, Mathf.SmoothStep(0f, 1f, (t - ClimbPullEnd) / (ClimbPressEnd - ClimbPullEnd)));
-            if (t < ClimbKneeEnd) return HeroPose.Lerp(press, knee, Mathf.SmoothStep(0f, 1f, (t - ClimbPressEnd) / (ClimbKneeEnd - ClimbPressEnd)));
-            return HeroPose.Lerp(knee, up, Mathf.SmoothStep(0f, 1f, (t - ClimbKneeEnd) / (1f - ClimbKneeEnd)));
+            var keys = new[] { hang, chin, press, knee, step, up };
+            var times = new[] { 0f, ClimbPullEnd, ClimbPressEnd, ClimbKneeEnd, ClimbStep, 1f };
+            var p = HeroPose.Spline(keys, times, t);
+
+            // pulling up, the feet scrabble up the wall in turns (they push, they find no hold), then hang loose
+            if (t < ClimbPullEnd)
+            {
+                float u = t / ClimbPullEnd;
+                float env = Mathf.Sin(u * Mathf.PI);
+                float kick = Mathf.Sin(u * Mathf.PI * 3f) * env;
+                p.thighL += 16f * kick; p.kneeL += 14f * Mathf.Abs(kick);
+                p.thighR -= 16f * kick; p.kneeR += 14f * Mathf.Abs(kick);
+                p.footL += 10f * kick; p.footR -= 10f * kick;
+            }
+            // pressing over the top, the trailing leg hangs and swings a little with the heave
+            else if (t < ClimbKneeEnd)
+            {
+                float u = Mathf.InverseLerp(ClimbPullEnd, ClimbKneeEnd, t);
+                float swing = Mathf.Sin(u * Mathf.PI * 2f) * Mathf.Sin(u * Mathf.PI);
+                p.thighR += 8f * swing; p.kneeR += 6f * Mathf.Abs(swing);
+            }
+            return p;
         }
+
+        /// <summary>Climb progress at which the trailing leg has stepped up beside the knee.</summary>
+        public const float ClimbStep = 0.9f;
 
         /// <summary>How firmly the hands are kept on the lip (0..1): all the way while hanging, pulling up and pressing over;
         /// they let go as the knee comes up and the hero stands.</summary>

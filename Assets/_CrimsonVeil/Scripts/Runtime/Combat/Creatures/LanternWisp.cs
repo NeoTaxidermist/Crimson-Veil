@@ -16,6 +16,9 @@ namespace CrimsonVeil.Combat
         [SerializeField] float lookAhead = 10f;
 
         public bool IsCaught { get; private set; }
+
+        /// <summary>Harmless: it lures and lights, it never makes a fight.</summary>
+        public override bool Fights => false;
         public Vector3 LureTarget { get; private set; }
 
         Light glow;

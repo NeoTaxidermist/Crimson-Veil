@@ -8,7 +8,7 @@ namespace CrimsonVeil.Combat
     /// Uses a trigger capsule so the hero can pass through it (contact still hurts).
     /// </summary>
     [RequireComponent(typeof(CapsuleCollider))]
-    public sealed class Enemy : MonoBehaviour, IDamageable, IStaggerable
+    public sealed class Enemy : MonoBehaviour, IDamageable, IStaggerable, IHostile
     {
         [SerializeField] EnemyBrainSettings brain = new EnemyBrainSettings();
         [SerializeField] float maxHealth = 3f;
@@ -45,6 +45,22 @@ namespace CrimsonVeil.Combat
         }
 
         void Start() => target = CombatTarget.Find();
+
+        /// <summary>It has noticed the hero: chasing, winding up, striking, recovering, reeling from his blow.</summary>
+        public bool EngagedWithHero
+        {
+            get
+            {
+                if (Health == null || Health.IsDead) return false;
+                var s = Brain.State;
+                return s == EnemyState.Chase || s == EnemyState.Windup || s == EnemyState.Strike
+                       || s == EnemyState.Recover || s == EnemyState.Hurt;
+            }
+        }
+        public bool IsAlive => Health != null && !Health.IsDead;
+        public Vector3 HostilePosition => transform.position + Vector3.up;
+        void OnEnable() => Hostiles.Register(this);
+        void OnDisable() => Hostiles.Unregister(this);
 
         void Update()
         {

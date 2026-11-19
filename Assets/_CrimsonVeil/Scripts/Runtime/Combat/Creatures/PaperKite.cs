@@ -25,6 +25,9 @@ namespace CrimsonVeil.Combat
         LineRenderer tail;
         readonly Vector3[] tailPoints = new Vector3[6];
         bool landed, engaged;
+
+        /// <summary>Within its thread's reach of the hero: rearing back or swooping at him.</summary>
+        public override bool EngagedWithHero => engaged && !Free && !IsDead;
         float windup, rearAngle;
         /// <summary>Seconds the kite rears back before its first swoop at a hero come within reach.</summary>
         public const float SwoopWarning = 0.5f;

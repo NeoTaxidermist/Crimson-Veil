@@ -77,6 +77,8 @@ namespace CrimsonVeil.Combat
             if (!IsAlive) return false;
 
             float attackerX = info.source != null ? info.source.transform.position.x : info.point.x;
+            // a blow from a hostile reaching him (taken, blocked, parried or by the scarf) is an exchange: a fight
+            if (!Model.IsInvulnerable) Hostiles.NoteHitFrom(info.source);
             int facing = player.Motor != null ? player.Motor.Facing : 1;
             if (Model.IsInvulnerable) return false;
 

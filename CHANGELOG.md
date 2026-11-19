@@ -5,6 +5,33 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.41.0] – 2026-11-19
+### Jak hra pozná boj
+- **Boj je vztah s konkrétním nepřítelem, ne vzdálenost** (`CombatState`, `Hostiles`). Hrdina je v boji, když platí aspoň jedno:
+  - nepřítel o hrdinovi ví, je do 12 m a vidí na něj (mezi nimi není zeď);
+  - před chvílí si vyměnili úder (2,5 s): hrdinova rána zasáhla nepřítele, nebo nepřítelova rána zasáhla hrdinu, byla vykryta nebo ji schytala šála. Výměna úderů zapne boj i na dálku nebo přes zeď.
+- **Konec boje:**
+  - 2 s poté, co hrdinu nikdo nepronásleduje a nepadla rána;
+  - okamžitě, když v okruhu 18 m nezůstal žádný živý nepřítel (všichni padli, nebo hrdina utekl).
+- **Každý nepřítel hlásí, jestli o hrdinovi ví** (`IHostile.EngagedWithHero`):
+
+  | Nepřítel | Kdy o hrdinovi ví |
+  |---|---|
+  | zjev | pronásleduje, napřahuje se, útočí, vzpamatovává se, nebo je zasažený (ne na hlídce) |
+  | mnich se štítem | vidí hrdinu před sebou na své úrovni, nebo je uprostřed výpadu |
+  | plazivý kořen | spadl z kořene a je u hrdiny |
+  | vrány a popelavá můra | loví |
+  | papírový drak | vzpíná se nebo se snáší na hrdinu |
+  | oběšenec | rozhoupává se na hrdinu |
+  | stínový dvojník | je vzhůru |
+
+  Lucernová bludička je neškodná (láká a svítí k hádankám) a boj nikdy nezapne.
+- **V boji se šála víc ježí**, kruhy nesvítí a bič vždycky udeří.
+- Vyzkoušeno v úrovni: u zjeva, který pronásledoval hrdinu u startu, a u vran (x 64–76) boj je. V testovací místnosti a u hlídkujících nepřátel, kteří hrdinu ještě nezaregistrovali, boj není.
+- Testy:
+  - `CombatStateTests`: kdo je v boji, výměna úderů, konec, nikdo poblíž;
+  - `GrappleSwingPlayTests`: zjev za zdí není boj, dokud nepadne rána; nevšímavý zjev pár metrů od hrdiny není boj.
+
 ## [0.40.2] – 2026-11-19
 ### V boji se kruhy nechytají
 - **Bič se v boji vždycky použije jako zbraň.** Kruhy slouží k pohybu a hádankám, ne k boji. Když je do 6 m živý nepřítel, žádný kruh se nerozsvítí a seslaný bič udeří, i když nad hrdinou visí kruh a i ve skoku (`VeilController.InCombat`). Boj trvá ještě 1 s po posledním nepříteli v dosahu, aby kruhy na hranici neblikaly.

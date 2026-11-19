@@ -8,7 +8,7 @@ namespace CrimsonVeil.Combat
     /// It shadows the hero from above and every few seconds dives straight through him.
     /// Every crow is its own target: the whip's long lash downs several at once, a sword one at a time.
     /// </summary>
-    public sealed class CrowSwarm : MonoBehaviour
+    public sealed class CrowSwarm : MonoBehaviour, IHostile
     {
         [SerializeField] float sightRange = 13f;
         [SerializeField] float hoverHeight = 2.6f;
@@ -46,6 +46,13 @@ namespace CrimsonVeil.Combat
         }
 
         void Start() => target = CombatTarget.Find();
+
+        /// <summary>Hunting: it shadows the hero from above and dives at him.</summary>
+        public bool EngagedWithHero => hunting && crows.Count > 0;
+        public bool IsAlive => crows.Count > 0;
+        public Vector3 HostilePosition => centre;
+        void OnEnable() => Hostiles.Register(this);
+        void OnDisable() => Hostiles.Unregister(this);
 
         public void OnCrowDown(Crow c)
         {

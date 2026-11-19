@@ -17,6 +17,9 @@ namespace CrimsonVeil.Combat
 
         /// <summary>True once the hero has come close and the shadow started following.</summary>
         public bool IsAwake { get; private set; }
+
+        /// <summary>Awake, it follows the hero (a fight that is won by leading it into a fall).</summary>
+        public override bool EngagedWithHero => IsAwake && !IsDead && HasTarget;
         public float Delay => delay;
 
         struct Frame

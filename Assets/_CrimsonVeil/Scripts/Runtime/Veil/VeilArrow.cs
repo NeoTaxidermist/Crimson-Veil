@@ -61,6 +61,7 @@ namespace CrimsonVeil.Veil
                     };
                     if (target.ReceiveHit(info))
                     {
+                        if (hit.collider.GetComponentInParent<CrimsonVeil.Combat.IHostile>() != null) CrimsonVeil.Combat.Hostiles.NoteExchange();
                         CombatFx.HitStop(0.04f);
                         CombatFx.Burst(hit.point, -velocity, CombatFx.Crimson, 14, 4f);
                     }

@@ -8,7 +8,7 @@ namespace CrimsonVeil.Combat
     /// A creature only implements <see cref="Tick"/> (its behaviour) and optionally filters hits.
     /// Visuals are built in the editor by each creature's static <c>BuildVisual</c> and found by name at runtime.
     /// </summary>
-    public abstract class CreatureBase : MonoBehaviour, IDamageable
+    public abstract class CreatureBase : MonoBehaviour, IDamageable, IHostile
     {
         [SerializeField] protected float maxHealth = 2f;
         [SerializeField] protected float contactDamage = 0.5f;
@@ -26,6 +26,16 @@ namespace CrimsonVeil.Combat
         float contactCooldown;
 
         protected virtual void Awake() => Health = new HealthModel(maxHealth, 0.12f);
+
+        /// <summary>Does it fight the hero at all? (A harmless lure does not: it never makes a fight.)</summary>
+        public virtual bool Fights => true;
+        /// <summary>It is after the hero now (see <see cref="IHostile.EngagedWithHero"/>).</summary>
+        public virtual bool EngagedWithHero => false;
+        public bool IsAlive => !IsDead;
+        public virtual Vector3 HostilePosition => transform.position + Vector3.up * 0.6f;
+
+        protected virtual void OnEnable() { if (Fights) Hostiles.Register(this); }
+        protected virtual void OnDisable() => Hostiles.Unregister(this);
 
         protected virtual void Start() => target = CombatTarget.Find();
 

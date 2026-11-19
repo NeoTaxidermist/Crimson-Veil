@@ -75,6 +75,7 @@ namespace CrimsonVeil.Combat
                     if (target.ReceiveHit(info))
                     {
                         veil.NotifyHitLanded(); // feeds the scarf; a downward spear bounces the hero up
+                        if (col.GetComponentInParent<IHostile>() != null) Hostiles.NoteExchange();
                         Hit?.Invoke(target, info);
                         // the finisher lands heavier: a longer stop, a harder shake, a bigger spray
                         float heavy = blow.finisher ? 1.6f : 1f;

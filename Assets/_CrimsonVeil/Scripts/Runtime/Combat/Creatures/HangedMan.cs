@@ -16,6 +16,9 @@ namespace CrimsonVeil.Combat
         [SerializeField] float damping = 0.25f;
 
         public bool Fallen { get; private set; }
+
+        /// <summary>He swings himself at the hero while the hero is within his reach.</summary>
+        public override bool EngagedWithHero => !Fallen && !IsDead && HasTarget && Mathf.Abs(target.Position.x - pivot.x) < reach;
         public float Angle => angle;
 
         Vector3 pivot;

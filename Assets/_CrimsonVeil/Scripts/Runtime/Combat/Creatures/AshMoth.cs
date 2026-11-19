@@ -105,6 +105,9 @@ namespace CrimsonVeil.Combat
         bool hunting;
         float wingPhase, hurtSpin;
 
+        /// <summary>Hunting: it hangs over the hero and shakes its ash on him.</summary>
+        public override bool EngagedWithHero => hunting && !IsDead;
+
         void SetWings(float beat)
         {
             // 0 = wings up and open to the camera, larger = folded down / foreshortened.

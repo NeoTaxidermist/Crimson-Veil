@@ -200,6 +200,7 @@ namespace CrimsonVeil.Tests
         public IEnumerator InAFight_TheWhipStrikes_AndTheRingStaysDark()
         {
             var veil = player.AddComponent<VeilController>();
+            player.AddComponent<CrimsonVeil.Combat.PlayerHealth>();   // (something for the enemy to be after)
             var low = new GameObject("LowRing");
             low.transform.SetParent(root.transform);
             low.transform.position = new Vector3(-3f, 6f, 0f);
@@ -221,10 +222,51 @@ namespace CrimsonVeil.Tests
             Assert.AreEqual(0, veil.Combo.Step, "it struck: the first blow of a combo");
             Assert.AreEqual(VeilForm.Whip, veil.Combo.Current.form);
 
-            Object.Destroy(foe);   // the fight is over
-            yield return Wait(VeilController.CombatMemory + 0.6f);
+            Object.Destroy(foe);   // the fight is over: no hostile left near, it ends at once
+            yield return Wait(0.6f);
             Assert.IsFalse(veil.InCombat);
             Assert.IsNotNull(veil.GrappleCandidate, "the ring is for getting about again");
+        }
+
+        CrimsonVeil.Combat.Enemy SpawnFoe(Vector3 at)
+        {
+            var foe = new GameObject("TestWraith");
+            foe.transform.SetParent(root.transform);
+            foe.transform.position = at;
+            var cap = foe.AddComponent<CapsuleCollider>();
+            cap.center = new Vector3(0f, 1f, 0f); cap.height = 2f; cap.radius = 0.4f;
+            var e = foe.AddComponent<CrimsonVeil.Combat.Enemy>();
+            e.Brain.Settings.windupTime = 10f;   // passive
+            return e;
+        }
+
+        [UnityTest]
+        public IEnumerator AnEnemyAfterTheHero_BehindAWall_IsNoFight_UntilBlowsAreExchanged()
+        {
+            var veil = player.AddComponent<VeilController>();
+            player.AddComponent<CrimsonVeil.Combat.PlayerHealth>();   // (something for the enemy to be after)
+            Box(new Vector3(-4.6f, 1.5f, 0f), new Vector3(0.4f, 3f, 4f));   // a wall between them
+            var e = SpawnFoe(new Vector3(-3.6f, 0f, 0f));
+            yield return Wait(0.6f);
+            Assert.IsTrue(e.EngagedWithHero, "the wraith is after him");
+            Assert.IsFalse(veil.InCombat, "but it can't see him through the wall: no fight");
+            CrimsonVeil.Combat.Hostiles.NoteExchange();   // a blow passed between them all the same (an arrow over the wall)
+            yield return Wait(0.3f);
+            Assert.IsTrue(veil.InCombat, "an exchange of blows is a fight");
+            yield return Wait(CrimsonVeil.Combat.CombatState.ExchangeMemory + 0.4f);
+            Assert.IsFalse(veil.InCombat, "it fades once no more blows pass and no one sees him");
+        }
+
+        [UnityTest]
+        public IEnumerator AnEnemyThatHasNotNoticedHim_IsNoFight()
+        {
+            var veil = player.AddComponent<VeilController>();
+            player.AddComponent<CrimsonVeil.Combat.PlayerHealth>();   // (something for the enemy to be after)
+            Box(new Vector3(-3f, 4f, 0f), new Vector3(6f, 1f, 4f));       // a ledge above him, top at 4.5
+            var e = SpawnFoe(new Vector3(-3f, 4.5f, 0f));   // up there it patrols: he is out of its sight, a few metres off
+            yield return Wait(0.6f);
+            Assert.IsFalse(e.EngagedWithHero, "on patrol, it hasn't noticed him");
+            Assert.IsFalse(veil.InCombat, "a near enemy that hasn't noticed him is no fight");
         }
     }
 }

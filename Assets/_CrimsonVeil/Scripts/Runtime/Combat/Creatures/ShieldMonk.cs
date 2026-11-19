@@ -23,6 +23,11 @@ namespace CrimsonVeil.Combat
         public enum State { Walk, Windup, Bash, Recover }
         public State Current { get; private set; }
 
+        /// <summary>He sees the hero (in front of him, on his level) or is in the middle of a bash.</summary>
+        public override bool EngagedWithHero => !IsDead && HasTarget
+            && (Current != State.Walk || (Mathf.Abs(target.Position.x - transform.position.x) < sightRange
+                                          && Mathf.Abs(target.Position.y - transform.position.y) < 3f));
+
         float home, stateTime, disarmTimer, turnTimer, fall;
         Transform shield, visual;
         CreatureTurn turn = new CreatureTurn(1);

@@ -620,21 +620,57 @@ namespace CrimsonVeil.Veil
         public float Danger { get; private set; }
 
         /// <summary>
-        /// A living enemy is within <see cref="CombatRadius"/> (or was a moment ago): a fight. In a fight the rings are
-        /// left alone - they are for getting about and for puzzles - so the whip always strikes and no ring lights up.
+        /// The hero is in a fight (<see cref="CrimsonVeil.Combat.CombatState"/>): a hostile is after him and can see him, or
+        /// blows were exchanged a moment ago. In a fight the rings are left alone - they are for getting about and for
+        /// puzzles - so the whip always strikes and no ring lights up; the scarf bristles.
         /// </summary>
-        public bool InCombat => sinceFoe < CombatMemory;
-        /// <summary>How near (m) a living enemy makes a fight.</summary>
-        public const float CombatRadius = 6f;
-        /// <summary>Seconds a fight lasts after the last enemy is gone or out of range (no flicker at its edge).</summary>
-        public const float CombatMemory = 1f;
-        float sinceFoe = 99f;
+        public bool InCombat => Fight.InCombat;
+        /// <summary>The hero's sense of a fight: hostiles after him and in sight, blows exchanged.</summary>
+        public CrimsonVeil.Combat.CombatState Fight { get; } = new CrimsonVeil.Combat.CombatState();
+        int seenExchanges = -1;
+        bool engagedInSight, hostileNear;
         /// <summary>0..1 pull of a secret nearby, and the direction to it (the loose scarf leans that way).</summary>
         public float HintPull { get; private set; }
         public Vector2 HintDirection { get; private set; }
         const float DangerRadius = 6f;
         float senseTimer, dangerTarget;
-        bool foeNear;
+        readonly RaycastHit[] sightHits = new RaycastHit[8];
+
+        /// <summary>Is a hostile after the hero and in his sight, is any living one near at all?</summary>
+        void SenseFight(Vector3 a)
+        {
+            engagedInSight = false;
+            hostileNear = false;
+            var all = CrimsonVeil.Combat.Hostiles.All;
+            for (int i = 0; i < all.Count; i++)
+            {
+                var h = all[i];
+                if (h == null || (h as UnityEngine.Object) == null || !h.IsAlive) continue;
+                Vector3 p = h.HostilePosition;
+                float d = Vector2.Distance(p, a);
+                if (d > CrimsonVeil.Combat.CombatState.NearRadius) continue;
+                hostileNear = true;
+                if (engagedInSight || d > CrimsonVeil.Combat.CombatState.EngageRadius || !h.EngagedWithHero) continue;
+                if (InSight(a, p, h.transform)) engagedInSight = true;
+            }
+        }
+
+        /// <summary>No wall between the hero's neck and the hostile (its own colliders and his don't count).</summary>
+        bool InSight(Vector3 from, Vector3 to, Transform hostile)
+        {
+            Vector3 d = to - from;
+            float len = d.magnitude;
+            if (len < 0.01f) return true;
+            int n = Physics.RaycastNonAlloc(from, d / len, sightHits, len, ~0, QueryTriggerInteraction.Ignore);
+            var root = transform.root;
+            for (int i = 0; i < n; i++)
+            {
+                var t = sightHits[i].collider.transform;
+                if (t.IsChildOf(root) || t.IsChildOf(hostile)) continue;
+                return false;
+            }
+            return true;
+        }
         bool relicsChecked;
         readonly Collider[] senseBuffer = new Collider[24];
 
@@ -672,12 +708,14 @@ namespace CrimsonVeil.Veil
                     if (!alive) continue;
                     float d = Vector2.Distance(c.ClosestPoint(a), a);
                     dangerTarget = Mathf.Max(dangerTarget, 1f - d / DangerRadius);
-                    if (d <= CombatRadius) foeNear = true;
                 }
-                if (foeNear) sinceFoe = 0f;
-                foeNear = false;
+                SenseFight(a);
+                if (Fight.InCombat) dangerTarget = Mathf.Max(dangerTarget, 0.45f);   // in a fight the scarf bristles
             }
-            sinceFoe += dt;
+            int exchanges = CrimsonVeil.Combat.Hostiles.Exchanges;
+            if (seenExchanges >= 0 && exchanges != seenExchanges) Fight.Exchange();
+            seenExchanges = exchanges;
+            Fight.Tick(dt, engagedInSight, hostileNear);
             Danger = Mathf.MoveTowards(Danger, dangerTarget, dt * 3f);
         }
 

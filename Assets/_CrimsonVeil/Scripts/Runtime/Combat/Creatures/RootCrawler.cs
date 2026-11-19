@@ -17,6 +17,10 @@ namespace CrimsonVeil.Combat
 
         public enum State { Cling, Drop, Skitter, Pinned }
         public State Current { get; private set; }
+
+        /// <summary>Dropped from its root and after the hero (or pinned, still fighting).</summary>
+        public override bool EngagedWithHero => !IsDead && Current != State.Cling && HasTarget
+                                                && Mathf.Abs(target.Position.x - transform.position.x) < 12f;
         public int Facing { get; private set; } = 1;
 
         Vector3 velocity;

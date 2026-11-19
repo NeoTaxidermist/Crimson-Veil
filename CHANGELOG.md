@@ -5,6 +5,21 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.42.1] – 2026-11-19
+### Na laně se neotočí zády ke směru houpání
+- **Opraveno: při rozhoupávání se hrdina otočil a houpal se po zádech.** Otáčel se hned při stisku šipky, i když se zrovna houpal opačným směrem, takže letěl zády napřed, dokud se houpání neobrátilo.
+- Teď se natočí směrem šipky až ve chvíli, kdy se tím směrem opravdu houpe (aspoň 0,3 m/s, `MotorLogic.SwingPumpSpeed`). Šipka držená proti houpání ho zatím neotočí. Puštěné šipky směr nemění.
+- Testy (`GrappleSwingLogicTests`):
+  - šipka proti houpání hrdinu neotočí, po směru houpání ano;
+  - při přepnutí šipky proti rychlému houpání se otočí až s obrácením houpání a nikdy zády ke směru letu.
+
+  Se starým okamžitým otočením oba testy selžou.
+- **Hrdina si pamatuje poslední šipku.** Když šipku pustí dřív, než se houpání obrátí jejím směrem, otočí se po ní, jakmile se tam rozhoupe. Pak zůstává otočený po poslední šipce.
+- **Opraveno: při puštění z lana se hrdina sám otočil.** Hra mu po výskoku nastavila směr podle směru letu, nebo podle směru, kterým chytil kruh. Když se zrovna houpal zády napřed, při puštění se najednou otočil kolem. Teď si při puštění ponechá směr, kterým se dívá (`MotorLogic.FaceTo`).
+- Test `HeroMoveSetPlayTests` (houpání):
+  - při dohoupávání se otočí nejvýš jednou, po poslední šipce, a pak tak zůstane;
+  - když pustí lano zády napřed, směr se nezmění. Bez opravy se otočil z −1 na 1.
+
 ## [0.42.0] – 2026-11-19
 ### Tělo leží na zemi (kontakt se zemí)
 - **Opraveno: ve skluzu prošla přední noha podlahou.** Klip skluzu je na podlaze, ale ve hře se z 80 % míchá s procedurální pózou skluzu, která má nohy jinak. Ze směsi pata prošla podlahou o 4–17 cm.

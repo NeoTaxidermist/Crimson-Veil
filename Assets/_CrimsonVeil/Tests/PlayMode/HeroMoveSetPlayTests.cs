@@ -547,17 +547,23 @@ namespace CrimsonVeil.Tests
                 input.moveX = i % 2 == 0 ? 1f : -1f;
                 yield return Wait(0.8f, watch);
             }
-            Assert.AreEqual(-1, controller.BodyFacing, "pumping, he faces the way the arrow points");
             input.moveX = 0f;
-            int swungOut = controller.BodyFacing; bool turnedOnHisOwn = false;
-            yield return Wait(2.5f, () => turnedOnHisOwn |= controller.BodyFacing != swungOut);
-            Assert.IsFalse(turnedOnHisOwn, "swinging out on his own he doesn't turn round");
+            // swinging out on his own: he comes round to the last arrow's way (once he swings that way) and stays so
+            int turnsOnHisOwn = 0, lastFacing = controller.BodyFacing;
+            yield return Wait(2.5f, () => { if (controller.BodyFacing != lastFacing) { turnsOnHisOwn++; lastFacing = controller.BodyFacing; } });
+            Assert.LessOrEqual(turnsOnHisOwn, 1, "swinging out on his own he doesn't turn round and round");
+            Assert.AreEqual(-1, controller.BodyFacing, "he faces the way of the last arrow he pumped with");
             Assert.Greater(widest, 0.35f, "the keys swing him up");
             Assert.Less(offRope, 0.2f, "both fists on the rope: " + worst);
             Assert.Contains(HeroMocap.Swing, new List<string>(played), "the captured swing");
+            // let go as he swings back, his back to the way he flies (he turned round to the way he flew as he let go)
+            yield return Until(() => controller.Motor.SwingVelocity.x * controller.BodyFacing < -1f, 3f, watch);
+            Assert.Less(controller.Motor.SwingVelocity.x * controller.BodyFacing, -1f, "swinging back");
+            int beforeLetGo = controller.BodyFacing;
             input.jump = true;
             yield return Wait(0.2f);
             Assert.IsFalse(controller.Motor.IsSwinging, "let go");
+            Assert.AreEqual(beforeLetGo, controller.BodyFacing, "letting go he keeps the way he faces (he turned round as he let go)");
             Assert.IsNull(veil.Latched);
         }
 

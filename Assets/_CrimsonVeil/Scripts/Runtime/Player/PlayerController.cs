@@ -353,6 +353,10 @@ namespace CrimsonVeil.Player
 
         int bodyFacing = 1;
         float lastMoveX;
+        /// <summary>On the whip: the way of the last arrow he pumped with (0: none yet) - he turns that way as he swings
+        /// that way, even with the arrow let go before the swing came round.</summary>
+        int swingWant;
+        bool wasSwinging;
         /// <summary>Which way the body faces (the game's facing, except on the whip: see <see cref="MotorLogic.SwingFacing"/>).</summary>
         public int BodyFacing => bodyFacing;
 
@@ -360,7 +364,20 @@ namespace CrimsonVeil.Player
         {
             if (visualRoot == null) return;
             // on the whip he faces the way he pumps (the body only: the game's facing - and the whip - stay)
-            bodyFacing = Motor.IsSwinging ? MotorLogic.SwingFacing(lastMoveX, bodyFacing) : Motor.Facing;
+            if (Motor.IsSwinging)
+            {
+                if (!wasSwinging) swingWant = 0;
+                if (Mathf.Abs(lastMoveX) > 0.3f) swingWant = lastMoveX > 0f ? 1 : -1;
+                bodyFacing = MotorLogic.SwingFacing(swingWant, Motor.SwingVelocity.x, bodyFacing);
+            }
+            else
+            {
+                // letting go of the whip he keeps the way he faces (the game's facing was the one he caught the ring with:
+                // he turned round as he let go)
+                if (wasSwinging) Motor.FaceTo(bodyFacing);
+                bodyFacing = Motor.Facing;
+            }
+            wasSwinging = Motor.IsSwinging;
             float targetYaw = bodyFacing > 0 ? 90f : -90f;
             yaw = Mathf.LerpAngle(yaw, targetYaw, MovementMath.Damp(turnSharpness, dt));
             // On the whip the whole body hangs along it, pivoting round the hands.

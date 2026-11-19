@@ -236,12 +236,24 @@ namespace CrimsonVeil.Player
         public float SwingAngularVelocity { get; private set; }
         public bool IsSwinging => State == MotorState.Swinging;
         /// <summary>
-        /// Which way the body faces on the whip: the way the arrow he pumps the swing with points - turning into the
-        /// swing he gives himself. Swinging out on his own, or hanging still, he keeps the way he faces (turning past
-        /// each end of a free swing he twisted round and round, even in the sway of hanging still). Only the body turns
-        /// - <see cref="Facing"/> stays, so the whip held to its ring doesn't flip round with him.
+        /// Which way the body faces on the whip: he turns into the swing he gives himself - the way the arrow he pumps
+        /// with points, once he swings that way (pressed against the swing, he turned at once and swung on his back
+        /// until it came round). Swinging out on his own, or hanging still, he keeps the way he faces (turning past each
+        /// end of a free swing he twisted round and round, even in the sway of hanging still). Only the body turns -
+        /// <see cref="Facing"/> stays, so the whip held to its ring doesn't flip round with him.
         /// </summary>
-        public static int SwingFacing(float moveX, int current) => Mathf.Abs(moveX) > 0.3f ? (moveX > 0f ? 1 : -1) : current;
+        public static int SwingFacing(float moveX, float swingVx, int current)
+        {
+            if (Mathf.Abs(moveX) <= 0.3f) return current;
+            int side = moveX > 0f ? 1 : -1;
+            return swingVx * side > SwingPumpSpeed ? side : current;
+        }
+
+        /// <summary>Faces this way (the body's way on the whip, kept as he lets go of it).</summary>
+        public void FaceTo(int side) { if (side != 0) Facing = side > 0 ? 1 : -1; }
+
+        /// <summary>How fast (m/s) he must swing the arrow's way before he turns that way.</summary>
+        public const float SwingPumpSpeed = 0.3f;
         float carryTimer;
 
         /// <summary>Hands position for a given angle/length around the anchor.</summary>

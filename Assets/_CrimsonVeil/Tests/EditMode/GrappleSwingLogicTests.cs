@@ -76,7 +76,7 @@ namespace CrimsonVeil.Tests
                 {
                     var v = m.Tick(dt, new MotorInput(), At(grip));
                     grip += v * dt;
-                    body = MotorLogic.SwingFacing(0f, body);
+                    body = MotorLogic.SwingFacing(0f, m.SwingVelocity.x, body);
                     Assert.AreEqual(1, body, $"no arrow held (from {start}): he doesn't turn round");
                     Assert.AreEqual(facing, m.Facing, "the whip on its ring doesn't flip round");
                 }
@@ -84,12 +84,38 @@ namespace CrimsonVeil.Tests
         }
 
         [Test]
-        public void PumpingTheSwing_TheArrowTurnsHimThatWay_AtOnce()
+        public void PumpingTheSwing_HeTurnsTheArrowsWay_AsHeSwingsThatWay()
         {
-            Assert.AreEqual(-1, MotorLogic.SwingFacing(-1f, 1), "pumping to the left: he turns left");
-            Assert.AreEqual(1, MotorLogic.SwingFacing(1f, -1), "and back");
-            Assert.AreEqual(-1, MotorLogic.SwingFacing(0.2f, -1), "a light touch is no pump");
-            Assert.AreEqual(-1, MotorLogic.SwingFacing(0f, -1), "the arrow let go: he keeps the way he faces");
+            Assert.AreEqual(-1, MotorLogic.SwingFacing(-1f, -2f, 1), "pumping to the left as he swings left: he turns left");
+            Assert.AreEqual(1, MotorLogic.SwingFacing(-1f, 2f, 1), "pressed against the swing: not yet (he'd swing on his back)");
+            Assert.AreEqual(1, MotorLogic.SwingFacing(1f, 2f, -1), "and back");
+            Assert.AreEqual(-1, MotorLogic.SwingFacing(0.2f, 2f, -1), "a light touch is no pump");
+            Assert.AreEqual(-1, MotorLogic.SwingFacing(0f, 3f, -1), "the arrow let go: he keeps the way he faces");
+        }
+
+        [Test]
+        public void PumpingAgainstTheSwing_HeNeverSwingsOnHisBack_TheArrowHeld()
+        {
+            var m = new MotorLogic(new MotorSettings());
+            var grip = MotorLogic.SwingPoint(Anchor, 5f, -0.6f);   // swinging off to the right
+            Assert.IsTrue(m.BeginSwing(Anchor, grip));
+            const float dt = 1f / 60f;
+            int body = 1; bool turned = false, against = false;
+            // pumped to the right, then - as he swings fast to the right - the arrow turned to the left, against the swing
+            for (float t = 0f; t < 8f; t += dt)
+            {
+                if (!against && t > 2f && m.SwingVelocity.x > 2f) against = true;
+                float key = against ? -1f : 1f;
+                var v = m.Tick(dt, new MotorInput { moveX = key }, At(grip));
+                grip += v * dt;
+                int before = body;
+                body = MotorLogic.SwingFacing(key, m.SwingVelocity.x, body);
+                if (body != before) turned = true;
+                if (Mathf.Abs(m.SwingVelocity.x) > 1f && body != before)
+                    Assert.AreEqual(m.SwingVelocity.x > 0f ? 1 : -1, body, "he turns to face the way he swings, never his back to it");
+            }
+            Assert.IsTrue(turned, "the swing came round to the arrow's way, and he with it");
+            Assert.AreEqual(-1, body);
         }
 
         [Test]

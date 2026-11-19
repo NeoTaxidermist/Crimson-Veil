@@ -130,6 +130,9 @@ namespace CrimsonVeil.Player
         /// <summary>Sliding along the ground; <see cref="slideProgress"/> 0..1 through it.</summary>
         public bool sliding;
         public float slideProgress;
+        /// <summary>Rolling out of a hard landing; <see cref="rollProgress"/> 0..1 through it.</summary>
+        public bool rolling;
+        public float rollProgress;
     }
 
     /// <summary>

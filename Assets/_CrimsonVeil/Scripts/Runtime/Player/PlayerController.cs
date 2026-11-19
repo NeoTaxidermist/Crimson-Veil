@@ -133,7 +133,7 @@ namespace CrimsonVeil.Player
             };
 
             Vector2 v = Motor.Tick(dt, input, contacts);
-            SetLow(Motor.IsCrouching || Motor.IsSliding);
+            SetLow(Motor.IsCrouching || Motor.IsSliding || Motor.IsRolling);
 
             if (Motor.State == MotorState.Climbing)
             {
@@ -159,7 +159,14 @@ namespace CrimsonVeil.Player
         [Header("Crouch")]
         [Tooltip("Height of the body crouched or sliding (it passes under anything higher).")]
         [SerializeField] float crouchHeight = 1.0f;
-        float standHeight = -1f, standCenterY;
+        float standHeight = -1f, standCenterY, standStep;
+
+        /// <summary>
+        /// The step the body climbs while low (m). The controller lifts the body by its step offset to try a step: low,
+        /// under a ceiling hardly higher than the body (a 1.1 m tunnel), that lifted him into the tunnel's face and he
+        /// stuck at its mouth - a slide stopped dead, a crawl crept in a millimetre a frame.
+        /// </summary>
+        public const float LowStep = 0.04f;
 
         /// <summary>Is the body crouched low (crouching or sliding)?</summary>
         public bool IsLow { get; private set; }
@@ -179,10 +186,11 @@ namespace CrimsonVeil.Player
         /// <summary>Shrinks the body to the crouch height (feet where they are) or stands it up again.</summary>
         void SetLow(bool low)
         {
-            if (standHeight < 0f) { standHeight = controller.height; standCenterY = controller.center.y; }
+            if (standHeight < 0f) { standHeight = controller.height; standCenterY = controller.center.y; standStep = controller.stepOffset; }
             if (low == IsLow) return;
             IsLow = low;
             float h = low ? crouchHeight : standHeight;
+            controller.stepOffset = low ? Mathf.Min(standStep, LowStep) : standStep;
             controller.height = h;
             controller.center = new Vector3(controller.center.x, low ? standCenterY - (standHeight - h) * 0.5f : standCenterY, controller.center.z);
         }

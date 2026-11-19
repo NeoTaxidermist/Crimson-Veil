@@ -135,8 +135,24 @@ namespace CrimsonVeil.Player
         public const float InjuredBelow = 0.35f;
 
         /// <summary>A landing from a fall this high (m) is a hard one (the fall's speed is capped: a jump lands as fast
-        /// as a drop from a tower); from a run (m/s) he rolls out of it.</summary>
-        public const float HardLandingHeight = 5.5f, RollOutSpeed = 3f;
+        /// as a drop from a tower); from a run (m/s) he rolls out of it. Above the double jump's top (about 5.7 m):
+        /// at 5.5 m a double jump landed on the edge of it and now and then rolled on the spot.</summary>
+        public const float HardLandingHeight = 6.5f, RollOutSpeed = 3f;
+
+        /// <summary>
+        /// The part of the captured slide (0..1) he is down in: after it the capture gets up. The game's slide is all
+        /// low (and goes on crouched under a low ceiling), so it plays only this part; standing up is the game's.
+        /// </summary>
+        public const float SlideClipEnd = 0.45f;
+
+        /// <summary>The part of the captured landing roll (0..1) that is the roll; after it he is up and walks off.</summary>
+        public const float RollClipEnd = 0.78f;
+
+        /// <summary>
+        /// A blow aimed this steeply (degrees, up or down) on the ground: the arms and the trunk are the game's, which
+        /// cut where it aims; only the legs are the capture's (the captured cuts are all level).
+        /// </summary>
+        public const float SteepAim = 35f;
         public const float HardLandingTime = 0.75f, LandRollTime = 1.2f, WallJumpTime = 0.55f, HangCatchTime = 0.45f,
                            HurtTime = 0.55f, BlockTime = 0.5f, GetUpTime = 2.5f,
                            StaggerTime = 0.8f, TurnTime = 0.6f, StopTime = 0.8f;
@@ -204,8 +220,10 @@ namespace CrimsonVeil.Player
                     float level = 1f - Mathf.Clamp01(Mathf.Abs(s.attackAim) / 70f);
                     return new Choice { key = AirSlash, driven = true, time01 = s.attackT, weight = 0.75f * level, mask = Mask.NoHipsTurn };
                 }
-                // standing, the whole body fights; on the move only the waist up (the legs keep going)
+                // standing, the whole body fights; on the move only the waist up (the legs keep going); aimed steeply up
+                // or down only the legs
                 var mask = s.grounded && s.speed < 2f && !s.sliding ? Mask.Full : Mask.Upper;
+                if (Mathf.Abs(s.attackAim) >= SteepAim && s.attackForm != VeilForm.Shield) mask = Mask.Legs;
                 switch (s.attackForm)
                 {
                     case VeilForm.Sword:
@@ -233,14 +251,14 @@ namespace CrimsonVeil.Player
                 return new Choice { key = Fall, weight = 0.75f, mask = gear };
             }
             if (s.dashing) return new Choice { key = Dash, driven = true, time01 = c.dashProgress, weight = 0.6f, mask = gear };
-            if (s.sliding) return new Choice { key = Slide, driven = true, time01 = s.slideProgress, weight = 0.8f, mask = gear };
+            if (s.sliding) return new Choice { key = Slide, driven = true, time01 = s.slideProgress * SlideClipEnd, weight = 0.8f, mask = gear };
+            // rolling out of a hard landing (the game carries him forward: the capture rolls on the spot)
+            if (s.rolling) return new Choice { key = LandRoll, driven = true, time01 = s.rollProgress * RollClipEnd, weight = 0.85f, mask = gear };
             // a blow that got through staggers him back (a blow on the scarf or the shield only makes him flinch)
             if (c.sinceHurt < StaggerTime && s.speed < 2f && !(s.attacking && s.attackT >= 0f))   // (running off again, he runs)
                 return new Choice { key = Stagger, bySeconds = true, seconds = c.sinceHurt, weight = 0.85f, mask = gear };
             if (c.landFallHeight >= HardLandingHeight)
             {
-                if (c.landRunSpeed >= RollOutSpeed && c.sinceLanded < LandRollTime)
-                    return new Choice { key = LandRoll, bySeconds = true, seconds = c.sinceLanded, weight = 0.85f, mask = gear };
                 if (c.landRunSpeed < RollOutSpeed && c.sinceLanded < HardLandingTime && s.speed < 1f)
                     return new Choice { key = HardLanding, bySeconds = true, seconds = c.sinceLanded, weight = 0.8f, mask = gear };
             }

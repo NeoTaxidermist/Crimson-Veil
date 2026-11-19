@@ -47,6 +47,15 @@ namespace CrimsonVeil.Player
         public float slideEndSpeed = 3f;
         public float slideDuration = 0.5f;
 
+        [Header("Landing roll")]
+        [Tooltip("Landing from a fall this high (m) at a run, he rolls out of it (slower, a hard landing). Above the double jump's top (about 5.7 m): an ordinary double jump lands on its feet.")]
+        public float rollFromHeight = HeroMocap.HardLandingHeight;
+        [Tooltip("...at least this fast across (m/s).")]
+        public float rollFromSpeed = 3f;
+        [Tooltip("The roll carries him on for this long (s), slowing from the landing's speed to rollEndSpeed.")]
+        public float rollDuration = 0.8f;
+        public float rollEndSpeed = 2.5f;
+
         [Header("Wall")]
         [Tooltip("Pushing into a wall he first grips it, sliding this slowly...")]
         public float wallSlideSpeed = 2.3f;
@@ -159,6 +168,14 @@ namespace CrimsonVeil.Player
         public float SlideProgress => Settings.slideDuration > 0f ? 1f - Mathf.Clamp01(slideTimer / Settings.slideDuration) : 1f;
         public event Action Slid;
         float slideTimer;
+        /// <summary>Rolling out of a hard landing at a run: it carries him forward whatever the keys say.</summary>
+        public bool IsRolling => rollTimer > 0f;
+        /// <summary>0..1 through the landing roll.</summary>
+        public float RollProgress => Settings.rollDuration > 0f ? 1f - Mathf.Clamp01(rollTimer / Settings.rollDuration) : 1f;
+        public event Action Rolled;
+        /// <summary>How far (m) the last landing fell (from the top of the jump, or the ledge he dropped off).</summary>
+        public float LastFallHeight { get; private set; }
+        float rollTimer, rollSpeed, fallDrop;
         /// <summary>Seconds into the current wall slide (0 when not sliding down a wall).</summary>
         public float WallSlideTime { get; private set; }
         public bool IsJumping { get; private set; }
@@ -377,6 +394,7 @@ namespace CrimsonVeil.Player
             Velocity = velocity;
             stunTimer = Mathf.Max(stunTimer, stunTime);
             dashTimer = 0f;
+            rollTimer = 0f;
             IsJumping = false;
             State = MotorState.Normal;
             if (wasSwinging) SwingEnded?.Invoke(); // a hit knocks the hero off the whip
@@ -395,6 +413,8 @@ namespace CrimsonVeil.Player
             var s = Settings;
             if (dt <= 0f) return Velocity;
             IsGliding = false;
+            // (the fall is measured from the top of the jump, or from where he let go of a lip, a rope or a wall)
+            if (State != MotorState.Normal) fallDrop = 0f;
 
             if (stunTimer > 0f)
             {
@@ -470,12 +490,23 @@ namespace CrimsonVeil.Player
                 if (!wasGrounded && Velocity.y <= 0f)
                 {
                     IsJumping = false;
+                    LastFallHeight = fallDrop;
+                    // a hard landing at a run: he rolls out of it, carried on by the speed he came down with
+                    if (fallDrop >= s.rollFromHeight && Mathf.Abs(Velocity.x) >= s.rollFromSpeed && State == MotorState.Normal)
+                    {
+                        Facing = Velocity.x > 0f ? 1 : -1;
+                        rollSpeed = Mathf.Abs(Velocity.x);
+                        rollTimer = s.rollDuration;
+                        Rolled?.Invoke();
+                    }
                     Landed?.Invoke();
                 }
+                fallDrop = 0f;
             }
             else
             {
                 coyoteTimer -= dt;
+                fallDrop = Velocity.y > 0f ? 0f : fallDrop - Velocity.y * dt;
                 if (contacts.wallSide != 0)
                 {
                     lastWallSide = contacts.wallSide;
@@ -487,7 +518,7 @@ namespace CrimsonVeil.Player
             }
 
             bool locked = inputLockTimer > 0f;
-            if (hasInput && !IsDashing && !locked) Facing = inputSide;
+            if (hasInput && !IsDashing && !IsRolling && !locked) Facing = inputSide;
             // Planted: he stands his ground, turned the way the keys point (an attack from the spot), and doesn't step.
             if (input.stand && IsGrounded && !IsDashing)
             {
@@ -499,7 +530,7 @@ namespace CrimsonVeil.Player
             // (planted - Ctrl held - down aims a blow low instead: no crouching)
             bool downHeld = input.aimY < -0.5f && !input.stand;
             IsCrouching = IsGrounded && State == MotorState.Normal && !IsDashing && (downHeld || contacts.lowCeiling || IsSliding);
-            if (!IsGrounded) slideTimer = 0f;   // slid off an edge: the momentum carries on as a fall
+            if (!IsGrounded) { slideTimer = 0f; rollTimer = 0f; }   // slid or rolled off an edge: the momentum carries on as a fall
 
             // Ledge grab: falling or near the apex, pushing into a ledge.
             if (!IsGrounded && contacts.ledgeSide != 0 && regrabTimer <= 0f && Velocity.y <= 2f && !IsDashing
@@ -571,6 +602,19 @@ namespace CrimsonVeil.Player
                     float speed = Mathf.Lerp(s.slideSpeed, s.slideEndSpeed, SlideProgress * SlideProgress);
                     Velocity = new Vector2(Facing * speed, -s.groundStickVelocity);
                     if (contacts.wallSide != 0 && contacts.wallSide == Facing) { Velocity.x = 0f; slideTimer = 0f; }
+                    return Velocity;
+                }
+            }
+
+            if (IsRolling)
+            {
+                if (canJump || input.dashPressed) rollTimer = 0f;   // a jump or a dash out of the roll
+                else
+                {
+                    rollTimer = Mathf.Max(0f, rollTimer - dt);
+                    float speed = Mathf.Lerp(rollSpeed, Mathf.Min(rollSpeed, s.rollEndSpeed), RollProgress);
+                    Velocity = new Vector2(Facing * speed, -s.groundStickVelocity);
+                    if (contacts.wallSide != 0 && contacts.wallSide == Facing) { Velocity.x = 0f; rollTimer = 0f; }
                     return Velocity;
                 }
             }

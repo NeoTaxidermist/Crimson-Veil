@@ -151,7 +151,7 @@ namespace CrimsonVeil.Player
             bool still = s.grounded && s.speed < 0.2f;
             ctx.stillTime = still ? ctx.stillTime + dt : 0f;
             float y = player.transform.position.y;
-            if (s.grounded && !wasGroundedM) { ctx.sinceLanded = 0f; ctx.landFallHeight = airTop - y; ctx.landRunSpeed = s.speed; }
+            if (s.grounded && !wasGroundedM) { ctx.sinceLanded = 0f; ctx.landFallHeight = player != null ? player.Motor.LastFallHeight : airTop - y; ctx.landRunSpeed = s.speed; }
             airTop = s.grounded || s.hanging || s.climbing || s.swinging || s.wallSliding ? y : Mathf.Max(airTop, y);
             if (!s.grounded && wasGroundedM && s.verticalVelocity > 0.5f) ctx.jumpSpeed = s.verticalVelocity;
             if (!s.grounded && wasWallSliding && !s.wallSliding && s.verticalVelocity > 0.5f)
@@ -272,6 +272,8 @@ namespace CrimsonVeil.Player
                 crouching = player.Motor.IsCrouching,
                 sliding = player.Motor.IsSliding,
                 slideProgress = player.Motor.SlideProgress,
+                rolling = player.Motor.IsRolling,
+                rollProgress = player.Motor.RollProgress,
             };
             if (s.hanging)
             {

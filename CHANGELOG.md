@@ -5,6 +5,41 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.41.2] – 2026-11-19
+### Opravy z natáčení galerie a testy celé sady pohybů
+Při přetáčení galerie animací se ukázaly čtyři chyby:
+- **Opraveno: nízký tunel (1,1 m) hrdinu u vstupu zasekl.** Plížení se u vstupu asi na sekundu zastavilo a skluz se o vstup zastavil úplně. Týkalo se tunelu v testovací místnosti i v zahradě.
+  - Příčina: `CharacterController` při každém kroku zkouší tělo zvednout o výšku schodu (0,3 m), aby vyšlapal schod. Přikrčené tělo tím narazilo čelem do stropu tunelu.
+  - Oprava: přikrčený a ve skluzu leze hrdina přes schody jen 4 cm (`PlayerController.LowStep`). Ve stoje zůstává 0,3 m.
+- **Opraveno: ve skluzu se tělo zvedlo skoro do stoje.** Zachycený skluz končí vstáváním a hrál se celý během půl sekundy skluzu. Teď se hraje jen ta část, kdy je hrdina dole (`HeroMocap.SlideClipEnd`). Vstávání po skluzu je herní, a pod nízkým stropem hrdina zůstane přikrčený.
+- **Opraveno: po saltu „pád na záda“.** Zachycený kotoul je na místě, ale hra hrdinu po dopadu zastavila. Kotoul tak vypadal jako pád na záda s nohama nahoře. Dvojskok navíc dopadal z 5,2 až 5,7 m, přesně na hraně prahu 5,5 m.
+  - **Kotoul je teď pohyb hry** (`MotorLogic.IsRolling`): po dopadu z velké výšky za běhu (aspoň 3 m/s) hrdinu 0,8 s nese dopředu rychlostí dopadu, i když pustí šipku. Tělo je při něm nízko. Skokem nebo dashem se dá přerušit, o zeď skončí.
+  - Práh tvrdého dopadu je 6,5 m, nad vrcholem dvojskoku: obyčejný dvojskok dopadne na nohy. Seskok z 10m plošiny dál končí tvrdým dopadem, nebo za běhu kotoulem.
+  - Výšku pádu měří jen motor (`MotorLogic.LastFallHeight`). Animace z ní bere tvrdý dopad, takže se oba nemůžou rozejít.
+- **Opraveno: sek mečem nahoru šel šikmo dopředu.** Zachycené seky jsou všechny vodorovné a přebily procedurální míření. Při strmém míření (35° a víc, nahoru i dolů) mají paže a trup procedurální pohyb, který míří, a z klipu zůstanou jen nohy (`HeroMocap.SteepAim`). Meč teď seká zespodu nad hlavu.
+- **Testy celé sady pohybů na skutečném hrdinovi** (`HeroMoveSetPlayTests`): herní prefab hrdiny s motorem, šálou, modelem a mocapem v místnosti jako testovací. Každý pohyb z galerie kontroluje, co udělá hra a co zahraje tělo:
+  - chůze a běh: tempo kroků asi 1,4 cyklu za sekundu, dobrzdění;
+  - otočka v běhu se smykem;
+  - dvojskok se saltem, který dopadne na nohy;
+  - seskok za běhu s kotoulem, který nese dopředu, a seskok bez rozběhu s tvrdým dopadem;
+  - chycení hrany (obě ruce na hraně) a vylezení;
+  - plížení do tunelu 1,1 m bez zaseknutí, s hlavou pod stropem;
+  - skluz z běhu rovnou do tunelu, celou dobu nízko;
+  - dash;
+  - kombo meč, meč, kopí na zjevovi: tři zásahy, nejsilnější dokončovací úder a odhození;
+  - dvě šlehnutí bičem;
+  - luk vodorovně i nad hlavu z místa;
+  - štít;
+  - údery mečem a kopím nahoru nad hlavu a úder pod nohy ze skoku;
+  - houpání na kruhu s oběma pěstmi na laně a puštění skokem;
+  - zjev, který se přiblíží, napřáhne, udeří a hrdina se zapotácí.
+- Ověřeno, že testy chyby zachytí: se starým chováním (schod 0,3 m, celý klip skluzu, sek z klipu při míření) selžou testy tunelu, skluzu i míření.
+- Další testy:
+  - `LandingRollMotorTests`: kotoul za běhu nese dopředu, bez rozběhu nebo z malé výšky se nekotoulí, dvojskok dopadne na nohy, skok kotoul přeruší;
+  - `HeroMocapTests`: skluz hraje jen spodní část klipu, která je opravdu dole, kotoul v kroku s hrou a bez kotoulu na místě, strmě mířený úder má z klipu jen nohy;
+  - `ScriptedInput` umí držení Ctrl.
+- Galerie animací je přetočená podle větve mocap-mixamo: 18 klipů včetně nového kotoulu.
+
 ## [0.41.1] – 2026-11-19
 ### Běh už necupitá
 - **Opraveno: nohy při běhu cupitaly.** Délka cyklu kroků se měřila z rozpětí nohou v klipu běžícím na místě a vyšla poloviční, běh 2 m a sprint 1,8 m na cyklus. Při 8 m/s tak nohy dělaly přes čtyři cykly za sekundu.

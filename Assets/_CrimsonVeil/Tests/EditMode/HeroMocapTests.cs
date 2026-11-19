@@ -125,7 +125,13 @@ namespace CrimsonVeil.Tests
             c.sinceLanded = 0.1f; c.landFallHeight = 8f; c.landRunSpeed = 0f;
             Assert.AreEqual(HeroMocap.HardLanding, HeroMocap.Choose(Ground(), c).body.key);
             c.landRunSpeed = 7f;
-            Assert.AreEqual(HeroMocap.LandRoll, HeroMocap.Choose(Ground(7f), c).body.key);
+            var rolling = Ground(5f); rolling.rolling = true; rolling.rollProgress = 0.5f;
+            var roll = HeroMocap.Choose(rolling, c).body;
+            Assert.AreEqual(HeroMocap.LandRoll, roll.key, "the game's roll plays the captured one");
+            Assert.IsTrue(roll.driven, "in step with the roll that carries him");
+            Assert.AreEqual(0.5f * HeroMocap.RollClipEnd, roll.time01, 1e-5f);
+            Assert.AreNotEqual(HeroMocap.LandRoll, HeroMocap.Choose(Ground(0f), c).body.key,
+                "no roll on the spot: without the game's roll (it stopped him, or he jumped out) the capture doesn't tumble in place");
             c.landFallHeight = 3.4f;   // (a plain jump comes down from its own height)
             Assert.AreEqual(HeroMocap.Gait, HeroMocap.Choose(Ground(7f), c).body.Layer);
             c.landFallHeight = 8f; c.sinceLanded = 3f;
@@ -141,7 +147,57 @@ namespace CrimsonVeil.Tests
             Assert.AreEqual(HeroMocap.Dash, d.key); Assert.AreEqual(0.3f, d.time01, 1e-5f);
             var slide = Ground(10f); slide.sliding = true; slide.slideProgress = 0.6f;
             var sl = HeroMocap.Choose(slide, c).body;
-            Assert.AreEqual(HeroMocap.Slide, sl.key); Assert.AreEqual(0.6f, sl.time01, 1e-5f);
+            Assert.AreEqual(HeroMocap.Slide, sl.key); Assert.AreEqual(0.6f * HeroMocap.SlideClipEnd, sl.time01, 1e-5f);
+            slide.slideProgress = 1f;
+            Assert.AreEqual(HeroMocap.SlideClipEnd, HeroMocap.Choose(slide, c).body.time01, 1e-5f,
+                "to its end the slide stays down (the capture gets up after it: the game is still low)");
+        }
+
+        [Test]
+        public void TheCapturedSlide_IsDownUpToItsEnd_TheRollIsARoll()
+        {
+            var lib = AssetDatabase.LoadAssetAtPath<HeroMocapLibrary>(LibraryPath);
+            var hero = (GameObject)Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_CrimsonVeil/Art/Hero/Hero.fbx"));
+            try
+            {
+                var head = CrimsonVeil.Core.RigJoint.FindDeep(hero.transform, "Head");
+                Assert.IsTrue(lib.TryGet(HeroMocap.Slide, out var slide));
+                for (float t = 0.15f; t <= HeroMocap.SlideClipEnd + 1e-4f; t += 0.05f)
+                {
+                    slide.clip.SampleAnimation(hero, slide.clip.length * t);
+                    Assert.Less(head.position.y, 0.95f, $"the slide's part that plays is down (at {t:F2})");
+                }
+                Assert.IsTrue(lib.TryGet(HeroMocap.LandRoll, out var roll));
+                float lowest = 9f;
+                for (float t = 0f; t <= HeroMocap.RollClipEnd; t += 0.05f)
+                {
+                    roll.clip.SampleAnimation(hero, roll.clip.length * t);
+                    lowest = Mathf.Min(lowest, head.position.y);
+                }
+                Assert.Less(lowest, 0.5f, "through the roll the head goes down to the ground");
+                roll.clip.SampleAnimation(hero, roll.clip.length * HeroMocap.RollClipEnd);
+                Assert.Greater(head.position.y, 1.3f, "by its end he is up again");
+            }
+            finally { Object.DestroyImmediate(hero); }
+        }
+
+        [Test]
+        public void ABlowAimedSteeply_OnTheGround_TheArmsAreTheGames_TheLegsTheCaptures()
+        {
+            var s = Ground();
+            s.attacking = true; s.attackT = 0.3f;
+            foreach (var form in new[] { VeilForm.Sword, VeilForm.Spear, VeilForm.Whip })
+            {
+                s.attackForm = form;
+                s.attackAim = 0f;
+                Assert.AreEqual(HeroMocap.Mask.Full, HeroMocap.Choose(s, 0f, 0).mask, $"{form} level: the whole body");
+                s.attackAim = 60f;
+                Assert.AreEqual(HeroMocap.Mask.Legs, HeroMocap.Choose(s, 0f, 0).mask, $"{form} up: the cut goes where it aims");
+                s.attackAim = -45f;
+                Assert.AreEqual(HeroMocap.Mask.Legs, HeroMocap.Choose(s, 0f, 0).mask, $"{form} low");
+                s.attackAim = HeroMocap.SteepAim - 5f;
+                Assert.AreEqual(HeroMocap.Mask.Full, HeroMocap.Choose(s, 0f, 0).mask, $"{form} a little up is still the capture's");
+            }
         }
 
         [Test]

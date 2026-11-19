@@ -4,6 +4,83 @@ using UnityEngine;
 
 namespace CrimsonVeil.Tests
 {
+    /// <summary>The landing roll: a hard landing at a run carries him on, rolling.</summary>
+    public class LandingRollMotorTests
+    {
+        static readonly MotorContacts Air = new MotorContacts();
+        static readonly MotorContacts Floor = new MotorContacts { grounded = true };
+
+        static MotorLogic FallFrom(float height, float vx, out int frames)
+        {
+            var m = new MotorLogic(new MotorSettings());
+            var run = new MotorInput { moveX = Mathf.Sign(vx) * Mathf.Clamp01(Mathf.Abs(vx) / 8f) };
+            for (int i = 0; i < 30; i++) m.Tick(1f / 60f, run, Floor);
+            // off the edge: fall the height (integrating the motor's own fall)
+            float y = height; frames = 0;
+            while (y > 0f && frames < 600) { var v = m.Tick(1f / 60f, run, Air); y += v.y / 60f; frames++; }
+            return m;
+        }
+
+        [Test]
+        public void AHardLandingAtARun_Rolls_AndTheRollCarriesHimOn_WhateverTheKeys()
+        {
+            var m = FallFrom(10f, 4f, out _);
+            Assert.Greater(m.Velocity.x, 3f);
+            m.Tick(1f / 60f, new MotorInput(), Floor);   // lands, keys let go
+            Assert.IsTrue(m.IsRolling, "a 10 m fall at a run: he rolls out of it");
+            Assert.GreaterOrEqual(m.LastFallHeight, 9.5f);
+            float x = 0f;
+            for (int i = 0; i < 24; i++) { x += m.Tick(1f / 60f, new MotorInput(), Floor).x / 60f; }
+            Assert.Greater(x, 1.2f, "the roll carries him forward, not on the spot");
+            for (int i = 0; i < 60; i++) m.Tick(1f / 60f, new MotorInput(), Floor);
+            Assert.IsFalse(m.IsRolling, "and then it ends");
+        }
+
+        [Test]
+        public void ASoftLanding_OrAHardOneStandingStill_DoesNotRoll()
+        {
+            var m = FallFrom(3f, 6f, out _);
+            m.Tick(1f / 60f, new MotorInput(), Floor);
+            Assert.IsFalse(m.IsRolling, "a plain jump's height");
+            m = FallFrom(10f, 0f, out _);
+            m.Tick(1f / 60f, new MotorInput(), Floor);
+            Assert.IsFalse(m.IsRolling, "straight down: a hard landing on the knees, no roll");
+        }
+
+        [Test]
+        public void ADoubleJumpAtARun_LandsOnItsFeet_NoRoll()
+        {
+            var m = new MotorLogic(new MotorSettings());
+            var run = new MotorInput { moveX = 0.6f };
+            for (int i = 0; i < 30; i++) m.Tick(1f / 60f, run, Floor);
+            m.Tick(1f / 60f, new MotorInput { moveX = 0.6f, jumpPressed = true, jumpHeld = true }, Floor);
+            float y = 0f, top = 0f; bool second = false;
+            for (int i = 0; i < 600; i++)
+            {
+                var input = new MotorInput { moveX = 0.6f, jumpHeld = true };
+                if (!second && m.Velocity.y < 1f) { input.jumpPressed = true; second = true; }
+                var v = m.Tick(1f / 60f, input, Air);
+                y += v.y / 60f; top = Mathf.Max(top, y);
+                if (y <= 0f && i > 10) break;
+            }
+            Assert.Greater(top, 5f, "both jumps");
+            Assert.Less(top, m.Settings.rollFromHeight - 0.4f, "the double jump's top stays clear of a hard landing");
+            m.Tick(1f / 60f, new MotorInput(), Floor);
+            Assert.IsFalse(m.IsRolling, "an ordinary double jump lands on its feet");
+        }
+
+        [Test]
+        public void AJumpOutOfTheRoll_EndsIt()
+        {
+            var m = FallFrom(10f, 5f, out _);
+            m.Tick(1f / 60f, new MotorInput(), Floor);
+            Assert.IsTrue(m.IsRolling);
+            m.Tick(1f / 60f, new MotorInput { jumpPressed = true, jumpHeld = true }, Floor);
+            Assert.IsFalse(m.IsRolling);
+            Assert.Greater(m.Velocity.y, 0f, "he jumps");
+        }
+    }
+
     /// <summary>Crouching (down on the ground), crawling, sliding (down + dash), and the low ceiling.</summary>
     public class CrouchSlideMotorTests
     {

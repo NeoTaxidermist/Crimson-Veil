@@ -10,6 +10,9 @@ namespace CrimsonVeil.Tests
         public float moveX;
         public float aimY;
         public bool jump, jumpHeld, dash;
+        /// <summary>Planted (Ctrl held).</summary>
+        public bool stand;
+        public bool StandHeld => stand;
         /// <summary>Cast this weapon (one shot).</summary>
         public VeilForm? cast;
         /// <summary>The weapon whose button is held down.</summary>

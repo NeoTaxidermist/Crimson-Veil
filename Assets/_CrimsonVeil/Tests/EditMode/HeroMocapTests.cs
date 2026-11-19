@@ -148,7 +148,10 @@ namespace CrimsonVeil.Tests
             var sw = HeroMocap.Choose(s, c).body;
             Assert.AreEqual(HeroMocap.Swing, sw.key);
             Assert.AreEqual(0.25f + HeroMocap.SwingSync, sw.time01, 1e-5f);
-            Assert.AreEqual(HeroMocap.Mask.NoHipsTurn, sw.mask, "the rope turns the body: the clip swings the limbs");
+            Assert.AreEqual(HeroMocap.Mask.LegsOnly, sw.mask, "the rope turns the body and the hands hold it: the clip swings the legs");
+            Assert.AreEqual(0f, HeroMocap.MaskWeight(HeroMocap.Mask.LegsOnly, "UpperArm.R"), "no swapping hands on the rope");
+            Assert.AreEqual(0f, HeroMocap.MaskWeight(HeroMocap.Mask.LegsOnly, "Hips"));
+            Assert.AreEqual(1f, HeroMocap.MaskWeight(HeroMocap.Mask.LegsOnly, "LowerLeg.L"));
             // the pendulum's phase: 0 at the forward end, a quarter on through the bottom going back
             Assert.AreEqual(0f, HeroMocap.SwingPhase(1f, 0f, 2f), 1e-4f);
             Assert.AreEqual(0.25f, HeroMocap.SwingPhase(0f, -2f, 2f), 1e-4f);

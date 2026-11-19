@@ -63,6 +63,29 @@ namespace CrimsonVeil.Tests
         }
 
         [Test]
+        public void OnTheWhip_HeFacesTheWaySheSwings_TurningRoundPastEachEnd()
+        {
+            var m = new MotorLogic(new MotorSettings());
+            var grip = MotorLogic.SwingPoint(Anchor, 5f, -0.8f);
+            Assert.IsTrue(m.BeginSwing(Anchor, grip));
+            const float dt = 1f / 60f;
+            int turns = 0, body = m.Facing, facing = m.Facing;
+            for (float t = 0f; t < 4f; t += dt)
+            {
+                var v = m.Tick(dt, new MotorInput(), At(grip));
+                grip += v * dt;
+                int next = MotorLogic.SwingFacing(m.SwingVelocity.x, body);
+                if (Mathf.Abs(m.SwingVelocity.x) > MotorLogic.SwingTurnSpeed + 1f)
+                    Assert.AreEqual(m.SwingVelocity.x > 0f ? 1 : -1, next, "facing the way he flies");
+                if (next != body) turns++;
+                body = next;
+                Assert.AreEqual(facing, m.Facing, "only the body turns: the whip on its ring doesn't flip round");
+            }
+            Assert.GreaterOrEqual(turns, 2, "he turns round at each end of the swing");
+            Assert.AreEqual(-1, MotorLogic.SwingFacing(0.5f, -1), "slow at the end of the swing: he keeps his way");
+        }
+
+        [Test]
         public void LeaningIn_PumpsTheSwingHigher()
         {
             float Amplitude(float lean)

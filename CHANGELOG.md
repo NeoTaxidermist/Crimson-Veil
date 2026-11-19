@@ -5,6 +5,12 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.38.0] – 2026-11-19
+### Houpání na biči
+- **Ruce se na laně už nepřehazují.** Klip houpání z Mixama mává rukama a střídá je, takže ruka z lana šla dolů a druhá nahoru. Z klipu jsou teď jen nohy (a trochu trup) a lano drží ruce podle hry.
+- **Hrdina se otáčí po směru houpání.** Za každou úvratí, jakmile švih znovu nabere rychlost (1,5 m/s napříč), se natočí tam, kam letí (`MotorLogic.SwingFacing`, `PlayerController.BodyFacing`). Otáčí se jen tělo: herní směr pohledu zůstává, takže bič se při otočce nepřeklopí a neodtrhne od kruhu (to jsem ve hře zachytil a opravil). Nohy na laně a fáze houpání se počítají vůči tělu.
+- Testy: `GrappleSwingLogicTests` (tělo se otáčí po směru letu, v každé úvrati se otočí, herní směr pohledu zůstane, pomalu se neotáčí); `HeroMocapTests` (houpání jen nohama, ruce ne).
+
 ## [0.37.0] – 2026-11-19
 ### Testovací místnost
 - Ze startu se teď dá jít doleva pod zadní zdí (visí, je pod ní 4 m průchod) do **testovací místnosti** (x -61 až -14,5), kde si jde prohlížet pohyb a animace hrdiny:

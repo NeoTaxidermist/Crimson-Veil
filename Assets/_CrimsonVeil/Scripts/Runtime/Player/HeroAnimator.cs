@@ -182,7 +182,7 @@ namespace CrimsonVeil.Player
             {
                 var m = player.Motor;
                 float omega = Mathf.Sqrt(m.Settings.SwingGravity / Mathf.Max(0.5f, m.SwingLength));
-                ctx.swingPhase = HeroMocap.SwingPhase(m.SwingAngle * m.Facing, m.SwingAngularVelocity * m.Facing, omega);
+                ctx.swingPhase = HeroMocap.SwingPhase(m.SwingAngle * player.BodyFacing, m.SwingAngularVelocity * player.BodyFacing, omega);
             }
             bool striking = s.attacking && s.attackT >= 0f;
             if (striking && (!wasStriking || s.attackT < lastAttackT - 0.3f)) swing++;
@@ -240,7 +240,7 @@ namespace CrimsonVeil.Player
                 climbing = player.Motor.State == MotorState.Climbing,
                 climbProgress = player.Motor.ClimbProgress,
                 swinging = player.Motor.IsSwinging,
-                swingSpeed = player.Motor.SwingAngularVelocity * player.Motor.Facing,
+                swingSpeed = player.Motor.SwingAngularVelocity * player.BodyFacing,   // (relative to the way the body faces on the whip)
                 weaponHeld = veil != null && veil.Form != VeilForm.Flow ? veil.TransformProgress : 0f,
                 somersault = player.FlipProgress,
                 crouching = player.Motor.IsCrouching,

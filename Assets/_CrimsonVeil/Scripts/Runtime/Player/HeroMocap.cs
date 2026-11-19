@@ -62,6 +62,8 @@ namespace CrimsonVeil.Player
             DrawArm,
             /// <summary>The legs and the hips, the trunk a little (stopping out of a run: the arms stay the game's).</summary>
             Legs,
+            /// <summary>The legs alone, the trunk a little (on the whip: the rope turns the body and the hands hold it).</summary>
+            LegsOnly,
         }
 
         /// <summary>What the game wants played this frame on one channel.</summary>
@@ -179,7 +181,7 @@ namespace CrimsonVeil.Player
                 if (c.sinceHangStart < HangCatchTime) return new Choice { key = HangCatch, bySeconds = true, seconds = c.sinceHangStart, weight = 0.7f };
                 return new Choice { key = HangIdle, weight = 0.6f };
             }
-            if (s.swinging) return new Choice { key = Swing, driven = true, time01 = Mathf.Repeat(c.swingPhase + SwingSync, 1f), weight = 0.75f, mask = Mask.NoHipsTurn };
+            if (s.swinging) return new Choice { key = Swing, driven = true, time01 = Mathf.Repeat(c.swingPhase + SwingSync, 1f), weight = 0.75f, mask = Mask.LegsOnly };   // (the captured swinger's arms swap hands on the rope)
 
             if (s.attacking && s.attackT >= 0f)
             {
@@ -381,6 +383,9 @@ namespace CrimsonVeil.Player
                     return bone == "Hips" ? 0f : 1f;
                 case Mask.DrawArm:
                     return IsDrawArm(bone) ? 1f : 0f;
+                case Mask.LegsOnly:
+                    if (bone == "Hips") return 0f;
+                    goto case Mask.Legs;
                 case Mask.Legs:
                     if (IsLegOrHips(bone)) return 1f;
                     return bone == "Spine" ? 0.5f : bone == "Chest" ? 0.3f : 0f;

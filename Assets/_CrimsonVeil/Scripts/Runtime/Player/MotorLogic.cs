@@ -218,6 +218,16 @@ namespace CrimsonVeil.Player
         /// <summary>Angular velocity (rad/s), + = swinging towards the right.</summary>
         public float SwingAngularVelocity { get; private set; }
         public bool IsSwinging => State == MotorState.Swinging;
+        /// <summary>On the whip he turns to face the way he swings once he goes this fast (m/s) across.</summary>
+        public const float SwingTurnSpeed = 1.5f;
+
+        /// <summary>
+        /// Which way the body faces on the whip: the way he swings, past each end of the swing once it has picked up
+        /// speed again (else the way he faced). Only the body turns - <see cref="Facing"/> stays, so the whip held to its
+        /// ring doesn't flip round with him.
+        /// </summary>
+        public static int SwingFacing(float swingVx, int current)
+            => Mathf.Abs(swingVx) > SwingTurnSpeed ? (swingVx > 0f ? 1 : -1) : current;
         float carryTimer;
 
         /// <summary>Hands position for a given angle/length around the anchor.</summary>

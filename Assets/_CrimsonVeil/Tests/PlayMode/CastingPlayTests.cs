@@ -161,6 +161,63 @@ namespace CrimsonVeil.Tests
         }
 
         [UnityTest]
+        public IEnumerator AnEnemysBlow_BreaksOffTheComboMidChain()
+        {
+            var blows = new System.Collections.Generic.List<VeilCombo.Blow>();
+            veil.ComboBlow += b => blows.Add(b);
+            int broken = 0;
+            veil.Interrupted += () => broken++;
+            yield return Wait(0.3f);
+            input.cast = VeilForm.Sword;
+            yield return Wait(0.3f);
+            input.cast = VeilForm.Sword;          // the second blow, queued
+            float end = Time.time + 1.2f;
+            while (blows.Count < 2 && Time.time < end) yield return null;
+            while (veil.IsAttacking && veil.AttackProgress < 0.5f) yield return null;
+            Assert.IsTrue(veil.IsAttacking);
+            input.cast = VeilForm.Sword;          // a third, late in the blow: waiting to follow
+            yield return null;
+            var hit = new DamageInfo { amount = 1f, knockback = new Vector2(-3f, 2f), point = player.transform.position + Vector3.up };
+            Assert.IsTrue(health.ReceiveHit(hit), "struck mid-combo");
+            Assert.AreEqual(1, broken);
+            Assert.IsFalse(veil.IsAttacking, "the blow is broken off");
+            Assert.AreEqual(0, veil.Combo.Step);
+            yield return Wait(0.4f);   // (shorter than the pause that would start the chain again by itself)
+            Assert.AreEqual(2, blows.Count, "the press waiting to follow is lost");
+            input.cast = VeilForm.Sword;
+            end = Time.time + 1f;
+            while (blows.Count < 3 && Time.time < end) yield return null;
+            Assert.AreEqual(0, blows[2].step, "the combo starts again from the first blow");
+        }
+
+        [UnityTest]
+        public IEnumerator Dead_TheVeilCastsNothing_UntilHeIsBack()
+        {
+            yield return Wait(0.3f);
+            for (int i = 0; i < 10 && health.IsAlive; i++)
+            {
+                health.ReceiveHit(new DamageInfo { amount = 1f, knockback = Vector2.zero, point = player.transform.position });
+                if (health.IsAlive) yield return Wait(1f);
+            }
+            Assert.IsFalse(health.IsAlive);
+            yield return null;
+            Assert.IsTrue(veil.Disarmed);
+            int blows = 0;
+            veil.Attacked += _ => blows++;
+            input.cast = VeilForm.Sword;
+            yield return Wait(0.4f);
+            Assert.AreEqual(0, blows, "no blade floats where he fell");
+            Assert.AreEqual(VeilForm.Flow, veil.Form);
+            yield return Wait(1.6f);
+            Assert.IsTrue(health.IsAlive);
+            Assert.IsFalse(veil.Disarmed);
+            input.cast = VeilForm.Sword;
+            yield return Wait(0.3f);
+            Assert.AreEqual(1, blows, "back on his feet he fights again");
+            Assert.AreEqual(0, veil.Combo.Step, "and his combo starts from the first blow");
+        }
+
+        [UnityTest]
         public IEnumerator SwordAimedUp_CutsAboveTheHead()
         {
             yield return Wait(0.3f);

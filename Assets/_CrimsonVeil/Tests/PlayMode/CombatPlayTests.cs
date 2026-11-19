@@ -101,10 +101,13 @@ namespace CrimsonVeil.Tests
             enemy.Brain.Settings.windupTime = 10f; // keep it from fighting back during the test
             yield return Wait(0.3f);
             float before = enemy.Health.Current;
+            float knock = 0f;
+            player.GetComponent<VeilCombat>().Hit += (t, info) => knock = info.knockback.x;
             input.cast = VeilForm.Spear;
             yield return Wait(0.6f);
             Assert.AreEqual(before - VeilCombatProfile.Damage(VeilForm.Spear), enemy.Health.Current, 1e-3f, "exactly one hit per thrust");
-            Assert.Greater(enemy.transform.position.x, 2.2f, "knocked back away from the hero");
+            // (a blow that opens a combo only rocks the enemy, so it stays in reach of the next: VeilCombo.ChainKnockback)
+            Assert.Greater(knock, 0f, "knocked back away from the hero");
         }
 
         [UnityTest]

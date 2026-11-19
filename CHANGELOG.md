@@ -5,6 +5,23 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.40.1] – 2026-11-19
+### Kombo v boji: přerušení, dosah, smrt
+- **Zásah nepřítelem kombo přeruší** (`VeilController.Interrupt`):
+  - rozjetý úder se zruší a stisk, který na něj čekal, propadne;
+  - kombo začne znovu od prvního úderu a hrdina se po zásahu zotavuje (0,3 s);
+  - stejně ho přeruší i úder, který za hrdinu schytá šála.
+  - Výjimka: úder dolů na nepřítele se pouhým dotykem jeho těla nepřeruší, protože právě do těla se tím úderem míří.
+- **Údery před finále nepřítele jen zakymácí** (40 % odhození). Při plném odhození první sek odsunul zjeva o 0,6 m a druhý sek mávl do vzduchu před ním. Teď zasáhnou všechny tři údery a odhazuje až finále.
+- **Opraveno: mrtvý hrdina už neútočí.** Šála skrytá s tělem dál sesílala zbraně a čepel vznášející se v místě, kde hrdina padl, dokázala zabít zjeva. Teď šála do návratu hrdiny nesešle nic a jeho kombo začíná od začátku.
+- Vyzkoušeno ve hře se zjevem:
+  - zjev uprostřed komba sekl a kombo se přerušilo;
+  - meč, meč, kopí: 1 + 1 + 2,52 (finále s úderem po proměně), zjev odletěl.
+- Testy:
+  - `CastingPlayTests`: zásah uprostřed komba ho přeruší a čekající stisk propadne; mrtvý hrdina nesešle nic;
+  - `VeilComboTests`: údery před finále odhazují málo;
+  - `CombatPlayTests`: kopí odhazuje směrem od hrdiny.
+
 ## [0.40.0] – 2026-11-19
 ### Kombo napříč zbraněmi
 - **Kombo je pozice v řetězu, ne zbraň** (`VeilCombo`). Úder 1, 2, 3 se počítá napříč zbraněmi, šála se mezi údery může přelít do jiné zbraně a řetěz pokračuje. Meč, meč, bič je jedno kombo zakončené finále biče.

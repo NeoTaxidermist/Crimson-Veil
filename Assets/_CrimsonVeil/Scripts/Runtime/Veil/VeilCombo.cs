@@ -18,6 +18,8 @@ namespace CrimsonVeil.Veil
 
         /// <summary>The finisher's damage and knockback, before the bonus for variety.</summary>
         public const float FinisherDamage = 1.5f, FinisherKnockback = 1.6f;
+        /// <summary>Knockback of the blows before the finisher: enough to rock the enemy, not to put it out of reach.</summary>
+        public const float ChainKnockback = 0.4f;
         /// <summary>Added to the finisher's damage for each further different weapon in the chain.</summary>
         public const float VarietyBonus = 0.25f;
         /// <summary>Extra seconds of recovery after the finisher: the reward is a commitment.</summary>
@@ -48,7 +50,11 @@ namespace CrimsonVeil.Veil
                 }
             }
 
-            public float KnockbackScale => finisher ? FinisherKnockback : 1f;
+            /// <summary>
+            /// The blows before the finisher only nudge the enemy (knocked a full step back, the next blow of the chain
+            /// cut the air in front of it); the finisher throws it.
+            /// </summary>
+            public float KnockbackScale => finisher ? FinisherKnockback : ChainKnockback;
             /// <summary>The blow's duration is divided by this (the bow keeps its draw).</summary>
             public float Speed => morph && form != VeilForm.Bow ? MorphSpeed : 1f;
             public float ExtraRecovery => finisher ? FinisherRecovery : 0f;

@@ -28,6 +28,8 @@ namespace CrimsonVeil.Tests
             Assert.AreEqual(1f, a.DamageScale, 1e-5f, "an ordinary blow");
             Assert.AreEqual(VeilCombo.FinisherDamage, f.DamageScale, 1e-5f, "the finisher hits harder");
             Assert.Greater(f.KnockbackScale, 1f, "and throws further");
+            Assert.Less(a.KnockbackScale, 0.5f, "the blows before it only rock the enemy: the next one still reaches it");
+            Assert.Less(b.KnockbackScale, 0.5f);
             Assert.Greater(f.ExtraRecovery, 0f, "and leaves the body longer to recover");
             Assert.AreEqual(0, Strike(c, VeilForm.Sword).step, "after the finisher a new chain");
         }

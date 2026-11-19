@@ -109,6 +109,7 @@ namespace CrimsonVeil.Combat
             if (veil != null && veil.Form == VeilForm.Flow && info.amount > 0f && veil.Charge.TryAbsorbHit())
             {
                 AbsorbCount++;
+                veil.Interrupt(0.12f);   // the chain is broken all the same
                 Model.GrantInvulnerability(0.6f);
                 player.Motor.ApplyKnockback(info.knockback * 0.5f, 0.12f);
                 CombatFx.HitStop(0.06f);
@@ -121,6 +122,10 @@ namespace CrimsonVeil.Combat
             if (!Model.TryDamage(info)) return false;
             sinceHit = 0f;
             player.Motor.ApplyKnockback(info.knockback, stunTime);
+            // struck, the hero's blow is broken off and his combo starts again - except a strike under the feet
+            // driven down onto an enemy: bumping its body there is the point of it
+            if (veil != null && !(info.kind == DamageKind.Contact && (veil.DownStrike || veil.ThrustingDown)))
+                veil.Interrupt(stunTime);
             CombatFx.HitStop(0.09f);
             CombatFx.Shake(0.6f);
             CombatFx.Burst(transform.position + Vector3.up * 1.1f, info.knockback, CombatFx.Ink, 16);
@@ -132,6 +137,13 @@ namespace CrimsonVeil.Combat
         IEnumerator DieAndRespawn()
         {
             Died?.Invoke();
+            if (veil != null)
+            {
+                // dead, the veil lets its weapon go and casts nothing until he is back
+                veil.Interrupt(0f);
+                veil.SetForm(VeilForm.Flow);
+                veil.Disarmed = true;
+            }
             CombatFx.Burst(transform.position + Vector3.up * 1f, Vector2.up, CombatFx.Crimson, 60, 7f);
             if (visualRoot != null) visualRoot.gameObject.SetActive(false);
             player.enabled = false;
@@ -145,6 +157,7 @@ namespace CrimsonVeil.Combat
             if (veil != null)
             {
                 veil.SetForm(VeilForm.Flow);
+                veil.Disarmed = false;
                 veil.Vitality = 1f;
                 veil.Charge.Restore();
                 veil.Simulation.Reset(transform.position + Vector3.up * 1.5f);

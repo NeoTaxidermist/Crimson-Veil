@@ -226,7 +226,7 @@ namespace CrimsonVeil.Veil
         /// </summary>
         public bool Cast(VeilForm form)
         {
-            if (form == VeilForm.Flow) return false;
+            if (form == VeilForm.Flow || Disarmed) return false;
             if (!IsUnlocked(form)) { CastFizzled?.Invoke(form); return false; }
             if (Latched != null) return false;
             float cost = VeilCasting.Cost(form);
@@ -270,6 +270,35 @@ namespace CrimsonVeil.Veil
             castMode = true;
             lingerTimer = VeilCasting.Linger;
         }
+
+        /// <summary>
+        /// The hero was struck: the blow under way is broken off, a press waiting to follow it is lost and the combo
+        /// starts again from the first blow. The weapon stays in the hand (it melts back as usual if not used).
+        /// </summary>
+        public void Interrupt(float recover)
+        {
+            bool broke = attackTime >= 0f || pendingAttack.HasValue || buffered.HasValue || Combo.Current.step >= 0;
+            attackTime = -1f;
+            AttackProgress = -1f;
+            pendingAttack = null;
+            buffered = null;
+            Drawing = false;
+            ThrustingDown = false;
+            DownStrike = false;
+            aimTiltTarget = 0f;
+            recoverTimer = Mathf.Max(recoverTimer, recover);
+            Combo.Reset();
+            if (broke) Interrupted?.Invoke();
+        }
+
+        /// <summary>
+        /// The hero is dead (until he respawns): the veil casts nothing. (Hidden with the body, it used to go on
+        /// striking - a blade floating where he fell cut an enemy down.)
+        /// </summary>
+        public bool Disarmed { get; set; }
+
+        /// <summary>A hit broke off the hero's blow or combo.</summary>
+        public event Action Interrupted;
 
         /// <summary>A blow of the veil landed: the scarf feeds on it; a downward spear bounces the hero up.</summary>
         public void NotifyHitLanded()
@@ -342,7 +371,7 @@ namespace CrimsonVeil.Veil
 
         public bool Attack()
         {
-            if (IsAttacking || recoverTimer > 0f) return false; // a blow plays to its end, then the body recovers
+            if (Disarmed || IsAttacking || recoverTimer > 0f) return false; // a blow plays to its end, then the body recovers
             if (Form == VeilForm.Flow || Hardness < 0.5f * VeilFormLibrary.Hardness(Form)) return false;
             if (Latched != null) return false;
             // The whip lashes round a ring in reach instead of cracking.

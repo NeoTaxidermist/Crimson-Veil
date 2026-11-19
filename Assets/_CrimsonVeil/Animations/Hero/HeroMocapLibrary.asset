@@ -71,19 +71,19 @@ MonoBehaviour:
     clip: {fileID: 7400000, guid: 12fff0346b3259b45bc5f9dbb7d952dc, type: 2}
     loop: 1
     impact: 0
-    stride: 1.5232738
+    stride: 1.4870081
     sync: 0.21951218
   - key: Run
     clip: {fileID: 7400000, guid: 91754df5ca6c2cd4f8da0f097b361919, type: 2}
     loop: 1
     impact: 0
-    stride: 1.9959949
-    sync: 0.28571427
+    stride: 1.8291848
+    sync: 0.23809522
   - key: Sprint
     clip: {fileID: 7400000, guid: c6211b288d14a464a94cfc22c7aca94e, type: 2}
     loop: 1
     impact: 0
-    stride: 1.8422177
+    stride: 1.8316432
     sync: 0.28571427
   - key: CrouchIdle
     clip: {fileID: 7400000, guid: d0b8c0c937a48504e97d4ed33e9c4e62, type: 2}
@@ -196,7 +196,7 @@ MonoBehaviour:
   - key: ShieldBash
     clip: {fileID: 7400000, guid: d5cb8253947a5b346a6d5b1f96a7a953, type: 2}
     loop: 0
-    impact: 0.5128205
+    impact: 0.48717946
     stride: 0
     sync: 0
   - key: WhipA
@@ -208,7 +208,7 @@ MonoBehaviour:
   - key: WhipB
     clip: {fileID: 7400000, guid: 5c4b96c063a95c44bb4c408530b7bb90, type: 2}
     loop: 0
-    impact: 0.76811594
+    impact: 0.17391305
     stride: 0
     sync: 0
   - key: WhipC

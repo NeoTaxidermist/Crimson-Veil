@@ -44,26 +44,109 @@ namespace CrimsonVeil.EditorTools
             { "Right Little Proximal", "Finger.R.3.0" }, { "Right Little Intermediate", "Finger.R.3.1" }, { "Right Little Distal", "Finger.R.3.2" },
         };
 
-        /// <summary>Every Mixamo source under <see cref="SourceDir"/> imported as humanoid animation (its own skeleton as avatar).</summary>
+        /// <summary>
+        /// The Mixamo rig in its true T-pose (X Bot from ArtSource/mocap - its skeleton only: the mesh, the skin weights and
+        /// the body are not used). Copied next to the sources, outside git like them.
+        /// </summary>
+        public const string ReferencePath = SourceDir + "/Reference/X Bot.fbx";
+        const string AvatarDir = SourceDir + "/Reference/Avatars";
+
+        /// <summary>
+        /// Every Mixamo source under <see cref="SourceDir"/> imported as humanoid animation, measured against the rig's
+        /// true T-pose. (A source exported without a character has no bind pose: its "rest" is its first frame - the
+        /// walk's starts with the left foot pushing off on its toes - and an avatar made from that pose carried the
+        /// difference into every frame: the left foot flapped, toes up where it stood. Now each source gets an avatar
+        /// of its own bones' lengths with the reference's T-pose rotations, the same for every Mixamo rig.)
+        /// </summary>
         [MenuItem("Crimson Veil/Mocap/Import sources as humanoid")]
         public static int ConfigureSources()
         {
             if (!AssetDatabase.IsValidFolder(SourceDir)) return 0;
+            var tpose = ReferenceTPose(out var human);
+            if (tpose == null) throw new System.Exception("the T-pose reference is missing: copy ArtSource/mocap/mixamo/X Bot.fbx to " + ReferencePath);
+            if (!AssetDatabase.IsValidFolder(AvatarDir)) { Directory.CreateDirectory(AvatarDir); AssetDatabase.Refresh(); }
             int n = 0;
             foreach (var guid in AssetDatabase.FindAssets("t:Model", new[] { SourceDir }))
             {
                 var path = AssetDatabase.GUIDToAssetPath(guid);
+                if (path.StartsWith(SourceDir + "/Reference/")) continue;
                 var imp = AssetImporter.GetAtPath(path) as ModelImporter;
                 if (imp == null) continue;
-                bool dirty = imp.animationType != ModelImporterAnimationType.Human || imp.avatarSetup != ModelImporterAvatarSetup.CreateFromThisModel
-                             || imp.materialImportMode != ModelImporterMaterialImportMode.None;
+                string avatarPath = AvatarDir + "/" + path.Substring(SourceDir.Length + 1).Replace('/', '_').Replace(".fbx", ".asset");
+                var avatar = AssetDatabase.LoadAssetAtPath<Avatar>(avatarPath);
+                if (avatar == null)
+                {
+                    var model = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+                    var built = SourceAvatar(model, human, tpose);
+                    if (built == null || !built.isValid || !built.isHuman) throw new System.Exception("T-pose avatar invalid for " + path);
+                    built.name = Path.GetFileNameWithoutExtension(path) + " T-pose";
+                    AssetDatabase.CreateAsset(built, avatarPath);
+                    avatar = built;
+                }
+                bool dirty = imp.animationType != ModelImporterAnimationType.Human || imp.avatarSetup != ModelImporterAvatarSetup.CopyFromOther
+                             || imp.sourceAvatar != avatar || imp.materialImportMode != ModelImporterMaterialImportMode.None;
                 imp.animationType = ModelImporterAnimationType.Human;
-                imp.avatarSetup = ModelImporterAvatarSetup.CreateFromThisModel;
+                imp.avatarSetup = ModelImporterAvatarSetup.CopyFromOther;
+                imp.sourceAvatar = avatar;
                 imp.materialImportMode = ModelImporterMaterialImportMode.None;
                 imp.importAnimation = true;
                 if (dirty) { imp.SaveAndReimport(); n++; }
             }
             return n;
+        }
+
+        /// <summary>The Mixamo rig's T-pose: each bone's local rotation by name, and the humanoid mapping.</summary>
+        public static Dictionary<string, Quaternion> ReferenceTPose(out HumanBone[] human)
+        {
+            human = null;
+            var imp = AssetImporter.GetAtPath(ReferencePath) as ModelImporter;
+            if (imp == null) return null;
+            if (imp.animationType != ModelImporterAnimationType.Human || imp.avatarSetup != ModelImporterAvatarSetup.CreateFromThisModel || imp.importAnimation)
+            {
+                imp.animationType = ModelImporterAnimationType.Human;
+                imp.avatarSetup = ModelImporterAvatarSetup.CreateFromThisModel;
+                imp.materialImportMode = ModelImporterMaterialImportMode.None;
+                imp.importAnimation = false;
+                imp.SaveAndReimport();
+            }
+            Avatar refAvatar = null;
+            foreach (var o in AssetDatabase.LoadAllAssetsAtPath(ReferencePath)) if (o is Avatar a) refAvatar = a;
+            if (refAvatar == null || !refAvatar.isHuman) return null;
+            human = refAvatar.humanDescription.human;
+            var rig = AssetDatabase.LoadAssetAtPath<GameObject>(ReferencePath);
+            var tpose = new Dictionary<string, Quaternion>();
+            foreach (var t in rig.GetComponentsInChildren<Transform>(true))
+                if (t.name.StartsWith("mixamorig")) tpose[t.name] = t.localRotation;
+            return tpose;
+        }
+
+        /// <summary>A humanoid avatar for a source: its own bones' lengths, posed in the reference's T-pose.</summary>
+        public static Avatar SourceAvatar(GameObject model, HumanBone[] human, Dictionary<string, Quaternion> tpose)
+        {
+            var go = (GameObject)Object.Instantiate(model);
+            try
+            {
+                var names = new HashSet<string>();
+                var skeleton = new List<SkeletonBone>();
+                foreach (var t in go.GetComponentsInChildren<Transform>(true))
+                {
+                    string name = t == go.transform ? model.name : t.name;
+                    names.Add(name);
+                    var rot = t != go.transform && tpose.TryGetValue(t.name, out var q) ? q : t.localRotation;
+                    skeleton.Add(new SkeletonBone { name = name, position = t.localPosition, rotation = rot, scale = t.localScale });
+                }
+                go.name = model.name;
+                var bones = new List<HumanBone>();
+                foreach (var h in human) if (names.Contains(h.boneName)) bones.Add(h);
+                var hd = new HumanDescription
+                {
+                    human = bones.ToArray(), skeleton = skeleton.ToArray(),
+                    upperArmTwist = 0.5f, lowerArmTwist = 0.5f, upperLegTwist = 0.5f, lowerLegTwist = 0.5f,
+                    armStretch = 0.05f, legStretch = 0.05f, feetSpacing = 0f, hasTranslationDoF = false,
+                };
+                return AvatarBuilder.BuildHumanAvatar(go, hd);
+            }
+            finally { Object.DestroyImmediate(go); }
         }
 
         /// <summary>
@@ -93,10 +176,14 @@ namespace CrimsonVeil.EditorTools
             return avatar;
         }
 
-        /// <summary>Turns the limbs of a hero at rest (facing +z, his left at -x) into the T-pose.</summary>
+        /// <summary>Turns the limbs of a hero at rest (facing +z, his left at -x) into the T-pose (the feet stay as he
+        /// stands on them: flat on the floor, as the reference's T-pose stands).</summary>
         public static void TPose(Transform root)
         {
             Transform F(string n) => CrimsonVeil.Core.RigJoint.FindDeep(root, n);
+            var footL = F("Foot.L"); var footR = F("Foot.R");
+            var flatL = footL != null ? footL.rotation : Quaternion.identity;
+            var flatR = footR != null ? footR.rotation : Quaternion.identity;
             void Aim(string bone, string child, Vector3 dir)
             {
                 var b = F(bone); var c = F(child);
@@ -113,6 +200,8 @@ namespace CrimsonVeil.EditorTools
                 Aim("UpperLeg." + s, "LowerLeg." + s, Vector3.down);
                 Aim("LowerLeg." + s, "Foot." + s, Vector3.down);
             }
+            if (footL != null) footL.rotation = flatL;
+            if (footR != null) footR.rotation = flatR;
         }
 
         /// <summary>The hero's own bones a mocap clip drives (relative paths from the model's root).</summary>
@@ -188,6 +277,14 @@ namespace CrimsonVeil.EditorTools
                 }
                 float Lowest() { float y = float.MaxValue; foreach (var t in lowPoints) y = Mathf.Min(y, t.position.y); return y; }
                 float restLowest = Lowest();
+                var feet = new List<Transform>();
+                foreach (var n in new[] { "Foot.L", "Foot.R", "Toe.L", "Toe.R" })
+                {
+                    var t = CrimsonVeil.Core.RigJoint.FindDeep(hero.transform, n);
+                    if (t != null) feet.Add(t);
+                }
+                float FeetLowest() { float y = float.MaxValue; foreach (var t in feet) y = Mathf.Min(y, t.position.y); return y; }
+                float restFeet = FeetLowest(), clipFeet = float.MaxValue;
 
                 // the avatar is built on a T-posed copy; the recording is made on the hero at his own rest
                 var tposed = (GameObject)Object.Instantiate(asset);
@@ -217,6 +314,7 @@ namespace CrimsonVeil.EditorTools
                 var rot = new AnimationCurve[bones.Count, 4];
                 for (int b = 0; b < bones.Count; b++) for (int k = 0; k < 4; k++) rot[b, k] = new AnimationCurve();
                 var hp = new[] { new AnimationCurve(), new AnimationCurve(), new AnimationCurve() };
+                var hipsKeys = new List<(float t, Vector3 p)>();
                 var hand = CrimsonVeil.Core.RigJoint.FindDeep(hero.transform, "Hand.R");
                 Vector3 lastHand = Vector3.zero, firstHips = Vector3.zero;
                 float fastest = 0f, fastestAt = 0f, lowestHips = float.MaxValue;
@@ -252,7 +350,8 @@ namespace CrimsonVeil.EditorTools
                         }
                     }
                     lowestHips = Mathf.Min(lowestHips, hips.position.y);
-                    hp[0].AddKey(t, p.x); hp[1].AddKey(t, p.y); hp[2].AddKey(t, p.z);
+                    clipFeet = Mathf.Min(clipFeet, FeetLowest());
+                    hipsKeys.Add((t, p));
                     if (hand != null)
                     {
                         if (f > 0)
@@ -264,6 +363,17 @@ namespace CrimsonVeil.EditorTools
                     }
                 }
                 graph.Destroy();
+                // standing on the floor (as the clip has him over his feet): the lowest the feet go through the clip is the
+                // floor - the hips' height the retargeting gives (scaled from the source's proportions) left the feet a few
+                // centimetres in the floor or over it
+                Vector3 ground = Vector3.zero;
+                if (hipsMode == HipsMode.Absolute && hips.parent != null && clipFeet < float.MaxValue)
+                    ground = hips.parent.InverseTransformVector(Vector3.up * (restFeet - clipFeet));
+                foreach (var (kt, kp) in hipsKeys)
+                {
+                    var q = kp + ground;
+                    hp[0].AddKey(kt, q.x); hp[1].AddKey(kt, q.y); hp[2].AddKey(kt, q.z);
+                }
                 impact = span > 0f ? fastestAt / span : 0f;
                 measure = new Measure
                 {

@@ -5,6 +5,30 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.41.3] – 2026-11-19
+### Chodidla už neplandají
+- **Opraveno: chodidla při chůzi a běhu plandala.** Levé chodidlo stálo na zemi se špičkou asi o 50° nahoru, pravé rovně. Ve švihu obě padala špičkou dolů.
+  - Příčina: Mixamo soubory bez postavy nemají klidovou pózu, jejich „klid“ je první snímek animace. Chůze začíná levou nohou na špičce v odrazu. Unity z té pózy postavilo avatar zdroje a odchylku přeneslo do celého klipu.
+  - Týkalo se to všech zdrojů, každého jinak: v čem byl první snímek, to se přeneslo do celého klipu.
+- **Každý zdroj teď dostane vlastní avatar ve skutečné T-póze** (`HeroMocapBaker.ConfigureSources`):
+  - délky kostí má ze své kostry, natočení kostí z T-pózy X Bota;
+  - z X Bota se bere jen kostra, ne síť, váhy kůže ani tvar těla;
+  - soubor X Bota je jako ostatní zdroje mimo git (`Art/Mocap/Reference`), stejně jako uložené avatary.
+- **T-póza hrdiny nechává chodidla, jak na nich stojí**: naplocho na zemi. Narovnání nohou je už nenaklání.
+- **Nohy na zemi**: při pečení stojících klipů je nejnižší bod chodidel v klipu přesně na podlaze. Dřív stojná noha vězela asi 3 cm v podlaze a po opravě avatarů visela asi 5 cm nad ní.
+- Výsledek u chůze:
+  - stojné chodidlo míří −19 až −22°, jako hrdina ve stoje (−25°), a levé stejně jako pravé (dřív levé +25°);
+  - kotník je při došlapu na podlaze;
+  - došlap jde přes patu;
+  - v běhu dopad na patu, plné chodidlo a odraz špičkou, souměrně.
+- Všechny klipy jsou znovu upečené (`Bake hero clips`). Galerie je přetočená.
+- Test `HeroMocapTests.TheGait_BothFeetStandFlatOnTheFloor_TheLeftAsTheRight` hlídá u chůze, běhu i sprintu:
+  - plné chodidlo ve středu opory proti klidovému postoji;
+  - dopad na patu i odraz levé nohy stejně jako pravé;
+  - kotník na podlaze.
+
+  Se starou chůzí test selže, levé chodidlo stálo na +24°.
+
 ## [0.41.2] – 2026-11-19
 ### Opravy z natáčení galerie a testy celé sady pohybů
 Při přetáčení galerie animací se ukázaly čtyři chyby:

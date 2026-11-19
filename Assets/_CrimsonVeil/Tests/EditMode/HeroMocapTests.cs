@@ -154,6 +154,45 @@ namespace CrimsonVeil.Tests
         }
 
         [Test]
+        public void TheGait_BothFeetStandFlatOnTheFloor_TheLeftAsTheRight()
+        {
+            var lib = AssetDatabase.LoadAssetAtPath<HeroMocapLibrary>(LibraryPath);
+            var hero = (GameObject)Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_CrimsonVeil/Art/Hero/Hero.fbx"));
+            try
+            {
+                Transform F(string n) => CrimsonVeil.Core.RigJoint.FindDeep(hero.transform, n);
+                var foot = new[] { F("Foot.L"), F("Foot.R") };
+                var toe = new[] { F("Toe.L"), F("Toe.R") };
+                float Pitch(int i) { var d = toe[i].position - foot[i].position; return Mathf.Atan2(d.y, new Vector2(d.x, d.z).magnitude) * Mathf.Rad2Deg; }
+                float restPitch = Pitch(0), restAnkle = foot[0].position.y;
+                foreach (var key in new[] { HeroMocap.Walk, HeroMocap.Run, HeroMocap.Sprint })
+                {
+                    Assert.IsTrue(lib.TryGet(key, out var e));
+                    // per foot: its pitch where its ankle is lowest (mid-stance, flat on the floor), and the most it lifts
+                    // its toes (the heel strike) and points them (the push-off)
+                    var low = new[] { 9f, 9f }; var flat = new float[2];
+                    var up = new[] { -99f, -99f }; var down = new[] { 99f, 99f };
+                    for (int f = 0; f < 60; f++)
+                    {
+                        e.clip.SampleAnimation(hero, e.clip.length * f / 60f);
+                        for (int i = 0; i < 2; i++)
+                        {
+                            float p = Pitch(i);
+                            if (foot[i].position.y < low[i]) { low[i] = foot[i].position.y; flat[i] = p; }
+                            up[i] = Mathf.Max(up[i], p); down[i] = Mathf.Min(down[i], p);
+                        }
+                    }
+                    Assert.AreEqual(restPitch, flat[0], 12f, $"{key}: the left foot flat on the floor where it stands (not toes up)");
+                    Assert.AreEqual(restPitch, flat[1], 12f, $"{key}: the right foot flat on the floor");
+                    Assert.AreEqual(up[0], up[1], 12f, $"{key}: the heel strike, the left as the right");
+                    Assert.AreEqual(down[0], down[1], 15f, $"{key}: the push-off, the left as the right");
+                    Assert.AreEqual(restAnkle, Mathf.Min(low[0], low[1]), 0.025f, $"{key}: the feet on the floor, not in it or over it");
+                }
+            }
+            finally { Object.DestroyImmediate(hero); }
+        }
+
+        [Test]
         public void TheCapturedSlide_IsDownUpToItsEnd_TheRollIsARoll()
         {
             var lib = AssetDatabase.LoadAssetAtPath<HeroMocapLibrary>(LibraryPath);

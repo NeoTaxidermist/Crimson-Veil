@@ -5,6 +5,20 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.35.1] – 2026-11-19
+### Luk, štít a salto ověřené ve hře
+- **Luk:**
+  - lukostřelec z Mixama stojí bokem a míří do strany, takže na hrdinovi mířil luk do kamery a luk zůstával u hrudi;
+  - z klipu se teď bere jen ruka, která natahuje tětivu (zrcadlená, protože archer drží luk v levé ruce a hrdina v pravé);
+  - ruku s lukem, trup i míření řídí hra, takže hrdina míří tam, kam hra míří, i šikmo nahoru nebo dolů;
+  - opravené bliknutí výstřelu v okamžiku plného natažení, než hra nahlásí natažený luk.
+- **Štít:** krytí i blok skutečného úderu ve hře fungují.
+- **Salto:** klip Mixama je salto s nataženým tělem, takže klip teď hraje jen odraz a otevření před dopadem. Uprostřed se hrdina schoulí do klubíčka (procedurálně).
+- `HeroMocapBaker` umí zdroj zrcadlit (levá za pravou).
+- Testy:
+  - `HeroMocapTests`: luk bere jen ruku s tětivou (i při strmém míření), plné natažení před hlášením hry je stále míření, salto je uprostřed schoulené a odraz je z klipu;
+  - `HeroMocapPlayTests`: ruka s tětivou natahuje a nohy zůstanou.
+
 ## [0.35.0] – 2026-11-19
 ### Mocap na všem, co hrdina dělá
 Klipů je teď 38 (dřív 15). Téměř všechny jsou řízené hrou, takže zůstávají v kroku s ní.

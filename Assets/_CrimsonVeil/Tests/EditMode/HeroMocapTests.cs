@@ -106,6 +106,9 @@ namespace CrimsonVeil.Tests
             Assert.AreEqual(HeroMocap.Flip, flip.key);
             Assert.AreEqual(0.4f, flip.time01, 1e-5f, "in step with the game's somersault");
             Assert.AreEqual(HeroMocap.Mask.NoHipsTurn, flip.mask, "the game turns the body over: the clip only the limbs");
+            Assert.Less(flip.weight, 0.2f, "through the middle he is tucked into a ball (the captured flip is laid out)");
+            var takeOff = HeroMocap.Choose(new HeroState { verticalVelocity = 12f, somersault = 0.05f }, c).body;
+            Assert.Greater(takeOff.weight, 0.6f, "the take-off and the opening to land are the clip's");
             c.sinceWallJump = 0.2f;
             Assert.AreEqual(HeroMocap.WallJump, HeroMocap.Choose(new HeroState { verticalVelocity = 10f, somersault = -1f }, c).body.key);
             Assert.IsTrue(HeroMocap.Choose(new HeroState { wallSliding = true, verticalVelocity = -2f, somersault = -1f }, c).body.IsNone, "the wall slide is procedural");
@@ -170,14 +173,16 @@ namespace CrimsonVeil.Tests
             var c = HeroMocap.Context.Default;
             var pick = HeroMocap.Choose(s, c);
             Assert.AreEqual(HeroMocap.BowDraw, pick.upper.key);
-            Assert.AreEqual(HeroMocap.Mask.Upper, pick.upper.mask);
+            Assert.AreEqual(HeroMocap.Mask.DrawArm, pick.upper.mask, "only the string hand: the bow arm aims where the game aims");
             Assert.AreEqual(HeroMocap.Gait, pick.body.Layer, "running on below the bow");
             c.drawing = true;
             Assert.AreEqual(HeroMocap.BowAim, HeroMocap.Choose(s, c).upper.key);
-            c.drawing = false; s.attackT = 0.7f;
+            c.drawing = false; s.attackT = HeroMocap.BowFullDraw + 0.01f;
+            Assert.AreEqual(HeroMocap.BowAim, HeroMocap.Choose(s, c).upper.key, "fully drawn before the game says held: still aiming, not loosing");
+            s.attackT = 0.7f;
             Assert.AreEqual(HeroMocap.BowShot, HeroMocap.Choose(s, c).upper.key);
             s.attackAim = 80f;
-            Assert.IsTrue(HeroMocap.Choose(s, c).upper.IsNone, "aimed steeply the procedural aim has it");
+            Assert.AreEqual(HeroMocap.BowShot, HeroMocap.Choose(s, c).upper.key, "aimed steeply too: the bow arm is procedural");
 
             var guard = Ground(); guard.attackForm = VeilForm.Shield;
             c = HeroMocap.Context.Default; c.shieldHeld = true;
@@ -215,6 +220,9 @@ namespace CrimsonVeil.Tests
             Assert.AreEqual(0.5f, HeroMocap.MaskWeight(HeroMocap.Mask.Gait, "Chest"), 1e-5f);
             Assert.AreEqual(1f, HeroMocap.MaskWeight(HeroMocap.Mask.Gait, "LowerLeg.R"));
             Assert.AreEqual(0f, HeroMocap.MaskWeight(HeroMocap.Mask.GaitArmed, "UpperArm.R"));
+            Assert.AreEqual(1f, HeroMocap.MaskWeight(HeroMocap.Mask.DrawArm, "LowerArm.L"));
+            Assert.AreEqual(0f, HeroMocap.MaskWeight(HeroMocap.Mask.DrawArm, "UpperArm.R"), "the bow arm is the game's");
+            Assert.AreEqual(0f, HeroMocap.MaskWeight(HeroMocap.Mask.DrawArm, "Chest"));
         }
 
         [Test]

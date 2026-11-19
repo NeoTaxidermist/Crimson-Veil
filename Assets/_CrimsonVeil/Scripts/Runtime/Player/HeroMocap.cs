@@ -55,6 +55,9 @@ namespace CrimsonVeil.Player
             Gait,
             /// <summary>The gait with a weapon in hand (the weapon arm stays the procedural's).</summary>
             GaitArmed,
+            /// <summary>Only the arm that draws the bow's string (the captured archer stands side-on and shoots to his
+            /// side: the bow arm, the trunk and the aim stay the procedural's, which shoot where the hero faces).</summary>
+            DrawArm,
         }
 
         /// <summary>What the game wants played this frame on one channel.</summary>
@@ -117,6 +120,9 @@ namespace CrimsonVeil.Player
         public const float HardLandingSpeed = 24f, RollOutSpeed = 3f;
         public const float HardLandingTime = 0.75f, LandRollTime = 1.2f, WallJumpTime = 0.55f, HangCatchTime = 0.45f,
                            HurtTime = 0.55f, BlockTime = 0.5f, GetUpTime = 2.5f;
+
+        /// <summary>Through the bow's attack (0..1): fully drawn, and the string let go.</summary>
+        public const float BowFullDraw = 0.3f, BowLoose = 0.36f;
 
         /// <summary>Where in the captured swing (0..1) he is at the forward end of the pendulum.</summary>
         public const float SwingSync = 0.12f;
@@ -185,7 +191,7 @@ namespace CrimsonVeil.Player
             {
                 if (s.wallSliding) return Choice.None;
                 if (Somersault.Active(s.somersault))
-                    return new Choice { key = Flip, driven = true, time01 = s.somersault, weight = 0.85f, mask = Mask.NoHipsTurn };
+                    return new Choice { key = Flip, driven = true, time01 = s.somersault, weight = 0.85f * (1f - Somersault.Tuck(s.somersault)), mask = Mask.NoHipsTurn };   // (the captured flip is laid out: through the middle he tucks into a ball, the procedural tuck)
                 if (c.sinceWallJump < WallJumpTime) return new Choice { key = WallJump, bySeconds = true, seconds = c.sinceWallJump, weight = 0.7f, mask = gear };
                 if (s.verticalVelocity > 0.5f)
                     return new Choice { key = JumpUp, driven = true, time01 = 1f - Mathf.Clamp01(s.verticalVelocity / Mathf.Max(1f, c.jumpSpeed)), weight = 0.7f, mask = gear };
@@ -221,14 +227,15 @@ namespace CrimsonVeil.Player
             if (c.dead || s.hanging || s.climbing || s.swinging) return Choice.None;
             if (s.attackForm == VeilForm.Bow && (s.attacking || c.drawing))
             {
-                // aimed far up or down the captured bow (held level) gives way to the procedural aim
-                float level = 1f - Mathf.Clamp01(Mathf.Abs(s.attackAim) / 50f);
-                float w = 0.8f * level;
-                if (c.drawing) return new Choice { key = BowAim, weight = w, mask = Mask.Upper };
-                if (s.attackT >= 0f && s.attackT < VeilCasting.BowHoldAt)
-                    return new Choice { key = BowDraw, driven = true, time01 = s.attackT / VeilCasting.BowHoldAt, weight = w, mask = Mask.Upper };
-                if (s.attackT >= VeilCasting.BowHoldAt)
-                    return new Choice { key = BowShot, driven = true, time01 = Mathf.InverseLerp(VeilCasting.BowHoldAt, 1f, s.attackT), weight = w, mask = Mask.Upper };
+                // (only the drawing arm: the procedural bow arm aims wherever the game aims, level or steep)
+                float w = 0.85f;
+                // (the draw reaches full draw a moment before the game says it is held: until the string is let go it aims)
+                if (c.drawing || (s.attackT >= BowFullDraw && s.attackT < BowLoose))
+                    return new Choice { key = BowAim, weight = w, mask = Mask.DrawArm };
+                if (s.attackT >= 0f && s.attackT < BowFullDraw)
+                    return new Choice { key = BowDraw, driven = true, time01 = s.attackT / BowFullDraw, weight = w, mask = Mask.DrawArm };
+                if (s.attackT >= BowLoose)
+                    return new Choice { key = BowShot, driven = true, time01 = Mathf.InverseLerp(BowLoose, 1f, s.attackT), weight = w, mask = Mask.DrawArm };
             }
             if (c.sinceHurt < HurtTime) return new Choice { key = Hurt, bySeconds = true, seconds = c.sinceHurt, weight = 0.75f, mask = Mask.Upper };
             if (c.shieldHeld)
@@ -347,6 +354,8 @@ namespace CrimsonVeil.Player
                     return IsWeaponArm(bone) ? 0f : 1f;
                 case Mask.NoHipsTurn:
                     return bone == "Hips" ? 0f : 1f;
+                case Mask.DrawArm:
+                    return IsDrawArm(bone) ? 1f : 0f;
                 case Mask.Gait:
                 case Mask.GaitArmed:
                     if (mask == Mask.GaitArmed && IsWeaponArm(bone)) return 0f;
@@ -357,6 +366,8 @@ namespace CrimsonVeil.Player
         }
 
         static bool IsLegOrHips(string b) => b == "Hips" || b.StartsWith("UpperLeg") || b.StartsWith("LowerLeg") || b.StartsWith("Foot") || b.StartsWith("Toe");
+        static bool IsDrawArm(string b) => b == "Shoulder.L" || b == "UpperArm.L" || b == "LowerArm.L" || b == "Hand.L"
+                                           || b.StartsWith("Finger.L") || b.StartsWith("Thumb.L");
         static bool IsTrunk(string b) => b == "Spine" || b == "Chest" || b == "UpperChest" || b == "Neck" || b == "Head";
         static bool IsWeaponArm(string b) => b == "Shoulder.R" || b == "UpperArm.R" || b == "LowerArm.R" || b == "Hand.R"
                                              || b.StartsWith("Finger.R") || b.StartsWith("Thumb.R");

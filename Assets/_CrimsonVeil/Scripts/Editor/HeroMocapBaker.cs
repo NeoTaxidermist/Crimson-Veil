@@ -291,6 +291,20 @@ namespace CrimsonVeil.EditorTools
             finally { Object.DestroyImmediate(hero); }
         }
 
+        /// <summary>Imports a source's clip mirrored (left for right) or not.</summary>
+        public static void SetMirror(string fbxPath, bool mirror)
+        {
+            var imp = AssetImporter.GetAtPath(fbxPath) as ModelImporter;
+            if (imp == null) return;
+            var clips = imp.clipAnimations;
+            if (clips == null || clips.Length == 0) clips = imp.defaultClipAnimations;
+            bool dirty = false;
+            foreach (var c in clips) if (c.mirror != mirror) { c.mirror = mirror; dirty = true; }
+            if (!dirty) return;
+            imp.clipAnimations = clips;
+            imp.SaveAndReimport();
+        }
+
         /// <summary>The first animation clip in a source FBX.</summary>
         public static AnimationClip SourceClip(string fbxPath)
         {
@@ -312,6 +326,7 @@ namespace CrimsonVeil.EditorTools
             var log = new System.Text.StringBuilder();
             foreach (var r in HeroMocapRecipe.All)
             {
+                SetMirror(SourceDir + "/" + r.source, r.mirror);
                 var src = SourceClip(SourceDir + "/" + r.source);
                 if (src == null) { log.Append("missing " + r.source + "\n"); continue; }
                 var clip = Bake(src, r.key, r.loop, r.hips, r.from, r.to, out float impact, out var m);
@@ -341,13 +356,15 @@ namespace CrimsonVeil.EditorTools
         {
             public string key, source;
             public bool loop, gait, blow;
+            /// <summary>Left and right swapped: the source holds in its left hand what the hero holds in his right.</summary>
+            public bool mirror;
             public HeroMocapBaker.HipsMode hips;
             public float from, to;
         }
 
         static Item I(string key, string source, bool loop = false, HeroMocapBaker.HipsMode hips = HeroMocapBaker.HipsMode.Absolute,
-                      float from = 0f, float to = 1f, bool gait = false, bool blow = false)
-            => new Item { key = key, source = source, loop = loop, hips = hips, from = from, to = to, gait = gait, blow = blow };
+                      float from = 0f, float to = 1f, bool gait = false, bool blow = false, bool mirror = false)
+            => new Item { key = key, source = source, loop = loop, hips = hips, from = from, to = to, gait = gait, blow = blow, mirror = mirror };
 
         const HeroMocapBaker.HipsMode Rel = HeroMocapBaker.HipsMode.Relative, Gnd = HeroMocapBaker.HipsMode.Grounded;
         const string SS = "Sword and Shield Pack/", LB = "Pro Longbow Pack/";
@@ -391,9 +408,10 @@ namespace CrimsonVeil.EditorTools
             I(HeroMocap.ShieldBash, SS + "sword and shield attack (2).fbx", blow: true),
             I(HeroMocap.BlockIdle, SS + "sword and shield block idle.fbx", true),
             I(HeroMocap.Block, SS + "sword and shield block.fbx"),
-            I(HeroMocap.BowDraw, LB + "standing draw arrow.fbx"),
-            I(HeroMocap.BowAim, LB + "standing aim overdraw.fbx", true),
-            I(HeroMocap.BowShot, LB + "standing aim recoil.fbx"),
+            // (the archer holds the bow in his left hand, the hero in his right - the weapon hand: mirrored)
+            I(HeroMocap.BowDraw, LB + "standing draw arrow.fbx", mirror: true),
+            I(HeroMocap.BowAim, LB + "standing aim overdraw.fbx", true, mirror: true),
+            I(HeroMocap.BowShot, LB + "standing aim recoil.fbx", mirror: true),
             I(HeroMocap.Hurt, SS + "sword and shield impact.fbx"),
             I(HeroMocap.Death, SS + "sword and shield death.fbx", hips: Gnd),
         };

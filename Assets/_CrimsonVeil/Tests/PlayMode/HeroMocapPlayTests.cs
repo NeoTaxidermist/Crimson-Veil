@@ -71,7 +71,7 @@ namespace CrimsonVeil.Tests
             var leg = CrimsonVeil.Core.RigJoint.FindDeep(hero.transform, "UpperLeg.L");
             var arm = CrimsonVeil.Core.RigJoint.FindDeep(hero.transform, "UpperArm.L");
             var legRest = leg.localRotation; var armRest = arm.localRotation;
-            var pick = new HeroMocap.Pick { upper = new HeroMocap.Choice { key = HeroMocap.BowAim, weight = 1f, mask = HeroMocap.Mask.Upper } };
+            var pick = new HeroMocap.Pick { upper = new HeroMocap.Choice { key = HeroMocap.BowAim, weight = 1f, mask = HeroMocap.Mask.DrawArm } };
             for (int i = 0; i < 20; i++)
             {
                 leg.localRotation = legRest; arm.localRotation = armRest;
@@ -79,7 +79,7 @@ namespace CrimsonVeil.Tests
                 yield return null;
             }
             Assert.Less(Quaternion.Angle(legRest, leg.localRotation), 0.01f, "the legs are the body's");
-            Assert.Greater(Quaternion.Angle(armRest, arm.localRotation), 30f, "the bow arm is up");
+            Assert.Greater(Quaternion.Angle(armRest, arm.localRotation), 30f, "the string hand draws");
             Assert.AreEqual(HeroMocap.BowAim, mocap.CurrentUpper);
         }
 

@@ -118,13 +118,13 @@ namespace CrimsonVeil.Tests
         public void Landing_AHardFallTakesTheKnees_FromARunHeRollsOut_AnOrdinaryJumpDoesNot()
         {
             var c = HeroMocap.Context.Default;
-            c.sinceLanded = 0.1f; c.landFallSpeed = 30f; c.landRunSpeed = 0f;
+            c.sinceLanded = 0.1f; c.landFallHeight = 8f; c.landRunSpeed = 0f;
             Assert.AreEqual(HeroMocap.HardLanding, HeroMocap.Choose(Ground(), c).body.key);
             c.landRunSpeed = 7f;
             Assert.AreEqual(HeroMocap.LandRoll, HeroMocap.Choose(Ground(7f), c).body.key);
-            c.landFallSpeed = 18f;   // (a plain jump comes down at about this)
+            c.landFallHeight = 3.4f;   // (a plain jump comes down from its own height)
             Assert.AreEqual(HeroMocap.Gait, HeroMocap.Choose(Ground(7f), c).body.Layer);
-            c.landFallSpeed = 30f; c.sinceLanded = 3f;
+            c.landFallHeight = 8f; c.sinceLanded = 3f;
             Assert.AreEqual(HeroMocap.Gait, HeroMocap.Choose(Ground(7f), c).body.Layer, "and then he runs on");
         }
 

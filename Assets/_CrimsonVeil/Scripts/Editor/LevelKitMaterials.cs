@@ -25,6 +25,8 @@ namespace CrimsonVeil.EditorTools
         public Material veil, wisp, leafParticle, inkGrade;
         /// <summary>Simple particle materials (hit bursts, ropes) — the veil shader is for cloth only.</summary>
         public Material burst, rope;
+        /// <summary>The test room: plain grey blocks and a plain grey wall behind them (no stone, no grain).</summary>
+        public Material testBlock, testBackdrop;
 
         static LevelKitMaterials cached;
 
@@ -94,6 +96,8 @@ namespace CrimsonVeil.EditorTools
                 rope = Transparent(Mat("Rope", particles, new Color(1.1f, 0.04f, 0.05f, 1f))),
                 leafParticle = Transparent(Mat("Leaf", particles, new Color(0.9f, 0.03f, 0.05f, 1f))),
                 inkGrade = Mat("InkGrade", Shader.Find("CrimsonVeil/InkGrade"), Color.white),
+                testBlock = Sil("TestBlock", sil, new Color(0.34f, 0.34f, 0.35f), 0f, 0f),
+                testBackdrop = Sil("TestBackdrop", sil, new Color(0.62f, 0.62f, 0.63f), 0f, 0f),
             };
             m.shaft.SetFloat("_SrcBlend", (float)BlendMode.SrcAlpha);
             m.shaft.SetFloat("_DstBlend", (float)BlendMode.One);

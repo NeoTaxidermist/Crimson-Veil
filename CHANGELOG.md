@@ -5,6 +5,16 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.37.0] – 2026-11-19
+### Testovací místnost
+- Ze startu se teď dá jít doleva pod zadní zdí (visí, je pod ní 4 m průchod) do **testovací místnosti** (x -61 až -14,5), kde si jde prohlížet pohyb a animace hrdiny:
+  - jen šedé bloky bez textur a trávy a šedá stěna za nimi (žádné ruiny, mlha ani obloha);
+  - nejsou tam nepřátelé;
+  - při vstupu se hrdinovi odemknou všechny zbraně (`TestRoom`);
+  - dlouhá rovná podlaha (chůze, běh, otočka, dobrzdění, skluz), schod, blok vyšší než skok (chytit hranu a vylézt), šachta pro skoky od zdi (vchází se pod visící zdí) nahoru na plošinu ve výšce 10 m, z níž seskok končí tvrdým dopadem, nízký tunel pod plošinou (plížení, skluz), koncová zeď a dva kruhy pro bič.
+- **Tvrdý dopad podle výšky pádu.** Rychlost pádu je ve hře omezená na 18 m/s, takže práh 24 m/s se nikdy nesplnil. Tvrdý dopad (a z běhu kotoul) teď nastane při pádu z 5,5 m a víc. Obyčejný skok (3,4 m) ho nespustí.
+- Testy: `TestRoomTests` (podlaha navazuje na start bez mezery, schod, blok k chycení, šachta, plošina pro tvrdý dopad s volným pádem až na podlahu, tunel, kruhy, místnost zná své místo a všechny zbraně); `HeroMocapTests` (dopad podle výšky).
+
 ## [0.36.0] – 2026-11-19
 ### Otočka v běhu, dobrzdění a zavrávorání
 - **Otočka v běhu:** když se hrdina v běhu otočí, smykne se na nohou (`Running Turn 180`). Tělo otáčí hra, klip dává jen končetiny. Se zbraní v ruce jen nohy.

@@ -40,7 +40,7 @@ namespace CrimsonVeil.EditorTools
             var deco = Group(level, "Dekorace");
 
             // ---------------------------------------------------------------- terrain
-            T(terrain, -14f, 14f, 2f, 18f, TerrainStyle.Ruin, 1, false);    // back wall
+            T(terrain, -14f, 14f, 2f, 10f, TerrainStyle.Ruin, 1, false);    // back wall (hangs: the way into the test room under it)
             T(terrain, -1.5f, 0f, 25f, 12f, TerrainStyle.Rock, 2);          // start floor  (-14 .. 11)
             T(terrain, 14.5f, 3.6f, 5f, 4.2f, TerrainStyle.Ruin, 3);        // ledge block (grab & climb)
             T(terrain, 21f, 0.6f, 8f, 10f, TerrainStyle.Rock, 4);            // landing     (17 .. 25)
@@ -54,6 +54,7 @@ namespace CrimsonVeil.EditorTools
             T(terrain, 103f, 0f, 24f, 12f, TerrainStyle.Rock, 12);           // far side    (91 .. 115)
             T(terrain, 98.5f, 4.6f, 4.5f, 1f, TerrainStyle.Ruin, 14, false); // overhang (a root crawler hangs under it)
             T(terrain, -11f, 6f, 4f, 1f, TerrainStyle.Ruin, 15, false);     // high perch (-13 .. -9): only the whip swing reaches it
+            BuildTestRoom(level);
             // The way on (the tower, the ramparts, the well, the climb out): see Extension.
             foreach (var b in Extension) T(terrain, b.cx, b.top, b.width, b.height, b.style, b.seed, b.grass);
 
@@ -174,6 +175,7 @@ namespace CrimsonVeil.EditorTools
             for (int i = 0; i < 124; i++)
             {
                 float gx = -16f + i * 2.9f;
+                if (gx < TestRoomRight + 1.5f) continue;   // (no grass in the test room)
                 if (!GroundSpan(gx, 1.5f, out float gy, out float span)) continue;
                 OnLip(F.Grass(new Vector3(gx, gy - 0.1f - (i % 3) * 0.08f, 0f), LevelLayer.Foreground, 100 + i, span, new Vector2(0.6f, 2.1f), Mathf.RoundToInt(40 * span / 3.4f), null, 0.07f), gx, deco);
                 if (i % 4 == 1 && GroundSpan(gx + 1f, 1f, out float fy, out _))
@@ -266,7 +268,7 @@ namespace CrimsonVeil.EditorTools
             F.Block(deco, "DistantCliffs", new Vector3(30f, -10f, 110f), new Vector3(500f, 24f, 4f), LevelKitMaterials.Get().inkSky, false);
 
             // ---------------------------------------------------------------- mist & light
-            F.MistBand(new Vector3(50f, -1.6f, 1.2f), LevelLayer.Playfield, 180f, 2.6f).transform.SetParent(deco, true);
+            F.MistBand(new Vector3(63f, -1.6f, 1.2f), LevelLayer.Playfield, 154f, 2.6f).transform.SetParent(deco, true); // (from the test room's door)
             foreach (var (y, l, w, h, dz) in new[] { (-1f, LevelLayer.Near, 440f, 7f, -4f), (0f, LevelLayer.Mid, 560f, 12f, -10f), (-2f, LevelLayer.Far, 700f, 22f, -20f) })
             {
                 var band = F.MistBand(new Vector3(160f, y, 0f), l, w, h);
@@ -366,6 +368,46 @@ namespace CrimsonVeil.EditorTools
             if (mirror) go.transform.rotation = Quaternion.Euler(0f, 180f, 0f); // turned round, not negatively scaled (keeps winding)
             go.transform.SetParent(parent, true);
             return go;
+        }
+
+        /// <summary>The test room's span (x): left of the start, through under the back wall.</summary>
+        public const float TestRoomLeft = -61f, TestRoomRight = -14.5f;
+
+        /// <summary>
+        /// The test room's blocks (centre x, top, width, height): grey and plain, to look at the hero's movement. Left
+        /// of the start through under the back wall: a long flat floor (walk, run, turn, stop, slide), a step, a block
+        /// to grab and climb, a wall-jump shaft up to a deck 10 m high (drop off it: a hard landing), a low tunnel
+        /// (crawl or slide) under the deck, the end wall. Two whip rings. No enemies, no grass.
+        /// </summary>
+        public static readonly BlockDef[] TestRoomBlocks =
+        {
+            new BlockDef("test floor", -37.45f, 0f, 47.1f, 6f, TerrainStyle.Ruin, 0, false),        // -61 .. -13.9 (meets the start floor under the wall)
+            new BlockDef("test step", -26f, 1.4f, 2.4f, 1.4f, TerrainStyle.Ruin, 0, false),          // a hop up
+            new BlockDef("test ledge block", -32.5f, 4.2f, 3f, 4.2f, TerrainStyle.Ruin, 0, false),   // higher than a jump: grab and climb
+            new BlockDef("test shaft right", -40.5f, 10f, 1f, 8f, TerrainStyle.Ruin, 0, false),       // hangs 2 m over the floor: walk in under it
+            new BlockDef("test shaft left", -44.5f, 10f, 1f, 10f, TerrainStyle.Ruin, 0, false),       // 3 m shaft between them
+            new BlockDef("test deck", -49.5f, 10f, 9f, 1f, TerrainStyle.Ruin, 0, false),             // -54 .. -45, 10 m up: drop off for a hard landing
+            new BlockDef("test tunnel", -50f, 2.6f, 6f, 1.5f, TerrainStyle.Ruin, 0, false),          // -53 .. -47 under the deck, 1.1 m over the floor: crawl or slide
+            new BlockDef("test end wall", -61.5f, 16f, 1f, 16f, TerrainStyle.Ruin, 0, false),
+        };
+
+        /// <summary>The whip rings in the test room.</summary>
+        public static readonly Vector2[] TestRoomRings = { new Vector2(-21f, 7.5f), new Vector2(-37f, 14f) };
+
+        static void BuildTestRoom(Transform level)
+        {
+            var mats = LevelKitMaterials.Get();
+            var room = new GameObject("TestRoom");
+            room.transform.SetParent(level, false);
+            var tr = room.AddComponent<TestRoom>();
+            tr.minX = TestRoomLeft; tr.maxX = TestRoomRight;
+            foreach (var b in TestRoomBlocks)
+                F.Block(room.transform, b.name, new Vector3(b.cx, b.top - b.height * 0.5f, 0f), new Vector3(b.width, b.height, 4f), mats.testBlock);
+            // a plain wall behind it all: no ruins, mist or sky behind the hero
+            F.Block(room.transform, "test backdrop", new Vector3((TestRoomLeft + TestRoomRight) * 0.5f - 1f, 12f, 3f),
+                    new Vector3(TestRoomRight - TestRoomLeft + 6f, 34f, 0.2f), mats.testBackdrop, false);
+            foreach (var r in TestRoomRings)
+                Place("GrapplePoint", new Vector3(r.x, r.y, 0f), LevelLayer.Playfield, room.transform);
         }
 
         static void Zone(Transform parent, float x, float minX, float maxX, Vector3 offset)

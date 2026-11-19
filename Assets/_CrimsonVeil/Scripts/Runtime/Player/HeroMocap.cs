@@ -98,7 +98,7 @@ namespace CrimsonVeil.Player
             public float stillTime;
             /// <summary>Counts the blows of a combo (alternates the cuts).</summary>
             public int swing;
-            public float sinceLanded, landFallSpeed, landRunSpeed;
+            public float sinceLanded, landFallHeight, landRunSpeed;
             public float sinceWallJump, sinceHangStart, sinceHurt, sinceBlock, sinceDeath, sinceRespawn;
             /// <summary>Since a blow the scarf took for him (a flinch, no harm), since he turned round at a run, since he
             /// pulled up out of a run.</summary>
@@ -124,8 +124,9 @@ namespace CrimsonVeil.Player
         /// <summary>The scarf's health under which he stands hurt.</summary>
         public const float InjuredBelow = 0.35f;
 
-        /// <summary>A landing from a fall faster than this (m/s) is a hard one: from a run he rolls out of it.</summary>
-        public const float HardLandingSpeed = 24f, RollOutSpeed = 3f;
+        /// <summary>A landing from a fall this high (m) is a hard one (the fall's speed is capped: a jump lands as fast
+        /// as a drop from a tower); from a run (m/s) he rolls out of it.</summary>
+        public const float HardLandingHeight = 5.5f, RollOutSpeed = 3f;
         public const float HardLandingTime = 0.75f, LandRollTime = 1.2f, WallJumpTime = 0.55f, HangCatchTime = 0.45f,
                            HurtTime = 0.55f, BlockTime = 0.5f, GetUpTime = 2.5f,
                            StaggerTime = 0.8f, TurnTime = 0.6f, StopTime = 0.8f;
@@ -214,7 +215,7 @@ namespace CrimsonVeil.Player
             // a blow that got through staggers him back (a blow on the scarf or the shield only makes him flinch)
             if (c.sinceHurt < StaggerTime && s.speed < 2f && !(s.attacking && s.attackT >= 0f))   // (running off again, he runs)
                 return new Choice { key = Stagger, bySeconds = true, seconds = c.sinceHurt, weight = 0.85f, mask = gear };
-            if (c.landFallSpeed >= HardLandingSpeed)
+            if (c.landFallHeight >= HardLandingHeight)
             {
                 if (c.landRunSpeed >= RollOutSpeed && c.sinceLanded < LandRollTime)
                     return new Choice { key = LandRoll, bySeconds = true, seconds = c.sinceLanded, weight = 0.85f, mask = gear };

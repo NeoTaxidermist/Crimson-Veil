@@ -5,6 +5,15 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.36.0] – 2026-11-19
+### Otočka v běhu, dobrzdění a zavrávorání
+- **Otočka v běhu:** když se hrdina v běhu otočí, smykne se na nohou (`Running Turn 180`). Tělo otáčí hra, klip dává jen končetiny. Se zbraní v ruce jen nohy.
+- **Dobrzdění:** když z běhu (aspoň 4 m/s) zastaví, poslední kroky brzdí v předklonu a pak se narovná. Z klipu jsou jen nohy a trochu trup, ruce zůstávají herní. Když se hned rozběhne, běží.
+- **Zavrávorání:** rána, která projde, ho celého zapotácí dozadu (`sword and shield impact (2)`). Rána, kterou vezme šála nebo štít, nechá jen ucuknutí horní polovinou. Ve vzduchu a uprostřed vlastního úderu taky jen ucukne, a když se po ráně rozběhne, běží.
+- Sražení k zemi se vstáváním nepřidávám: omráčení ve hře trvá jen 0,3 s a klip `Getting Up Knocked Down` začíná až vleže.
+- Klipů je 41. `HeroAnimator` sleduje otočku a zastavení z běhu i ránu do šály.
+- Testy (`HeroMocapTests`): rána, která projde, zapotácí, ve vzduchu jen ucuknutí a rozběh vyhraje; otočka, dobrzdění, rozběh místo dobrzdění a maska nohou.
+
 ## [0.35.1] – 2026-11-19
 ### Luk, štít a salto ověřené ve hře
 - **Luk:**

@@ -29,7 +29,9 @@ namespace CrimsonVeil.Player
         // fighting
         public const string SlashA = "SlashA", SlashB = "SlashB", SlashC = "SlashC", Stab = "Stab", ShieldBash = "ShieldBash",
                             BlockIdle = "BlockIdle", Block = "Block", BowDraw = "BowDraw", BowAim = "BowAim", BowShot = "BowShot",
-                            Hurt = "Hurt", Death = "Death";
+                            Hurt = "Hurt", Stagger = "Stagger", Death = "Death";
+        // turning and stopping out of a run
+        public const string Turn = "Turn", RunStop = "RunStop";
 
         /// <summary>The gait's layer (walk, run and sprint blended into one by speed).</summary>
         public const string Gait = "Gait";
@@ -58,6 +60,8 @@ namespace CrimsonVeil.Player
             /// <summary>Only the arm that draws the bow's string (the captured archer stands side-on and shoots to his
             /// side: the bow arm, the trunk and the aim stay the procedural's, which shoot where the hero faces).</summary>
             DrawArm,
+            /// <summary>The legs and the hips, the trunk a little (stopping out of a run: the arms stay the game's).</summary>
+            Legs,
         }
 
         /// <summary>What the game wants played this frame on one channel.</summary>
@@ -96,6 +100,9 @@ namespace CrimsonVeil.Player
             public int swing;
             public float sinceLanded, landFallSpeed, landRunSpeed;
             public float sinceWallJump, sinceHangStart, sinceHurt, sinceBlock, sinceDeath, sinceRespawn;
+            /// <summary>Since a blow the scarf took for him (a flinch, no harm), since he turned round at a run, since he
+            /// pulled up out of a run.</summary>
+            public float sinceFlinch, sinceTurn, sinceStop;
             public bool dead, drawing, shieldHeld;
             public float health01;
             /// <summary>The take-off speed of a jump (the rise is laid over it).</summary>
@@ -107,6 +114,7 @@ namespace CrimsonVeil.Player
             {
                 sinceLanded = 99f, sinceWallJump = 99f, sinceHangStart = 99f, sinceHurt = 99f, sinceBlock = 99f,
                 sinceDeath = 99f, sinceRespawn = 99f, health01 = 1f, jumpSpeed = 12f,
+                sinceFlinch = 99f, sinceTurn = 99f, sinceStop = 99f,
             };
         }
 
@@ -119,7 +127,11 @@ namespace CrimsonVeil.Player
         /// <summary>A landing from a fall faster than this (m/s) is a hard one: from a run he rolls out of it.</summary>
         public const float HardLandingSpeed = 24f, RollOutSpeed = 3f;
         public const float HardLandingTime = 0.75f, LandRollTime = 1.2f, WallJumpTime = 0.55f, HangCatchTime = 0.45f,
-                           HurtTime = 0.55f, BlockTime = 0.5f, GetUpTime = 2.5f;
+                           HurtTime = 0.55f, BlockTime = 0.5f, GetUpTime = 2.5f,
+                           StaggerTime = 0.8f, TurnTime = 0.6f, StopTime = 0.8f;
+
+        /// <summary>A turn or a stop is out of a run this fast (m/s).</summary>
+        public const float TurnFromSpeed = 3f, StopFromSpeed = 4f;
 
         /// <summary>Through the bow's attack (0..1): fully drawn, and the string let go.</summary>
         public const float BowFullDraw = 0.3f, BowLoose = 0.36f;
@@ -199,6 +211,9 @@ namespace CrimsonVeil.Player
             }
             if (s.dashing) return new Choice { key = Dash, driven = true, time01 = c.dashProgress, weight = 0.6f, mask = gear };
             if (s.sliding) return new Choice { key = Slide, driven = true, time01 = s.slideProgress, weight = 0.8f, mask = gear };
+            // a blow that got through staggers him back (a blow on the scarf or the shield only makes him flinch)
+            if (c.sinceHurt < StaggerTime && s.speed < 2f && !(s.attacking && s.attackT >= 0f))   // (running off again, he runs)
+                return new Choice { key = Stagger, bySeconds = true, seconds = c.sinceHurt, weight = 0.85f, mask = gear };
             if (c.landFallSpeed >= HardLandingSpeed)
             {
                 if (c.landRunSpeed >= RollOutSpeed && c.sinceLanded < LandRollTime)
@@ -206,6 +221,12 @@ namespace CrimsonVeil.Player
                 if (c.landRunSpeed < RollOutSpeed && c.sinceLanded < HardLandingTime && s.speed < 1f)
                     return new Choice { key = HardLanding, bySeconds = true, seconds = c.sinceLanded, weight = 0.8f, mask = gear };
             }
+            // turning round at a run: he skids round on his feet (the game turns the body: the clip has the limbs)
+            if (c.sinceTurn < TurnTime && !s.crouching && !(s.attacking && s.attackT >= 0f))
+                return new Choice { key = Turn, bySeconds = true, seconds = c.sinceTurn, weight = 0.75f, mask = armed ? Mask.Legs : Mask.NoHipsTurn };
+            // pulling up out of a run: the last steps brake and he straightens (unless he sets off again)
+            if (c.sinceStop < StopTime && s.speed < 1.5f && !s.crouching && !(s.attacking && s.attackT >= 0f))
+                return new Choice { key = RunStop, bySeconds = true, seconds = c.sinceStop, weight = 0.8f, mask = Mask.Legs };
             // (crouch-walking stays procedural: the captured one shuffles short steps, at the game's speed a scurry)
             if (s.crouching)
                 return s.speed > 0.2f ? Choice.None : new Choice { key = CrouchIdle, weight = 0.7f, mask = gear };
@@ -237,7 +258,10 @@ namespace CrimsonVeil.Player
                 if (s.attackT >= BowLoose)
                     return new Choice { key = BowShot, driven = true, time01 = Mathf.InverseLerp(BowLoose, 1f, s.attackT), weight = w, mask = Mask.DrawArm };
             }
-            if (c.sinceHurt < HurtTime) return new Choice { key = Hurt, bySeconds = true, seconds = c.sinceHurt, weight = 0.75f, mask = Mask.Upper };
+            // a flinch: a blow the scarf or the shield took - or one that got through while he can't stagger (in the air,
+            // or mid-blow: the waist up only)
+            float flinch = Mathf.Min(c.sinceFlinch, !s.grounded || (s.attacking && s.attackT >= 0f) ? c.sinceHurt : 99f);
+            if (flinch < HurtTime) return new Choice { key = Hurt, bySeconds = true, seconds = flinch, weight = 0.75f, mask = Mask.Upper };
             if (c.shieldHeld)
             {
                 if (c.sinceBlock < BlockTime) return new Choice { key = Block, bySeconds = true, seconds = c.sinceBlock, weight = 0.8f, mask = Mask.Upper };
@@ -356,6 +380,9 @@ namespace CrimsonVeil.Player
                     return bone == "Hips" ? 0f : 1f;
                 case Mask.DrawArm:
                     return IsDrawArm(bone) ? 1f : 0f;
+                case Mask.Legs:
+                    if (IsLegOrHips(bone)) return 1f;
+                    return bone == "Spine" ? 0.5f : bone == "Chest" ? 0.3f : 0f;
                 case Mask.Gait:
                 case Mask.GaitArmed:
                     if (mask == Mask.GaitArmed && IsWeaponArm(bone)) return 0f;

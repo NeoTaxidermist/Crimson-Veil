@@ -190,8 +190,44 @@ namespace CrimsonVeil.Tests
             c.sinceBlock = 0.1f;
             Assert.AreEqual(HeroMocap.Block, HeroMocap.Choose(guard, c).upper.key, "a blow on the shield jolts it");
 
-            c = HeroMocap.Context.Default; c.sinceHurt = 0.1f;
-            Assert.AreEqual(HeroMocap.Hurt, HeroMocap.Choose(Ground(), c).upper.key);
+            c = HeroMocap.Context.Default; c.sinceFlinch = 0.1f;
+            Assert.AreEqual(HeroMocap.Hurt, HeroMocap.Choose(Ground(), c).upper.key, "a blow the scarf took: a flinch");
+        }
+
+        [Test]
+        public void ABlowThatGetsThrough_StaggersHim_InTheAirHeFlinches()
+        {
+            var c = HeroMocap.Context.Default; c.sinceHurt = 0.1f;
+            var pick = HeroMocap.Choose(Ground(), c);
+            Assert.AreEqual(HeroMocap.Stagger, pick.body.key, "standing, the whole body reels back");
+            Assert.IsTrue(pick.upper.IsNone, "no flinch on top of the stagger");
+            var air = new HeroState { verticalVelocity = -3f, somersault = -1f };
+            pick = HeroMocap.Choose(air, c);
+            Assert.AreEqual(HeroMocap.Hurt, pick.upper.key, "in the air only the waist up");
+            Assert.AreNotEqual(HeroMocap.Stagger, pick.body.key);
+            Assert.AreEqual(HeroMocap.Gait, HeroMocap.Choose(Ground(5f), c).body.Layer, "running off again, he runs");
+            c.sinceHurt = HeroMocap.StaggerTime + 0.1f;
+            Assert.AreNotEqual(HeroMocap.Stagger, HeroMocap.Choose(Ground(), c).body.key, "and then it is over");
+        }
+
+        [Test]
+        public void TurningRoundAtARun_HeSkids_PullingUp_HeBrakes()
+        {
+            var c = HeroMocap.Context.Default; c.sinceTurn = 0.2f;
+            var turn = HeroMocap.Choose(Ground(2f), c).body;
+            Assert.AreEqual(HeroMocap.Turn, turn.key);
+            Assert.AreEqual(0.2f, turn.seconds, 1e-5f);
+            Assert.AreEqual(HeroMocap.Mask.NoHipsTurn, turn.mask, "the game turns the body round: the clip has the limbs");
+            var armed = Ground(2f); armed.weaponHeld = 1f;
+            Assert.AreEqual(HeroMocap.Mask.Legs, HeroMocap.Choose(armed, c).body.mask, "with a weapon only the legs skid");
+
+            c = HeroMocap.Context.Default; c.sinceStop = 0.3f;
+            var stop = HeroMocap.Choose(Ground(0.5f), c).body;
+            Assert.AreEqual(HeroMocap.RunStop, stop.key);
+            Assert.AreEqual(HeroMocap.Mask.Legs, stop.mask, "the legs brake, the arms stay the game's");
+            Assert.AreEqual(HeroMocap.Gait, HeroMocap.Choose(Ground(5f), c).body.Layer, "setting off again, he runs");
+            Assert.AreEqual(1f, HeroMocap.MaskWeight(HeroMocap.Mask.Legs, "LowerLeg.L"));
+            Assert.AreEqual(0f, HeroMocap.MaskWeight(HeroMocap.Mask.Legs, "UpperArm.R"));
         }
 
         [Test]
@@ -246,7 +282,7 @@ namespace CrimsonVeil.Tests
                                         HeroMocap.Walk, HeroMocap.Run, HeroMocap.Sprint, HeroMocap.CrouchIdle, HeroMocap.Slide, HeroMocap.Dash,
                                         HeroMocap.HardLanding, HeroMocap.LandRoll, HeroMocap.Fall, HeroMocap.Flip, HeroMocap.WallJump,
                                         HeroMocap.HangCatch, HeroMocap.Swing, HeroMocap.SlashC, HeroMocap.ShieldBash, HeroMocap.BlockIdle,
-                                        HeroMocap.Block, HeroMocap.BowDraw, HeroMocap.BowAim, HeroMocap.BowShot, HeroMocap.Hurt, HeroMocap.Death,
+                                        HeroMocap.Block, HeroMocap.BowDraw, HeroMocap.BowAim, HeroMocap.BowShot, HeroMocap.Hurt, HeroMocap.Stagger, HeroMocap.Turn, HeroMocap.RunStop, HeroMocap.Death,
                                         HeroMocap.GetUp })
             {
                 Assert.IsTrue(lib.TryGet(key, out var e), key);

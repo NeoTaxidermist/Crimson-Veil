@@ -235,6 +235,24 @@ MonoBehaviour:
     impact: 0
     stride: 0
     sync: 0
+  - key: Stagger
+    clip: {fileID: 7400000, guid: c0c7c263adec04e4bbbaaa600ed03004, type: 2}
+    loop: 0
+    impact: 0
+    stride: 0
+    sync: 0
+  - key: Turn
+    clip: {fileID: 7400000, guid: 7b20deab2772c4a46b7d0fa72b16b5fc, type: 2}
+    loop: 0
+    impact: 0
+    stride: 0
+    sync: 0
+  - key: RunStop
+    clip: {fileID: 7400000, guid: 83af313a6c9354143bdf9cb0d6584023, type: 2}
+    loop: 0
+    impact: 0
+    stride: 0
+    sync: 0
   - key: Death
     clip: {fileID: 7400000, guid: a0b44a93b94097247b423907293d794a, type: 2}
     loop: 0

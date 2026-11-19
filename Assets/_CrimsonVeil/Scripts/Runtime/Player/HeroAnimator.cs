@@ -131,8 +131,8 @@ namespace CrimsonVeil.Player
         // what happened lately (for the captured motion: see HeroMocap.Context)
         HeroMocap.Context ctx = HeroMocap.Context.Default;
         bool wasGroundedM = true, wasHangingM, wasWallSliding, wasDead;
-        float lastVy, lastHealth = -1f;
-        int lastBlocks;
+        float lastVy, lastHealth = -1f, sinceFast = 99f;
+        int lastBlocks, lastAbsorbs, lastFacing;
 
         /// <summary>Keeps <see cref="ctx"/>: the times since a landing (and how hard), a jump off a wall, a catch of the
         /// lip, a hurt, a block, death and the return to life; the swing's phase, the dash's progress.</summary>
@@ -140,6 +140,13 @@ namespace CrimsonVeil.Player
         {
             ctx.sinceLanded += dt; ctx.sinceWallJump += dt; ctx.sinceHangStart += dt; ctx.sinceHurt += dt;
             ctx.sinceBlock += dt; ctx.sinceDeath += dt; ctx.sinceRespawn += dt;
+            ctx.sinceFlinch += dt; ctx.sinceTurn += dt; ctx.sinceStop += dt;
+            // turning round, and pulling up, out of a run
+            int facing = player.Motor.Facing;
+            if (lastFacing != 0 && facing != lastFacing && s.grounded && sinceFast < 0.25f) ctx.sinceTurn = 0f;
+            lastFacing = facing;
+            if (s.grounded && s.speed < 1f && sinceFast < 0.3f && ctx.sinceStop > HeroMocap.StopTime && ctx.sinceTurn > 0.3f) ctx.sinceStop = 0f;
+            sinceFast = s.grounded && s.speed >= HeroMocap.StopFromSpeed ? 0f : sinceFast + dt;
             bool still = s.grounded && s.speed < 0.2f;
             ctx.stillTime = still ? ctx.stillTime + dt : 0f;
             if (s.grounded && !wasGroundedM) { ctx.sinceLanded = 0f; ctx.landFallSpeed = -lastVy; ctx.landRunSpeed = s.speed; }
@@ -164,6 +171,7 @@ namespace CrimsonVeil.Player
                 wasDead = dead;
                 ctx.dead = dead;
                 if (health.BlockCount != lastBlocks) { ctx.sinceBlock = 0f; lastBlocks = health.BlockCount; }
+                if (health.AbsorbCount != lastAbsorbs) { ctx.sinceFlinch = 0f; lastAbsorbs = health.AbsorbCount; }
             }
             ctx.drawing = veil != null && veil.Drawing;
             ctx.shieldHeld = veil != null && veil.ShieldHeld;

@@ -413,6 +413,9 @@ namespace CrimsonVeil.EditorTools
             I(HeroMocap.BowAim, LB + "standing aim overdraw.fbx", true, mirror: true),
             I(HeroMocap.BowShot, LB + "standing aim recoil.fbx", mirror: true),
             I(HeroMocap.Hurt, SS + "sword and shield impact.fbx"),
+            I(HeroMocap.Stagger, SS + "sword and shield impact (2).fbx", hips: Gnd),
+            I(HeroMocap.Turn, "Running Turn 180.fbx"),
+            I(HeroMocap.RunStop, LB + "standing run forward stop.fbx"),
             I(HeroMocap.Death, SS + "sword and shield death.fbx", hips: Gnd),
         };
     }

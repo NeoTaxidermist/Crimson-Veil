@@ -109,7 +109,7 @@ namespace CrimsonVeil.Tests
                 var roof = Get(roofName);
                 var ground = Get(groundName);
                 float gap = roof.Bottom - ground.top;
-                Assert.That(gap, Is.InRange(1.05f, 1.6f), roofName + ": room for the crouched body (1 m), not for a standing one (1.8 m)");
+                Assert.That(gap, Is.InRange(1.3f, 1.6f), roofName + ": room for the crouched hero, hair and all (1.24 m), not for a standing one (1.8 m)");
                 Assert.Greater(roof.top - ground.top, 6.5f, roofName + ": too high to jump over (even with the double jump)");
                 Assert.IsTrue(roof.Left > ground.Left + 0.5f && roof.Right < ground.Right - 0.5f, roofName + ": over its ground, room to stand at both ends");
             }

@@ -23,8 +23,8 @@ namespace CrimsonVeil.Tests
     {
         const string Prefabs = "Assets/_CrimsonVeil/LevelKit/Prefabs/";
 
-        // the room: a floor (top y = 0), a 1.1 m tunnel, a block higher than a jump, a deck 10 m up, a whip ring
-        const float TunnelLeft = 20f, TunnelRight = 26f, TunnelBottom = 1.1f;
+        // the room: a floor (top y = 0), a tunnel as low as the level's, a block higher than a jump, a deck 10 m up, a whip ring
+        const float TunnelLeft = 20f, TunnelRight = 26f, TunnelBottom = 1.35f;   // (PrototypeSceneBuilder.LowPassage)
         const float LedgeLeft = -20f, LedgeRight = -17f, LedgeTop = 4.2f;
         const float DeckLeft = -40f, DeckRight = -31f, DeckTop = 10f;
         static readonly Vector3 Ring = new Vector3(40f, 7.5f, 0f);
@@ -178,6 +178,22 @@ namespace CrimsonVeil.Tests
             Assert.Contains(HeroMocap.RunStop, new List<string>(played), "the last steps brake");
         }
 
+        Mesh baked;
+
+        /// <summary>The top of the hero's body (m over his ground): the skinned mesh as it is drawn, his hair and all.</summary>
+        float BodyTop()
+        {
+            if (baked == null) baked = new Mesh();
+            float top = -9f;
+            foreach (var smr in player.GetComponentsInChildren<SkinnedMeshRenderer>())
+            {
+                smr.BakeMesh(baked, true);
+                var t = smr.transform;
+                foreach (var v in baked.vertices) top = Mathf.Max(top, t.TransformPoint(v).y);
+            }
+            return top - Pos.y;
+        }
+
         /// <summary>The lowest of the feet's joints over his ground (m).</summary>
         float FeetLowest()
         {
@@ -315,10 +331,14 @@ namespace CrimsonVeil.Tests
             input.moveX = 1f;
             yield return Until(() => Pos.x > TunnelLeft - 1f, 2f);
             float t0 = Time.time, highest = 0f;
-            yield return Until(() => Pos.x > TunnelLeft + 1.5f, 3f, () => highest = Mathf.Max(highest, HeadHeight));
+            yield return Until(() => Pos.x > TunnelLeft + 1.5f, 3f, () => { if (Pos.x > TunnelLeft - 0.3f) highest = Mathf.Max(highest, BodyTop()); });
             Assert.Greater(Pos.x, TunnelLeft + 1.5f, "in under the tunnel");
             Assert.Less(Time.time - t0, 1.6f, "2.5 m at a crawl - not stuck at the mouth");
-            Assert.Less(highest, TunnelBottom + 0.05f, "the head under the roof");
+            Assert.Less(highest, TunnelBottom - 0.03f, "under the roof, his hair and all (not through it)");
+            input.moveX = 0f;
+            float still = 0f;
+            yield return Wait(0.8f, () => still = Mathf.Max(still, BodyTop()));
+            Assert.Less(still, TunnelBottom - 0.03f, "crouched still in the tunnel, his hair under the roof");
             input.aimY = 0f;
             yield return Wait(0.5f);
             Assert.IsTrue(controller.Motor.IsCrouching, "no room to stand: still crouched");
@@ -339,14 +359,14 @@ namespace CrimsonVeil.Tests
             yield return Until(() => Pos.x > TunnelLeft + 1.5f, 3f, () =>
             {
                 float h = HeadHeight;
-                if (Pos.x > TunnelLeft - 0.3f) highest = Mathf.Max(highest, h);   // under the roof
+                if (Pos.x > TunnelLeft - 0.3f) highest = Mathf.Max(highest, BodyTop());   // under the roof, hair and all
                 if (Time.time - t0 > 0.15f && controller.Motor.IsSliding) { lowest = Mathf.Min(lowest, h); rise = Mathf.Max(rise, h - lowest); }
             });
             Assert.Contains(HeroMocap.Slide, new List<string>(played), "the captured slide");
             Assert.Greater(Pos.x, TunnelLeft + 1.5f, "into the tunnel");
             Assert.Less(Time.time - t0, 2f, "the slide doesn't stop dead at the mouth");
             Assert.Less(rise, 0.2f, "once down the slide stays down: the body doesn't get up in it");
-            Assert.Less(highest, TunnelBottom + 0.05f, "the head under the roof"); 
+            Assert.Less(highest, TunnelBottom - 0.03f, "under the roof, his hair and all (not through it)");
         }
 
         [UnityTest]

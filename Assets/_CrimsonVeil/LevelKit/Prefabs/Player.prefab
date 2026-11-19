@@ -156,6 +156,10 @@ MonoBehaviour:
     slideSpeed: 13
     slideEndSpeed: 3
     slideDuration: 0.5
+    rollFromHeight: 6.5
+    rollFromSpeed: 3
+    rollDuration: 0.8
+    rollEndSpeed: 2.5
     wallSlideSpeed: 2.3
     wallGripTime: 0.5
     wallSlideMaxSpeed: 8
@@ -187,7 +191,7 @@ MonoBehaviour:
   minLedgeHeight: 1.2
   maxLedgeHeight: 2.1
   gripHeight: 2.05
-  crouchHeight: 1
+  crouchHeight: 1.2
 --- !u!114 &4233667051544647546
 MonoBehaviour:
   m_ObjectHideFlags: 0

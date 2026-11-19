@@ -370,6 +370,12 @@ namespace CrimsonVeil.EditorTools
             return go;
         }
 
+        /// <summary>
+        /// The height (m) of a low passage, crawled or slid through: the crouched hero, his hair and all, is up to 1.24 m
+        /// (crawling 1.13-1.16), and the body that collides 1.2 m. (At 1.1 m his hair went through the roof.)
+        /// </summary>
+        public const float LowPassage = 1.35f;
+
         /// <summary>The test room's span (x): left of the start, through under the back wall.</summary>
         public const float TestRoomLeft = -61f, TestRoomRight = -14.5f;
 
@@ -387,7 +393,7 @@ namespace CrimsonVeil.EditorTools
             new BlockDef("test shaft right", -40.5f, 10f, 1f, 8f, TerrainStyle.Ruin, 0, false),       // hangs 2 m over the floor: walk in under it
             new BlockDef("test shaft left", -44.5f, 10f, 1f, 10f, TerrainStyle.Ruin, 0, false),       // 3 m shaft between them
             new BlockDef("test deck", -49.5f, 10f, 9f, 1f, TerrainStyle.Ruin, 0, false),             // -54 .. -45, 10 m up: drop off for a hard landing
-            new BlockDef("test tunnel", -50f, 2.6f, 6f, 1.5f, TerrainStyle.Ruin, 0, false),          // -53 .. -47 under the deck, 1.1 m over the floor: crawl or slide
+            new BlockDef("test tunnel", -50f, LowPassage + 1.5f, 6f, 1.5f, TerrainStyle.Ruin, 0, false), // -53 .. -47 under the deck, a low passage over the floor: crawl or slide
             new BlockDef("test end wall", -61.5f, 16f, 1f, 16f, TerrainStyle.Ruin, 0, false),
         };
 
@@ -462,7 +468,7 @@ namespace CrimsonVeil.EditorTools
             new BlockDef("step 1", 197f, 0f, 4f, 4f, TerrainStyle.Rock, 34),                      // 195 .. 199
             new BlockDef("step 2", 201f, 3.5f, 4f, 7.5f, TerrainStyle.Rock, 35),                  // 199 .. 203
             new BlockDef("plateau", 212.5f, 7f, 19f, 12f, TerrainStyle.Rock, 36),                 // 203 .. 222
-            new BlockDef("plateau tunnel", 208f, 15f, 5f, 6.8f, TerrainStyle.Ruin, 65),          // 205.5 .. 210.5, 1.2 m over the plateau: crawl or slide
+            new BlockDef("plateau tunnel", 208f, 15f, 5f, 8f - LowPassage, TerrainStyle.Ruin, 65), // 205.5 .. 210.5, a low passage over the plateau: crawl or slide
             // 10. the belfry: a step, ledges to and fro 4 m apart, a wall-jump shaft by its right wall, out at 38 m
             new BlockDef("belfry floor", 230f, 7f, 16f, 12f, TerrainStyle.Rock, 37),            // 222 .. 238
             new BlockDef("belfry left wall", 222.7f, 44f, 1.4f, 34f, TerrainStyle.Ruin, 38, false), // hangs: walk in under it (3 m)
@@ -495,7 +501,7 @@ namespace CrimsonVeil.EditorTools
             new BlockDef("chasm right wall", 311f, 2f, 2f, 18f, TerrainStyle.Ruin, 62, false),    // 310 .. 312
             // 14. the garden at the end, and the end wall
             new BlockDef("garden", 325f, 2f, 26f, 14f, TerrainStyle.Rock, 63),                   // 312 .. 338
-            new BlockDef("garden tunnel", 322f, 9.2f, 6f, 6.1f, TerrainStyle.Ruin, 66),          // 319 .. 325, 1.1 m over the ground: a long crawl, or a slide
+            new BlockDef("garden tunnel", 322f, 9.2f, 6f, 7.2f - LowPassage, TerrainStyle.Ruin, 66), // 319 .. 325, a low passage over the ground: a long crawl, or a slide
             new BlockDef("end wall", 339f, 22f, 2f, 30f, TerrainStyle.Ruin, 64, false),
         };
 

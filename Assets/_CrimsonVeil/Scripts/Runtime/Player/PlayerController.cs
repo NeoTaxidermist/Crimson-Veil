@@ -157,8 +157,8 @@ namespace CrimsonVeil.Player
         }
 
         [Header("Crouch")]
-        [Tooltip("Height of the body crouched or sliding (it passes under anything higher).")]
-        [SerializeField] float crouchHeight = 1.0f;
+        [Tooltip("Height of the body crouched or sliding (it passes under anything higher). The crouched hero is up to 1.24 m to the top of his hair: at 1 m he crawled under a 1.1 m roof with his hair through it.")]
+        [SerializeField] float crouchHeight = 1.2f;
         float standHeight = -1f, standCenterY, standStep;
 
         /// <summary>

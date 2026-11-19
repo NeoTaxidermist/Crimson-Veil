@@ -41,7 +41,7 @@ namespace CrimsonVeil.Tests
                 if (b.name != "test floor" && b.name != "test end wall" && b.name != "test deck")
                     Assert.IsTrue(b.Right <= wall.Right + 1e-3f || b.Left >= deck.Left - 1e-3f, b.name + " is under the drop off the deck");
             var tunnel = B("test tunnel");
-            Assert.That(tunnel.Bottom, Is.InRange(1f, 1.3f), "a low passage: crawl or slide");
+            Assert.That(tunnel.Bottom, Is.InRange(1.3f, 1.5f), "a low passage: crawl or slide (the crouched hero is up to 1.24 m, hair and all)");
             Assert.GreaterOrEqual(PrototypeSceneBuilder.TestRoomRings.Length, 2, "whip rings to swing on");
             foreach (var r in PrototypeSceneBuilder.TestRoomRings)
                 Assert.That(r.x, Is.InRange(PrototypeSceneBuilder.TestRoomLeft, PrototypeSceneBuilder.TestRoomRight));

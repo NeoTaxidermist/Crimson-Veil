@@ -5,6 +5,18 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.41.7] – 2026-11-19
+### Nízké tunely jsou vyšší, vlasy už neprochází stropem
+- **Opraveno: při plížení a skluzu tunelem prošly vlasy stropem.**
+  - Hrdina je při plížení vysoký i s vlasy 1,13–1,16 m a v přikrčeném stoji až 1,24 m. Změřeno na vykreslené síti.
+  - Tunely měly podchod jen 1,1 m (testovací místnost a zahrada) a 1,2 m (plošina).
+  - Tělo pro kolize bylo přikrčené jen 1 m vysoké, takže hra hrdinu pustila i tam, kam se viditelně nevešel.
+- **Přikrčené tělo pro kolize má 1,2 m** (`PlayerController.crouchHeight`), jako skutečná postava.
+- **Všechny nízké podchody mají 1,35 m** (`PrototypeSceneBuilder.LowPassage`). To je asi 10 cm nad vlasy a stojící hrdina (1,8 m) se pod ně pořád nevejde. Scéna je přestavěná.
+- Testy:
+  - `HeroMoveSetPlayTests` u plížení, přikrčení v tunelu i skluzu měří vršek vykreslené sítě (vlasy), ne jen kloub hlavy, a hlídá, že je pod stropem;
+  - `LevelExtensionTests` a `TestRoomTests` hlídají podchod aspoň 1,3 m.
+
 ## [0.41.6] – 2026-11-19
 ### Na laně se otáčí jen šipkou
 - **Opraveno: na laně se hrdina pořád přetáčel.** Otáčel se po směru pohybu, jakmile rychlost přes lano překročila 0,5 m/s. Na to stačilo i pohupování ve visu nebo dohoupávání, takže se při každém překmitu otočil.

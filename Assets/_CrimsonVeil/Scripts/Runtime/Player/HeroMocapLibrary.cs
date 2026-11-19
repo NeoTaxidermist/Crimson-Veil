@@ -17,6 +17,8 @@ namespace CrimsonVeil.Player
             public bool loop;
             /// <summary>0..1 through the clip where a blow lands (0 when not a blow).</summary>
             public float impact;
+            /// <summary>A gait: metres covered per loop of the clip (from its own steps), and 0..1 where the left foot leads.</summary>
+            public float stride, sync;
         }
 
         public Entry[] entries = new Entry[0];

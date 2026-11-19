@@ -17,59 +17,227 @@ MonoBehaviour:
     clip: {fileID: 7400000, guid: 4e550e9ee2ac5ed4c9414bee18953da0, type: 2}
     loop: 1
     impact: 0
+    stride: 0
+    sync: 0
   - key: LookAround
     clip: {fileID: 7400000, guid: c0bfea05b8d79d34ba2c5ecb3e46b838, type: 2}
     loop: 1
     impact: 0
-  - key: HangIdle
-    clip: {fileID: 7400000, guid: 836a70af352068e4a9d657b63da34f9e, type: 2}
+    stride: 0
+    sync: 0
+  - key: InjuredIdle
+    clip: {fileID: 7400000, guid: 95b3f9350c2332c41b2b221936fbb07a, type: 2}
     loop: 1
     impact: 0
-  - key: Mantle
-    clip: {fileID: 7400000, guid: f3fdbe3a0c0ea0f408cbb8e339325a78, type: 2}
-    loop: 0
-    impact: 0
-  - key: HardLanding
-    clip: {fileID: 7400000, guid: 60575c39deceb0f4585c909907a1cf08, type: 2}
-    loop: 0
-    impact: 0
-  - key: Roll
-    clip: {fileID: 7400000, guid: cc12976f0189fe345b0737e1ccd65a73, type: 2}
-    loop: 0
-    impact: 0
-  - key: SlashA
-    clip: {fileID: 7400000, guid: 23154e056e32fb545bbfe5f2f6b86191, type: 2}
-    loop: 0
-    impact: 0.59090906
-  - key: SlashB
-    clip: {fileID: 7400000, guid: 0772f1a217d25214fa66e128ec119d79, type: 2}
-    loop: 0
-    impact: 0.42622948
-  - key: Stab
-    clip: {fileID: 7400000, guid: b03f95b15ad8fd549b5675b2d2761191, type: 2}
-    loop: 0
-    impact: 0.28571427
+    stride: 0
+    sync: 0
   - key: Talk
     clip: {fileID: 7400000, guid: d92266646ee09be498c7cb33c3ebd575, type: 2}
     loop: 1
     impact: 0
+    stride: 0
+    sync: 0
   - key: Sad
     clip: {fileID: 7400000, guid: 31d58d6f2cecc59459d7c9fb6a062272, type: 2}
     loop: 1
     impact: 0
+    stride: 0
+    sync: 0
   - key: Angry
     clip: {fileID: 7400000, guid: 67e43ff3ddfa49b43b23352934aee6c9, type: 2}
     loop: 0
     impact: 0
+    stride: 0
+    sync: 0
   - key: Nod
     clip: {fileID: 7400000, guid: 62c82a719886a6445b7da910dfcd21af, type: 2}
     loop: 0
     impact: 0
+    stride: 0
+    sync: 0
   - key: Point
     clip: {fileID: 7400000, guid: cc8371fd3365e9543a2408bb4b74eaa5, type: 2}
     loop: 0
     impact: 0
+    stride: 0
+    sync: 0
   - key: GetUp
     clip: {fileID: 7400000, guid: 14871bcb4e2253e4a9f4a79f48986da5, type: 2}
     loop: 0
     impact: 0
+    stride: 0
+    sync: 0
+  - key: Walk
+    clip: {fileID: 7400000, guid: 12fff0346b3259b45bc5f9dbb7d952dc, type: 2}
+    loop: 1
+    impact: 0
+    stride: 1.5232738
+    sync: 0.21951218
+  - key: Run
+    clip: {fileID: 7400000, guid: 91754df5ca6c2cd4f8da0f097b361919, type: 2}
+    loop: 1
+    impact: 0
+    stride: 1.9959949
+    sync: 0.28571427
+  - key: Sprint
+    clip: {fileID: 7400000, guid: c6211b288d14a464a94cfc22c7aca94e, type: 2}
+    loop: 1
+    impact: 0
+    stride: 1.8422177
+    sync: 0.28571427
+  - key: CrouchIdle
+    clip: {fileID: 7400000, guid: d0b8c0c937a48504e97d4ed33e9c4e62, type: 2}
+    loop: 1
+    impact: 0
+    stride: 0
+    sync: 0
+  - key: Slide
+    clip: {fileID: 7400000, guid: 85b934ff7c2b5334b93aae5e214db4bb, type: 2}
+    loop: 0
+    impact: 0
+    stride: 0
+    sync: 0
+  - key: Dash
+    clip: {fileID: 7400000, guid: 73b8231e7e929be4ba4a60d47abf671a, type: 2}
+    loop: 0
+    impact: 0
+    stride: 0
+    sync: 0
+  - key: Roll
+    clip: {fileID: 7400000, guid: cc12976f0189fe345b0737e1ccd65a73, type: 2}
+    loop: 0
+    impact: 0
+    stride: 0
+    sync: 0
+  - key: HardLanding
+    clip: {fileID: 7400000, guid: 60575c39deceb0f4585c909907a1cf08, type: 2}
+    loop: 0
+    impact: 0
+    stride: 0
+    sync: 0
+  - key: LandRoll
+    clip: {fileID: 7400000, guid: 7fe631374b7f5bf49975bae82dfc110d, type: 2}
+    loop: 0
+    impact: 0
+    stride: 0
+    sync: 0
+  - key: JumpUp
+    clip: {fileID: 7400000, guid: 8a7e2c66c48ec30498fe86c35a8d9e62, type: 2}
+    loop: 0
+    impact: 0
+    stride: 0
+    sync: 0
+  - key: Fall
+    clip: {fileID: 7400000, guid: d3f3821894a01d24a94d02fccd63a13a, type: 2}
+    loop: 1
+    impact: 0
+    stride: 0
+    sync: 0
+  - key: Flip
+    clip: {fileID: 7400000, guid: ef4d2a4a0c8c4a64681f5cc41664ba5c, type: 2}
+    loop: 0
+    impact: 0
+    stride: 0
+    sync: 0
+  - key: WallJump
+    clip: {fileID: 7400000, guid: bd137e8f414f79d45bd02e51cfdbc5c6, type: 2}
+    loop: 0
+    impact: 0
+    stride: 0
+    sync: 0
+  - key: HangIdle
+    clip: {fileID: 7400000, guid: 836a70af352068e4a9d657b63da34f9e, type: 2}
+    loop: 1
+    impact: 0
+    stride: 0
+    sync: 0
+  - key: HangCatch
+    clip: {fileID: 7400000, guid: e27449b21741d2049b89d70e7a439276, type: 2}
+    loop: 0
+    impact: 0
+    stride: 0
+    sync: 0
+  - key: Mantle
+    clip: {fileID: 7400000, guid: f3fdbe3a0c0ea0f408cbb8e339325a78, type: 2}
+    loop: 0
+    impact: 0
+    stride: 0
+    sync: 0
+  - key: Swing
+    clip: {fileID: 7400000, guid: 8ca704b4579db9248b402746607d629a, type: 2}
+    loop: 1
+    impact: 0
+    stride: 0
+    sync: 0
+  - key: SlashA
+    clip: {fileID: 7400000, guid: 23154e056e32fb545bbfe5f2f6b86191, type: 2}
+    loop: 0
+    impact: 0.59090906
+    stride: 0
+    sync: 0
+  - key: SlashB
+    clip: {fileID: 7400000, guid: 0772f1a217d25214fa66e128ec119d79, type: 2}
+    loop: 0
+    impact: 0.42622948
+    stride: 0
+    sync: 0
+  - key: SlashC
+    clip: {fileID: 7400000, guid: 8c1594ac1379c554b8f8cf9cf28c1b94, type: 2}
+    loop: 0
+    impact: 0.5319149
+    stride: 0
+    sync: 0
+  - key: Stab
+    clip: {fileID: 7400000, guid: b03f95b15ad8fd549b5675b2d2761191, type: 2}
+    loop: 0
+    impact: 0.28571427
+    stride: 0
+    sync: 0
+  - key: ShieldBash
+    clip: {fileID: 7400000, guid: d5cb8253947a5b346a6d5b1f96a7a953, type: 2}
+    loop: 0
+    impact: 0.5128205
+    stride: 0
+    sync: 0
+  - key: BlockIdle
+    clip: {fileID: 7400000, guid: e4abcf6caa48f8e46b2c9424bc5a13c1, type: 2}
+    loop: 1
+    impact: 0
+    stride: 0
+    sync: 0
+  - key: Block
+    clip: {fileID: 7400000, guid: b0310255ce5a2a24c821e250fb0e5962, type: 2}
+    loop: 0
+    impact: 0
+    stride: 0
+    sync: 0
+  - key: BowDraw
+    clip: {fileID: 7400000, guid: 98beedde78d5282458db9673fd61a000, type: 2}
+    loop: 0
+    impact: 0
+    stride: 0
+    sync: 0
+  - key: BowAim
+    clip: {fileID: 7400000, guid: b4d60352245a15c47929679d452ab8f3, type: 2}
+    loop: 1
+    impact: 0
+    stride: 0
+    sync: 0
+  - key: BowShot
+    clip: {fileID: 7400000, guid: f474f650b6164244092a05422b8a8253, type: 2}
+    loop: 0
+    impact: 0
+    stride: 0
+    sync: 0
+  - key: Hurt
+    clip: {fileID: 7400000, guid: 33a3ffb1b93363e449e2f3bcc4233f6e, type: 2}
+    loop: 0
+    impact: 0
+    stride: 0
+    sync: 0
+  - key: Death
+    clip: {fileID: 7400000, guid: a0b44a93b94097247b423907293d794a, type: 2}
+    loop: 0
+    impact: 0
+    stride: 0
+    sync: 0

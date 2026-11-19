@@ -159,6 +159,8 @@ namespace CrimsonVeil.Veil
         public bool ThrustingDown { get; private set; }
         /// <summary>True while the bow is held drawn.</summary>
         public bool Drawing { get; private set; }
+        /// <summary>The shield is raised and held (guarding; overhead in the air).</summary>
+        public bool ShieldHeld { get; private set; }
         /// <summary>The shield was raised a moment ago: a blow landing now is parried.</summary>
         public bool InParryWindow => Form == VeilForm.Shield && sinceShieldRaised < VeilCasting.ParryWindow;
         /// <summary>The current weapon came from a cast (it melts back into cloth after the blow).</summary>
@@ -454,6 +456,7 @@ namespace CrimsonVeil.Veil
             // Shield held: it guards (and drains the scarf); in the air it is held overhead and slows the fall.
             bool shieldHeld = Form == VeilForm.Shield && castMode && input != null && input.CastHeld(VeilForm.Shield)
                               && Charge.Drain(VeilCasting.ShieldHoldDrain, dt);
+            ShieldHeld = shieldHeld;
             if (player != null && player.Motor != null)
             {
                 var m = player.Motor;

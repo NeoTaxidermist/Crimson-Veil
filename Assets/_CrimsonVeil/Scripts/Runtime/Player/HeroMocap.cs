@@ -6,70 +6,256 @@ namespace CrimsonVeil.Player
 {
     /// <summary>
     /// Motion capture over the hero's procedural pose. Each frame <see cref="HeroAnimator"/> poses him procedurally
-    /// and then lets this blend a captured clip over it: the clip is sampled onto his bones and every bone is turned
-    /// part of the way towards it (the weight fades in and out). Some clips run on their own clock (standing, hanging,
-    /// the cutscenes' acting), some are driven by the game so they stay in step with it: the mantle by the climb's
-    /// progress, a blow by the attack's - the clip's moment of impact laid onto the game's own.
-    /// Running, jumping and the scarf's weapons stay procedural; the face, the hair and the cloth are not touched.
+    /// and then lets this blend captured clips over it: a clip is sampled onto his bones and every bone (of the clip's
+    /// mask) is turned part of the way towards it, the weight fading in and out. Two channels: the body (what he does
+    /// with all of him - walking, running, falling, landing, hanging, a blow) and over it the upper body (drawing the
+    /// bow, holding the shield, a flinch) so that he can run and aim at once.
+    /// Nearly everything is driven by the game so it stays in step with it: the gait by the distance he travels (the
+    /// clip's own stride, so the feet don't slide), the mantle by the climb, a blow by the attack (the clip's moment of
+    /// impact laid onto the game's), the somersault by the flip, the swing by the pendulum, a landing or a flinch by the
+    /// time since it happened. The face, the hair and the cloth are not touched.
     /// </summary>
     public sealed class HeroMocap : MonoBehaviour
     {
-        public const string Idle = "Idle", LookAround = "LookAround", HangIdle = "HangIdle", Mantle = "Mantle",
-                            HardLanding = "HardLanding", Roll = "Roll", SlashA = "SlashA", SlashB = "SlashB", Stab = "Stab",
+        // standing, acting (cutscenes)
+        public const string Idle = "Idle", LookAround = "LookAround", InjuredIdle = "InjuredIdle",
                             Talk = "Talk", Sad = "Sad", Angry = "Angry", Nod = "Nod", Point = "Point", GetUp = "GetUp";
+        // on the ground
+        public const string Walk = "Walk", Run = "Run", Sprint = "Sprint", CrouchIdle = "CrouchIdle",
+                            Slide = "Slide", Dash = "Dash", Roll = "Roll", HardLanding = "HardLanding", LandRoll = "LandRoll";
+        // in the air, on the lip, on the whip
+        public const string JumpUp = "JumpUp", Fall = "Fall", Flip = "Flip", WallJump = "WallJump",
+                            HangIdle = "HangIdle", HangCatch = "HangCatch", Mantle = "Mantle", Swing = "Swing";
+        // fighting
+        public const string SlashA = "SlashA", SlashB = "SlashB", SlashC = "SlashC", Stab = "Stab", ShieldBash = "ShieldBash",
+                            BlockIdle = "BlockIdle", Block = "Block", BowDraw = "BowDraw", BowAim = "BowAim", BowShot = "BowShot",
+                            Hurt = "Hurt", Death = "Death";
+
+        /// <summary>The gait's layer (walk, run and sprint blended into one by speed).</summary>
+        public const string Gait = "Gait";
 
         [SerializeField] HeroMocapLibrary library;
         [SerializeField] Transform model;
         [Tooltip("Overall strength of the captured motion over the procedural (0 = off).")]
         [Range(0f, 1f)] public float strength = 1f;
 
-        /// <summary>What the game wants played this frame.</summary>
+        /// <summary>Which bones a clip moves.</summary>
+        public enum Mask
+        {
+            /// <summary>All of him.</summary>
+            Full,
+            /// <summary>The waist up (the legs stay the gait's or the procedural's).</summary>
+            Upper,
+            /// <summary>All but the weapon arm (it holds the veil's weapon where the procedural pose puts it).</summary>
+            NoWeaponArm,
+            /// <summary>All but the hips' turn: the game turns the whole body (the somersault).</summary>
+            NoHipsTurn,
+            /// <summary>Legs and arms the clip's, the trunk half the procedural's: the gait (his lean into the run, the
+            /// weight of a start and a stop), the mantle (upright over the lip, not folded onto it).</summary>
+            Gait,
+            /// <summary>The gait with a weapon in hand (the weapon arm stays the procedural's).</summary>
+            GaitArmed,
+        }
+
+        /// <summary>What the game wants played this frame on one channel.</summary>
         public struct Choice
         {
             public string key;
             /// <summary>Driven by the game: the clip's time as 0..1 (else it runs on its own clock).</summary>
             public bool driven;
             public float time01;
+            /// <summary>Driven by seconds since something happened (a landing, a flinch): the clip's time in seconds.</summary>
+            public bool bySeconds;
+            public float seconds;
             public float weight;
+            public Mask mask;
+            /// <summary>A gait: <see cref="key"/> and <see cref="key2"/> blended by <see cref="mix"/>, stepping at <see cref="speed"/> m/s.</summary>
+            public bool gait;
+            public string key2;
+            public float mix, speed;
             public static Choice None => new Choice();
             public bool IsNone => string.IsNullOrEmpty(key) || weight <= 0f;
+            public string Layer => gait ? Gait : key;
         }
 
-        /// <summary>Seconds of standing still before the captured idle comes in.</summary>
-        public const float IdleAfter = 0.25f;
+        /// <summary>Both channels' choices for a frame.</summary>
+        public struct Pick
+        {
+            public Choice body, upper;
+            public static Pick None => new Pick();
+        }
+
+        /// <summary>What happened lately, which the game's state alone does not say (kept by HeroAnimator).</summary>
+        public struct Context
+        {
+            public float stillTime;
+            /// <summary>Counts the blows of a combo (alternates the cuts).</summary>
+            public int swing;
+            public float sinceLanded, landFallSpeed, landRunSpeed;
+            public float sinceWallJump, sinceHangStart, sinceHurt, sinceBlock, sinceDeath, sinceRespawn;
+            public bool dead, drawing, shieldHeld;
+            public float health01;
+            /// <summary>The take-off speed of a jump (the rise is laid over it).</summary>
+            public float jumpSpeed;
+            /// <summary>0..1 through the pendulum's cycle (0 = the forward end).</summary>
+            public float swingPhase;
+            public float dashProgress;
+            public static Context Default => new Context
+            {
+                sinceLanded = 99f, sinceWallJump = 99f, sinceHangStart = 99f, sinceHurt = 99f, sinceBlock = 99f,
+                sinceDeath = 99f, sinceRespawn = 99f, health01 = 1f, jumpSpeed = 12f,
+            };
+        }
+
+        /// <summary>Seconds of standing still before the captured idle comes in; and before he looks around.</summary>
+        public const float IdleAfter = 0.25f, LookAroundAfter = 7f;
+
+        /// <summary>The scarf's health under which he stands hurt.</summary>
+        public const float InjuredBelow = 0.35f;
+
+        /// <summary>A landing from a fall faster than this (m/s) is a hard one: from a run he rolls out of it.</summary>
+        public const float HardLandingSpeed = 24f, RollOutSpeed = 3f;
+        public const float HardLandingTime = 0.75f, LandRollTime = 1.2f, WallJumpTime = 0.55f, HangCatchTime = 0.45f,
+                           HurtTime = 0.55f, BlockTime = 0.5f, GetUpTime = 2.5f;
+
+        /// <summary>Where in the captured swing (0..1) he is at the forward end of the pendulum.</summary>
+        public const float SwingSync = 0.12f;
+
+        /// <summary>Speeds (m/s) at which the walk is all there is, the run, the sprint.</summary>
+        public const float WalkSpeed = 1.6f, RunSpeed = 5.5f, SprintSpeed = 8.5f;
 
         /// <summary>The game's moment of impact (0..1 through its attack) for each veil weapon.</summary>
         public static float GameImpact(VeilForm form) => form == VeilForm.Spear ? 0.45f : 0.5f;
 
         /// <summary>
-        /// What to play for this state: the mantle in step with the climb, the hang, a blow with the sword or the whip
-        /// (both cut like a sword: there is no captured whip), a spear thrust, standing still. Nothing for the rest.
-        /// <paramref name="swing"/> alternates the two cuts through a combo.
+        /// What to play for this state, on both channels. The body: dead, getting up, the mantle, the lip, the whip, a
+        /// blow, the air (rising, falling, the somersault, off a wall), the dash, the slide, a hard landing, crouching, the
+        /// gait, standing. The upper body: the bow, the shield, a flinch.
         /// </summary>
+        public static Pick Choose(in HeroState s, in Context c)
+        {
+            var pick = new Pick { body = Body(s, c), upper = Upper(s, c) };
+            return pick;
+        }
+
+        /// <summary>The body's choice (see <see cref="Choose"/>); compatible older signature for the plain cases.</summary>
         public static Choice Choose(in HeroState s, float stillTime, int swing)
         {
-            // (the captured mantle ends crouched on the top, the game's stands up: it hands over in the last quarter)
-            if (s.climbing) return new Choice { key = Mantle, driven = true, time01 = s.climbProgress, weight = 0.85f * MantleHandOver(s.climbProgress) };
-            if (s.hanging) return s.weaponHeld < 0.1f ? new Choice { key = HangIdle, weight = 0.6f } : Choice.None;
+            var c = Context.Default;
+            c.stillTime = stillTime; c.swing = swing;
+            return Body(s, c);
+        }
+
+        static Choice Body(in HeroState s, in Context c)
+        {
+            if (c.dead) return new Choice { key = Death, bySeconds = true, seconds = c.sinceDeath, weight = 1f };
+            if (c.sinceRespawn < GetUpTime && s.grounded) return new Choice { key = GetUp, bySeconds = true, seconds = c.sinceRespawn + 0.3f, weight = 0.9f };
+            // (the captured mantle folds over the lip and ends crouched on the top, the game's stands up: the trunk stays
+            // half the game's, and from halfway up the game takes over)
+            if (s.climbing) return new Choice { key = Mantle, driven = true, time01 = s.climbProgress, weight = 0.85f * MantleHandOver(s.climbProgress), mask = Mask.Gait };
+            bool armed = s.weaponHeld >= 0.1f;
+            if (s.hanging)
+            {
+                if (armed) return Choice.None;   // one hand on the lip and the weapon in the other: that pose is procedural
+                if (c.sinceHangStart < HangCatchTime) return new Choice { key = HangCatch, bySeconds = true, seconds = c.sinceHangStart, weight = 0.7f };
+                return new Choice { key = HangIdle, weight = 0.6f };
+            }
+            if (s.swinging) return new Choice { key = Swing, driven = true, time01 = Mathf.Repeat(c.swingPhase + SwingSync, 1f), weight = 0.75f, mask = Mask.NoHipsTurn };
+
             if (s.attacking && s.attackT >= 0f)
             {
+                // standing, the whole body fights; on the move or in the air only the waist up (the legs keep going)
+                var mask = s.grounded && s.speed < 2f && !s.sliding ? Mask.Full : Mask.Upper;
                 switch (s.attackForm)
                 {
                     case VeilForm.Sword:
                     case VeilForm.Whip:
-                        return new Choice { key = swing % 2 == 0 ? SlashA : SlashB, driven = true, time01 = s.attackT, weight = 0.7f };
+                        int k = ((c.swing % 3) + 3) % 3;
+                        return new Choice { key = k == 0 ? SlashA : k == 1 ? SlashB : SlashC, driven = true, time01 = s.attackT, weight = 0.7f, mask = mask };
                     case VeilForm.Spear:
-                        return new Choice { key = Stab, driven = true, time01 = s.attackT, weight = 0.7f };
+                        return new Choice { key = Stab, driven = true, time01 = s.attackT, weight = 0.7f, mask = mask };
+                    case VeilForm.Shield:
+                        return new Choice { key = ShieldBash, driven = true, time01 = s.attackT, weight = 0.65f, mask = mask };
                 }
-                return Choice.None;
+                // (the bow is the upper body's: the legs go on below it)
             }
-            bool still = s.grounded && s.speed < 0.2f && !s.crouching && !s.sliding && !s.dashing && s.weaponHeld < 0.1f;
-            if (still && stillTime > IdleAfter) return new Choice { key = Idle, weight = 0.8f };
+            var gear = armed ? Mask.NoWeaponArm : Mask.Full;
+
+            if (!s.grounded)
+            {
+                if (s.wallSliding) return Choice.None;
+                if (Somersault.Active(s.somersault))
+                    return new Choice { key = Flip, driven = true, time01 = s.somersault, weight = 0.85f, mask = Mask.NoHipsTurn };
+                if (c.sinceWallJump < WallJumpTime) return new Choice { key = WallJump, bySeconds = true, seconds = c.sinceWallJump, weight = 0.7f, mask = gear };
+                if (s.verticalVelocity > 0.5f)
+                    return new Choice { key = JumpUp, driven = true, time01 = 1f - Mathf.Clamp01(s.verticalVelocity / Mathf.Max(1f, c.jumpSpeed)), weight = 0.7f, mask = gear };
+                return new Choice { key = Fall, weight = 0.75f, mask = gear };
+            }
+            if (s.dashing) return new Choice { key = Dash, driven = true, time01 = c.dashProgress, weight = 0.6f, mask = gear };
+            if (s.sliding) return new Choice { key = Slide, driven = true, time01 = s.slideProgress, weight = 0.8f, mask = gear };
+            if (c.landFallSpeed >= HardLandingSpeed)
+            {
+                if (c.landRunSpeed >= RollOutSpeed && c.sinceLanded < LandRollTime)
+                    return new Choice { key = LandRoll, bySeconds = true, seconds = c.sinceLanded, weight = 0.85f, mask = gear };
+                if (c.landRunSpeed < RollOutSpeed && c.sinceLanded < HardLandingTime && s.speed < 1f)
+                    return new Choice { key = HardLanding, bySeconds = true, seconds = c.sinceLanded, weight = 0.8f, mask = gear };
+            }
+            // (crouch-walking stays procedural: the captured one shuffles short steps, at the game's speed a scurry)
+            if (s.crouching)
+                return s.speed > 0.2f ? Choice.None : new Choice { key = CrouchIdle, weight = 0.7f, mask = gear };
+            if (s.speed > 0.2f)
+            {
+                GaitMix(s.speed, out var a, out var b, out float mix);
+                return new Choice { key = a, key2 = b, mix = mix, gait = true, speed = s.speed, weight = 0.9f, mask = armed ? Mask.GaitArmed : Mask.Gait };
+            }
+            if (c.stillTime > IdleAfter)
+            {
+                string idle = c.health01 < InjuredBelow ? InjuredIdle : c.stillTime > LookAroundAfter && !armed ? LookAround : Idle;
+                return new Choice { key = idle, weight = 0.8f, mask = gear };
+            }
             return Choice.None;
         }
 
+        static Choice Upper(in HeroState s, in Context c)
+        {
+            if (c.dead || s.hanging || s.climbing || s.swinging) return Choice.None;
+            if (s.attackForm == VeilForm.Bow && (s.attacking || c.drawing))
+            {
+                // aimed far up or down the captured bow (held level) gives way to the procedural aim
+                float level = 1f - Mathf.Clamp01(Mathf.Abs(s.attackAim) / 50f);
+                float w = 0.8f * level;
+                if (c.drawing) return new Choice { key = BowAim, weight = w, mask = Mask.Upper };
+                if (s.attackT >= 0f && s.attackT < VeilCasting.BowHoldAt)
+                    return new Choice { key = BowDraw, driven = true, time01 = s.attackT / VeilCasting.BowHoldAt, weight = w, mask = Mask.Upper };
+                if (s.attackT >= VeilCasting.BowHoldAt)
+                    return new Choice { key = BowShot, driven = true, time01 = Mathf.InverseLerp(VeilCasting.BowHoldAt, 1f, s.attackT), weight = w, mask = Mask.Upper };
+            }
+            if (c.sinceHurt < HurtTime) return new Choice { key = Hurt, bySeconds = true, seconds = c.sinceHurt, weight = 0.75f, mask = Mask.Upper };
+            if (c.shieldHeld)
+            {
+                if (c.sinceBlock < BlockTime) return new Choice { key = Block, bySeconds = true, seconds = c.sinceBlock, weight = 0.8f, mask = Mask.Upper };
+                return new Choice { key = BlockIdle, weight = 0.6f, mask = Mask.Upper };
+            }
+            return Choice.None;
+        }
+
+        /// <summary>Which two gaits to blend at this speed, and how far from the first to the second.</summary>
+        public static void GaitMix(float speed, out string a, out string b, out float mix)
+        {
+            if (speed <= RunSpeed) { a = Walk; b = Run; mix = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(WalkSpeed, RunSpeed, speed)); }
+            else { a = Run; b = Sprint; mix = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(RunSpeed, SprintSpeed, speed)); }
+        }
+
+        /// <summary>0..1 through the pendulum's cycle from its angle and angular velocity (0 = the forward end).</summary>
+        public static float SwingPhase(float angle, float angularVelocity, float omega)
+        {
+            // angle = A cos(wt), velocity = -A w sin(wt): the phase is the angle round that ellipse
+            float a = Mathf.Atan2(-angularVelocity / Mathf.Max(0.01f, omega), angle);
+            return Mathf.Repeat(a / (2f * Mathf.PI), 1f);
+        }
+
         /// <summary>How much of the captured mantle shows at climb progress t: all of it, then handing over to standing.</summary>
-        public static float MantleHandOver(float t) => 1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.72f, 1f, t));
+        public static float MantleHandOver(float t) => 1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.5f, 0.85f, t));
 
         /// <summary>
         /// The game's attack progress laid onto the clip so that both land at once: up to the game's moment of impact the
@@ -88,22 +274,36 @@ namespace CrimsonVeil.Player
 
         sealed class Layer
         {
-            public HeroMocapLibrary.Entry entry;
+            public string id;
+            public HeroMocapLibrary.Entry entry, entry2;
+            public bool hasSecond;
+            public float mix;
             public float time, weight, target, fadeSpeed;
-            public bool driven;
+            public Mask mask;
         }
 
-        readonly List<Layer> layers = new List<Layer>();
+        sealed class Channel
+        {
+            public readonly List<Layer> layers = new List<Layer>();
+        }
+
+        readonly Channel body = new Channel(), upper = new Channel();
         Transform[] bones;
-        Quaternion[] proc, sampled;
+        float[][] masks;            // per Mask, per bone: how much the clip moves it
+        bool[] hipsPosition;        // per Mask: whether the clip places the hips
+        Quaternion[] proc, sampled, sampled2;
         Transform hips;
-        Vector3 hipsProc;
-        Choice script;           // a cutscene's request (wins over the game's)
+        float gaitPhase;            // 0..1 through the gait's cycle (left foot ahead at 0)
+        Pick script;                // a cutscene's request (wins over the game's)
         bool scripted;
 
         public bool IsReady => library != null && model != null && bones != null && bones.Length > 0;
-        public float Weight { get { float w = 0f; foreach (var l in layers) w += l.weight; return Mathf.Min(1f, w) * strength; } }
-        public string Current => layers.Count > 0 ? layers[layers.Count - 1].entry.key : null;
+        public float Weight => ChannelWeight(body);
+        public float UpperWeight => ChannelWeight(upper);
+        float ChannelWeight(Channel ch) { float w = 0f; foreach (var l in ch.layers) w += l.weight; return Mathf.Min(1f, w) * strength; }
+        public string Current => body.layers.Count > 0 ? body.layers[body.layers.Count - 1].id : null;
+        public string CurrentUpper => upper.layers.Count > 0 ? upper.layers[upper.layers.Count - 1].id : null;
+        public float GaitPhase => gaitPhase;
 
         void Awake() => Bind();
 
@@ -121,8 +321,45 @@ namespace CrimsonVeil.Player
             bones = list.ToArray();
             proc = new Quaternion[bones.Length];
             sampled = new Quaternion[bones.Length];
+            sampled2 = new Quaternion[bones.Length];
             hips = CrimsonVeil.Core.RigJoint.FindDeep(model, "Hips");
+            int maskCount = System.Enum.GetValues(typeof(Mask)).Length;
+            masks = new float[maskCount][];
+            hipsPosition = new bool[maskCount];
+            for (int m = 0; m < maskCount; m++)
+            {
+                masks[m] = new float[bones.Length];
+                for (int i = 0; i < bones.Length; i++) masks[m][i] = MaskWeight((Mask)m, bones[i].name);
+                hipsPosition[m] = (Mask)m != Mask.Upper;
+            }
         }
+
+        /// <summary>How much a clip of this mask moves the bone (the waist blends in over the spine).</summary>
+        public static float MaskWeight(Mask mask, string bone)
+        {
+            switch (mask)
+            {
+                case Mask.Upper:
+                    if (bone == "Spine") return 0.4f;
+                    if (bone == "Chest") return 0.8f;
+                    return IsLegOrHips(bone) ? 0f : 1f;
+                case Mask.NoWeaponArm:
+                    return IsWeaponArm(bone) ? 0f : 1f;
+                case Mask.NoHipsTurn:
+                    return bone == "Hips" ? 0f : 1f;
+                case Mask.Gait:
+                case Mask.GaitArmed:
+                    if (mask == Mask.GaitArmed && IsWeaponArm(bone)) return 0f;
+                    return IsTrunk(bone) ? 0.5f : 1f;
+                default:
+                    return 1f;
+            }
+        }
+
+        static bool IsLegOrHips(string b) => b == "Hips" || b.StartsWith("UpperLeg") || b.StartsWith("LowerLeg") || b.StartsWith("Foot") || b.StartsWith("Toe");
+        static bool IsTrunk(string b) => b == "Spine" || b == "Chest" || b == "UpperChest" || b == "Neck" || b == "Head";
+        static bool IsWeaponArm(string b) => b == "Shoulder.R" || b == "UpperArm.R" || b == "LowerArm.R" || b == "Hand.R"
+                                             || b.StartsWith("Finger.R") || b.StartsWith("Thumb.R");
 
         /// <summary>The bones a captured clip drives (body, arms, legs, fingers; not the face, hair, cloth or sash).</summary>
         public static readonly string[] BoneNames =
@@ -139,66 +376,118 @@ namespace CrimsonVeil.Player
         /// <summary>A cutscene plays a clip (on its own clock) until <see cref="StopScript"/>; it wins over the game's choice.</summary>
         public void Play(string key, float weight = 1f)
         {
-            script = new Choice { key = key, weight = weight };
+            script = new Pick { body = new Choice { key = key, weight = weight } };
             scripted = true;
         }
 
         public void StopScript() => scripted = false;
 
-        /// <summary>Blends the chosen clip over the pose the procedural animation has just set (called by HeroAnimator).</summary>
-        public void Apply(Choice want, float dt)
+        /// <summary>The body channel alone (the upper body lets go).</summary>
+        public void Apply(Choice want, float dt) => Apply(new Pick { body = want }, dt);
+
+        /// <summary>Blends the chosen clips over the pose the procedural animation has just set (called by HeroAnimator).</summary>
+        public void Apply(Pick want, float dt)
         {
             if (!IsReady || dt <= 0f) return;
             if (scripted) want = script;
 
-            // the wanted clip fades in; any other fades out
-            Layer top = layers.Count > 0 ? layers[layers.Count - 1] : null;
-            if (!want.IsNone && (top == null || top.entry.key != want.key || top.target <= 0f) && library.TryGet(want.key, out var entry))
+            Advance(body, want.body, dt);
+            Advance(upper, want.upper, dt);
+            if ((body.layers.Count == 0 && upper.layers.Count == 0) || strength <= 0f) return;
+
+            for (int i = 0; i < bones.Length; i++) proc[i] = bones[i].localRotation;
+            Vector3 hipsProc = hips != null ? hips.localPosition : Vector3.zero;
+            var blended = (Quaternion[])proc.Clone();
+            Vector3 hipsBlend = hipsProc;
+            Blend(body, blended, ref hipsBlend);
+            Blend(upper, blended, ref hipsBlend);
+            for (int i = 0; i < bones.Length; i++) bones[i].localRotation = blended[i];
+            if (hips != null) hips.localPosition = hipsBlend;
+        }
+
+        void Advance(Channel ch, Choice want, float dt)
+        {
+            Layer top = ch.layers.Count > 0 ? ch.layers[ch.layers.Count - 1] : null;
+            if (!want.IsNone && library.TryGet(want.key, out var entry))
             {
-                top = layers.Find(l => l.entry.key == want.key);
-                if (top != null) layers.Remove(top);
-                else top = new Layer { entry = entry, time = 0f };
-                layers.Add(top);
+                string id = want.Layer;
+                if (top == null || top.id != id || top.target <= 0f)
+                {
+                    var found = ch.layers.Find(l => l.id == id);
+                    if (found != null) ch.layers.Remove(found);
+                    else
+                    {
+                        found = new Layer { id = id, time = 0f };
+                        // a gait comes in with its feet where the steps already are
+                        if (want.gait && ch.layers.TrueForAll(l => l.id != Gait)) gaitPhase = Mathf.Repeat(gaitPhase, 1f);
+                    }
+                    ch.layers.Add(found);
+                    top = found;
+                }
+                top.entry = entry;
+                top.hasSecond = want.gait && !string.IsNullOrEmpty(want.key2) && library.TryGet(want.key2, out top.entry2);
+                top.mix = top.hasSecond ? Mathf.Clamp01(want.mix) : 0f;
+                top.mask = want.mask;
             }
-            foreach (var l in layers)
+            else top = null;
+
+            foreach (var l in ch.layers)
             {
-                bool wanted = l == top && !want.IsNone && l.entry.key == want.key;
+                bool wanted = l == top;
                 l.target = wanted ? want.weight : 0f;
-                l.driven = wanted && want.driven;
-                // driven blows and the mantle come in quickly, the idle settles in slowly
-                l.fadeSpeed = l.driven ? 10f : 3.5f;
+                bool driven = wanted && (want.driven || want.bySeconds);
+                // driven blows and the like come in quickly, the idle settles in slowly
+                l.fadeSpeed = driven || (wanted && want.gait) ? 10f : 3.5f;
                 l.weight = Mathf.MoveTowards(l.weight, l.target, dt * l.fadeSpeed);
                 float len = Mathf.Max(0.01f, l.entry.clip.length);
-                if (l.driven)
+                if (wanted && want.gait)
+                {
+                    // the steps follow the ground covered, at the clip's own stride (blended between the two gaits)
+                    float stride = Mathf.Lerp(Stride(l.entry), l.hasSecond ? Stride(l.entry2) : Stride(l.entry), l.mix);
+                    gaitPhase = Mathf.Repeat(gaitPhase + want.speed * dt / stride, 1f);
+                }
+                else if (wanted && want.driven)
                 {
                     float t01 = want.time01;
                     if (l.entry.impact > 0f) t01 = RemapToClip(t01, GameImpact(KeyForm(l.entry.key)), l.entry.impact);
-                    l.time = Mathf.Clamp01(t01) * len;
+                    l.time = (l.entry.loop ? Mathf.Repeat(t01, 1f) : Mathf.Clamp01(t01)) * len;
                 }
-                else
+                else if (wanted && want.bySeconds)
+                    l.time = l.entry.loop ? Mathf.Repeat(want.seconds, len) : Mathf.Clamp(want.seconds, 0f, len);
+                else if (l.id != Gait)
                 {
                     l.time += dt;
                     l.time = l.entry.loop ? Mathf.Repeat(l.time, len) : Mathf.Min(l.time, len);
                 }
             }
-            layers.RemoveAll(l => l.weight <= 0f && l.target <= 0f);
-            if (layers.Count == 0 || strength <= 0f) return;
+            ch.layers.RemoveAll(l => l.weight <= 0f && l.target <= 0f);
+        }
 
-            // blend: procedural pose -> each layer in turn
-            for (int i = 0; i < bones.Length; i++) proc[i] = bones[i].localRotation;
-            hipsProc = hips != null ? hips.localPosition : Vector3.zero;
-            var blended = (Quaternion[])proc.Clone();
-            Vector3 hipsBlend = hipsProc;
-            foreach (var l in layers)
+        static float Stride(in HeroMocapLibrary.Entry e) => e.stride > 0.1f ? e.stride : 2f;
+
+        float GaitTime(in HeroMocapLibrary.Entry e) => Mathf.Repeat(gaitPhase + e.sync, 1f) * Mathf.Max(0.01f, e.clip.length);
+
+        void Blend(Channel ch, Quaternion[] blended, ref Vector3 hipsBlend)
+        {
+            foreach (var l in ch.layers)
             {
                 if (l.weight <= 0f) continue;
-                l.entry.clip.SampleAnimation(model.gameObject, l.time);
+                bool gait = l.id == Gait;
+                l.entry.clip.SampleAnimation(model.gameObject, gait ? GaitTime(l.entry) : l.time);
+                for (int i = 0; i < bones.Length; i++) sampled[i] = bones[i].localRotation;
+                Vector3 hipsSampled = hips != null ? hips.localPosition : Vector3.zero;
+                if (l.hasSecond && l.mix > 0f)
+                {
+                    l.entry2.clip.SampleAnimation(model.gameObject, GaitTime(l.entry2));
+                    for (int i = 0; i < bones.Length; i++) sampled[i] = Quaternion.Slerp(sampled[i], bones[i].localRotation, l.mix);
+                    if (hips != null) hipsSampled = Vector3.Lerp(hipsSampled, hips.localPosition, l.mix);
+                }
                 float w = Mathf.Clamp01(l.weight * strength);
-                for (int i = 0; i < bones.Length; i++) blended[i] = Quaternion.Slerp(blended[i], bones[i].localRotation, w);
-                if (hips != null) hipsBlend = Vector3.Lerp(hipsBlend, hips.localPosition, w);
+                var m = masks[(int)l.mask];
+                for (int i = 0; i < bones.Length; i++)
+                    if (m[i] > 0f) blended[i] = Quaternion.Slerp(blended[i], sampled[i], w * m[i]);
+                if (hips != null && hipsPosition[(int)l.mask]) hipsBlend = Vector3.Lerp(hipsBlend, hipsSampled, w);
             }
-            for (int i = 0; i < bones.Length; i++) bones[i].localRotation = blended[i];
-            if (hips != null) hips.localPosition = hipsBlend;
         }
 
         static VeilForm KeyForm(string key) => key == Stab ? VeilForm.Spear : VeilForm.Sword;

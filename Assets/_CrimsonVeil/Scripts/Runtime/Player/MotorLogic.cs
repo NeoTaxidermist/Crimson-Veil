@@ -149,6 +149,8 @@ namespace CrimsonVeil.Player
         public MotorState State { get; private set; } = MotorState.Normal;
         public bool IsGrounded { get; private set; }
         public bool IsDashing => dashTimer > 0f;
+        /// <summary>0..1 through the dash (1 when not dashing).</summary>
+        public float DashProgress => IsDashing && Settings.dashDuration > 0f ? 1f - Mathf.Clamp01(dashTimer / Settings.dashDuration) : 1f;
         /// <summary>Crouched on the ground: down held, or no room to stand. Crawls slowly; the body is low.</summary>
         public bool IsCrouching { get; private set; }
         /// <summary>Sliding along the ground (down + dash): fast, low, slowing to a crawl.</summary>

@@ -1,3 +1,4 @@
+using CrimsonVeil.Combat;
 using CrimsonVeil.Core;
 using CrimsonVeil.Veil;
 using UnityEngine;
@@ -33,6 +34,7 @@ namespace CrimsonVeil.Player
             if (veil == null && player != null) veil = player.GetComponent<VeilController>();
             if (model == null) model = transform;
             mocap = GetComponent<HeroMocap>();
+            health = player != null ? player.GetComponent<PlayerHealth>() : null;
             IsReady = Setup();
             if (IsReady)
             {
@@ -122,9 +124,62 @@ namespace CrimsonVeil.Player
         }
 
         HeroMocap mocap;
+        PlayerHealth health;
         float stillTime, lastAttackT = -1f;
         int swing;
         bool wasStriking;
+        // what happened lately (for the captured motion: see HeroMocap.Context)
+        HeroMocap.Context ctx = HeroMocap.Context.Default;
+        bool wasGroundedM = true, wasHangingM, wasWallSliding, wasDead;
+        float lastVy, lastHealth = -1f;
+        int lastBlocks;
+
+        /// <summary>Keeps <see cref="ctx"/>: the times since a landing (and how hard), a jump off a wall, a catch of the
+        /// lip, a hurt, a block, death and the return to life; the swing's phase, the dash's progress.</summary>
+        void Track(in HeroState s, float dt)
+        {
+            ctx.sinceLanded += dt; ctx.sinceWallJump += dt; ctx.sinceHangStart += dt; ctx.sinceHurt += dt;
+            ctx.sinceBlock += dt; ctx.sinceDeath += dt; ctx.sinceRespawn += dt;
+            bool still = s.grounded && s.speed < 0.2f;
+            ctx.stillTime = still ? ctx.stillTime + dt : 0f;
+            if (s.grounded && !wasGroundedM) { ctx.sinceLanded = 0f; ctx.landFallSpeed = -lastVy; ctx.landRunSpeed = s.speed; }
+            if (!s.grounded && wasGroundedM && s.verticalVelocity > 0.5f) ctx.jumpSpeed = s.verticalVelocity;
+            if (!s.grounded && wasWallSliding && !s.wallSliding && s.verticalVelocity > 0.5f)
+            {
+                ctx.sinceWallJump = 0f;
+                ctx.jumpSpeed = s.verticalVelocity;
+            }
+            if (s.hanging && !wasHangingM) ctx.sinceHangStart = 0f;
+            wasGroundedM = s.grounded; wasHangingM = s.hanging; wasWallSliding = s.wallSliding;
+            if (!s.grounded) lastVy = s.verticalVelocity;
+            if (health != null && health.Model != null)
+            {
+                float hp = health.Model.Current;
+                if (lastHealth >= 0f && hp < lastHealth - 1e-4f && health.IsAlive) ctx.sinceHurt = 0f;
+                lastHealth = hp;
+                ctx.health01 = health.Model.Fraction;
+                bool dead = !health.IsAlive;
+                if (dead && !wasDead) ctx.sinceDeath = 0f;
+                if (!dead && wasDead) ctx.sinceRespawn = 0f;
+                wasDead = dead;
+                ctx.dead = dead;
+                if (health.BlockCount != lastBlocks) { ctx.sinceBlock = 0f; lastBlocks = health.BlockCount; }
+            }
+            ctx.drawing = veil != null && veil.Drawing;
+            ctx.shieldHeld = veil != null && veil.ShieldHeld;
+            ctx.dashProgress = player.Motor.DashProgress;
+            if (s.swinging)
+            {
+                var m = player.Motor;
+                float omega = Mathf.Sqrt(m.Settings.SwingGravity / Mathf.Max(0.5f, m.SwingLength));
+                ctx.swingPhase = HeroMocap.SwingPhase(m.SwingAngle * m.Facing, m.SwingAngularVelocity * m.Facing, omega);
+            }
+            bool striking = s.attacking && s.attackT >= 0f;
+            if (striking && (!wasStriking || s.attackT < lastAttackT - 0.3f)) swing++;
+            wasStriking = striking;
+            lastAttackT = s.attackT;
+            ctx.swing = swing;
+        }
 
         RigJoint pelvis, neckJ, shoulderL, shoulderR, wristL, wristR, toeL, toeR;
         Transform upperArmL, upperArmR, lowerArmL, lowerArmR, handL, handR;
@@ -193,13 +248,9 @@ namespace CrimsonVeil.Player
             // motion capture over the procedural pose (before the hands are set on the lip, so they stay on it)
             if (mocap != null)
             {
-                bool still = s.grounded && s.speed < 0.2f;
-                stillTime = still ? stillTime + Time.deltaTime : 0f;
-                bool striking = s.attacking && s.attackT >= 0f;
-                if (striking && (!wasStriking || s.attackT < lastAttackT - 0.3f)) swing++;
-                wasStriking = striking;
-                lastAttackT = s.attackT;
-                mocap.Apply(HeroMocap.Choose(s, stillTime, swing), Time.deltaTime);
+                Track(s, Time.deltaTime);
+                stillTime = ctx.stillTime;
+                mocap.Apply(HeroMocap.Choose(s, ctx), Time.deltaTime);
             }
             if (s.hanging || s.climbing) ReachLip(s);
             if (Hands != null)

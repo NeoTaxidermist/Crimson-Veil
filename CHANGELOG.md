@@ -5,6 +5,65 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.35.0] – 2026-11-19
+### Mocap na všem, co hrdina dělá
+Klipů je teď 38 (dřív 15). Téměř všechny jsou řízené hrou, takže zůstávají v kroku s ní.
+- **Pohyb:**
+  - chůze, běh a sprint se prolínají podle rychlosti;
+  - krok jde podle uražené vzdálenosti s vlastní délkou kroku klipu, takže nohy neklouzají;
+  - trup zůstává z půlky procedurální, aby zůstal předklon do běhu a váha rozběhu i zastavení;
+  - plížení v pohybu zůstává procedurální (klip z Mixama jen šoupe krátkými kroky), podřep na místě je z mocapu.
+- **Vzduch:**
+  - odraz běží podle toho, jak skok zpomaluje, pak přijde pád;
+  - salto při dvojskoku jde v kroku se saltem hry. Celým tělem otáčí hra, klip dává jen končetiny;
+  - skok od zdi.
+- **Dopad:** pád rychlejší než 24 m/s (zhruba z 6 m) skončí v podřepu, z běhu kotoulem. Obyčejný skok nic takového nespustí.
+- **Na zemi:** dash a skluz podle průběhu ve hře.
+- **Římsa a lano:**
+  - chycení římsy, pak visení;
+  - houpání na laně podle fáze kyvadla;
+  - **vytahování na římsu už hrdinu nepřehne přes hranu.** Klip Mixama ho ve druhé půlce položí dopředu skoro vodorovně a skrčí ho na římse. Trup proto zůstává z půlky herní, od poloviny výstupu převezme pózu hra a výška boků se bere jen relativně. Hrdina tak vyšlápne nahoru a postaví se.
+- **Boj:**
+  - meč a bič střídají tři seky (tříúderové kombo), štít má výpad;
+  - zásah v klipu je vždy položený na okamžik zásahu ve hře.
+- **Horní polovina těla** běží jako druhý kanál nad nohama, takže jde běžet a zároveň:
+  - natahovat luk, mířit a vystřelit (při strmém míření nahoru nebo dolů má ruce procedurální míření);
+  - krýt se štítem a ucuknout při bloku;
+  - ucuknout při zásahu.
+- **Klid:** po sedmi sekundách stání se hrdina rozhlíží. Když je šála slabá (pod 35 %), stojí zraněný.
+- **Smrt a návrat:** smrt padá na zem, po respawnu hrdina vstane.
+- Se zbraní v ruce klipy nesahají na ruku se zbraní. Tu drží procedurální póza tam, kde zbraň je.
+
+### Technika
+- `HeroMocapBaker`:
+  - klip jde oříznout (například dopad od okamžiku kontaktu);
+  - výška boků má tři režimy. *Beze změny* je pro chůzi. *Relativně* je pro visení, lano a vzduch, kde hrdinu umisťuje hra. *Na zemi* je pro dopad, kotoul a smrt, kde nejnižší bod těla sedí na podlaze. Zdroje bez pohybu kořene totiž ztrácí výšku nad zemí;
+  - u chůze se měří délka kroku a fáze levé nohy.
+- `HeroMocap`:
+  - dva kanály, tělo a horní polovina;
+  - masky kostí: celé tělo, horní polovina, bez ruky se zbraní, bez otočení boků a krok s polovičním trupem;
+  - krokový cyklus a klipy řízené časem od události.
+- `HeroAnimator` sleduje, co se stalo: dopad a jak tvrdý byl, skok od zdi, chycení římsy, zásah, blok, smrt, respawn, fázi lana a průběh dashe.
+- Nové vlastnosti: `MotorLogic.DashProgress` a `VeilController.ShieldHeld`.
+- Recept na klipy je v `HeroMocapRecipe` (38 položek). Zdroje zůstávají mimo git.
+
+### Testy
+- `HeroMocapTests`:
+  - stání, rozhlížení a zraněný postoj;
+  - prolínání chůze, běhu a sprintu podle rychlosti;
+  - vzduch: odraz, pád, salto a skok od zdi;
+  - tvrdý dopad a kotoul (obyčejný skok je nespustí);
+  - dash a skluz;
+  - fáze kyvadla;
+  - chycení římsy;
+  - horní polovina: luk, štít a zásah;
+  - smrt a vstávání;
+  - masky;
+  - všech 38 upečených klipů je v projektu a krokové cykly znají délku kroku.
+- `HeroMocapPlayTests`:
+  - krok jde podle uražené vzdálenosti;
+  - luk hýbe rukama a nohy nechá být.
+
 ## [0.34.0] – 2026-11-19
 ### Kostra podle anatomie (inspirace standardní humanoidní kostrou)
 - Klouby hrdiny jsou porovnané se standardní humanoidní kostrou (Mixamo X Bot). Převzaté jsou jen polohy otočných bodů. Síť, váhy kůže a tvar těla zůstávají naše.

@@ -140,14 +140,55 @@ namespace CrimsonVeil.EditorTools
         /// </summary>
         public static AnimationClip Bake(AnimationClip source, string name, bool loop) => Bake(source, name, loop, out _);
 
-        /// <param name="impact">0..1 through the clip where the right hand moves fastest (a blow lands).</param>
         public static AnimationClip Bake(AnimationClip source, string name, bool loop, out float impact)
+            => Bake(source, name, loop, HipsMode.Absolute, 0f, 1f, out impact, out _);
+
+        /// <summary>Where a baked clip puts the hips (the humanoid sources lose their height over the ground: their root
+        /// motion is the game's to give).</summary>
+        public enum HipsMode
+        {
+            /// <summary>As the clip has them over his feet (standing, walking: the feet on the floor).</summary>
+            Absolute,
+            /// <summary>Only how they move from the clip's first frame (hanging, swinging, in the air: the game places him).</summary>
+            Relative,
+            /// <summary>Lowered or raised each frame so his lowest point is on the floor (landing, rolling, falling dead).</summary>
+            Grounded,
+        }
+
+        /// <summary>What a bake measured of the clip (for the library and the log).</summary>
+        public struct Measure
+        {
+            /// <summary>Metres covered per loop by its steps (twice the reach of a foot fore and aft under the hips).</summary>
+            public float stride;
+            /// <summary>0..1 through the clip where the left foot is furthest ahead of the right (a gait's sync point).</summary>
+            public float sync;
+            /// <summary>0..1 through the clip where the right hand moves fastest (a blow lands).</summary>
+            public float impact;
+            public float lowestHips;
+        }
+
+        /// <param name="from01">Where in the source the clip starts (0..1) - e.g. a landing from the moment of contact.</param>
+        /// <param name="to01">Where it ends.</param>
+        public static AnimationClip Bake(AnimationClip source, string name, bool loop, HipsMode hipsMode, float from01, float to01,
+                                         out float impact, out Measure measure)
         {
             var asset = AssetDatabase.LoadAssetAtPath<GameObject>(HeroPath);
             var hero = (GameObject)Object.Instantiate(asset);
             hero.name = "HeroBake";
             try
             {
+                // his rest: where the hips sit and how low his lowest point is
+                var hips = CrimsonVeil.Core.RigJoint.FindDeep(hero.transform, "Hips");
+                var restHipsLocal = hips.localPosition;
+                var lowPoints = new List<Transform>();
+                foreach (var n in new[] { "Foot.L", "Foot.R", "Toe.L", "Toe.R", "Hand.L", "Hand.R", "Head", "Hips", "LowerLeg.L", "LowerLeg.R", "LowerArm.L", "LowerArm.R", "Chest" })
+                {
+                    var t = CrimsonVeil.Core.RigJoint.FindDeep(hero.transform, n);
+                    if (t != null) lowPoints.Add(t);
+                }
+                float Lowest() { float y = float.MaxValue; foreach (var t in lowPoints) y = Mathf.Min(y, t.position.y); return y; }
+                float restLowest = Lowest();
+
                 // the avatar is built on a T-posed copy; the recording is made on the hero at his own rest
                 var tposed = (GameObject)Object.Instantiate(asset);
                 Avatar avatar;
@@ -167,25 +208,50 @@ namespace CrimsonVeil.EditorTools
                 output.SetSourcePlayable(play);
 
                 var bones = DrivenBones(hero.transform);
-                int frames = Mathf.Max(2, Mathf.RoundToInt(source.length * Fps) + 1);
+                float t0 = Mathf.Clamp01(from01) * source.length, t1 = Mathf.Clamp(to01, from01, 1f) * source.length;
+                float span = Mathf.Max(1f / Fps, t1 - t0);
+                int frames = Mathf.Max(2, Mathf.RoundToInt(span * Fps) + 1);
+                var footL = CrimsonVeil.Core.RigJoint.FindDeep(hero.transform, "Foot.L");
+                var footR = CrimsonVeil.Core.RigJoint.FindDeep(hero.transform, "Foot.R");
+                float bestLead = float.MinValue, syncAt = 0f, reachMin = float.MaxValue, reachMax = float.MinValue;
                 var rot = new AnimationCurve[bones.Count, 4];
                 for (int b = 0; b < bones.Count; b++) for (int k = 0; k < 4; k++) rot[b, k] = new AnimationCurve();
-                var hips = CrimsonVeil.Core.RigJoint.FindDeep(hero.transform, "Hips");
                 var hp = new[] { new AnimationCurve(), new AnimationCurve(), new AnimationCurve() };
                 var hand = CrimsonVeil.Core.RigJoint.FindDeep(hero.transform, "Hand.R");
-                Vector3 lastHand = Vector3.zero;
-                float fastest = 0f, fastestAt = 0f;
+                Vector3 lastHand = Vector3.zero, firstHips = Vector3.zero;
+                float fastest = 0f, fastestAt = 0f, lowestHips = float.MaxValue;
                 for (int f = 0; f < frames; f++)
                 {
-                    float t = Mathf.Min(source.length, f / Fps);
-                    play.SetTime(t);
+                    float t = Mathf.Min(span, f / Fps);
+                    play.SetTime(t0 + t);
                     graph.Evaluate(0f);
+                    if (footL != null && footR != null)
+                    {
+                        float lead = footL.position.z - footR.position.z;   // (the hero faces +z)
+                        if (lead > bestLead) { bestLead = lead; syncAt = t; }
+                        float reach = footL.position.z - hips.position.z;
+                        reachMin = Mathf.Min(reachMin, reach); reachMax = Mathf.Max(reachMax, reach);
+                    }
                     for (int b = 0; b < bones.Count; b++)
                     {
                         var q = bones[b].localRotation;
                         rot[b, 0].AddKey(t, q.x); rot[b, 1].AddKey(t, q.y); rot[b, 2].AddKey(t, q.z); rot[b, 3].AddKey(t, q.w);
                     }
-                    var p = hips.localPosition;
+                    // where the hips go (see HipsMode); never travelling over the ground: the game moves him
+                    var local = hips.localPosition;
+                    if (f == 0) firstHips = local;
+                    Vector3 p;
+                    if (hipsMode == HipsMode.Relative) p = restHipsLocal + (local - firstHips);
+                    else
+                    {
+                        p = local;
+                        if (hipsMode == HipsMode.Grounded && hips.parent != null)
+                        {
+                            float lift = restLowest - Lowest();     // world metres to raise him by
+                            p = hips.parent.InverseTransformPoint(hips.position + Vector3.up * lift);
+                        }
+                    }
+                    lowestHips = Mathf.Min(lowestHips, hips.position.y);
                     hp[0].AddKey(t, p.x); hp[1].AddKey(t, p.y); hp[2].AddKey(t, p.z);
                     if (hand != null)
                     {
@@ -198,7 +264,12 @@ namespace CrimsonVeil.EditorTools
                     }
                 }
                 graph.Destroy();
-                impact = source.length > 0f ? fastestAt / source.length : 0f;
+                impact = span > 0f ? fastestAt / span : 0f;
+                measure = new Measure
+                {
+                    stride = reachMax > reachMin ? 2f * (reachMax - reachMin) : 0f, sync = span > 0f ? syncAt / span : 0f,
+                    impact = impact, lowestHips = lowestHips,
+                };
 
                 var clip = new AnimationClip { name = name, frameRate = Fps, legacy = false };
                 string[] comp = { "localRotation.x", "localRotation.y", "localRotation.z", "localRotation.w" };
@@ -243,14 +314,18 @@ namespace CrimsonVeil.EditorTools
             {
                 var src = SourceClip(SourceDir + "/" + r.source);
                 if (src == null) { log.Append("missing " + r.source + "\n"); continue; }
-                var clip = Bake(src, r.key, r.loop, out float impact);
-                bool blow = r.key == HeroMocap.SlashA || r.key == HeroMocap.SlashB || r.key == HeroMocap.Stab;
+                var clip = Bake(src, r.key, r.loop, r.hips, r.from, r.to, out float impact, out var m);
                 string outPath = OutDir + "/" + r.key + ".anim";
                 var existing = AssetDatabase.LoadAssetAtPath<AnimationClip>(outPath);
                 if (existing != null) { EditorUtility.CopySerialized(clip, existing); clip = existing; }
                 else AssetDatabase.CreateAsset(clip, outPath);
-                entries.Add(new HeroMocapLibrary.Entry { key = r.key, clip = clip, loop = r.loop, impact = blow ? impact : 0f });
-                log.Append(r.key + " " + clip.length.ToString("F2") + "s" + (blow ? " impact " + impact.ToString("F2") : "") + "\n");
+                entries.Add(new HeroMocapLibrary.Entry
+                {
+                    key = r.key, clip = clip, loop = r.loop, impact = r.blow ? impact : 0f,
+                    stride = r.gait ? m.stride : 0f, sync = r.gait ? m.sync : 0f,
+                });
+                log.Append(r.key + " " + clip.length.ToString("F2") + "s" + (r.blow ? " impact " + impact.ToString("F2") : "")
+                           + (r.gait ? " stride " + m.stride.ToString("F2") + " sync " + m.sync.ToString("F2") : "") + "\n");
             }
             lib.entries = entries.ToArray();
             EditorUtility.SetDirty(lib);
@@ -262,25 +337,65 @@ namespace CrimsonVeil.EditorTools
     /// <summary>Which source clip becomes which of the hero's clips (by key: see <see cref="HeroMocap"/>).</summary>
     public static class HeroMocapRecipe
     {
-        public struct Item { public string key, source; public bool loop; public Item(string k, string s, bool l) { key = k; source = s; loop = l; } }
+        public struct Item
+        {
+            public string key, source;
+            public bool loop, gait, blow;
+            public HeroMocapBaker.HipsMode hips;
+            public float from, to;
+        }
+
+        static Item I(string key, string source, bool loop = false, HeroMocapBaker.HipsMode hips = HeroMocapBaker.HipsMode.Absolute,
+                      float from = 0f, float to = 1f, bool gait = false, bool blow = false)
+            => new Item { key = key, source = source, loop = loop, hips = hips, from = from, to = to, gait = gait, blow = blow };
+
+        const HeroMocapBaker.HipsMode Rel = HeroMocapBaker.HipsMode.Relative, Gnd = HeroMocapBaker.HipsMode.Grounded;
+        const string SS = "Sword and Shield Pack/", LB = "Pro Longbow Pack/";
 
         public static readonly Item[] All =
         {
-            new Item(HeroMocap.Idle, "Breathing Idle.fbx", true),
-            new Item(HeroMocap.LookAround, "Looking Around.fbx", true),
-            new Item(HeroMocap.HangIdle, "Hanging Idle.fbx", true),
-            new Item(HeroMocap.Mantle, "Climbing.fbx", false),
-            new Item(HeroMocap.HardLanding, "Hard Landing.fbx", false),
-            new Item(HeroMocap.Roll, "Sprinting Forward Roll.fbx", false),
-            new Item(HeroMocap.SlashA, "Stable Sword Inward Slash.fbx", false),
-            new Item(HeroMocap.SlashB, "Stable Sword Outward Slash.fbx", false),
-            new Item(HeroMocap.Stab, "Bayonet Stab.fbx", false),
-            new Item(HeroMocap.Talk, "Talking Conversation.fbx", true),
-            new Item(HeroMocap.Sad, "Sad Idle.fbx", true),
-            new Item(HeroMocap.Angry, "Yelling.fbx", false),
-            new Item(HeroMocap.Nod, "Head Nod Yes.fbx", false),
-            new Item(HeroMocap.Point, "Pointing Forward.fbx", false),
-            new Item(HeroMocap.GetUp, "Getting Up From Back.fbx", false),
+            // standing, acting
+            I(HeroMocap.Idle, "Breathing Idle.fbx", true),
+            I(HeroMocap.LookAround, "Looking Around.fbx", true),
+            I(HeroMocap.InjuredIdle, "Injured Idle.fbx", true),
+            I(HeroMocap.Talk, "Talking Conversation.fbx", true),
+            I(HeroMocap.Sad, "Sad Idle.fbx", true),
+            I(HeroMocap.Angry, "Yelling.fbx"),
+            I(HeroMocap.Nod, "Head Nod Yes.fbx"),
+            I(HeroMocap.Point, "Pointing Forward.fbx"),
+            I(HeroMocap.GetUp, "Getting Up From Back.fbx", hips: Gnd),
+            // on the ground
+            I(HeroMocap.Walk, "Unarmed Walk Forward.fbx", true, gait: true),
+            I(HeroMocap.Run, "Run.fbx", true, gait: true),
+            I(HeroMocap.Sprint, "Sprint.fbx", true, gait: true),
+            I(HeroMocap.CrouchIdle, SS + "sword and shield crouch idle.fbx", true),
+            I(HeroMocap.Slide, "Running Slide.fbx", hips: Gnd, from: 0.1f, to: 0.85f),
+            I(HeroMocap.Dash, "Standing Dodge Forward.fbx", from: 0.25f, to: 0.75f),
+            I(HeroMocap.Roll, "Sprinting Forward Roll.fbx", hips: Gnd),
+            I(HeroMocap.HardLanding, "Falling To Landing.fbx", hips: Gnd, from: 0.2f),
+            I(HeroMocap.LandRoll, "Falling To Roll.fbx", hips: Gnd, from: 0.06f),
+            // in the air, on the lip, on the whip
+            I(HeroMocap.JumpUp, "Jump In Place.fbx", hips: Rel, from: 0.36f, to: 0.45f),
+            I(HeroMocap.Fall, "Falling Idle.fbx", true, Rel),
+            I(HeroMocap.Flip, "Running Forward Flip.fbx", hips: Rel, from: 0.3f, to: 0.82f),
+            I(HeroMocap.WallJump, "Jump From Wall.fbx", hips: Rel, from: 0.1f),
+            I(HeroMocap.HangIdle, "Hanging Idle.fbx", true),
+            I(HeroMocap.HangCatch, "Jumping To Hanging.fbx", hips: Rel, from: 0.18f, to: 0.6f),
+            I(HeroMocap.Mantle, "Climbing.fbx", hips: Rel),
+            I(HeroMocap.Swing, "Swinging.fbx", true, Rel),
+            // fighting
+            I(HeroMocap.SlashA, "Stable Sword Inward Slash.fbx", blow: true),
+            I(HeroMocap.SlashB, "Stable Sword Outward Slash.fbx", blow: true),
+            I(HeroMocap.SlashC, SS + "sword and shield slash (3).fbx", blow: true),
+            I(HeroMocap.Stab, "Bayonet Stab.fbx", blow: true),
+            I(HeroMocap.ShieldBash, SS + "sword and shield attack (2).fbx", blow: true),
+            I(HeroMocap.BlockIdle, SS + "sword and shield block idle.fbx", true),
+            I(HeroMocap.Block, SS + "sword and shield block.fbx"),
+            I(HeroMocap.BowDraw, LB + "standing draw arrow.fbx"),
+            I(HeroMocap.BowAim, LB + "standing aim overdraw.fbx", true),
+            I(HeroMocap.BowShot, LB + "standing aim recoil.fbx"),
+            I(HeroMocap.Hurt, SS + "sword and shield impact.fbx"),
+            I(HeroMocap.Death, SS + "sword and shield death.fbx", hips: Gnd),
         };
     }
 }

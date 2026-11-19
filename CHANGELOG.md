@@ -5,6 +5,17 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.30.1] – 2026-11-19
+### Opraveno
+- **Hrdina už nemá kouty.** V 0.30.0 se nad čelem zanořila pod kůži celá přední vlasová hmota, včetně boků nad spánky. Zepředu tak měl vysoké holé spánky. Model bude sloužit i pro cutscény zblízka, takže teď:
+  - pod kůži se zanoří jen střed čela;
+  - přes spánky leží tenká vrstva vlasů (`TEMPLE`, 13 mm), která sahá dolů až k hornímu okraji ucha. Vlasová linie je zepředu měkký oblouk.
+- **Pojistka podle skutečného tvaru lebky.** Přední řady vlasové hmoty pod horním čelem se zatáhnou dovnitř hlavy podle jejího průřezu v dané výšce. Dřív stačila „šířka lebky", jenže obličej je vpředu užší, takže body vyčuhovaly z lící a obočí jako střepy. Výjimkou je jen vrstva na spáncích.
+- Hlavu jsem zkontroloval zepředu, z obou tří čtvrtin, z boku i zezadu.
+
+### Testy
+- `HeroModelTests`: přes spánky leží vlasy, hlava je tam širší než samotná lebka.
+
 ## [0.30.0] – 2026-11-19
 ### Opraveno
 - **Vlasy hrdiny.** Vlasová hmota tvořila „čepici" s ostrou hranou přes čelo jako hledí a z čela rostl hřeben bodlin. Teď:

@@ -73,6 +73,31 @@ namespace CrimsonVeil.Tests
         }
 
         [Test]
+        public void TheHairCoversTheTemples_NoDeepReceedingCorners()
+        {
+            // Over the temples (in front of the ears, at the height of the upper forehead) the head is wider than the
+            // skull alone (0.078 m half-width there): a layer of hair lies over them.
+            var go = Object.Instantiate(Hero());
+            try
+            {
+                var smr = go.GetComponentInChildren<SkinnedMeshRenderer>();
+                var baked = new Mesh();
+                smr.BakeMesh(baked, true);
+                var m = smr.transform.localToWorldMatrix;
+                var vs = baked.vertices.Select(v => m.MultiplyPoint3x4(v)).ToArray();
+                // which way is forward: the toes are ahead of the heels
+                float minY = vs.Min(v => v.y);
+                var soles = vs.Where(v => v.y < minY + 0.03f).ToArray();
+                var ankle = go.GetComponentsInChildren<Transform>().First(t => t.name == "Foot.L").position;
+                float fwd = Mathf.Sign((soles.Max(v => v.z) + soles.Min(v => v.z)) * 0.5f - ankle.z);
+                float temple = vs.Where(v => v.y > 1.72f && v.y < 1.75f && fwd * v.z > 0.03f && fwd * v.z < 0.09f)
+                                 .Max(v => Mathf.Abs(v.x));
+                Assert.Greater(temple, 0.082f, "hair over the temples");
+            }
+            finally { Object.DestroyImmediate(go); }
+        }
+
+        [Test]
         public void InkBody_WithACrimsonScarfAndTrim()
         {
             var smr = Hero().GetComponentInChildren<SkinnedMeshRenderer>();

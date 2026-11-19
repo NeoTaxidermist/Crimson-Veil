@@ -1163,6 +1163,10 @@ def skull_r(a_deg):
 # Hair doesn't grow out of the brow: over the forehead the mass sinks under the skin (no cap's rim across the
 # brow), it comes out of the skull at the hairline high on the forehead and reaches its full fullness over the crown.
 HAIRLINE = (18.0, 58.0)   # degrees: bare up to the first, full from the second
+# ...but only in the middle of the brow: to the sides the hair comes down over the temples in a thin layer hugging the
+# skull (bare there too, he had deep receding corners), so seen from the front the hairline is a soft arch.
+HAIR_SIDE = [None] * _N   # per row: the radius at the row's sides (over the temples), where it differs
+TEMPLE = 0.013            # thickness of the hair over the temples
 for k in range(_N):
     a = (k * 3 + 1.5 + 180) % 360 - 180
     if -60 < a < HAIRLINE[1]:
@@ -1170,6 +1174,18 @@ for k in range(_N):
         u = u * u * (3 - 2 * u)
         inner = skull_r(a) - 0.012
         HAIR_R[k] = inner + (max(HAIR_R[k], inner) - inner) * u
+        if a > -30:   # (over the cheeks it is held inside the skull below the ear's top: see the clamp in the grid)
+            c = max(0.0, min(1.0, (a + 30) / 20))
+            c = c * c * (3 - 2 * c)
+            side = skull_r(a) + TEMPLE + (max(HAIR_R[k], inner) - inner) * u * 0.5
+            HAIR_SIDE[k] = HAIR_R[k] + (side - HAIR_R[k]) * c
+
+
+def side_share(ph):
+    """How much of a hair row's cross-section at angle ph (0 = the middle, +-pi/2 = the sides) is temple."""
+    s = abs(math.sin(ph))
+    u = max(0.0, min(1.0, (s - 0.45) / 0.4))
+    return u * u * (3 - 2 * u)
     if _is_face(k * 3 + 1.5):
         HAIR_R[k] = 0.035   # under the face the mass is gathered deep inside the head (out at the jaw it showed as shards)
 
@@ -1178,12 +1194,26 @@ _grid = []
 for k in range(_N):
     a = math.radians(k * 3 + 1.5)
     d = Vector((0.0, -math.cos(a), math.sin(a)))
-    R = HAIR_R[k]
-    W = min(0.09, 0.62 * R + 0.012)
+    R0 = HAIR_R[k]
     row = []
     for m in range(1, _nphi):
         ph = -math.pi / 2 + math.pi * m / _nphi
+        R = R0 if HAIR_SIDE[k] is None else R0 + (HAIR_SIDE[k] - R0) * side_share(ph)
+        W = min(0.09, 0.62 * R + 0.012)
         p = centre + d * (R * math.cos(ph)) + Vector((W * math.sin(ph), 0, 0))
+        a_row = (k * 3 + 1.5 + 180) % 360 - 180
+        if -60 < a_row < HAIRLINE[1] and HEAD_RINGS[0][0] <= p.z <= 1.745:
+            # in front, below the top of the forehead, the mass stays inside the skull (the face narrows in front of
+            # its widest: points at the skull's width there stood out of the cheeks and brow as shards) - except for
+            # the thin layer of hair over the temples, from the brow up
+            rx, yf, yb = head_ring(p.z)
+            ry = (HEAD_AXIS_Y - yf) if p.y < HEAD_AXIS_Y else (yb - HEAD_AXIS_Y)
+            e = math.hypot(p.x / max(rx, 1e-3), (p.y - HEAD_AXIS_Y) / max(ry, 1e-3))
+            g = max(0.0, min(1.0, (p.z - 1.692) / 0.02)) * (side_share(ph) if HAIR_SIDE[k] is not None else 0.0)   # (down to the top of the ear)
+            tgt = 0.92 + (1.0 + TEMPLE / max(rx, 0.03) - 0.92) * g
+            if e > tgt:
+                f = tgt / e
+                p = Vector((p.x * f, HEAD_AXIS_Y + (p.y - HEAD_AXIS_Y) * f, p.z))
         row.append(add_vert(p, head_hair_w(p, 0)))
     _grid.append(row)
 # (the side poles sit just inside the skull: out at its surface their fans read as a flat plate down the cheek)

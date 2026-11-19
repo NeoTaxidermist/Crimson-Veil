@@ -472,6 +472,9 @@ namespace CrimsonVeil.Tests
             input.jumpHeld = false;
             Assert.IsNotNull(veil.Latched, "the whip caught the ring");
             Assert.IsTrue(controller.Motor.IsSwinging);
+            int hanging = controller.BodyFacing; bool turnedHanging = false;
+            yield return Wait(1.2f, () => turnedHanging |= controller.BodyFacing != hanging);
+            Assert.IsFalse(turnedHanging, "hanging still he doesn't twist round");
             float widest = 0f, offRope = 0f, swingStart = Time.time;
             string worst = "";
             Action watch = () =>
@@ -492,7 +495,11 @@ namespace CrimsonVeil.Tests
                 input.moveX = i % 2 == 0 ? 1f : -1f;
                 yield return Wait(0.8f, watch);
             }
+            Assert.AreEqual(-1, controller.BodyFacing, "pumping, he faces the way the arrow points");
             input.moveX = 0f;
+            int swungOut = controller.BodyFacing; bool turnedOnHisOwn = false;
+            yield return Wait(2.5f, () => turnedOnHisOwn |= controller.BodyFacing != swungOut);
+            Assert.IsFalse(turnedOnHisOwn, "swinging out on his own he doesn't turn round");
             Assert.Greater(widest, 0.35f, "the keys swing him up");
             Assert.Less(offRope, 0.2f, "both fists on the rope: " + worst);
             Assert.Contains(HeroMocap.Swing, new List<string>(played), "the captured swing");

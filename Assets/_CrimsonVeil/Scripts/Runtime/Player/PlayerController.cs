@@ -359,8 +359,8 @@ namespace CrimsonVeil.Player
         void UpdateVisual(float dt)
         {
             if (visualRoot == null) return;
-            // on the whip he faces the way he swings (the body only: the game's facing - and the whip - stay)
-            bodyFacing = Motor.IsSwinging ? MotorLogic.SwingFacing(Motor.SwingVelocity.x, lastMoveX, bodyFacing) : Motor.Facing;
+            // on the whip he faces the way he pumps (the body only: the game's facing - and the whip - stay)
+            bodyFacing = Motor.IsSwinging ? MotorLogic.SwingFacing(lastMoveX, bodyFacing) : Motor.Facing;
             float targetYaw = bodyFacing > 0 ? 90f : -90f;
             yaw = Mathf.LerpAngle(yaw, targetYaw, MovementMath.Damp(turnSharpness, dt));
             // On the whip the whole body hangs along it, pivoting round the hands.

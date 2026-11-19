@@ -5,6 +5,15 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.41.6] – 2026-11-19
+### Na laně se otáčí jen šipkou
+- **Opraveno: na laně se hrdina pořád přetáčel.** Otáčel se po směru pohybu, jakmile rychlost přes lano překročila 0,5 m/s. Na to stačilo i pohupování ve visu nebo dohoupávání, takže se při každém překmitu otočil.
+- Teď se na laně otáčí **jen šipkou, kterou se rozhoupává**: natočí se tím směrem, kam se rozhoupává. Když se houpe sám (dohoupává) nebo visí, drží směr, kterým se díval (`MotorLogic.SwingFacing`).
+- Testy:
+  - `GrappleSwingLogicTests`: samovolné houpání (široké, krátké i pohupování ve visu) ho neotočí, šipka ano a lehký dotek ne;
+  - `HeroMoveSetPlayTests`: ve visu se neotočí, při rozhoupávání se natočí podle šipky a při dohoupávání se neotočí.
+- Uživatel to tak chtěl už dřív a já jsem to tehdy pochopil obráceně: otáčení při samovolném houpání jsem přidal, místo abych ho zrušil.
+
 ## [0.41.5] – 2026-11-19
 ### Zastavení z běhu bez levitace
 - **Opraveno: při zastavení z běhu nohy na chvilku levitovaly nad zemí.** Sešly se tři věci:

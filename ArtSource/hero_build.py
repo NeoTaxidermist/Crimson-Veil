@@ -605,8 +605,13 @@ FOOT_PROFILE = measure_profile(None, 0.0, 0.0, 0.08, step=0.01, head=Vector((0, 
 # (past the toe the reading is only the ground line: stop there)
 _last = max(i for i, e in enumerate(FOOT_PROFILE) if e[1] > 0.008)
 FOOT_PROFILE = FOOT_PROFILE[:_last + 1]
+# The drawing's boot reads short (its toe is lost in the ground line): a man of 1.83 m has a foot of ~0.27 m, so the
+# boot's profile is stretched along its length to that (its height and its shape stay the drawing's).
+BOOT_LENGTH = 0.27
+_stretch = BOOT_LENGTH / (FOOT_PROFILE[-1][0] + 0.012)
+FOOT_PROFILE = [(round(e[0] * _stretch, 3),) + tuple(e[1:]) for e in FOOT_PROFILE]
 _ank = head_of("Foot.L")
-_foot_len = _heel_y - _toe_y
+_foot_len = (_heel_y - _toe_y) * _stretch
 # The toes: a bone from the ball of the foot to the toe (Toe.<side>), so the boot rolls over them as the heel lifts.
 # (The boot ends where the profile was cut, short of the drawing's full foot length: measured from there.)
 _boot_len = FOOT_PROFILE[-1][0] + 0.012
@@ -1138,6 +1143,36 @@ for _ in range(4):
     HAIR_R = [(HAIR_R[k - 1] + 2 * HAIR_R[k] + HAIR_R[(k + 1) % _N]) / 4 for k in range(_N)]
 HAIR_R = [max(r, 0.065) for r in HAIR_R]
 
+
+def skull_r(a_deg):
+    """Distance from the hair's centre to the skull's surface in the side plane at angle a (0 = forward, 90 = up)."""
+    a = math.radians(a_deg)
+    d = Vector((0.0, -math.cos(a), math.sin(a)))
+    r = 0.0
+    while r < 0.3:
+        q = centre + d * r
+        if q.z < HEAD_RINGS[0][0] or q.z > HEAD_RINGS[-1][0]:
+            return r
+        rx, yf, yb = head_ring(q.z)
+        if not (yf <= q.y <= yb):
+            return r
+        r += 0.002
+    return r
+
+
+# Hair doesn't grow out of the brow: over the forehead the mass sinks under the skin (no cap's rim across the
+# brow), it comes out of the skull at the hairline high on the forehead and reaches its full fullness over the crown.
+HAIRLINE = (18.0, 58.0)   # degrees: bare up to the first, full from the second
+for k in range(_N):
+    a = (k * 3 + 1.5 + 180) % 360 - 180
+    if -60 < a < HAIRLINE[1]:
+        u = max(0.0, min(1.0, (a - HAIRLINE[0]) / (HAIRLINE[1] - HAIRLINE[0])))
+        u = u * u * (3 - 2 * u)
+        inner = skull_r(a) - 0.012
+        HAIR_R[k] = inner + (max(HAIR_R[k], inner) - inner) * u
+    if _is_face(k * 3 + 1.5):
+        HAIR_R[k] = 0.035   # under the face the mass is gathered deep inside the head (out at the jaw it showed as shards)
+
 _nphi = 14
 _grid = []
 for k in range(_N):
@@ -1151,7 +1186,8 @@ for k in range(_N):
         p = centre + d * (R * math.cos(ph)) + Vector((W * math.sin(ph), 0, 0))
         row.append(add_vert(p, head_hair_w(p, 0)))
     _grid.append(row)
-_poles = [add_vert(centre + Vector((s * 0.088, 0, 0)), {"Head": 1.0}) for s in (-1, 1)]
+# (the side poles sit just inside the skull: out at its surface their fans read as a flat plate down the cheek)
+_poles = [add_vert(centre + Vector((s * 0.072, 0, 0)), {"Head": 1.0}) for s in (-1, 1)]
 
 
 def _face_out(idx, outward):
@@ -1191,10 +1227,19 @@ for ang, r_root, r_tip, names in chains:
     surf = centre + d * HAIR_R[k]
     tip = surf + (tip - surf) * 1.7  # long, thin wisps (the drawing's ends fade out lighter, longer than they read)
     bend = -0.016 if 60 < ang < 200 else 0.01
+    if -20 <= ang < HAIRLINE[1]:
+        # the fringe: the locks grow from the hairline (not out of the brow) and spike forward and up like the
+        # drawing's - three to each forward tip, the outer ones shorter and fanned to the sides
+        ha = math.radians(HAIRLINE[1] - 4)
+        hd = Vector((0.0, -math.cos(ha), math.sin(ha)))
+        hroot = centre + hd * (skull_r(HAIRLINE[1] - 4) - 0.004)
+        for sx, reach in ((0.0, 1.0), (1.0, 0.8), (-1.0, 0.8)):
+            lock(hroot + Vector((sx * 0.035, 0, 0)), hroot.lerp(tip, reach) + Vector((sx * 0.055, 0, 0)), 0.04, 0.02, bend)
+        continue
     lock(root, tip, 0.046, 0.024, bend)
-    if ang > 60:  # beside the locks swept back, a lock to each side: they read from the front as well
-        for sx in (1, -1):
-            lock(root + Vector((sx * 0.04, 0, 0)), root.lerp(tip, 0.82) + Vector((sx * 0.06, 0, 0)), 0.04, 0.022, bend)
+    # beside the locks swept back, a lock to each side: they read from the front as well
+    for sx in (1, -1):
+        lock(root + Vector((sx * 0.04, 0, 0)), root.lerp(tip, 0.82) + Vector((sx * 0.06, 0, 0)), 0.04, 0.022, bend)
 
 # ---------------------------------------------------------------- mesh object
 old = bpy.data.objects.get("Hero")
@@ -1228,7 +1273,8 @@ mod = ob.modifiers.new("Armature", 'ARMATURE')
 mod.object = rig
 
 bpy.ops.wm.save_as_mainfile(filepath=ROOT + r"\ArtSource\Hero.blend")
-result = {"verts": len(verts), "faces": len(faces), "hair_chains": len(chains),
+result = {"verts": len(verts), "faces": len(faces), "hair_chains": len(chains), "chain_angles": [round(c[0]) for c in chains],
+          "boot": round(_boot_len, 3),
           "cloth_bones": len([b for b in rig.data.bones if b.name.startswith("Cloth.") or b.name.startswith("Sash.")]),
           "dims": [round(x, 3) for x in ob.dimensions]}
 

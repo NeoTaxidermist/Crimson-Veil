@@ -5,6 +5,43 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.30.0] – 2026-11-19
+### Opraveno
+- **Vlasy hrdiny.** Vlasová hmota tvořila „čepici" s ostrou hranou přes čelo jako hledí a z čela rostl hřeben bodlin. Teď:
+  - hmota se nad čelem zanoří pod kůži a vynoří se až na vlasové linii vysoko na čele (`HAIRLINE`);
+  - špičatá ofina roste z vlasové linie, ne z čela;
+  - boční póly vlasové hmoty jsou uvnitř lebky, takže na tváři už není plochá „deska" až k čelisti;
+  - pod obličejem je hmota stažená hluboko do hlavy, takže na lících nic netrčí.
+- **Krátká chodidla.** Bota přečtená z kresby měřila asi 17 cm. Je natažená na 26 cm, což odpovídá postavě vysoké 1,83 m (`BOOT_LENGTH`). Výška a tvar boty zůstávají podle kresby.
+
+### Změněno
+- **Plynulejší útoky** (`HeroAttackChoreography`). Pohyb mezi klíčovými pózami se dřív na každé zastavil (zpomalení na nulu u každé klíčové pózy), proto působil topornými zastávkami. Teď:
+  - póza vede plynulou křivkou (Hermite) skrz klíčové pózy a zpomaluje jen při odchodu z bojového postoje a při návratu do něj;
+  - klouby se lámou postupně: trup vede (`TorsoLead`), paže jde za ním, předloktí švihne až po rameni (`ElbowLag`) a hlava se dorovná nakonec (`HeadLag`). Úder tak projde tělem jako vlna.
+- **Rozběh a zastavení** (`HeroPoseSolver`). Ovládání zůstává ostré (rychlost se mění za desetinu sekundy), mění se jen pohyb těla:
+  - póza do běhu a z něj přechází přes několik snímků, ne skokem. Délka kroku dál sedí na skutečnou rychlost, takže nohy neklouzají;
+  - pružina „váhy těla": při rozběhu se postava předkloní do prvních kroků a ruce se stáhnou dozadu;
+  - při zastavení trup setrvačností přepadne přes zapřené nohy, kolena to zachytí, ruce švihnou dopředu, pak se tělo zhoupne zpět a usadí.
+  - Při úderu se pružina nepoužije, protože výpad má vlastní náklon.
+- **Ruce při stání** (`HeroPoseSolver.IdleLife`). Ruce se ve smyčce stání skoro nehýbaly. Teď:
+  - jdou s dechem o chvilku později než hrudník;
+  - každá se houpe vlastním pomalým rytmem a lokty se povolují a přitahují;
+  - váha se pomalu přenáší a hlava se lehce pohupuje.
+- Inspirace:
+  - Valve a Gears of War (SIGGRAPH) k rozběhům a zastavením;
+  - rozbory úderu nápřah–úder–dotažení (Sakurai, Dark Souls);
+  - principy idle animace (dech a navazující pohyb).
+
+### Testy
+- `HeroModelTests`: bota je dlouhá 24–30 cm.
+- `HeroPoseSolverTests`:
+  - úder se na klíčových pózách nezastaví;
+  - předloktí se narovná až po rameni;
+  - rozběh i zastavení předkloní tělo, zastavení ho přehoupne zpět a usadí;
+  - póza do běhu najede postupně;
+  - ruce při stání žijí a nejsou zrcadlové.
+  - Test bodnutí kopím čte natažení o `ElbowLag` později.
+
 ## [0.29.0] – 2026-11-19
 ### Přidáno
 - **Hrdina má nové kosti v oblečení a to vlaje.** Model staví `ArtSource/hero_build.py`. Do tuniky a šerpy, které byly dosud přišité k bokům a stehnům, teď přidává kosti:

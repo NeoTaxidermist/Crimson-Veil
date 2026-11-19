@@ -242,26 +242,85 @@ namespace CrimsonVeil.Player
             return SampleKeys(form, keys, t);
         }
 
+        /// <summary>
+        /// How much later than the body each part reaches its key (as a share of the attack): the torso leads the
+        /// blow, the upper arm follows it, the forearm whips through last and the head settles after - the joints
+        /// break in turn (successive breaking), so the blow is a wave through the body, not a rigid swing.
+        /// </summary>
+        public const float TorsoLead = 0.03f, ElbowLag = 0.035f, HeadLag = 0.03f;
+
         static Key SampleKeys(VeilForm form, Key[] keys, float t)
         {
             t = Mathf.Clamp01(t);
+            var body = Spline(form, keys, t);
+            var lead = Spline(form, keys, Mathf.Clamp01(t + TorsoLead));
+            var lag = Spline(form, keys, Mathf.Clamp01(t - ElbowLag));
+            var late = Spline(form, keys, Mathf.Clamp01(t - HeadLag));
+            body.spine = lead.spine; body.chest = lead.chest;
+            body.thighL = lead.thighL; body.kneeL = lead.kneeL; body.thighR = lead.thighR; body.kneeR = lead.kneeR;
+            body.elbowR = lag.elbowR; body.elbowL = lag.elbowL;
+            body.head = late.head;
+            body.t = t;
+            return body;
+        }
+
+        /// <summary>
+        /// The keys joined by a smooth curve (cubic Hermite, the tangent at each key from its neighbours): the motion
+        /// flows through the key poses without stopping at each one (an ease in and out at every key made each blow
+        /// halt at every pose, stiffly); it eases only out of the ready stance and back into it.
+        /// </summary>
+        static Key Spline(VeilForm form, Key[] keys, float t)
+        {
             int last = keys.Length - 1;
             for (int i = 0; i < last; i++)
             {
-                // Every attack starts and ends in that weapon's own ready stance.
-                var a = i == 0 ? Ready(form, keys[i]) : keys[i];
-                var b = i + 1 == last ? Ready(form, keys[i + 1]) : keys[i + 1];
-                if (t > b.t) continue;
-                float u = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(a.t, b.t, t));
-                return new Key(t,
-                    Mathf.Lerp(a.armR, b.armR, u), Mathf.Lerp(a.elbowR, b.elbowR, u),
-                    Mathf.Lerp(a.armL, b.armL, u), Mathf.Lerp(a.elbowL, b.elbowL, u),
-                    Mathf.Lerp(a.spine, b.spine, u), Mathf.Lerp(a.chest, b.chest, u), Mathf.Lerp(a.head, b.head, u),
-                    Mathf.Lerp(a.thighL, b.thighL, u), Mathf.Lerp(a.kneeL, b.kneeL, u),
-                    Mathf.Lerp(a.thighR, b.thighR, u), Mathf.Lerp(a.kneeR, b.kneeR, u));
+                var a = KeyAt(form, keys, i);
+                var b = KeyAt(form, keys, i + 1);
+                if (t > b.t && i + 1 < last) continue;
+                float h = Mathf.Max(1e-4f, b.t - a.t);
+                float u = Mathf.Clamp01((t - a.t) / h);
+                var ta = Tangent(form, keys, i);
+                var tb = Tangent(form, keys, i + 1);
+                var o = new float[Fields];
+                var fa = ToArray(a); var fb = ToArray(b);
+                for (int f = 0; f < Fields; f++) o[f] = Hermite(fa[f], fb[f], ta[f] * h, tb[f] * h, u);
+                return FromArray(t, o);
             }
-            return Ready(form, keys[last]);
+            return KeyAt(form, keys, last);
         }
+
+        /// <summary>Cubic Hermite between p0 and p1 with end tangents m0, m1 (per unit of u).</summary>
+        public static float Hermite(float p0, float p1, float m0, float m1, float u)
+        {
+            float u2 = u * u, u3 = u2 * u;
+            return (2f * u3 - 3f * u2 + 1f) * p0 + (u3 - 2f * u2 + u) * m0 + (-2f * u3 + 3f * u2) * p1 + (u3 - u2) * m1;
+        }
+
+        static Key KeyAt(VeilForm form, Key[] keys, int i)
+        {
+            int last = keys.Length - 1;
+            return i == 0 || i == last ? Ready(form, keys[i]) : keys[i];
+        }
+
+        /// <summary>Rate of change at key i (per unit of attack time): zero in the ready stance at either end.</summary>
+        static float[] Tangent(VeilForm form, Key[] keys, int i)
+        {
+            var m = new float[Fields];
+            int last = keys.Length - 1;
+            if (i == 0 || i == last) return m;
+            var p = ToArray(KeyAt(form, keys, i - 1));
+            var n = ToArray(KeyAt(form, keys, i + 1));
+            float span = Mathf.Max(1e-4f, keys[i + 1].t - keys[i - 1].t);
+            // (0.8: a little tighter than Catmull-Rom, so a fast swing doesn't overshoot wildly between keys)
+            for (int f = 0; f < Fields; f++) m[f] = 0.8f * (n[f] - p[f]) / span;
+            return m;
+        }
+
+        const int Fields = 11;
+
+        static float[] ToArray(Key k) => new[] { k.armR, k.elbowR, k.armL, k.elbowL, k.spine, k.chest, k.head, k.thighL, k.kneeL, k.thighR, k.kneeR };
+
+        static Key FromArray(float t, float[] f) => new Key(t, f[0], f[1], f[2], f[3], f[4], f[5], f[6], f[7], f[8], f[9], f[10]);
 
         static Key Ready(VeilForm form, Key k)
         {

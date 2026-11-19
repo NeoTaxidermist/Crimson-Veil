@@ -52,6 +52,27 @@ namespace CrimsonVeil.Tests
         }
 
         [Test]
+        public void TheBoots_AreAsLongAsAGrownMansFeet()
+        {
+            // everything of the mesh near the ground is the soles: their reach from heel to toe
+            // (measured on the posed mesh in the world: the mesh's own axes are the exporter's)
+            var go = Object.Instantiate(Hero());
+            try
+            {
+                var smr = go.GetComponentInChildren<SkinnedMeshRenderer>();
+                var baked = new Mesh();
+                smr.BakeMesh(baked, true);
+                var m = smr.transform.localToWorldMatrix;
+                var vs = baked.vertices.Select(v => m.MultiplyPoint3x4(v)).ToArray();
+                float minY = vs.Min(v => v.y);
+                var soles = vs.Where(v => v.y < minY + 0.03f).ToArray();
+                float length = soles.Max(v => v.z) - soles.Min(v => v.z);
+                Assert.That(length, Is.InRange(0.24f, 0.3f), "a foot of ~0.27 m for a man of 1.83 m (the drawing's read short)");
+            }
+            finally { Object.DestroyImmediate(go); }
+        }
+
+        [Test]
         public void InkBody_WithACrimsonScarfAndTrim()
         {
             var smr = Hero().GetComponentInChildren<SkinnedMeshRenderer>();

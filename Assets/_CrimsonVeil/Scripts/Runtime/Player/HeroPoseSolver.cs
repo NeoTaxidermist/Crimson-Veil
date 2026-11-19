@@ -138,6 +138,54 @@ namespace CrimsonVeil.Player
 
         float time;
         float lagL, lagR;
+        float runVis, runVisVel, lastSpeed, accelSmooth;
+        float torso, torsoVel, armSwing, armSwingVel;
+
+        /// <summary>Degrees the torso is pitched by the start / stop (+ forward) and the arms swung by it (+ forward).</summary>
+        public float Momentum => torso;
+        public float ArmMomentum => armSwing;
+
+        /// <summary>
+        /// A damped spring towards <paramref name="target"/> (angular frequency omega, damping ratio zeta < 1 swings
+        /// past it and settles): the body's weight carried through a start or a stop.
+        /// </summary>
+        public static void Spring(ref float x, ref float v, float target, float omega, float zeta, float dt)
+        {
+            float a = omega * omega * (target - x) - 2f * zeta * omega * v;
+            v += a * dt;
+            x += v * dt;
+        }
+
+        /// <summary>
+        /// Where the body's weight goes as the run starts or stops (<paramref name="accel01"/>: the ground speed's
+        /// change, +1 a full sprint start, -1 a full stop): setting off he leans into the first steps; stopping, the
+        /// upper body carries on forward over the planted feet (then swings back past upright and settles).
+        /// </summary>
+        public static float TorsoTarget(float accel01) => accel01 > 0f ? 9f * accel01 : -15f * accel01;
+
+        /// <summary>The arms: pulled back driving off into the run, flung forward by a stop.</summary>
+        public static float ArmTarget(float accel01) => -20f * accel01;
+
+        /// <summary>
+        /// Standing, the arms are never still: they follow the breath a beat behind the chest and each sways on its
+        /// own slow rhythm (never mirrored), the elbows easing in and out, with a slow shift of the weight - added to
+        /// the idle loop (whose arms barely move).
+        /// </summary>
+        public static HeroPose IdleLife(float time)
+        {
+            float breath = Mathf.Sin(time * 1.85f);
+            return new HeroPose
+            {
+                armR = 4f * Mathf.Sin(time * 1.85f - 0.7f) + 2.5f * Mathf.Sin(time * 0.53f + 0.4f),
+                elbowR = 5f + 5f * Mathf.Sin(time * 1.85f - 1.2f) + 2f * Mathf.Sin(time * 0.71f),
+                // (the far arm goes with the idle loop's own sway, a beat behind it, and drifts slowly)
+                armL = 3.5f * Mathf.Cos(time * 2f * Mathf.PI / HeroIdleCycle.Duration - 0.5f) + 2f * Mathf.Sin(time * 0.47f + 2.1f),
+                elbowL = 4f * Mathf.Sin(time * 1.61f - 0.4f),
+                chest = 1.2f * breath,
+                spine = 1.2f * Mathf.Sin(time * 0.37f),
+                head = -1.5f * Mathf.Sin(time * 1.85f - 0.4f) + 2f * Mathf.Sin(time * 0.29f + 1f),
+            };
+        }
         float landTimer;
         bool wasGrounded = true;
         bool initialised;
@@ -148,7 +196,20 @@ namespace CrimsonVeil.Player
             time += dt;
 
             float run = Mathf.Clamp01(s.speed / Mathf.Max(0.01f, s.maxSpeed));
+            // The ground speed jumps to a run in a tenth of a second (the controls stay sharp): the body pours into
+            // the run and out of it over a few frames more, so the pose doesn't snap from standing to running.
+            runVis = Mathf.SmoothDamp(runVis, run, ref runVisVel, run > runVis ? 0.06f : 0.1f, Mathf.Infinity, dt);
+            float accel = (s.speed - lastSpeed) / dt;
+            lastSpeed = s.speed;
+            accelSmooth = Mathf.Lerp(accelSmooth, accel, 1f - Mathf.Exp(-25f * dt));
+            bool plainFeet = s.grounded && !s.hanging && !s.climbing && !s.swinging && !s.wallSliding && !s.sliding && !s.dashing
+                             && !(s.attacking && s.attackT >= 0f);   // (a blow's lunge has its own lean)
+            float accel01 = plainFeet ? Mathf.Clamp(accelSmooth / 85f, -1.2f, 1.2f) : 0f;
+            Spring(ref torso, ref torsoVel, TorsoTarget(accel01), 11f, 0.42f, dt);
+            Spring(ref armSwing, ref armSwingVel, ArmTarget(accel01), 12f, 0.38f, dt);
+            // (the stride follows the real speed, so the feet never slide; the pose follows the body's own)
             float stride = Mathf.Lerp(walkStride, runStride, run);
+            run = Mathf.Clamp01(runVis);
             if (s.crouching && !s.sliding) stride = CrouchStride;   // a crouch-walk: long, unhurried steps
             if (s.grounded) Phase = Mathf.Repeat(Phase + s.speed * dt / stride, 1f);
 
@@ -166,6 +227,22 @@ namespace CrimsonVeil.Player
             else if (s.sliding) target = SlidePose(s.slideProgress);
             else if (s.crouching) target = CrouchPose(s.speed, Phase, time);
             else target = Standing(GroundPose(run), run);
+
+            // The weight of a start or a stop: the torso leans into the first steps or carries on over the planted
+            // feet, the knees take it, the arms swing through and the head lags; then it all settles.
+            if (plainFeet || Mathf.Abs(torso) > 0.3f || Mathf.Abs(armSwing) > 0.3f)
+            {
+                target.spine += torso;
+                target.chest += torso * 0.4f;
+                target.head -= torso * 0.45f;
+                float give = Mathf.Max(0f, torso);
+                target.kneeL += give * 1.1f; target.kneeR += give * 1.1f;
+                target.thighL += give * 0.4f; target.thighR += give * 0.4f;
+                target.bob -= give * 0.0035f;
+                target.armL += armSwing;
+                target.armR += armSwing * (s.weaponHeld > 0.3f ? 0.3f : 1f);
+                target.elbowL += Mathf.Abs(armSwing) * 0.5f;
+            }
 
             // Somersault: knees pulled to the chest, arms hugging the shins, then opening out to land.
             bool flipping = !s.grounded && !s.hanging && !s.climbing && !s.swinging && Somersault.Active(s.somersault);
@@ -241,6 +318,9 @@ namespace CrimsonVeil.Player
             if (w <= 0f) return gait;
             var idle = HeroIdleCycle.Sample(time);
             idle.chest = gait.chest;
+            var life = IdleLife(time);
+            idle.armR += life.armR; idle.elbowR += life.elbowR; idle.armL += life.armL; idle.elbowL += life.elbowL;
+            idle.chest += life.chest; idle.spine += life.spine; idle.head += life.head;
             return HeroPose.Lerp(gait, idle, w);
         }
 

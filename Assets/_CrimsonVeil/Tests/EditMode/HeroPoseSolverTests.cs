@@ -166,7 +166,8 @@ namespace CrimsonVeil.Tests
         {
             var back = HeroAttackChoreography.Sample(CrimsonVeil.Veil.VeilForm.Spear, 0.3f);
             Assert.Greater(back.elbowR, 90f, "drawn back to the chest");
-            var thrust = HeroAttackChoreography.Sample(CrimsonVeil.Veil.VeilForm.Spear, 0.45f);
+            // (the forearm whips straight a beat after the shoulder: see HeroAttackChoreography.ElbowLag)
+            var thrust = HeroAttackChoreography.Sample(CrimsonVeil.Veil.VeilForm.Spear, 0.45f + HeroAttackChoreography.ElbowLag);
             Assert.Greater(thrust.armR, 75f);
             Assert.Less(thrust.elbowR, 10f, "arm fully extended");
         }
@@ -256,6 +257,88 @@ namespace CrimsonVeil.Tests
                 Assert.AreEqual(bare.armL, p.armL, 2f, "the left hand holds on through the blow");
             }
             Assert.Greater(hi - lo, 60f, "hanging, the blow is really swung");
+        }
+
+        [Test]
+        public void Attacks_FlowThroughTheirKeys_WithoutStoppingAtEach()
+        {
+            // the sword arm's speed through the cut (0.5) and the follow-through (0.66) keys: it keeps moving
+            // (at the top of the wind-up it turns round, so there it may pass through zero)
+            foreach (var key in new[] { 0.5f, 0.66f })
+            {
+                float a = HeroAttackChoreography.Sample(CrimsonVeil.Veil.VeilForm.Sword, key - 0.01f).armR;
+                float b = HeroAttackChoreography.Sample(CrimsonVeil.Veil.VeilForm.Sword, key + 0.01f).armR;
+                Assert.Greater(Mathf.Abs(b - a), 0.5f, "the arm doesn't halt at the key pose at t " + key);
+            }
+            // it still starts from and returns to the ready stance, eased
+            var r0 = HeroAttackChoreography.Sample(CrimsonVeil.Veil.VeilForm.Sword, 0f);
+            var r1 = HeroAttackChoreography.Sample(CrimsonVeil.Veil.VeilForm.Sword, 1f);
+            Assert.AreEqual(r0.armR, r1.armR, 1e-3f);
+        }
+
+        [Test]
+        public void Attacks_BreakThroughTheJoints_TheBodyLeads_TheForearmFollows()
+        {
+            Assert.Greater(HeroAttackChoreography.TorsoLead, 0f);
+            Assert.Greater(HeroAttackChoreography.ElbowLag, 0f);
+            // into the spear thrust the shoulder is up before the forearm has whipped straight
+            float shoulderUp = -1f, elbowStraight = -1f;
+            for (float t = 0.3f; t <= 0.7f; t += 0.002f)
+            {
+                var k = HeroAttackChoreography.Sample(CrimsonVeil.Veil.VeilForm.Spear, t);
+                if (shoulderUp < 0f && k.armR >= 75f) shoulderUp = t;
+                if (elbowStraight < 0f && k.elbowR <= 10f) elbowStraight = t;
+            }
+            Assert.Greater(shoulderUp, 0f); Assert.Greater(elbowStraight, 0f);
+            Assert.Greater(elbowStraight, shoulderUp, "the forearm straightens after the shoulder has come up");
+        }
+
+        [Test]
+        public void StartAndStop_TheBodyLeansIn_ThenCarriesOnOverTheFeet_AndSettles()
+        {
+            Assert.Greater(HeroPoseSolver.TorsoTarget(1f), 5f, "setting off: lean into it");
+            Assert.Greater(HeroPoseSolver.TorsoTarget(-1f), 10f, "stopping: the upper body carries on forward");
+            Assert.Greater(HeroPoseSolver.ArmTarget(-1f), 10f, "stopping: the arms are flung forward");
+
+            var solver = new HeroPoseSolver();
+            Run(solver, 1f, Ground(8f));
+            float peak = 0f, low = 0f;
+            for (int i = 0; i < 90; i++)
+            {
+                solver.Step(Dt, Ground(i < 5 ? 8f - 1.6f * (i + 1) : 0f));   // a stop in a tenth of a second
+                peak = Mathf.Max(peak, solver.Momentum);
+                low = Mathf.Min(low, solver.Momentum);
+            }
+            Assert.Greater(peak, 4f, "the stop throws the torso forward");
+            Assert.Less(low, -0.3f, "then it swings back past upright");
+            Assert.AreEqual(0f, solver.Momentum, 0.3f, "and settles");
+        }
+
+        [Test]
+        public void StartingToRun_ThePoseRunsIn_OverAFewFrames()
+        {
+            var solver = new HeroPoseSolver();
+            Run(solver, 1f, Ground(0f));
+            var idle = solver.Current;
+            var first = solver.Step(Dt, Ground(8f));
+            var later = Run(solver, 0.5f, Ground(8f));
+            Assert.Less(Mathf.Abs(first.spine - idle.spine), Mathf.Abs(later.spine - idle.spine) * 0.6f,
+                "one frame in, the body is not yet in its full run lean");
+        }
+
+        [Test]
+        public void IdleArms_Live_EachOnItsOwnRhythm()
+        {
+            float lo = float.MaxValue, hi = float.MinValue, corr = 0f;
+            for (float t = 0f; t < 12f; t += 0.05f)
+            {
+                var l = HeroPoseSolver.IdleLife(t);
+                lo = Mathf.Min(lo, l.elbowR); hi = Mathf.Max(hi, l.elbowR);
+                corr += l.armL * l.armR;
+            }
+            Assert.Greater(hi - lo, 6f, "the elbow eases in and out");
+            var a = HeroPoseSolver.IdleLife(1f);
+            Assert.AreNotEqual(a.armL, a.armR, "the arms are not mirrored");
         }
     }
 }

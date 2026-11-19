@@ -193,6 +193,44 @@ namespace CrimsonVeil.Tests
         }
 
         [Test]
+        public void StandingClips_KeepTheirFeetOnTheFloor_TheBodySinksIntoTheStance()
+        {
+            // (a humanoid clip's rise and fall was taken out as root motion and lost: a fighter sinking into his stance
+            // kept his hips up and drew his feet off the floor - a slash stood him 15-20 cm over the ground)
+            var lib = AssetDatabase.LoadAssetAtPath<HeroMocapLibrary>(LibraryPath);
+            var hero = (GameObject)Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_CrimsonVeil/Art/Hero/Hero.fbx"));
+            try
+            {
+                Transform F(string n) => CrimsonVeil.Core.RigJoint.FindDeep(hero.transform, n);
+                var feet = new[] { F("Foot.L"), F("Foot.R"), F("Toe.L"), F("Toe.R") };
+                float Lowest() { float y = 9f; foreach (var t in feet) y = Mathf.Min(y, t.position.y); return y; }
+                float floor = Lowest();
+                string[] standing =
+                {
+                    HeroMocap.Idle, HeroMocap.LookAround, HeroMocap.InjuredIdle, HeroMocap.Talk, HeroMocap.Walk, HeroMocap.CrouchIdle,
+                    HeroMocap.SlashA, HeroMocap.SlashB, HeroMocap.SlashC, HeroMocap.Stab, HeroMocap.SpearB, HeroMocap.SpearC,
+                    HeroMocap.WhipA, HeroMocap.WhipB, HeroMocap.WhipC, HeroMocap.ShieldBash, HeroMocap.Block, HeroMocap.BlockIdle,
+                    HeroMocap.BowDraw, HeroMocap.BowAim, HeroMocap.BowShot, HeroMocap.Hurt,
+                };
+                foreach (var key in standing)
+                {
+                    Assert.IsTrue(lib.TryGet(key, out var e), key);
+                    int up = 0; float highest = 0f; const int n = 40;
+                    for (int f = 0; f <= n; f++)
+                    {
+                        e.clip.SampleAnimation(hero, e.clip.length * f / n);
+                        float off = Lowest() - floor;
+                        if (off > 0.06f) up++;
+                        highest = Mathf.Max(highest, off);
+                    }
+                    Assert.LessOrEqual(up, n / 5, $"{key}: a foot on the floor nearly all the time ({up} of {n + 1} frames off it)");
+                    Assert.Less(highest, 0.12f, $"{key}: never both feet high off the floor");
+                }
+            }
+            finally { Object.DestroyImmediate(hero); }
+        }
+
+        [Test]
         public void TheCapturedSlide_IsDownUpToItsEnd_TheRollIsARoll()
         {
             var lib = AssetDatabase.LoadAssetAtPath<HeroMocapLibrary>(LibraryPath);

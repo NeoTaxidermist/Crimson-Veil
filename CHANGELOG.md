@@ -5,6 +5,20 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.41.4] – 2026-11-19
+### Kontrola ostatních animací: seky už nevisí nad zemí
+Po opravě chodidel jsem prošel všech 47 upečených klipů.
+- **Klouby proti nahrávce.** U každého klipu jsem porovnal úhly loktů, kolen, kotníků, zápěstí, zvednutí paží, ohnutí kyčlí, páteře a krku vždy od T-pózy, hrdinu proti zdrojové Mixamo kostře.
+  - Hrdina sleduje nahrávku věrně, u většiny kloubů do 15°.
+  - Víc se liší jen krk v krajních pózách (15–24°, pády, houpání) a paže u úderu pod nohy (16–19°). To dělá jiné rozdělení páteře a krku u hrdiny, ne chyba převodu.
+- **Kolena ani lokty se v žádném klipu neprohýbají dozadu.**
+- **Opraveno: při sekách, otočce a dobrzdění visel hrdina nad zemí.** U seků mečem a bičem stál oběma nohama 15–20 cm nad podlahou a dosedl jen na okamžik.
+  - Příčina: Unity u humanoidního klipu bere svislý pohyb těla jako pohyb kořene a pečení ho zahazovalo. Když bojovník klesl do postoje, kyčle zůstaly nahoře a kolena se ohnula, takže se chodidla zvedla.
+  - Teď mají stojící klipy svislý pohyb zapečený v póze (`HeroMocapBaker.SetClip`). U klipů ve vzduchu ne, tam výšku řídí hra.
+  - Výsledek: seky jsou na zemi skoro celou dobu (dřív 24–35 snímků ze 41 nad zemí, teď 0–7, a to jen při kroku). Chůze a postoje stojí celou dobu.
+  - Běh, sprint a dash se teď odlepí od země (až 18 cm). To je správná letová fáze běhu, kterou pečení dřív zahazovalo.
+- Test `HeroMocapTests.StandingClips_KeepTheirFeetOnTheFloor_TheBodySinksIntoTheStance`: postoje, chůze a všechny údery mají nohu na zemi aspoň ve 4/5 snímků a nikdy obě vysoko nad zemí. Se starým sekem selže (35 ze 41 snímků nad zemí).
+
 ## [0.41.3] – 2026-11-19
 ### Chodidla už neplandají
 - **Opraveno: chodidla při chůzi a běhu plandala.** Levé chodidlo stálo na zemi se špičkou asi o 50° nahoru, pravé rovně. Ve švihu obě padala špičkou dolů.

@@ -83,7 +83,7 @@ MonoBehaviour:
     clip: {fileID: 7400000, guid: c6211b288d14a464a94cfc22c7aca94e, type: 2}
     loop: 1
     impact: 0
-    stride: 1.8316432
+    stride: 1.8316431
     sync: 0.28571427
   - key: CrouchIdle
     clip: {fileID: 7400000, guid: d0b8c0c937a48504e97d4ed33e9c4e62, type: 2}

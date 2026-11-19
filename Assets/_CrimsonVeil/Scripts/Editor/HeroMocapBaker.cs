@@ -402,14 +402,27 @@ namespace CrimsonVeil.EditorTools
         }
 
         /// <summary>Imports a source's clip mirrored (left for right) or not.</summary>
-        public static void SetMirror(string fbxPath, bool mirror)
+        public static void SetMirror(string fbxPath, bool mirror) => SetClip(fbxPath, mirror, false);
+
+        /// <summary>
+        /// Imports a source's clip mirrored (left for right) or not, and with its body's rise and fall in the pose or not.
+        /// (Unity takes a humanoid clip's vertical motion out as root motion, which the bake leaves out: a fighter sinking
+        /// into his stance kept his hips up and drew his feet off the floor - a slash stood him 15-20 cm over the ground.
+        /// Standing clips keep it in the pose; in the air the game moves him up and down.)
+        /// </summary>
+        public static void SetClip(string fbxPath, bool mirror, bool heightInPose)
         {
             var imp = AssetImporter.GetAtPath(fbxPath) as ModelImporter;
             if (imp == null) return;
             var clips = imp.clipAnimations;
             if (clips == null || clips.Length == 0) clips = imp.defaultClipAnimations;
             bool dirty = false;
-            foreach (var c in clips) if (c.mirror != mirror) { c.mirror = mirror; dirty = true; }
+            foreach (var c in clips)
+            {
+                if (c.mirror != mirror) { c.mirror = mirror; dirty = true; }
+                if (c.lockRootHeightY != heightInPose) { c.lockRootHeightY = heightInPose; dirty = true; }
+                if (heightInPose && (!c.keepOriginalPositionY || c.heightFromFeet)) { c.keepOriginalPositionY = true; c.heightFromFeet = false; dirty = true; }
+            }
             if (!dirty) return;
             imp.clipAnimations = clips;
             imp.SaveAndReimport();
@@ -436,7 +449,7 @@ namespace CrimsonVeil.EditorTools
             var log = new System.Text.StringBuilder();
             foreach (var r in HeroMocapRecipe.All)
             {
-                SetMirror(SourceDir + "/" + r.source, r.mirror);
+                SetClip(SourceDir + "/" + r.source, r.mirror, r.hips != HipsMode.Relative);
                 var src = SourceClip(SourceDir + "/" + r.source);
                 if (src == null) { log.Append("missing " + r.source + "\n"); continue; }
                 var clip = Bake(src, r.key, r.loop, r.hips, r.from, r.to, out float impact, out var m);

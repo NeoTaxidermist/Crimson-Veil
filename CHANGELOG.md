@@ -5,6 +5,25 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.42.0] – 2026-11-19
+### Tělo leží na zemi (kontakt se zemí)
+- **Opraveno: ve skluzu prošla přední noha podlahou.** Klip skluzu je na podlaze, ale ve hře se z 80 % míchá s procedurální pózou skluzu, která má nohy jinak. Ze směsi pata prošla podlahou o 4–17 cm.
+  - Při měření se ukázaly ještě dva drobnější kiksy: ve stoji hrdina visel asi 4 cm nad zemí a při plížení se tělo houpalo od −5 do +9 cm.
+- **Kontakt se zemí** (`HeroAnimator.KeepOnGround`): po složení pózy se najde nejnižší bod těla, který se může dotknout země, a celé tělo se posune tak, aby na podlaze ležel.
+  - Body bere z kůže modelu: podrážky, paty a špičky, holeně a kolena, ruce. Každý je svázaný se svou kostí a z upečené kopie sítě v klidu je vybraný jednou při startu.
+  - Zvedá se okamžitě, takže se nic nepropadne ani na jeden snímek. Spouští se plynule.
+  - Běh tělo jen zvedá, aby měl dál fázi letu. Na laně, na hraně a ve vzduchu se kontakt nepoužívá.
+- **Pečení klipů měří podlahu také podle vykreslené sítě** (podrážky, paty), ne podle kloubů. Když chodidlo míří špičkou nahoru, kloub kotníku leží na podlaze a pata prochází skrz.
+- Výsledek ve hře: ve skluzu, při plížení i ve stoji je tělo na podlaze s odchylkou do 2–3 cm.
+- Testy `HeroMoveSetPlayTests`:
+  - stoj, přikrčení a plížení leží na podlaze, nic neprochází;
+  - skluz bez propadu;
+  - zastavení z běhu se teď měří podle vykreslené sítě.
+
+  Bez kontaktu se zemí selžou: skluz −14,8 cm, stoj +3,7 cm.
+- Klip skluzu v galerii začíná těsně před tunelem.
+- Houpání na laně: při kontrole se hrdina po posledním stisku šipky už sám neotočil. Zůstává ve směru poslední šipky až do puštění. Otáčí se jen ve chvílích, kdy klip v galerii mačká šipky (1,8 s a 2,6 s).
+
 ## [0.41.7] – 2026-11-19
 ### Nízké tunely jsou vyšší, vlasy už neprochází stropem
 - **Opraveno: při plížení a skluzu tunelem prošly vlasy stropem.**

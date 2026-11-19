@@ -269,22 +269,25 @@ namespace CrimsonVeil.EditorTools
                 // his rest: where the hips sit and how low his lowest point is
                 var hips = CrimsonVeil.Core.RigJoint.FindDeep(hero.transform, "Hips");
                 var restHipsLocal = hips.localPosition;
-                var lowPoints = new List<Transform>();
-                foreach (var n in new[] { "Foot.L", "Foot.R", "Toe.L", "Toe.R", "Hand.L", "Hand.R", "Head", "Hips", "LowerLeg.L", "LowerLeg.R", "LowerArm.L", "LowerArm.R", "Chest" })
+                // the lowest point of the body as it is drawn - the sole, a heel, a knee, a hand on the floor (the joints
+                // are inside it: a heel dug in, the foot pointing up, put the ankle on the floor and the heel through it)
+                var skins = hero.GetComponentsInChildren<SkinnedMeshRenderer>();
+                var bakedMesh = new Mesh();
+                var verts = new List<Vector3>();
+                float Lowest()
                 {
-                    var t = CrimsonVeil.Core.RigJoint.FindDeep(hero.transform, n);
-                    if (t != null) lowPoints.Add(t);
+                    float y = float.MaxValue;
+                    foreach (var skin in skins)
+                    {
+                        skin.BakeMesh(bakedMesh, true);
+                        bakedMesh.GetVertices(verts);
+                        var m = skin.transform.localToWorldMatrix;
+                        for (int i = 0; i < verts.Count; i++) y = Mathf.Min(y, m.MultiplyPoint3x4(verts[i]).y);
+                    }
+                    return y;
                 }
-                float Lowest() { float y = float.MaxValue; foreach (var t in lowPoints) y = Mathf.Min(y, t.position.y); return y; }
                 float restLowest = Lowest();
-                var feet = new List<Transform>();
-                foreach (var n in new[] { "Foot.L", "Foot.R", "Toe.L", "Toe.R" })
-                {
-                    var t = CrimsonVeil.Core.RigJoint.FindDeep(hero.transform, n);
-                    if (t != null) feet.Add(t);
-                }
-                float FeetLowest() { float y = float.MaxValue; foreach (var t in feet) y = Mathf.Min(y, t.position.y); return y; }
-                float restFeet = FeetLowest(), clipFeet = float.MaxValue;
+                float restFeet = restLowest, clipFeet = float.MaxValue;
 
                 // the avatar is built on a T-posed copy; the recording is made on the hero at his own rest
                 var tposed = (GameObject)Object.Instantiate(asset);
@@ -350,7 +353,7 @@ namespace CrimsonVeil.EditorTools
                         }
                     }
                     lowestHips = Mathf.Min(lowestHips, hips.position.y);
-                    clipFeet = Mathf.Min(clipFeet, FeetLowest());
+                    clipFeet = Mathf.Min(clipFeet, Lowest());
                     hipsKeys.Add((t, p));
                     if (hand != null)
                     {

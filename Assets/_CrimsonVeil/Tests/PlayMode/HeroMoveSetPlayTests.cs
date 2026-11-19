@@ -194,6 +194,36 @@ namespace CrimsonVeil.Tests
             return top - Pos.y;
         }
 
+        /// <summary>The lowest point of the hero's body as it is drawn (world y; the room's floor is at 0).</summary>
+        float BodyBottom()
+        {
+            if (baked == null) baked = new Mesh();
+            float low = 9f;
+            foreach (var smr in player.GetComponentsInChildren<SkinnedMeshRenderer>())
+            {
+                smr.BakeMesh(baked, true);
+                var t = smr.transform;
+                foreach (var v in baked.vertices) low = Mathf.Min(low, t.TransformPoint(v).y);
+            }
+            return low;
+        }
+
+        [UnityTest]
+        public IEnumerator StandingCrouchingCrawling_TheBodyLiesOnTheFloor_NotInItNorOverIt()
+        {
+            yield return StartAt(new Vector3(-12f, 0.05f, 0f));
+            yield return Wait(0.6f);
+            Assert.AreEqual(0f, BodyBottom(), 0.025f, "standing: the soles on the floor (it stood 4 cm over it)");
+            input.aimY = -1f;
+            yield return Wait(0.6f);
+            Assert.AreEqual(0f, BodyBottom(), 0.025f, "crouched on the floor");
+            input.moveX = 1f;
+            float lo = 9f, hi = -9f;
+            yield return Wait(1.5f, () => { float b = BodyBottom(); lo = Mathf.Min(lo, b); hi = Mathf.Max(hi, b); });
+            Assert.Greater(lo, -0.03f, "crawling: nothing through the floor");
+            Assert.Less(hi, 0.04f, "crawling: always something on the floor (it rose up to 9 cm off it)");
+        }
+
         /// <summary>The lowest of the feet's joints over his ground (m).</summary>
         float FeetLowest()
         {
@@ -208,7 +238,7 @@ namespace CrimsonVeil.Tests
             // (the brake takes 2-3 frames: played out at a run, a stop in the run's flight left him a moment in the air)
             yield return StartAt(new Vector3(-40f, 0.05f, 0f));
             yield return Wait(0.6f);
-            float standing = FeetLowest();
+            const float standing = 0f;   // (the floor: the drawn body on it)
             foreach (float phase in new[] { 0f, 0.25f, 0.5f, 0.75f })
             {
                 yield return StartAt(new Vector3(-40f, 0.05f, 0f));
@@ -223,7 +253,7 @@ namespace CrimsonVeil.Tests
                 float highest = 0f; string when = "";
                 yield return Wait(0.3f, () =>
                 {
-                    float h = FeetLowest() - standing;
+                    float h = BodyBottom() - standing;
                     if (h > highest) { highest = h; when = $"{Time.time - from:F3}s after, {mocap.Current} w{mocap.Weight:F2}, {Speed:F1} m/s, frame {Time.deltaTime * 1000f:F0} ms"; }
                 });
                 Assert.Less(highest, 0.03f, $"stopping at {phase:F2} of the stride: a foot stays on the floor as he brakes ({when})");
@@ -355,10 +385,11 @@ namespace CrimsonVeil.Tests
             input.aimY = -1f; input.dash = true;
             yield return Until(() => slid, 0.5f);
             Assert.IsTrue(slid, "down + dash: a slide");
-            float t0 = Time.time, highest = 0f, lowest = 9f, rise = 0f;
+            float t0 = Time.time, highest = 0f, lowest = 9f, rise = 0f, sunk = 9f;
             yield return Until(() => Pos.x > TunnelLeft + 1.5f, 3f, () =>
             {
                 float h = HeadHeight;
+                if (controller.Motor.IsSliding && Time.time - t0 > 0.05f) sunk = Mathf.Min(sunk, BodyBottom());
                 if (Pos.x > TunnelLeft - 0.3f) highest = Mathf.Max(highest, BodyTop());   // under the roof, hair and all
                 if (Time.time - t0 > 0.15f && controller.Motor.IsSliding) { lowest = Mathf.Min(lowest, h); rise = Mathf.Max(rise, h - lowest); }
             });
@@ -366,6 +397,7 @@ namespace CrimsonVeil.Tests
             Assert.Greater(Pos.x, TunnelLeft + 1.5f, "into the tunnel");
             Assert.Less(Time.time - t0, 2f, "the slide doesn't stop dead at the mouth");
             Assert.Less(rise, 0.2f, "once down the slide stays down: the body doesn't get up in it");
+            Assert.Greater(sunk, -0.03f, "sliding, the leading foot doesn't go through the floor (it sank 4-17 cm)");
             Assert.Less(highest, TunnelBottom - 0.03f, "under the roof, his hair and all (not through it)");
         }
 

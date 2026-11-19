@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using CrimsonVeil.Combat;
 using CrimsonVeil.Core;
 using CrimsonVeil.Veil;
@@ -120,6 +121,7 @@ namespace CrimsonVeil.Player
             wristR = Tip("Hand.R", 0.08f, forward);
             toeL = Tip("Toe.L", 0.05f, up);
             toeR = Tip("Toe.R", 0.05f, up);
+            SetupContacts();
             return spine != null && thighL != null && thighR != null && armL != null && armR != null;
         }
 
@@ -294,6 +296,8 @@ namespace CrimsonVeil.Player
                 stillTime = ctx.stillTime;
                 mocap.Apply(HeroMocap.Choose(s, ctx), Time.deltaTime);
             }
+            // on the ground the body lies on it: the sole, a heel, a knee, a hand on the floor - not through it, not over it
+            KeepOnGround(s, Time.deltaTime);
             if (s.hanging || s.climbing) ReachLip(s);
             if (s.swinging) GripRope();
             if (Hands != null)
@@ -316,6 +320,123 @@ namespace CrimsonVeil.Player
 
             if (veilAnchor != null)
                 veilAnchor.position = neck.position + veilAnchorOffset;
+        }
+
+        // --- ground contact -------------------------------------------------------------------------------------
+
+        /// <summary>The bones whose skin can touch the floor: the soles, heels and toes, the shins and knees, the hands.</summary>
+        static readonly string[] ContactBones = { "Foot.L", "Foot.R", "Toe.L", "Toe.R", "LowerLeg.L", "LowerLeg.R", "Hand.L", "Hand.R" };
+        /// <summary>Points of the skin per contact bone, in the bone's own space (the vertices it carries most).</summary>
+        const int PointsPerBone = 96;
+        Transform[] contactBones;
+        Vector3[][] contactPoints;
+        float groundOffset;
+        public const float GroundRunSpeed = 2f;
+        /// <summary>How far (m) the body may be put up or down to lie on the floor.</summary>
+        public const float GroundMaxLift = 0.35f, GroundMaxDrop = 0.15f;
+
+        /// <summary>How far (m) over the floor the lowest point of the skin was this frame (after the ground contact).</summary>
+        public float SkinOverFloor { get; private set; }
+
+        void SetupContacts()
+        {
+            var skin = model.GetComponentInChildren<SkinnedMeshRenderer>();
+            if (skin == null || skin.sharedMesh == null) return;
+            // the skin as it stands at rest (a baked copy: the model's own mesh is not readable in the game)
+            var bakedMesh = new Mesh();
+            skin.BakeMesh(bakedMesh, true);
+            var local = new List<Vector3>();
+            bakedMesh.GetVertices(local);
+            Destroy(bakedMesh);
+            var toWorld = skin.transform.localToWorldMatrix;
+            // each contact bone's stretch of the body: from it to the next joint (the toes and the hands reach on a little)
+            Transform F(string n) => RigJoint.FindDeep(model, n);
+            contactBones = new Transform[ContactBones.Length];
+            var from = new Vector3[ContactBones.Length];
+            var to = new Vector3[ContactBones.Length];
+            for (int c = 0; c < ContactBones.Length; c++)
+            {
+                var b = F(ContactBones[c]);
+                contactBones[c] = b;
+                if (b == null) continue;
+                string side = ContactBones[c].EndsWith(".L") ? "L" : "R";
+                Transform next = ContactBones[c].StartsWith("Foot") ? F("Toe." + side)
+                               : ContactBones[c].StartsWith("LowerLeg") ? F("Foot." + side)
+                               : ContactBones[c].StartsWith("Hand") ? F("Finger." + side + ".1.0") : null;
+                from[c] = b.position;
+                to[c] = next != null ? next.position : b.position + (b.position - b.parent.position).normalized * 0.1f;
+                if (ContactBones[c].StartsWith("Hand") && next != null) to[c] = next.position + (next.position - b.position) * 0.8f;
+            }
+            var mine = new List<Vector3>[ContactBones.Length];
+            for (int c = 0; c < mine.Length; c++) mine[c] = new List<Vector3>();
+            foreach (var lv in local)
+            {
+                var w = toWorld.MultiplyPoint3x4(lv);
+                int best = -1; float bestD = 0.16f;   // (only the skin near a contact bone)
+                for (int c = 0; c < ContactBones.Length; c++)
+                {
+                    if (contactBones[c] == null) continue;
+                    var seg = to[c] - from[c];
+                    float t = Mathf.Clamp01(Vector3.Dot(w - from[c], seg) / Mathf.Max(1e-6f, seg.sqrMagnitude));
+                    float d = Vector3.Distance(w, from[c] + seg * t);
+                    if (d < bestD) { bestD = d; best = c; }
+                }
+                if (best >= 0) mine[best].Add(contactBones[best].InverseTransformPoint(w));
+            }
+            contactPoints = new Vector3[ContactBones.Length][];
+            for (int c = 0; c < ContactBones.Length; c++)
+            {
+                // an even spread of them (enough to find the lowest within a centimetre or so)
+                int step = Mathf.Max(1, mine[c].Count / PointsPerBone);
+                var pick = new List<Vector3>();
+                for (int i = 0; i < mine[c].Count; i += step) pick.Add(mine[c][i]);
+                contactPoints[c] = pick.ToArray();
+            }
+        }
+
+        /// <summary>The lowest point of the skin that can touch the floor (world y), or NaN.</summary>
+        public float SkinLowest()
+        {
+            if (contactBones == null) return float.NaN;
+            float y = float.PositiveInfinity;
+            for (int c = 0; c < contactBones.Length; c++)
+            {
+                var b = contactBones[c];
+                if (b == null) continue;
+                var m = b.localToWorldMatrix;
+                foreach (var p in contactPoints[c]) y = Mathf.Min(y, m.MultiplyPoint3x4(p).y);
+            }
+            return float.IsInfinity(y) ? float.NaN : y;
+        }
+
+        /// <summary>
+        /// On the ground the body lies on it: the drawn body is put up or down so its lowest point is on the floor. The
+        /// pose is a blend - the procedural one and the captured one each on the floor, the two together can put a heel
+        /// through it (a slide sank 4-17 cm) or lift it (crawling, standing 4 cm over it). Running only lifts: the run
+        /// has its flight.
+        /// </summary>
+        void KeepOnGround(in HeroState s, float dt)
+        {
+            float low = SkinLowest();
+            bool contact = s.grounded && !s.hanging && !s.climbing && !s.swinging && !float.IsNaN(low);
+            float want = 0f;
+            if (contact)
+            {
+                var origin = player.transform.position + Vector3.up * 0.5f;
+                if (Physics.Raycast(origin, Vector3.down, out var hit, 1.5f, ~0, QueryTriggerInteraction.Ignore))
+                {
+                    float gap = hit.point.y - low;   // (the pose is set afresh each frame: no offset in it yet)
+                    bool running = s.speed > GroundRunSpeed && !s.crouching && !s.sliding && !s.rolling;
+                    want = Mathf.Clamp(gap, running ? 0f : -GroundMaxDrop, GroundMaxLift);
+                }
+            }
+            // up at once (nothing sinks into the floor, not for a frame), down smoothly (nothing drops)
+            groundOffset = want > groundOffset ? want : Mathf.Lerp(groundOffset, want, 1f - Mathf.Exp(-30f * dt));
+            Vector3 up = model.parent != null ? model.parent.up : Vector3.up;
+            hips.position += up * groundOffset;
+            if (contact && Physics.Raycast(player.transform.position + Vector3.up * 0.5f, Vector3.down, out var h2, 1.5f, ~0, QueryTriggerInteraction.Ignore))
+                SkinOverFloor = SkinLowest() - h2.point.y;
+            else SkinOverFloor = float.NaN;
         }
 
         /// <summary>The fingers (null when the model has no finger bones).</summary>

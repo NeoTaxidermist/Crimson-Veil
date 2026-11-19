@@ -42,6 +42,49 @@ namespace CrimsonVeil.Tests
         }
 
         [Test]
+        public void TornShort_TheClothItselfIsShorter_AndGrowsBack()
+        {
+            // (fading the tail out instead looked like a scarf cut off, its curls gone)
+            var neck = new Vector3(0f, 1.5f, 0f);
+            var sim = Scarf(neck);
+            for (int k = 0; k < 240; k++) sim.Step(1f / 60f, neck);
+            float full = Length(sim);
+            sim.LengthScale = VeilController.LooseLength(0f);
+            for (int k = 0; k < 240; k++) sim.Step(1f / 60f, neck);
+            float torn = Length(sim);
+            Assert.Less(torn, full * 0.65f, "torn short, the scarf is shorter");
+            Assert.Greater(torn, full * 0.2f, "but still a scarf, ending in its curls");
+            sim.LengthScale = 1f;
+            for (int k = 0; k < 240; k++) sim.Step(1f / 60f, neck);
+            Assert.AreEqual(full, Length(sim), full * 0.05f, "grown back to its full length");
+            Assert.AreEqual(0.3f, VeilController.LooseLength(0f), 1e-5f);
+            Assert.AreEqual(1f, VeilController.LooseLength(1f), 1e-5f);
+        }
+
+        static float Length(VeilSimulation sim)
+        {
+            float l = 0f;
+            for (int i = 1; i < sim.Count; i++) l += Vector2.Distance(sim.Positions[i - 1], sim.Positions[i]);
+            return l;
+        }
+
+        [Test]
+        public void ADrawnPointUnderTheFloor_IsLaidOnIt()
+        {
+            var sim = Scarf(new Vector3(0f, 1.5f, 0f));
+            sim.Obstacles.Add(Rect.MinMaxRect(-5f, -1f, 5f, 0f));     // the floor, its top at 0
+            Assert.AreEqual(0f, sim.FloorUnder(1f, 0.4f), 1e-5f);
+            Assert.AreEqual(0f, sim.FloorUnder(1f, -0.3f), 1e-5f, "a point sunk into it still finds its top");
+            Assert.IsTrue(float.IsNegativeInfinity(sim.FloorUnder(7f, 0.4f)), "past its end there is no floor");
+            var p = VeilRenderer.AboveFloor(sim, new Vector3(1f, -0.2f, 0f), 0.2f, 1f);
+            Assert.GreaterOrEqual(p.y, 0.1f - 1e-4f, "a curl rolling into the floor lies on it, its stroke's width clear");
+            var high = VeilRenderer.AboveFloor(sim, new Vector3(1f, 0.8f, 0f), 0.2f, 1f);
+            Assert.AreEqual(0.8f, high.y, 1e-5f, "above it nothing moves");
+            var blade = VeilRenderer.AboveFloor(sim, new Vector3(1f, -0.2f, 0f), 0.2f, 0f);
+            Assert.AreEqual(-0.2f, blade.y, 1e-5f, "a weapon is left to its own shape");
+        }
+
+        [Test]
         public void EntryPoint_IsOnTheFaceTheSegmentCrossed()
         {
             var r = Rect.MinMaxRect(-2f, 0f, -1f, 4f);

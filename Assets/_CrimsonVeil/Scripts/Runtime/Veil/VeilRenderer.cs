@@ -272,7 +272,7 @@ namespace CrimsonVeil.Veil
             float time = Time.time;
             float vit = Mathf.Clamp01(veil.Vitality);
             // Length of the loose scarf: the lesser of the hero's life and the scarf's strength.
-            float reach = Mathf.Min(vit, Mathf.Lerp(0.3f, 1f, veil.Charge.Value));
+            float reach = veil.LooseReach;
             float facing = veil.Facing;
             bool bow = veil.ShapeForm == VeilForm.Bow;
             // Pulled out into a rope (the whip round a ring) the scarf runs several times its length: it must still
@@ -334,9 +334,9 @@ namespace CrimsonVeil.Veil
                 shadeAt[i] = Mathf.Lerp(1f, TwistShade(tw), looseHere);
                 widthAt[i] = Mathf.Lerp(flowW * flowProfile, formW * weaponProfile, hard * hard * hard) * Mathf.Lerp(0.45f, 1f, vit);
 
-                // The loose scarf ends where its strength runs out: casting shortens it, it grows back.
-                float fray = 1f - Mathf.SmoothStep(0f, 1f, (t - Mathf.Lerp(0.3f, 1.05f, reach)) / 0.25f);
-                alphaAt[i] = Mathf.Lerp(fray, 1f, hard) * Mathf.Lerp(0.6f, 1f, vit) * Mathf.SmoothStep(0f, 1f, t * 12f + 0.3f);
+                // (the loose scarf's length follows its strength in the cloth itself - VeilSimulation.LengthScale - so
+                // its end keeps its curls; fading the tail out instead looked like a scarf cut off)
+                alphaAt[i] = Mathf.Lerp(0.6f, 1f, vit) * Mathf.SmoothStep(0f, 1f, t * 12f + 0.3f);
                 // A weapon is the whole veil transformed: the band from the neck to the hand melts away as it
                 // sets (and comes back as the weapon softens), so the weapon isn't tied to the neck.
                 // It goes once the weapon has set *at the hand*: the hardening starts at the neck, and fading the band
@@ -443,6 +443,7 @@ namespace CrimsonVeil.Veil
                     if (!main) alpha = Mathf.Lerp(Mathf.Min(1f, alpha * 1.2f), alpha, hard); // fuller tongues (the sheet)
 
                     float shade = Mathf.Lerp(shadeAt[i0], shadeAt[i0 + 1], fr);
+                    c = AboveFloor(sim, c, sw, loose);
                     WriteVertex(baseV + i * 2, c, nrm, sw, alpha, st, hard, vit, front, shade);
                     if (i > 0) lastTan = c - lastC;
                     lastC = c; lastW = sw; lastA = alpha; lastHard = hard; lastFront = front; lastShade = shade;
@@ -476,6 +477,7 @@ namespace CrimsonVeil.Veil
                     // A brush stroke: broad as it winds round its whorl (the sheet), thinning only near its centre.
                     float sw = lastW * Mathf.Lerp(1f, Mathf.Lerp(0.14f, 0.03f, lastHard), Mathf.Pow(u, Mathf.Lerp(1.7f, 0.6f, lastHard)));
                     float alpha = lastA * Mathf.Lerp(1f, 0.55f, u);
+                    curl[k] = AboveFloor(sim, curl[k], sw, looseEnd);
                     WriteVertex(baseV + (samples - 1 + k) * 2, curl[k], nrm, sw, alpha, st, lastHard, vit, lastFront, lastShade);
                 }
                 ClampFolds(vertices, uv2, baseV, perStrand);
@@ -567,6 +569,20 @@ namespace CrimsonVeil.Veil
         /// <summary>Flickering thickness of the burning ring (about 0.65..1.3).</summary>
         public static float ShieldFlicker(float f, float time, float phase)
             => 0.98f + 0.2f * Mathf.Sin(f * 23f - time * 11f + phase) + 0.13f * Mathf.Sin(f * 11f + time * 6f + phase * 1.7f);
+
+        /// <summary>
+        /// Loose cloth drawn into the floor (a curl rolling down, the band's width round a node lying low) is laid on
+        /// it instead: the point is lifted to half its stroke's width over the floor under it. A weapon is left alone.
+        /// </summary>
+        public static Vector3 AboveFloor(VeilSimulation sim, Vector3 p, float width, float loose)
+        {
+            if (loose <= 0.01f) return p;
+            float floor = sim.FloorUnder(p.x, p.y);
+            if (float.IsNegativeInfinity(floor)) return p;
+            float lowest = floor + 0.5f * width + VeilSimulation.WallSkin * 0.5f;
+            if (p.y < lowest) p.y = Mathf.Lerp(p.y, lowest, loose);
+            return p;
+        }
 
         /// <summary>Weapons that end in a point (no flame curl at the tip).</summary>
         public static bool Pointed(VeilForm form) => form == VeilForm.Sword || form == VeilForm.Spear;

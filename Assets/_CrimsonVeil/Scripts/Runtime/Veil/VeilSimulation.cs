@@ -344,7 +344,7 @@ namespace CrimsonVeil.Veil
                 {
                     // The sheet's shape: its centre line d metres back from the neck. Its S takes up length: it reaches
                     // back ~RestReach of d (a straighter target would pull the S flat).
-                    float dAlong = f * s.length;
+                    float dAlong = f * s.length * LengthScale;
                     var target = new Vector3(a.x + Mathf.Sign(DriftDirection) * dAlong * RestReach, a.y + VeilRestShape.Height(dAlong, time), p.z);
                     Vector3 pull = (target - p) * (s.restShapeStiffness * (1f + 3f * unwind));
                     Vector3 still = new Vector3(anchorVel.x - vel.x, anchorVel.y - vel.y, 0f) * (s.restShapeDamping * (1f + 1.5f * unwind));
@@ -414,7 +414,7 @@ namespace CrimsonVeil.Veil
                     {
                         float loose = 1f - H(i);
                         if (loose <= 0.001f) continue;
-                        Vector2 w = WrapPoint(SwirlCenter, a, (float)i / (Count - 1) * s.length, s.length, trail);
+                        Vector2 w = WrapPoint(SwirlCenter, a, (float)i / (Count - 1) * s.length * LengthScale, s.length * LengthScale, trail);
                         var target = new Vector3(w.x, w.y, Positions[i].z);
                         Positions[i] = Vector3.Lerp(Positions[i], target, rate * loose);
                     }
@@ -427,7 +427,7 @@ namespace CrimsonVeil.Veil
                 for (int i = 0; i < Count - 1; i++)
                 {
                     if (i == DetachedAfter) continue; // a weapon that floats free of the hand (the shield's ring)
-                    float rest = Mathf.Lerp(FlowRestLength, TargetRest[i], 0.5f * (H(i) + H(i + 1)));
+                    float rest = Mathf.Lerp(FlowRestLength * LengthScale, TargetRest[i], 0.5f * (H(i) + H(i + 1)));
                     Vector3 d = Positions[i + 1] - Positions[i];
                     d.z = 0f; // 2.5D: lengths live in the picture plane; depth is only a cosmetic wobble
                     float len = d.magnitude;
@@ -494,6 +494,29 @@ namespace CrimsonVeil.Veil
         /// frame by the owner (VeilController gathers the walls and floors around the hero).
         /// </summary>
         public readonly List<Rect> Obstacles = new List<Rect>();
+
+        /// <summary>
+        /// How long the loose scarf is, as a share of its full length (its strength: casting and a torn scarf
+        /// shorten it, it grows back). The cloth itself is shorter - its curls stay at its end - rather than its tail
+        /// fading out, which read as a scarf cut off.
+        /// </summary>
+        public float LengthScale = 1f;
+
+        /// <summary>
+        /// The top of the floor under (x, y): the highest obstacle top below the point, or one it has sunk into by
+        /// up to <paramref name="sunk"/> m. -infinity when there is none.
+        /// </summary>
+        public float FloorUnder(float x, float y, float sunk = 0.6f)
+        {
+            float best = float.NegativeInfinity;
+            for (int o = 0; o < Obstacles.Count; o++)
+            {
+                var r = Obstacles[o];
+                if (x < r.xMin || x > r.xMax || r.yMax > y + sunk) continue;
+                if (r.yMax > best) best = r.yMax;
+            }
+            return best;
+        }
         float[] wallContact;
         /// <summary>0..1 how recently node <paramref name="i"/> was stopped by a wall.</summary>
         public float WallContact(int i) => wallContact[i];

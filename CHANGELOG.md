@@ -5,6 +5,13 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.32.1] – 2026-11-19
+### Opraveno
+- **Šála v podřepu procházela podlahou a po roztržení vypadala useknutá.**
+  - Simulace držela šálu nad podlahou, ale kudrlinky a šířka pásu se kreslily i pod ní. Kreslený bod volné šály, který by šel do podlahy, se teď položí na ni (`VeilRenderer.AboveFloor`, `VeilSimulation.FloorUnder`). Zbraně si drží svůj tvar.
+  - Když se šála zkrátí (seslání zbraně, nebo roztržení, když vezme ránu za hrdinu), zkrátí se teď sama látka (`VeilSimulation.LengthScale`, nejméně na 30 % délky). Dřív jen zprůhledněl její konec i s kudrlinkami, takže vypadala useknutá a bez konců. Teď je kratší, kudrlinky zůstávají na jejím konci a s dorůstající silou se plynule prodlužuje zpět.
+- Testy (`VeilCollisionTests`): roztržená šála je kratší, ale pořád je to šála, a doroste zpět; kreslený bod pod podlahou se položí na ni, nad ní se nehýbe a zbraně se to netýká.
+
 ## [0.32.0] – 2026-11-19
 ### Přidáno
 - **Ústa se otevírají.** Hlava je ve výšce rtů rozdělená na dvě části:

@@ -120,6 +120,12 @@ namespace CrimsonVeil.Veil
         public float AttackProgress { get; private set; } = -1f;
         /// <summary>The veil's glow (0..1): dimmed while smothered by ash. (Life itself is shown by the HUD.)</summary>
         public float Vitality { get; set; } = 1f;
+
+        /// <summary>How much of the loose scarf there is (0..1): the lesser of its glow and its strength.</summary>
+        public float LooseReach => Mathf.Min(Mathf.Clamp01(Vitality), Mathf.Lerp(0.3f, 1f, Charge != null ? Charge.Value : 1f));
+
+        /// <summary>The loose scarf's length as a share of its full length, for a reach (torn short it is still a scarf).</summary>
+        public static float LooseLength(float reach) => Mathf.Lerp(0.3f, 1f, Mathf.Clamp01(reach));
         public int Facing => player != null && player.Motor != null ? player.Motor.Facing : 1;
         /// <summary>Smoothed facing (-1..1): passes through 0 while the hero turns round.</summary>
         public float FacingBlend => facingScale;
@@ -556,6 +562,8 @@ namespace CrimsonVeil.Veil
             Simulation.DetachedAfter = ShapeForm == VeilForm.Shield && TransformProgress > 0.3f && morph > 0.6f
                 ? Mathf.Clamp(Mathf.CeilToInt(HandFraction * (Simulation.Count - 1)) - 1, 0, Simulation.Count - 2) : -1;
             GatherObstacles(a);
+            // the loose scarf is as long as its strength: it shrinks quickly when spent or torn and grows back with it
+            Simulation.LengthScale = Mathf.MoveTowards(Simulation.LengthScale, LooseLength(LooseReach), dt * 1.5f);
             Simulation.Step(dt, a);
             UpdateBowString();
             UpdateWhipHandle();

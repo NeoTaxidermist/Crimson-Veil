@@ -131,7 +131,7 @@ namespace CrimsonVeil.Player
         // what happened lately (for the captured motion: see HeroMocap.Context)
         HeroMocap.Context ctx = HeroMocap.Context.Default;
         bool wasGroundedM = true, wasHangingM, wasWallSliding, wasDead;
-        float lastVy, lastHealth = -1f, sinceFast = 99f, airTop;
+        float lastVy, lastHealth = -1f, sinceFast = 99f, airTop, sinceBlow = 99f;
         int lastBlocks, lastAbsorbs, lastFacing;
 
         /// <summary>Keeps <see cref="ctx"/>: the times since a landing (and how hard), a jump off a wall, a catch of the
@@ -146,7 +146,8 @@ namespace CrimsonVeil.Player
             if (lastFacing != 0 && facing != lastFacing && s.grounded && sinceFast < 0.25f) ctx.sinceTurn = 0f;
             lastFacing = facing;
             if (s.grounded && s.speed < 1f && sinceFast < 0.3f && ctx.sinceStop > HeroMocap.StopTime && ctx.sinceTurn > 0.3f) ctx.sinceStop = 0f;
-            sinceFast = s.grounded && s.speed >= HeroMocap.StopFromSpeed ? 0f : sinceFast + dt;
+            sinceBlow = s.attacking ? 0f : sinceBlow + dt;
+            sinceFast = s.grounded && s.speed >= HeroMocap.StopFromSpeed && sinceBlow > 0.5f ? 0f : sinceFast + dt;   // (a blow's lunge is no run)
             bool still = s.grounded && s.speed < 0.2f;
             ctx.stillTime = still ? ctx.stillTime + dt : 0f;
             float y = player.transform.position.y;

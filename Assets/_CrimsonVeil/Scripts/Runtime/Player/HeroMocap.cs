@@ -32,6 +32,12 @@ namespace CrimsonVeil.Player
                             Hurt = "Hurt", Stagger = "Stagger", Death = "Death";
         // turning and stopping out of a run
         public const string Turn = "Turn", RunStop = "RunStop";
+        // the whip's lashes, the spear's combo, blows in the air
+        public const string WhipA = "WhipA", WhipB = "WhipB", WhipC = "WhipC", SpearB = "SpearB", SpearC = "SpearC",
+                            AirSlash = "AirSlash", DownStrike = "DownStrike";
+
+        /// <summary>In the air a blow aimed this far down (degrees) is a strike under the feet (sword, spear).</summary>
+        public const float DownStrikeAim = -60f;
 
         /// <summary>The gait's layer (walk, run and sprint blended into one by speed).</summary>
         public const string Gait = "Gait";
@@ -185,16 +191,28 @@ namespace CrimsonVeil.Player
 
             if (s.attacking && s.attackT >= 0f)
             {
-                // standing, the whole body fights; on the move or in the air only the waist up (the legs keep going)
+                int k = ((c.swing % 3) + 3) % 3;
+                bool blade = s.attackForm == VeilForm.Sword || s.attackForm == VeilForm.Spear;
+                if (!s.grounded && (blade || s.attackForm == VeilForm.Whip))
+                {
+                    // in the air: a strike under the feet, or a cut in the leap (the game turns the body: the clip the limbs);
+                    // aimed steeply up the procedural aim has the arm
+                    if (blade && s.attackAim <= DownStrikeAim)
+                        return new Choice { key = DownStrike, driven = true, time01 = s.attackT, weight = 0.8f, mask = Mask.NoHipsTurn };
+                    float level = 1f - Mathf.Clamp01(Mathf.Abs(s.attackAim) / 70f);
+                    return new Choice { key = AirSlash, driven = true, time01 = s.attackT, weight = 0.75f * level, mask = Mask.NoHipsTurn };
+                }
+                // standing, the whole body fights; on the move only the waist up (the legs keep going)
                 var mask = s.grounded && s.speed < 2f && !s.sliding ? Mask.Full : Mask.Upper;
                 switch (s.attackForm)
                 {
                     case VeilForm.Sword:
-                    case VeilForm.Whip:
-                        int k = ((c.swing % 3) + 3) % 3;
                         return new Choice { key = k == 0 ? SlashA : k == 1 ? SlashB : SlashC, driven = true, time01 = s.attackT, weight = 0.7f, mask = mask };
+                    case VeilForm.Whip:
+                        // one-handed lashes: over the shoulder, a wind-up overhead, a low sweep
+                        return new Choice { key = k == 0 ? WhipA : k == 1 ? WhipB : WhipC, driven = true, time01 = s.attackT, weight = 0.7f, mask = mask };
                     case VeilForm.Spear:
-                        return new Choice { key = Stab, driven = true, time01 = s.attackT, weight = 0.7f, mask = mask };
+                        return new Choice { key = k == 0 ? Stab : k == 1 ? SpearB : SpearC, driven = true, time01 = s.attackT, weight = 0.7f, mask = mask };
                     case VeilForm.Shield:
                         return new Choice { key = ShieldBash, driven = true, time01 = s.attackT, weight = 0.65f, mask = mask };
                 }
@@ -534,6 +552,6 @@ namespace CrimsonVeil.Player
             }
         }
 
-        static VeilForm KeyForm(string key) => key == Stab ? VeilForm.Spear : VeilForm.Sword;
+        static VeilForm KeyForm(string key) => key == Stab || key == SpearB || key == SpearC ? VeilForm.Spear : VeilForm.Sword;
     }
 }

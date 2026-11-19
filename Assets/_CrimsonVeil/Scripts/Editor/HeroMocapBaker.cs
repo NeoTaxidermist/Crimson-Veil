@@ -406,6 +406,16 @@ namespace CrimsonVeil.EditorTools
             I(HeroMocap.SlashC, SS + "sword and shield slash (3).fbx", blow: true),
             I(HeroMocap.Stab, "Bayonet Stab.fbx", blow: true),
             I(HeroMocap.ShieldBash, SS + "sword and shield attack (2).fbx", blow: true),
+            // the whip: one-handed torch blows (over the shoulder, overhead, low), trimmed to the blow
+            I(HeroMocap.WhipA, "Standing Torch Melee Attack 01.fbx", from: 0.1f, to: 0.75f, blow: true),
+            I(HeroMocap.WhipB, "Standing Torch Melee Attack 04.fbx", from: 0.1f, to: 0.7f, blow: true),
+            I(HeroMocap.WhipC, "Standing Torch Melee Attack 02.fbx", from: 0.1f, to: 0.8f, blow: true),
+            // the spear's combo after the bayonet thrust
+            I(HeroMocap.SpearB, "Stabbing 1.fbx", from: 0.1f, to: 0.75f, blow: true),
+            I(HeroMocap.SpearC, "Stabbing 3.fbx", from: 0.1f, to: 0.75f, blow: true),
+            // in the air: a cut in the leap, and the overhead leap's slam for a strike under the feet
+            I(HeroMocap.AirSlash, SS + "sword and shield attack (3).fbx", hips: Rel, from: 0.15f, to: 0.8f, blow: true),
+            I(HeroMocap.DownStrike, SS + "sword and shield attack.fbx", hips: Rel, from: 0.3f, to: 0.75f, blow: true),
             I(HeroMocap.BlockIdle, SS + "sword and shield block idle.fbx", true),
             I(HeroMocap.Block, SS + "sword and shield block.fbx"),
             // (the archer holds the bow in his left hand, the hero in his right - the weapon hand: mirrored)

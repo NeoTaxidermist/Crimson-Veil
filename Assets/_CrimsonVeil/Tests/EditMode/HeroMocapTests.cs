@@ -45,11 +45,15 @@ namespace CrimsonVeil.Tests
             Assert.AreEqual(HeroMocap.SlashA, HeroMocap.Choose(s, 0f, 0).key);
             Assert.AreEqual(HeroMocap.SlashB, HeroMocap.Choose(s, 0f, 1).key, "the combo alternates the cuts");
             s.attackForm = VeilForm.Whip;
-            Assert.AreEqual(HeroMocap.SlashA, HeroMocap.Choose(s, 0f, 0).key, "no captured whip: it cuts like the sword");
+            Assert.AreEqual(HeroMocap.WhipA, HeroMocap.Choose(s, 0f, 0).key, "the whip lashes one-handed");
+            Assert.AreEqual(HeroMocap.WhipB, HeroMocap.Choose(s, 0f, 1).key);
+            Assert.AreEqual(HeroMocap.WhipC, HeroMocap.Choose(s, 0f, 2).key);
             s.attackForm = VeilForm.Spear;
             var stab = HeroMocap.Choose(s, 0f, 0);
             Assert.AreEqual(HeroMocap.Stab, stab.key);
             Assert.IsTrue(stab.driven);
+            Assert.AreEqual(HeroMocap.SpearB, HeroMocap.Choose(s, 0f, 1).key, "the spear has its combo");
+            Assert.AreEqual(HeroMocap.SpearC, HeroMocap.Choose(s, 0f, 2).key);
             s.attackForm = VeilForm.Bow;
             Assert.IsTrue(HeroMocap.Choose(s, 0f, 0).IsNone, "the bow stays procedural");
         }
@@ -265,6 +269,24 @@ namespace CrimsonVeil.Tests
         }
 
         [Test]
+        public void BlowsInTheAir_ACutInTheLeap_AStrikeUnderTheFeet()
+        {
+            var s = new HeroState { verticalVelocity = 4f, somersault = -1f, attacking = true, attackT = 0.3f, attackForm = VeilForm.Sword };
+            var cut = HeroMocap.Choose(s, 0f, 0);
+            Assert.AreEqual(HeroMocap.AirSlash, cut.key);
+            Assert.AreEqual(HeroMocap.Mask.NoHipsTurn, cut.mask, "the game turns the body: the clip has the limbs");
+            Assert.Greater(cut.weight, 0.5f);
+            s.attackAim = -80f;
+            Assert.AreEqual(HeroMocap.DownStrike, HeroMocap.Choose(s, 0f, 0).key, "aimed down from the air: under the feet");
+            s.attackForm = VeilForm.Spear;
+            Assert.AreEqual(HeroMocap.DownStrike, HeroMocap.Choose(s, 0f, 0).key);
+            s.attackForm = VeilForm.Whip;
+            Assert.AreEqual(HeroMocap.AirSlash, HeroMocap.Choose(s, 0f, 0).key, "the whip has no strike under the feet");
+            s.attackForm = VeilForm.Sword; s.attackAim = 85f;
+            Assert.Less(HeroMocap.Choose(s, 0f, 0).weight, 0.15f, "aimed steeply up the procedural aim has the arm");
+        }
+
+        [Test]
         public void ABlow_LandsInTheClip_WhenItLandsInTheGame()
         {
             Assert.AreEqual(0.3f, HeroMocap.RemapToClip(0.5f, 0.5f, 0.3f), 1e-5f, "game impact -> clip impact");
@@ -285,7 +307,7 @@ namespace CrimsonVeil.Tests
                                         HeroMocap.Walk, HeroMocap.Run, HeroMocap.Sprint, HeroMocap.CrouchIdle, HeroMocap.Slide, HeroMocap.Dash,
                                         HeroMocap.HardLanding, HeroMocap.LandRoll, HeroMocap.Fall, HeroMocap.Flip, HeroMocap.WallJump,
                                         HeroMocap.HangCatch, HeroMocap.Swing, HeroMocap.SlashC, HeroMocap.ShieldBash, HeroMocap.BlockIdle,
-                                        HeroMocap.Block, HeroMocap.BowDraw, HeroMocap.BowAim, HeroMocap.BowShot, HeroMocap.Hurt, HeroMocap.Stagger, HeroMocap.Turn, HeroMocap.RunStop, HeroMocap.Death,
+                                        HeroMocap.Block, HeroMocap.BowDraw, HeroMocap.BowAim, HeroMocap.BowShot, HeroMocap.Hurt, HeroMocap.Stagger, HeroMocap.Turn, HeroMocap.RunStop, HeroMocap.WhipA, HeroMocap.WhipB, HeroMocap.WhipC, HeroMocap.SpearB, HeroMocap.SpearC, HeroMocap.AirSlash, HeroMocap.DownStrike, HeroMocap.Death,
                                         HeroMocap.GetUp })
             {
                 Assert.IsTrue(lib.TryGet(key, out var e), key);
@@ -297,7 +319,9 @@ namespace CrimsonVeil.Tests
                 Assert.IsTrue(paths.Contains("UpperChest") && paths.Contains("Thumb.R.2"), key + " drives the upper chest and the thumb's tip too");
                 Assert.IsFalse(paths.Contains("Jaw") || paths.Contains("Hair.0.0") || paths.Contains("Cloth.0.0"), "not the face, hair or cloth");
             }
-            foreach (var key in new[] { HeroMocap.SlashA, HeroMocap.SlashB, HeroMocap.SlashC, HeroMocap.Stab, HeroMocap.ShieldBash })
+            foreach (var key in new[] { HeroMocap.SlashA, HeroMocap.SlashB, HeroMocap.SlashC, HeroMocap.Stab, HeroMocap.ShieldBash,
+                                        HeroMocap.WhipA, HeroMocap.WhipB, HeroMocap.WhipC, HeroMocap.SpearB, HeroMocap.SpearC,
+                                        HeroMocap.AirSlash, HeroMocap.DownStrike })
             {
                 lib.TryGet(key, out var e);
                 Assert.That(e.impact, Is.InRange(0.1f, 0.9f), key + " knows where its blow lands");

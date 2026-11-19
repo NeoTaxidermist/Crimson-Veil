@@ -199,6 +199,48 @@ MonoBehaviour:
     impact: 0.5128205
     stride: 0
     sync: 0
+  - key: WhipA
+    clip: {fileID: 7400000, guid: 865a41c684150544295de9c2e2f51edd, type: 2}
+    loop: 0
+    impact: 0.4615385
+    stride: 0
+    sync: 0
+  - key: WhipB
+    clip: {fileID: 7400000, guid: 5c4b96c063a95c44bb4c408530b7bb90, type: 2}
+    loop: 0
+    impact: 0.76811594
+    stride: 0
+    sync: 0
+  - key: WhipC
+    clip: {fileID: 7400000, guid: c7d0bba840d5df747b20a21c9ba99d05, type: 2}
+    loop: 0
+    impact: 0.24489795
+    stride: 0
+    sync: 0
+  - key: SpearB
+    clip: {fileID: 7400000, guid: 04b919bd14668034e922eb2a49f94a20, type: 2}
+    loop: 0
+    impact: 0.23369034
+    stride: 0
+    sync: 0
+  - key: SpearC
+    clip: {fileID: 7400000, guid: 999a318e5c0d9144581f285675e58eb6, type: 2}
+    loop: 0
+    impact: 0.62499994
+    stride: 0
+    sync: 0
+  - key: AirSlash
+    clip: {fileID: 7400000, guid: 88a88f6bf9a960640a52c1e2cb49197b, type: 2}
+    loop: 0
+    impact: 0.44378695
+    stride: 0
+    sync: 0
+  - key: DownStrike
+    clip: {fileID: 7400000, guid: 0dad5481020147d4c911ec491b8d177d, type: 2}
+    loop: 0
+    impact: 0.5396825
+    stride: 0
+    sync: 0
   - key: BlockIdle
     clip: {fileID: 7400000, guid: e4abcf6caa48f8e46b2c9424bc5a13c1, type: 2}
     loop: 1

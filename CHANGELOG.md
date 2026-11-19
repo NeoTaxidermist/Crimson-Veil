@@ -5,6 +5,19 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.39.0] – 2026-11-19
+### Bič, kopí a útoky ve vzduchu
+- Z Mixama je staženo devět dalších animací (útoky pochodní 01–05 a tři „Stabbing“; zdroje zůstávají mimo git). Bič v Mixamu není, nejbližší jsou jednoruční útoky pochodní.
+- **Bič má vlastní tříúderové kombo:** šlehnutí přes rameno (pochodeň 01), nápřah za hlavu a šlehnutí (04), nízký švih (02). Klipy jsou oříznuté na samotný úder.
+- **Kopí má kombo:** bodnutí bajonetem, pak dvě bodnutí s vytaženou paží („Stabbing“, poslední s výpadem).
+- **Útoky ve vzduchu:**
+  - sek ve výskoku (`sword and shield attack (3)`);
+  - úder dolů, tedy mečem nebo kopím ve vzduchu mířeno dolů strměji než 60° (`sword and shield attack`, výskok s úderem shora);
+  - tělo otáčí hra, klip dává končetiny. Při strmém míření nahoru má ruku procedurální míření.
+- Zásah je v každém klipu položený na okamžik zásahu ve hře. Klipů je 48.
+- Opraveno: výpad při úderu (kopí) se počítal jako rozběh a po něm se spustilo dobrzdění.
+- Testy (`HeroMocapTests`): kombo bičem a kopím, sek ve vzduchu a úder dolů (i kopím, bič ne, strmě nahoru jen procedurálně), všechny nové klipy znají okamžik zásahu.
+
 ## [0.38.0] – 2026-11-19
 ### Houpání na biči
 - **Ruce se na laně už nepřehazují.** Klip houpání z Mixama mává rukama a střídá je, takže ruka z lana šla dolů a druhá nahoru. Z klipu jsou teď jen nohy (a trochu trup) a lano drží ruce podle hry.

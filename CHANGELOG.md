@@ -5,6 +5,21 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.39.1] – 2026-11-19
+### Houpání a bič: opravy podle videí
+- **Nehybné visení už necuká.** Fáze houpání je při visení skoro v klidu jen šum, takže nohy skákaly mezi konci klipu. Klip houpání teď roste s rozkmitem: v klidu se nehraje vůbec, plně se hraje až při opravdovém houpání (`HeroMocap.SwingWeight`, `SwingAmplitude`).
+- **Obě ruce drží lano i při otočce.** Pěst s bičem je u úchytu, druhá ruka kousek nad ní na laně. Paže dosáhnou na lano (dvoukloubový dosah), ať je tělo natočené jakkoli, a obě pěsti jsou sevřené.
+- **Otáčení na laně:**
+  - šipka, kterou se rozhoupáváš, ho natočí hned tím směrem;
+  - při volném houpání se otočí za každou úvratí, i když je švih krátký (práh 0,5 m/s místo 1,5);
+  - při visení v klidu se neotáčí.
+- **Bič neprochází podlahou.** Šleh biče (i jeho konec) leží na podlaze stejně jako volná šála. Tuhé zbraně zůstávají beze změny (`VeilRenderer.FloorHold`).
+- Testy:
+  - `HeroMocapTests`: v klidu se klip houpání nehraje, roste plynule;
+  - `GrappleSwingLogicTests`: i krátký volný švih otáčí, v klidu ne, šipka otočí hned;
+  - `HeroPoseSolverTests`: ruce na laně;
+  - `VeilCollisionTests`: bič leží na podlaze.
+
 ## [0.39.0] – 2026-11-19
 ### Bič, kopí a útoky ve vzduchu
 - Z Mixama je staženo devět dalších animací (útoky pochodní 01–05 a tři „Stabbing“; zdroje zůstávají mimo git). Bič v Mixamu není, nejbližší jsou jednoruční útoky pochodní.

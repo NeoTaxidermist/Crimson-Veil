@@ -82,6 +82,10 @@ namespace CrimsonVeil.Tests
             Assert.AreEqual(0.8f, high.y, 1e-5f, "above it nothing moves");
             var blade = VeilRenderer.AboveFloor(sim, new Vector3(1f, -0.2f, 0f), 0.2f, 0f);
             Assert.AreEqual(-0.2f, blade.y, 1e-5f, "a weapon is left to its own shape");
+            Assert.AreEqual(0f, VeilRenderer.FloorHold(VeilForm.Sword, 0f), "a blade is a blade");
+            Assert.AreEqual(1f, VeilRenderer.FloorHold(VeilForm.Whip, 0f), "but a whip is no stiff blade: its lash lies on the floor");
+            var lash = VeilRenderer.AboveFloor(sim, new Vector3(1f, -0.2f, 0f), 0.2f, VeilRenderer.FloorHold(VeilForm.Whip, 0f));
+            Assert.GreaterOrEqual(lash.y, 0.1f - 1e-4f);
         }
 
         [Test]

@@ -117,6 +117,8 @@ namespace CrimsonVeil.Player
             public float jumpSpeed;
             /// <summary>0..1 through the pendulum's cycle (0 = the forward end).</summary>
             public float swingPhase;
+            /// <summary>How far the pendulum swings (radians, from its angle and speed).</summary>
+            public float swingAmplitude;
             public float dashProgress;
             public static Context Default => new Context
             {
@@ -187,7 +189,7 @@ namespace CrimsonVeil.Player
                 if (c.sinceHangStart < HangCatchTime) return new Choice { key = HangCatch, bySeconds = true, seconds = c.sinceHangStart, weight = 0.7f };
                 return new Choice { key = HangIdle, weight = 0.6f };
             }
-            if (s.swinging) return new Choice { key = Swing, driven = true, time01 = Mathf.Repeat(c.swingPhase + SwingSync, 1f), weight = 0.75f, mask = Mask.LegsOnly };   // (the captured swinger's arms swap hands on the rope)
+            if (s.swinging) return new Choice { key = Swing, driven = true, time01 = Mathf.Repeat(c.swingPhase + SwingSync, 1f), weight = 0.75f * SwingWeight(c.swingAmplitude), mask = Mask.LegsOnly };   // (the captured swinger's arms swap hands on the rope)
 
             if (s.attacking && s.attackT >= 0f)
             {
@@ -296,6 +298,19 @@ namespace CrimsonVeil.Player
         {
             if (speed <= RunSpeed) { a = Walk; b = Run; mix = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(WalkSpeed, RunSpeed, speed)); }
             else { a = Run; b = Sprint; mix = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(RunSpeed, SprintSpeed, speed)); }
+        }
+
+        /// <summary>
+        /// How much of the captured swing shows: none hanging (nearly) still - there the phase of the sway is noise and the
+        /// legs jerked from one end of the clip to the other - all of it once he really swings.
+        /// </summary>
+        public static float SwingWeight(float amplitude) => Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.12f, 0.45f, amplitude));
+
+        /// <summary>The pendulum's amplitude (radians) from its angle and angular velocity.</summary>
+        public static float SwingAmplitude(float angle, float angularVelocity, float omega)
+        {
+            float v = angularVelocity / Mathf.Max(0.01f, omega);
+            return Mathf.Sqrt(angle * angle + v * v);
         }
 
         /// <summary>0..1 through the pendulum's cycle from its angle and angular velocity (0 = the forward end).</summary>

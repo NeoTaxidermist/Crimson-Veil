@@ -86,6 +86,33 @@ namespace CrimsonVeil.Tests
         }
 
         [Test]
+        public void SwingingFreely_EvenAShortSwing_TurnsHimPastEachEnd()
+        {
+            var m = new MotorLogic(new MotorSettings());
+            var grip = MotorLogic.SwingPoint(Anchor, 5f, -0.3f);
+            Assert.IsTrue(m.BeginSwing(Anchor, grip));
+            const float dt = 1f / 60f;
+            int turns = 0, body = 1;
+            for (float t = 0f; t < 6f; t += dt)
+            {
+                var v = m.Tick(dt, new MotorInput(), At(grip));
+                grip += v * dt;
+                int next = MotorLogic.SwingFacing(m.SwingVelocity.x, 0f, body);
+                if (next != body) turns++;
+                body = next;
+            }
+            Assert.GreaterOrEqual(turns, 3, "no arrow held: he still faces the way he swings");
+        }
+
+        [Test]
+        public void HangingStill_HeDoesNotTurn_ButAnArrowTurnsHimAtOnce()
+        {
+            Assert.AreEqual(1, MotorLogic.SwingFacing(-0.2f, 0f, 1), "the sway of hanging still doesn't turn him");
+            Assert.AreEqual(-1, MotorLogic.SwingFacing(0f, -1f, 1), "pumping with the arrow: he turns that way");
+            Assert.AreEqual(1, MotorLogic.SwingFacing(-4f, 1f, -1), "leaning in against the swing: the way he pumps");
+        }
+
+        [Test]
         public void LeaningIn_PumpsTheSwingHigher()
         {
             float Amplitude(float lean)

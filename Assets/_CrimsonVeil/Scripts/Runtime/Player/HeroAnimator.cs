@@ -184,6 +184,7 @@ namespace CrimsonVeil.Player
                 var m = player.Motor;
                 float omega = Mathf.Sqrt(m.Settings.SwingGravity / Mathf.Max(0.5f, m.SwingLength));
                 ctx.swingPhase = HeroMocap.SwingPhase(m.SwingAngle * player.BodyFacing, m.SwingAngularVelocity * player.BodyFacing, omega);
+                ctx.swingAmplitude = HeroMocap.SwingAmplitude(m.SwingAngle, m.SwingAngularVelocity, omega);
             }
             bool striking = s.attacking && s.attackT >= 0f;
             if (striking && (!wasStriking || s.attackT < lastAttackT - 0.3f)) swing++;
@@ -211,6 +212,29 @@ namespace CrimsonVeil.Player
             // hanging with a weapon cast, the right hand has let go of the lip to wield it
             float free = HeroPoseSolver.HangFreeArm(s.hanging, s.weaponHeld);
             Reach(upperArmR, lowerArmR, handR, lip, off, dir, weight * (1f - free));
+        }
+
+        /// <summary>
+        /// On the whip both fists hold the rope - the whip hand at the grip, the other just above it - whichever way
+        /// the body turns: the arms are only roughly posed, a two-bone reach closes the hands on the line.
+        /// </summary>
+        void GripRope()
+        {
+            var m = player.Motor;
+            Vector3 grip = player.GripPosition;
+            Vector3 up = HeroPoseSolver.RopeUp(grip, m.SwingAnchor);
+            Vector3 forward = model != null ? model.forward : Vector3.right * player.BodyFacing;
+            GripRopeHand(upperArmR, lowerArmR, handR, grip + up * HeroPoseSolver.RopeLowHand, up, forward);
+            GripRopeHand(upperArmL, lowerArmL, handL, grip + up * HeroPoseSolver.RopeHighHand, up, forward);
+        }
+
+        static void GripRopeHand(Transform upper, Transform lower, Transform hand, Vector3 onRope, Vector3 up, Vector3 forward)
+        {
+            if (upper == null) return;
+            // the wrist sits just under the fist closed round the rope
+            var target = onRope - up * HeroPoseSolver.RopeWristBelow;
+            var pole = upper.position + forward * 0.8f - up * 0.3f;   // the elbows bend forward, a little down
+            LimbReach.Solve(upper, lower, hand, target, pole, 1f);
         }
 
         static void Reach(Transform upper, Transform lower, Transform hand, Vector3 lip, Vector2 off, int dir, float weight)
@@ -264,14 +288,17 @@ namespace CrimsonVeil.Player
                 mocap.Apply(HeroMocap.Choose(s, ctx), Time.deltaTime);
             }
             if (s.hanging || s.climbing) ReachLip(s);
+            if (s.swinging) GripRope();
             if (Hands != null)
             {
                 // the drawing hand pinches the string from the moment it reaches it until it lets go
                 bool drawing = veil != null && veil.ShapeForm == VeilForm.Bow
                                && (veil.Drawing || (veil.IsAttacking && veil.AttackProgress > 0.1f && veil.AttackProgress < 0.4f));
                 HeroHands.Targets(s.attackForm, s.weaponHeld, drawing, out float r, out float l);
+                // on the whip both fists are closed round the rope
+                if (s.swinging) { r = 1f; l = 1f; }
                 // hanging and mantling, both hands grip the lip (then lie flat on the top as he presses over it)
-                if (s.hanging || s.climbing)
+                else if (s.hanging || s.climbing)
                 {
                     float grip = HeroPoseSolver.LedgeGrip(s.hanging, s.climbing, s.climbProgress);
                     r = Mathf.Lerp(grip, r, HeroPoseSolver.HangFreeArm(s.hanging, s.weaponHeld));   // the weapon hand

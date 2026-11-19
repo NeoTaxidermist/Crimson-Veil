@@ -278,6 +278,8 @@ namespace CrimsonVeil.Veil
             // Pulled out into a rope (the whip round a ring) the scarf runs several times its length: it must still
             // read as the braided weapon, not a stretched-out red line.
             bool rope = veil.Latched != null;
+            // a whip is no stiff blade: like the loose scarf it lies on the floor rather than passing into it
+            var form = veil.ShapeForm;
             float arc = 0f;
             for (int i = 1; i < samples; i++) arc += Vector3.Distance(centre[i - 1], centre[i]);
             float braidScale = rope ? RopeBraidScale(arc, sim.Settings.length) * RopeBraidTwist : 1f;
@@ -443,7 +445,7 @@ namespace CrimsonVeil.Veil
                     if (!main) alpha = Mathf.Lerp(Mathf.Min(1f, alpha * 1.2f), alpha, hard); // fuller tongues (the sheet)
 
                     float shade = Mathf.Lerp(shadeAt[i0], shadeAt[i0 + 1], fr);
-                    c = AboveFloor(sim, c, sw, loose);
+                    c = AboveFloor(sim, c, sw, FloorHold(form, loose));
                     WriteVertex(baseV + i * 2, c, nrm, sw, alpha, st, hard, vit, front, shade);
                     if (i > 0) lastTan = c - lastC;
                     lastC = c; lastW = sw; lastA = alpha; lastHard = hard; lastFront = front; lastShade = shade;
@@ -477,7 +479,7 @@ namespace CrimsonVeil.Veil
                     // A brush stroke: broad as it winds round its whorl (the sheet), thinning only near its centre.
                     float sw = lastW * Mathf.Lerp(1f, Mathf.Lerp(0.14f, 0.03f, lastHard), Mathf.Pow(u, Mathf.Lerp(1.7f, 0.6f, lastHard)));
                     float alpha = lastA * Mathf.Lerp(1f, 0.55f, u);
-                    curl[k] = AboveFloor(sim, curl[k], sw, looseEnd);
+                    curl[k] = AboveFloor(sim, curl[k], sw, FloorHold(form, looseEnd));
                     WriteVertex(baseV + (samples - 1 + k) * 2, curl[k], nrm, sw, alpha, st, lastHard, vit, lastFront, lastShade);
                 }
                 ClampFolds(vertices, uv2, baseV, perStrand);
@@ -574,6 +576,9 @@ namespace CrimsonVeil.Veil
         /// Loose cloth drawn into the floor (a curl rolling down, the band's width round a node lying low) is laid on
         /// it instead: the point is lifted to half its stroke's width over the floor under it. A weapon is left alone.
         /// </summary>
+        /// <summary>How firmly a stroke of this form is kept on the floor: a whip always (it is no stiff blade), else as loose as it is.</summary>
+        public static float FloorHold(VeilForm form, float loose) => form == VeilForm.Whip ? 1f : loose;
+
         public static Vector3 AboveFloor(VeilSimulation sim, Vector3 p, float width, float loose)
         {
             if (loose <= 0.01f) return p;

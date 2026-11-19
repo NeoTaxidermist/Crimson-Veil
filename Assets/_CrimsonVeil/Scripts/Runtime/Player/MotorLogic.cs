@@ -218,16 +218,27 @@ namespace CrimsonVeil.Player
         /// <summary>Angular velocity (rad/s), + = swinging towards the right.</summary>
         public float SwingAngularVelocity { get; private set; }
         public bool IsSwinging => State == MotorState.Swinging;
-        /// <summary>On the whip he turns to face the way he swings once he goes this fast (m/s) across.</summary>
-        public const float SwingTurnSpeed = 1.5f;
+        /// <summary>
+        /// On the whip, swinging freely, he turns to face the way he swings once he goes this fast (m/s) across - low
+        /// enough that every free swing turns him just past its end, above the sway of hanging still.
+        /// </summary>
+        public const float SwingTurnSpeed = 0.5f;
 
         /// <summary>
         /// Which way the body faces on the whip: the way he swings, past each end of the swing once it has picked up
         /// speed again (else the way he faced). Only the body turns - <see cref="Facing"/> stays, so the whip held to its
         /// ring doesn't flip round with him.
         /// </summary>
-        public static int SwingFacing(float swingVx, int current)
-            => Mathf.Abs(swingVx) > SwingTurnSpeed ? (swingVx > 0f ? 1 : -1) : current;
+        public static int SwingFacing(float swingVx, int current) => SwingFacing(swingVx, 0f, current);
+
+        /// <summary>
+        /// As <see cref="SwingFacing(float,int)"/>, but an arrow held to pump the swing turns him that way at once.
+        /// </summary>
+        public static int SwingFacing(float swingVx, float moveX, int current)
+        {
+            if (Mathf.Abs(moveX) > 0.3f) return moveX > 0f ? 1 : -1;
+            return Mathf.Abs(swingVx) > SwingTurnSpeed ? (swingVx > 0f ? 1 : -1) : current;
+        }
         float carryTimer;
 
         /// <summary>Hands position for a given angle/length around the anchor.</summary>

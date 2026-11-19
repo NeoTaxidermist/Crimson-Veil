@@ -365,6 +365,18 @@ namespace CrimsonVeil.Tests
         }
 
         [Test]
+        public void OnTheWhip_BothHandsCloseOnTheRope()
+        {
+            var up = HeroPoseSolver.RopeUp(new Vector3(0f, 2f, 0.4f), new Vector2(3f, 6f));
+            Assert.AreEqual(new Vector3(0.6f, 0.8f, 0f).x, up.x, 1e-4f, "up the rope, towards the ring");
+            Assert.AreEqual(0.8f, up.y, 1e-4f);
+            Assert.AreEqual(0f, up.z, "the rope lies in the plane of play");
+            Assert.AreEqual(Vector3.up, HeroPoseSolver.RopeUp(new Vector3(1f, 1f, 0f), new Vector2(1f, 1f)));
+            Assert.Greater(HeroPoseSolver.RopeHighHand - HeroPoseSolver.RopeLowHand, 0.08f, "one fist above the other, not one on the other");
+            Assert.Less(HeroPoseSolver.RopeHighHand - HeroPoseSolver.RopeLowHand, 0.2f, "close together, like holding a rope");
+        }
+
+        [Test]
         public void OnTheWhip_TheLegsTrailTheSwing_AndPump()
         {
             var forward = HeroPoseSolver.SwingPose(1f, 0f);

@@ -615,6 +615,18 @@ namespace CrimsonVeil.Player
 
         /// <summary>Where the swing has carried the legs: a spring after the swing's speed (they lag, overshoot, settle).</summary>
         public float SwingLegs => swingLegs;
+
+        /// <summary>On the whip: how far up the rope (m) from the grip the whip hand and the other hand close on it.</summary>
+        public const float RopeLowHand = 0f, RopeHighHand = 0.12f;
+        /// <summary>How far (m) the wrist sits under the point of the rope its fist closes round.</summary>
+        public const float RopeWristBelow = 0.07f;
+
+        /// <summary>Up the rope: from the grip towards the ring (straight up if they coincide).</summary>
+        public static Vector3 RopeUp(Vector3 grip, Vector2 anchor)
+        {
+            var d = new Vector3(anchor.x - grip.x, anchor.y - grip.y, 0f);
+            return d.sqrMagnitude > 1e-6f ? d.normalized : Vector3.up;
+        }
         float swingLegs, swingLegsVel;
 
         /// <summary>

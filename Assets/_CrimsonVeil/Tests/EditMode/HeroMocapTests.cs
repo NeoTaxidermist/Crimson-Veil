@@ -145,6 +145,25 @@ namespace CrimsonVeil.Tests
         }
 
         [Test]
+        public void HangingStillOnTheWhip_TheCapturedSwingFadesOut()
+        {
+            var s = new HeroState { swinging = true };
+            var c = HeroMocap.Context.Default;
+            c.swingAmplitude = HeroMocap.SwingAmplitude(0.02f, 0.03f, 1.5f);
+            Assert.AreEqual(0f, HeroMocap.Choose(s, c).body.weight, 1e-4f, "at rest the sway's phase is noise: no jerking legs");
+            c.swingAmplitude = HeroMocap.SwingAmplitude(0f, 1.2f, 1.5f);
+            Assert.AreEqual(0.8f, c.swingAmplitude, 1e-4f, "through the bottom the amplitude is in the speed");
+            Assert.AreEqual(0.75f, HeroMocap.Choose(s, c).body.weight, 1e-4f, "really swinging: the whole captured swing");
+            float last = 0f;
+            for (float a = 0f; a <= 0.6f; a += 0.02f)
+            {
+                float w = HeroMocap.SwingWeight(a);
+                Assert.GreaterOrEqual(w, last, "it grows smoothly with the swing");
+                last = w;
+            }
+        }
+
+        [Test]
         public void TheWhip_TheSwingFollowsThePendulum()
         {
             var s = new HeroState { swinging = true };

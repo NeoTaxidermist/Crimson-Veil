@@ -19,6 +19,13 @@ namespace CrimsonVeil.Player
         [SerializeField] Vector3 gravity = new Vector3(0f, -5f, 0f);
         [Tooltip("Extra push opposite to the body's motion (wind of running).")]
         [SerializeField] float drag = 0.6f;
+        [Tooltip("Bones the chains are kept out of (capsules from each bone to its first child), e.g. the legs for cloth.")]
+        [SerializeField] string[] colliderBones = new string[0];
+        [SerializeField] float colliderRadius = 0.09f;
+        [Tooltip("Furthest (degrees) a bone may swing from its animated rest; 0 = no limit.")]
+        [SerializeField] float maxBend = 0f;
+
+        Transform[] colliders, colliderEnds;
 
         sealed class Chain
         {
@@ -33,12 +40,24 @@ namespace CrimsonVeil.Player
         Vector3 lastRootPos;
 
         public int ChainCount => chains.Count;
+        public string Prefix => prefix;
 
         void Awake()
         {
             if (root == null) root = transform;
             Collect(root);
             lastRootPos = root.position;
+            var cs = new List<Transform>();
+            var ends = new List<Transform>();
+            foreach (var n in colliderBones)
+            {
+                var b = RigJoint.FindDeep(root, n);
+                if (b == null || b.childCount == 0) continue;
+                cs.Add(b);
+                ends.Add(b.GetChild(0));
+            }
+            colliders = cs.ToArray();
+            colliderEnds = ends.ToArray();
         }
 
         void Collect(Transform t)
@@ -67,7 +86,7 @@ namespace CrimsonVeil.Player
             c.tipLength = bones.Length > 1 ? Vector3.Distance(bones[bones.Length - 2].position, bones[bones.Length - 1].position) : 0.1f;
             c.rest = new Vector3[bones.Length + 1];
             FillRest(c);
-            c.solver = new SpringChainSolver(c.rest) { Stiffness = stiffness, TipStiffness = tipStiffness, Damping = damping, Gravity = gravity };
+            c.solver = new SpringChainSolver(c.rest) { Stiffness = stiffness, TipStiffness = tipStiffness, Damping = damping, Gravity = gravity, MaxBend = maxBend };
             chains.Add(c);
         }
 
@@ -93,6 +112,9 @@ namespace CrimsonVeil.Player
                 for (int i = 0; i < c.bones.Length; i++) c.bones[i].localRotation = c.restLocal[i];
                 FillRest(c);
                 c.solver.Gravity = gravity + wind;
+                c.solver.Colliders.Clear();
+                for (int k = 0; k < colliders.Length; k++)
+                    c.solver.Colliders.Add(new SpringChainSolver.Capsule(colliders[k].position, colliderEnds[k].position, colliderRadius));
                 c.solver.Step(dt, c.rest);
 
                 // Aim each bone at its simulated child.

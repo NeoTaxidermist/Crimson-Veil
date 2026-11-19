@@ -3,7 +3,8 @@
 # boots — wind-swept hair streaming back, a crimson scarf wound at the neck (the veil flows from it).
 #   exec(open(r"C:\Dev\CrimsonVeil\ArtSource\hero_build.py").read())
 # Blender space: Z up, the hero faces -Y, his left is +X. Bone names are kept (the game poses them by name);
-# the hair chains are rebuilt (SpringBones finds any "Hair.N.0..2").
+# the hair chains are rebuilt (SpringBones finds any "Hair.N.0..2"), and so are the cloth chains of the tunic's
+# free panels ("Cloth.N.0..1") and the sash ends ("Sash.N.0..2").
 import math
 import random
 import bpy
@@ -780,7 +781,36 @@ def skirt_w(p, s):
         w["UpperLeg.L"] = leg * side
     if leg * (1 - side) > 1e-4:
         w["UpperLeg.R"] = leg * (1 - side)
+    # Below the slits the panels hang free: more and more of them swings on its cloth chain (Cloth.N.0..1, see
+    # CLOTH_CHAINS), the rest still follows the hips and the thigh behind it, so the stride carries them.
+    c = cloth_share(p.z)
+    if c > 0:
+        chain = cloth_chain_of(p)
+        k = 1 if p.z < CLOTH_MID else 0
+        w = {b: x * (1 - c) for b, x in w.items()}
+        w["Cloth.%d.%d" % (chain, k)] = c
     return w
+
+
+# The tunic's free panels: front and back, each split at the middle into a left and a right half, each half a
+# chain of two bones from the top of the slits to the hem (SpringBones prefix "Cloth.").
+#   n: (angle round the body, 0 = his left, 90 deg = front)
+CLOTH_CHAINS = {0: 50.0, 1: 130.0, 2: 310.0, 3: 230.0}   # front-left, front-right, back-left, back-right
+CLOTH_TOP = SLIT_TOP + 0.02
+CLOTH_MID = 0.715
+CLOTH_HEM = 0.6
+
+
+def cloth_share(z):
+    """How much of the tunic at height z swings on its cloth chain (0 at the slits' top .. 0.6 at the hem)."""
+    u = max(0.0, min(1.0, (CLOTH_TOP - z) / (CLOTH_TOP - CLOTH_HEM)))
+    return 0.6 * u * u * (3 - 2 * u)
+
+
+def cloth_chain_of(p):
+    front = p.y < SKIRT_CY
+    left = p.x >= 0
+    return (0 if left else 1) if front else (2 if left else 3)
 
 
 def shell(th0, th1, closed, z_top, z_bot, off, nth, nv, weight, thick=0.008, mat=INK):
@@ -844,12 +874,26 @@ box((0, _by - 0.007, 1.072), (0.036, 0.006, 0.034), W("Hips"), mat=CRIMSON)  # t
 # The crimson sash knotted at the front left of the belt, its two ends hanging over the tunic.
 _knot = skirt_pt(R(42), 1.072, 0.03)
 blob(_knot, (0.026, 0.018, 0.024), W("Hips"), mat=CRIMSON, seg=12, rings=8)
-for th, z_end, wd in ((R(38), 0.84, 0.017), (R(47), 0.79, 0.015)):
+# Each end swings on its own chain (Sash.N.0..2, SpringBones prefix "Sash."), from the knot down.
+SASH_ENDS = []
+
+
+def sash_w(n, z_end):
+    def w(p, s):
+        t = max(0.0, min(0.999, (1.06 - p.z) / (1.06 - z_end)))
+        free = max(0.0, min(1.0, t / 0.2))
+        bone = "Sash.%d.%d" % (n, int(t * 3))
+        return {"Hips": 1 - free, bone: free} if free < 1 else {bone: 1.0}
+    return w
+
+
+for n, (th, z_end, wd) in enumerate(((R(38), 0.84, 0.017), (R(47), 0.79, 0.015))):
     secs = []
     for k in range(9):
         z = 1.06 + (z_end - 1.06) * k / 8
         secs.append((skirt_pt(th + R(4) * k / 8, z, 0.012), wd * (1 + 0.25 * k / 8), 0.004))
-    loft(secs, skirt_w, mat=CRIMSON, n=10)
+    loft(secs, sash_w(n, z_end), mat=CRIMSON, n=10)
+    SASH_ENDS.append((skirt_pt(th, 1.06, 0.012), skirt_pt(th + R(4), z_end, 0.012)))
 
 # ---------------------------------------------------------------- neck and cowl
 loft([((0, 0.0, 1.50), 0.05, 0.048), ((0, -0.025, 1.58), 0.042, 0.042), ((0, -0.05, 1.65), 0.044, 0.044)],
@@ -953,8 +997,25 @@ _ctx = dict(window=_win, screen=_win.screen, active_object=rig, object=rig, sele
 with bpy.context.temp_override(**_ctx):
     bpy.ops.object.mode_set(mode='EDIT')
 eb = rig.data.edit_bones
-for bn in [bn for bn in eb if bn.name.startswith("Hair.")]:
+for bn in [bn for bn in eb if bn.name.startswith("Hair.") or bn.name.startswith("Cloth.") or bn.name.startswith("Sash.")]:
     eb.remove(bn)
+# Cloth chains of the tunic's free panels and the sash ends, hanging from the hips (bones point down the cloth).
+for n, ang in CLOTH_CHAINS.items():
+    a = math.radians(ang)
+    pts = [skirt_pt(a, CLOTH_TOP, 0.01), skirt_pt(a, CLOTH_MID, 0.01), skirt_pt(a, CLOTH_HEM, 0.01)]
+    parent = eb["Hips"]
+    for k in range(2):
+        bn = eb.new("Cloth.%d.%d" % (n, k))
+        bn.head, bn.tail = pts[k], pts[k + 1]
+        bn.parent, bn.use_connect = parent, k > 0
+        parent = bn
+for n, (top, end) in enumerate(SASH_ENDS):
+    parent = eb["Hips"]
+    for k in range(3):
+        bn = eb.new("Sash.%d.%d" % (n, k))
+        bn.head, bn.tail = top.lerp(end, k / 3), top.lerp(end, (k + 1) / 3)
+        bn.parent, bn.use_connect = parent, k > 0
+        parent = bn
 for bn in [bn for bn in eb if bn.name.startswith("Finger.") or bn.name.startswith("Thumb.") or bn.name.startswith("Toe.")]:
     eb.remove(bn)
 for _side, _sx in (("L", 1.0), ("R", -1.0)):
@@ -1168,6 +1229,7 @@ mod.object = rig
 
 bpy.ops.wm.save_as_mainfile(filepath=ROOT + r"\ArtSource\Hero.blend")
 result = {"verts": len(verts), "faces": len(faces), "hair_chains": len(chains),
+          "cloth_bones": len([b for b in rig.data.bones if b.name.startswith("Cloth.") or b.name.startswith("Sash.")]),
           "dims": [round(x, 3) for x in ob.dimensions]}
 
 # ---------------------------------------------------------------- export to the game

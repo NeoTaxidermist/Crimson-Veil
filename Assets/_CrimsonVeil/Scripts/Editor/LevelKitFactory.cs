@@ -145,6 +145,7 @@ namespace CrimsonVeil.EditorTools
                 SetRef(anim, "model", hero.transform);
                 SetRef(anim, "veilAnchor", anchor);
                 SetRef(player.AddComponent<SpringBones>(), "root", hero.transform);
+                HeroCloth(player, hero.transform);
                 var handBone = CrimsonVeil.Core.RigJoint.FindDeep(hero.transform, "Hand.R");
                 if (handBone != null) SetRef(veil, "hand", handBone);
                 var drawBone = CrimsonVeil.Core.RigJoint.FindDeep(hero.transform, "Hand.L");
@@ -152,6 +153,46 @@ namespace CrimsonVeil.EditorTools
                 SetRef(veil, "stringMaterial", M.rope);
             }
             return player;
+        }
+
+        /// <summary>
+        /// The hero's loose cloth on springs: the tunic's free panels (Cloth.N, stiff, kept off the legs) and the
+        /// two ends of the crimson sash (Sash.N, light, swinging wide).
+        /// </summary>
+        public static void HeroCloth(GameObject player, Transform hero)
+        {
+            var cloth = player.AddComponent<SpringBones>();
+            var so = new SerializedObject(cloth);
+            so.FindProperty("root").objectReferenceValue = hero;
+            so.FindProperty("prefix").stringValue = "Cloth.";
+            so.FindProperty("stiffness").floatValue = 18f;
+            so.FindProperty("tipStiffness").floatValue = 9f;
+            so.FindProperty("maxBend").floatValue = 32f;   // a panel swings, it never flips up into a tail
+            so.FindProperty("damping").floatValue = 0.82f;
+            so.FindProperty("gravity").vector3Value = new Vector3(0f, -3f, 0f);
+            so.FindProperty("drag").floatValue = 0.35f;
+            var legs = so.FindProperty("colliderBones");
+            var names = new[] { "UpperLeg.L", "UpperLeg.R", "LowerLeg.L", "LowerLeg.R" };
+            legs.arraySize = names.Length;
+            for (int i = 0; i < names.Length; i++) legs.GetArrayElementAtIndex(i).stringValue = names[i];
+            so.FindProperty("colliderRadius").floatValue = 0.08f;
+            so.ApplyModifiedPropertiesWithoutUndo();
+
+            var sash = player.AddComponent<SpringBones>();
+            so = new SerializedObject(sash);
+            so.FindProperty("root").objectReferenceValue = hero;
+            so.FindProperty("prefix").stringValue = "Sash.";
+            so.FindProperty("stiffness").floatValue = 6f;
+            so.FindProperty("tipStiffness").floatValue = 1.5f;
+            so.FindProperty("damping").floatValue = 0.9f;
+            so.FindProperty("gravity").vector3Value = new Vector3(0f, -6f, 0f);
+            so.FindProperty("drag").floatValue = 0.7f;
+            legs = so.FindProperty("colliderBones");
+            names = new[] { "UpperLeg.L", "UpperLeg.R" };
+            legs.arraySize = names.Length;
+            for (int i = 0; i < names.Length; i++) legs.GetArrayElementAtIndex(i).stringValue = names[i];
+            so.FindProperty("colliderRadius").floatValue = 0.11f;
+            so.ApplyModifiedPropertiesWithoutUndo();
         }
 
         public static GameObject Spawn(Vector3 pos)

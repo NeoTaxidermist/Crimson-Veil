@@ -331,6 +331,9 @@ MonoBehaviour:
   damping: 0.9
   gravity: {x: 0, y: -6, z: 0}
   drag: 0.8
+  colliderBones: []
+  colliderRadius: 0.09
+  maxBend: 0
 --- !u!114 &1691542680174164175
 MonoBehaviour:
   m_ObjectHideFlags: 0

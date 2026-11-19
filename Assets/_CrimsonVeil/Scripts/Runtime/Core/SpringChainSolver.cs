@@ -17,8 +17,40 @@ namespace CrimsonVeil.Core
         public float TipStiffness = 2.5f;
         public float Damping = 0.88f;
         public Vector3 Gravity = new Vector3(0f, -4f, 0f);
+        /// <summary>Furthest (degrees) a segment may swing from its rest direction; 0 = no limit. Cloth stays cloth.</summary>
+        public float MaxBend = 0f;
 
         public int Count => Positions.Length;
+
+        /// <summary>Capsules the chain is kept out of (a cloth panel off the legs): ends a, b and radius.</summary>
+        public readonly System.Collections.Generic.List<Capsule> Colliders = new System.Collections.Generic.List<Capsule>();
+
+        public struct Capsule
+        {
+            public Vector3 a, b;
+            public float radius;
+            public Capsule(Vector3 a, Vector3 b, float radius) { this.a = a; this.b = b; this.radius = radius; }
+        }
+
+        /// <summary>The point pushed straight out of the capsule if it is inside it (unchanged otherwise).</summary>
+        public static Vector3 PushOut(Vector3 p, in Capsule c)
+        {
+            Vector3 ab = c.b - c.a;
+            float t = ab.sqrMagnitude > 1e-10f ? Mathf.Clamp01(Vector3.Dot(p - c.a, ab) / ab.sqrMagnitude) : 0f;
+            Vector3 closest = c.a + ab * t;
+            Vector3 d = p - closest;
+            float len = d.magnitude;
+            if (len >= c.radius) return p;
+            if (len < 1e-6f) return closest + Vector3.forward * c.radius;
+            return closest + d * (c.radius / len);
+        }
+
+        void Collide()
+        {
+            if (Colliders.Count == 0) return;
+            for (int i = 1; i < Count; i++)
+                foreach (var c in Colliders) Positions[i] = PushOut(Positions[i], c);
+        }
 
         public SpringChainSolver(Vector3[] restPositions)
         {
@@ -57,13 +89,23 @@ namespace CrimsonVeil.Core
                 Positions[i] = p;
             }
 
+            Collide();
             // Keep segment lengths (parent wins, so the root never stretches).
             for (int i = 1; i < n; i++)
             {
                 Vector3 d = Positions[i] - Positions[i - 1];
                 float len = d.magnitude;
-                if (len > 1e-6f) Positions[i] = Positions[i - 1] + d * (lengths[i - 1] / len);
+                if (len <= 1e-6f) continue;
+                Vector3 dir = d / len;
+                if (MaxBend > 0f)
+                {
+                    Vector3 r = rest[i] - rest[i - 1];
+                    if (r.sqrMagnitude > 1e-10f)
+                        dir = Vector3.RotateTowards(r.normalized, dir, MaxBend * Mathf.Deg2Rad, 0f);
+                }
+                Positions[i] = Positions[i - 1] + dir * lengths[i - 1];
             }
+            Collide();
         }
     }
 }

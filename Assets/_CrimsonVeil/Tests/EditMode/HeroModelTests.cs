@@ -30,6 +30,28 @@ namespace CrimsonVeil.Tests
         }
 
         [Test]
+        public void TheTunicsFreePanels_AndTheSashEnds_HangOnClothChains_ThatMoveTheMesh()
+        {
+            var bones = Hero().GetComponentsInChildren<Transform>(true);
+            Assert.AreEqual(4, bones.Count(t => t.name.StartsWith("Cloth.") && t.name.EndsWith(".0")), "front and back panels, each split in two");
+            Assert.AreEqual(2, bones.Count(t => t.name.StartsWith("Sash.") && t.name.EndsWith(".0")), "the sash's two ends");
+            foreach (var t in bones.Where(t => t.name.StartsWith("Cloth.") && t.name.EndsWith(".0")))
+                Assert.AreEqual("Hips", t.parent.name, "the panels hang from the hips");
+
+            // they really carry the cloth: vertices are weighted to them
+            var smr = Hero().GetComponentInChildren<SkinnedMeshRenderer>();
+            var weighted = new System.Collections.Generic.HashSet<string>();
+            foreach (var w in smr.sharedMesh.boneWeights)
+            {
+                if (w.weight0 > 0.05f) weighted.Add(smr.bones[w.boneIndex0].name);
+                if (w.weight1 > 0.05f) weighted.Add(smr.bones[w.boneIndex1].name);
+                if (w.weight2 > 0.05f) weighted.Add(smr.bones[w.boneIndex2].name);
+            }
+            foreach (var n in new[] { "Cloth.0.1", "Cloth.1.1", "Cloth.2.1", "Cloth.3.1", "Sash.0.2", "Sash.1.2" })
+                CollectionAssert.Contains(weighted, n, n + " moves part of the mesh");
+        }
+
+        [Test]
         public void InkBody_WithACrimsonScarfAndTrim()
         {
             var smr = Hero().GetComponentInChildren<SkinnedMeshRenderer>();

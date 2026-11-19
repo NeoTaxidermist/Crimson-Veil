@@ -161,6 +161,9 @@ MonoBehaviour:
   damping: 0.9
   gravity: {x: 0, y: -3, z: 0}
   drag: 1.1
+  colliderBones: []
+  colliderRadius: 0.09
+  maxBend: 0
 --- !u!1001 &4612663878388219793
 PrefabInstance:
   m_ObjectHideFlags: 0

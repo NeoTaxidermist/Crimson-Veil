@@ -51,6 +51,8 @@ GameObject:
   - component: {fileID: 3181452723038322252}
   - component: {fileID: 8655229459203128116}
   - component: {fileID: 8008510758073263660}
+  - component: {fileID: 336091914274216243}
+  - component: {fileID: 8432667715012866920}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -364,6 +366,59 @@ MonoBehaviour:
   damping: 0.86
   gravity: {x: 0, y: -5, z: 0}
   drag: 0.6
+  colliderBones: []
+  colliderRadius: 0.09
+  maxBend: 0
+--- !u!114 &336091914274216243
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2481503692788009236}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 19f39d87c02a376469407a67d4a90111, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CrimsonVeil.Runtime::CrimsonVeil.Player.SpringBones
+  root: {fileID: 2239127941129956613}
+  prefix: Cloth.
+  stiffness: 18
+  tipStiffness: 9
+  damping: 0.82
+  gravity: {x: 0, y: -3, z: 0}
+  drag: 0.35
+  colliderBones:
+  - UpperLeg.L
+  - UpperLeg.R
+  - LowerLeg.L
+  - LowerLeg.R
+  colliderRadius: 0.08
+  maxBend: 32
+--- !u!114 &8432667715012866920
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2481503692788009236}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 19f39d87c02a376469407a67d4a90111, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CrimsonVeil.Runtime::CrimsonVeil.Player.SpringBones
+  root: {fileID: 2239127941129956613}
+  prefix: Sash.
+  stiffness: 6
+  tipStiffness: 1.5
+  damping: 0.9
+  gravity: {x: 0, y: -6, z: 0}
+  drag: 0.7
+  colliderBones:
+  - UpperLeg.L
+  - UpperLeg.R
+  colliderRadius: 0.11
+  maxBend: 0
 --- !u!1 &6980102738665917204
 GameObject:
   m_ObjectHideFlags: 0

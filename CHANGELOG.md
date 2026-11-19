@@ -5,6 +5,26 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.29.0] – 2026-11-19
+### Přidáno
+- **Hrdina má nové kosti v oblečení a to vlaje.** Model staví `ArtSource/hero_build.py`. Do tuniky a šerpy, které byly dosud přišité k bokům a stehnům, teď přidává kosti:
+  - **tunika** má volné díly pod rozparky, přední a zadní, každý rozdělený na levou a pravou půlku. Celkem 4 řetízky po 2 kostech (`Cloth.N.0..1`), visí z boků. Dole u lemu kmitá 60 % látky na pružině a zbytek dál sleduje boky a stehno, takže ji krok pořád nese;
+  - **oba konce rudé šerpy** mají po 3 kostech (`Sash.N.0..2`) a od uzlu dolů se volně houpou.
+- Ve hře je pohání dvě nové `SpringBones`:
+  - tunika je tužší a drží se mimo nohy;
+  - šerpa je lehká a rozhoupe se do široka.
+- `SpringChainSolver` umí nově:
+  - **srážky s válci** (`Capsule`, `PushOut`): látka se drží mimo stehna a lýtka a neprojde jimi;
+  - **omezení ohybu** (`MaxBend`): díl tuniky se vychýlí nejvýš o 32° od své polohy, takže se při běhu neodklopí do ostrého „ocásku".
+- `SpringBones` má nová nastavení `colliderBones`, `colliderRadius` a `maxBend`.
+
+### Testy
+- `HeroModelTests`: tunika má 4 a šerpa 2 řetízky, visí z boků a opravdu hýbou sítí.
+- `SpringChainSolverTests`:
+  - bod se vytlačí z válce;
+  - řetízek rozhoupaný do nohy zůstane mimo ni;
+  - žádný článek se nevychýlí za `MaxBend`.
+
 ## [0.28.1] – 2026-11-18
 ### Opraveno
 - **Kamenné oblouky v pozadí už nevisí ve vzduchu.** U věže a hradeb stálo 9 oblouků v blízké vrstvě ve výšce 23–44 m. Byly postavené od oka proti věžím v hlubší vrstvě a v jejich vlastní vrstvě pod nimi nic nebylo. Jakmile se kamera pohnula, vrstvy se rozjely a oblouky visely.

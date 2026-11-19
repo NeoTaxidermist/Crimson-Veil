@@ -5,6 +5,17 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.41.1] – 2026-11-19
+### Běh už necupitá
+- **Opraveno: nohy při běhu cupitaly.** Délka cyklu kroků se měřila z rozpětí nohou v klipu běžícím na místě a vyšla poloviční, běh 2 m a sprint 1,8 m na cyklus. Při 8 m/s tak nohy dělaly přes čtyři cykly za sekundu.
+- Teď se délka cyklu bere z tempa, ve kterém byl klip nahraný (`HeroMocap.GaitStride`): rychlost chůze, běhu nebo sprintu krát délka klipu.
+  - Běh: 5,5 m/s × 0,7 s ≈ 3,9 m.
+  - Sprint: 8,5 m/s × 0,7 s ≈ 6 m.
+  - Při plné rychlosti to vychází asi 1,4 cyklu za sekundu, jako u běžce.
+  - Při tempu nahrávky hraje klip svou vlastní rychlostí, při jiném tempu úměrně rychleji nebo pomaleji.
+- Rychlost hry se neměnila. Ověřeno: hrdina běží 8 m/s jako vždy, a to stejně při 30 i 120 FPS.
+- Testy: `HeroMocapTests` (kroky v tempu klipu, ne cupitání), `HeroMocapPlayTests` (krok podle uběhnuté vzdálenosti).
+
 ## [0.41.0] – 2026-11-19
 ### Jak hra pozná boj
 - **Boj je vztah s konkrétním nepřítelem, ne vzdálenost** (`CombatState`, `Hostiles`). Hrdina je v boji, když platí aspoň jedno:

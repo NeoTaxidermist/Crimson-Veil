@@ -60,7 +60,7 @@ namespace CrimsonVeil.Tests
             const int frames = 15;
             for (int i = 0; i < frames; i++) { mocap.Apply(want, 1f / 30f); yield return null; }
             float covered = 6f * frames / 30f;
-            float expected = Mathf.Repeat(before + covered / run.stride, 1f);
+            float expected = Mathf.Repeat(before + covered / HeroMocap.GaitStride(run.key, run.clip.length, run.stride), 1f);
             Assert.AreEqual(0f, Mathf.DeltaAngle(expected * 360f, mocap.GaitPhase * 360f), 1f, "a loop of steps per stride of ground");
             Assert.AreEqual(HeroMocap.Gait, mocap.Current);
         }

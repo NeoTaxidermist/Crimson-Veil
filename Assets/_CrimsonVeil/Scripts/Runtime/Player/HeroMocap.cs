@@ -540,7 +540,20 @@ namespace CrimsonVeil.Player
             ch.layers.RemoveAll(l => l.weight <= 0f && l.target <= 0f);
         }
 
-        static float Stride(in HeroMocapLibrary.Entry e) => e.stride > 0.1f ? e.stride : 2f;
+        static float Stride(in HeroMocapLibrary.Entry e) => GaitStride(e.key, e.clip != null ? e.clip.length : 0f, e.stride);
+
+        /// <summary>
+        /// Ground (m) one loop of a gait's steps carries him: the pace the clip was captured at times its length, so at
+        /// that pace the steps go at the clip's own tempo and faster or slower in proportion. (The stride measured
+        /// from the in-place clip's feet came out at half the real one - a running loop of 2 m - and at full speed his
+        /// legs pattered through four loops a second.)
+        /// </summary>
+        public static float GaitStride(string key, float clipLength, float measured)
+        {
+            float pace = key == Walk ? WalkSpeed : key == Run ? RunSpeed : key == Sprint ? SprintSpeed : 0f;
+            if (pace > 0f && clipLength > 0.05f) return pace * clipLength;
+            return measured > 0.1f ? measured : 2f;
+        }
 
         float GaitTime(in HeroMocapLibrary.Entry e) => Mathf.Repeat(gaitPhase + e.sync, 1f) * Mathf.Max(0.01f, e.clip.length);
 

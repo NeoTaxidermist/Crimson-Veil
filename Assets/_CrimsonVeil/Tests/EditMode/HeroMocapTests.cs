@@ -288,6 +288,21 @@ namespace CrimsonVeil.Tests
         }
 
         [Test]
+        public void TheGait_StepsAtTheClipsOwnTempo_NotAPatter()
+        {
+            // at the pace it was captured at, a loop of steps takes the clip's own length
+            Assert.AreEqual(HeroMocap.RunSpeed * 0.7f, HeroMocap.GaitStride(HeroMocap.Run, 0.7f, 2f), 1e-4f);
+            Assert.AreEqual(HeroMocap.SprintSpeed * 0.7f, HeroMocap.GaitStride(HeroMocap.Sprint, 0.7f, 1.8f), 1e-4f);
+            Assert.AreEqual(HeroMocap.WalkSpeed * 1.37f, HeroMocap.GaitStride(HeroMocap.Walk, 1.37f, 1.5f), 1e-4f);
+            // full speed (8 m/s), mostly the sprint: under two loops (four steps) a second, as a sprinter runs
+            HeroMocap.GaitMix(8f, out var a, out var b, out float mix);
+            float stride = Mathf.Lerp(HeroMocap.GaitStride(a, 0.7f, 2f), HeroMocap.GaitStride(b, 0.7f, 1.8f), mix);
+            Assert.Less(8f / stride, 2f, "no pattering legs");
+            Assert.Greater(8f / stride, 1.2f);
+            Assert.AreEqual(2.5f, HeroMocap.GaitStride("Other", 1f, 2.5f), 1e-4f, "anything else: its measured stride");
+        }
+
+        [Test]
         public void BlowsInTheAir_ACutInTheLeap_AStrikeUnderTheFeet()
         {
             var s = new HeroState { verticalVelocity = 4f, somersault = -1f, attacking = true, attackT = 0.3f, attackForm = VeilForm.Sword };

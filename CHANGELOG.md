@@ -5,6 +5,22 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.40.0] – 2026-11-19
+### Kombo napříč zbraněmi
+- **Kombo je pozice v řetězu, ne zbraň** (`VeilCombo`). Úder 1, 2, 3 se počítá napříč zbraněmi, šála se mezi údery může přelít do jiné zbraně a řetěz pokračuje. Meč, meč, bič je jedno kombo zakončené finále biče.
+- **Po pauze začíná znovu** (0,6 s bez úderu). Samostatný úder je tak vždy první a vypadá pokaždé stejně. Dřív se střídání seků počítalo napořád, a proto byl každý úder trochu jiný.
+- **Finále (třetí úder):**
+  - poškození ×1,5, větší odhození i nadhoz;
+  - delší zastavení hry při zásahu, silnější otřes a větší sprška;
+  - o 0,12 s delší zotavení (odměna stojí závazek).
+- **Bonus za rozmanitost:** za každou další různou zbraň v řetězu má finále +0,25 poškození.
+- **Úder po proměně:** první úder nové zbraně uprostřed řetězu je o čtvrtinu rychlejší, o 15 % silnější a šála v ruce vzplane. Luk si ponechává svůj nátah.
+- **Animace jdou podle pozice v řetězu:** meč seky A, B, C, bič šlehy A, B, C, kopí bodnutí, bodnutí, výpad.
+- Hra dál zahazuje stisk na začátku úderu: navazující úder se přijme až v druhé půlce předchozího.
+- Testy:
+  - `VeilComboTests`: pozice, reset po pauze, napříč zbraněmi, rozmanitost, úder po proměně;
+  - `CastingPlayTests`: meč, meč, bič je jedno kombo s finále biče a po pauze začíná znovu.
+
 ## [0.39.1] – 2026-11-19
 ### Houpání a bič: opravy podle videí
 - **Nehybné visení už necuká.** Fáze houpání je při visení skoro v klidu jen šum, takže nohy skákaly mezi konci klipu. Klip houpání teď roste s rozkmitem: v klidu se nehraje vůbec, plně se hraje až při opravdovém houpání (`HeroMocap.SwingWeight`, `SwingAmplitude`).

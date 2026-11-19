@@ -320,6 +320,7 @@ namespace CrimsonVeil.Veil
                 morph = 0f;
             }
             attackTime = -1f;
+            Combo.End();
             FormChanged?.Invoke(form);
         }
 
@@ -359,6 +360,14 @@ namespace CrimsonVeil.Veil
 
         void StartAttack()
         {
+            var blow = Combo.Begin(ShapeForm);
+            if (blow.morph)
+            {
+                // the morph strike: the scarf flares where it pours into the new weapon
+                Vector3 at = hand != null ? hand.position : transform.position + Vector3.up;
+                CrimsonVeil.Combat.CombatFx.Burst(at, new Vector2(Facing, 0.3f), CrimsonVeil.Combat.CombatFx.Crimson, 14);
+            }
+            ComboBlow?.Invoke(blow);
             attackTime = 0f;
             arrowFired = false;
             lunged = false;
@@ -391,6 +400,11 @@ namespace CrimsonVeil.Veil
 
         /// <summary>Direction (degrees from the facing, +up) the current blow is aimed in, aim assist included.</summary>
         public float AttackAim { get; private set; }
+
+        /// <summary>The chain of blows: where the current blow stands in it, the finisher, the morph strike.</summary>
+        public VeilCombo Combo { get; } = new VeilCombo();
+        /// <summary>A blow began, with its place in the chain (sound, effects).</summary>
+        public event Action<VeilCombo.Blow> ComboBlow;
         /// <summary>The current blow is a strike under the feet in the air (it bounces the hero off a hit).</summary>
         public bool DownStrike { get; private set; }
 
@@ -465,6 +479,7 @@ namespace CrimsonVeil.Veil
                 if (m.IsGliding && m.GlideTime <= 0f && Form == VeilForm.Flow) Charge.Drain(VeilCasting.GlideDrain, dt);
             }
             if (recoverTimer > 0f) recoverTimer -= dt;
+            Combo.Tick(dt);
             // A press late in a blow follows it up once it is spent and the body has recovered (combo, or pour
             // into another weapon).
             if (buffered.HasValue && attackTime < 0f && !pendingAttack.HasValue && recoverTimer <= 0f)
@@ -827,7 +842,8 @@ namespace CrimsonVeil.Veil
             if (attackTime >= 0f)
             {
                 attackTime += dt;
-                t = attackTime / Mathf.Max(0.01f, VeilFormLibrary.AttackDuration(ShapeForm));
+                // (the morph strike is quicker: the transformation carries it)
+                t = attackTime / Mathf.Max(0.01f, VeilFormLibrary.AttackDuration(ShapeForm) / Combo.Current.Speed);
                 if (ShapeForm == VeilForm.Bow && !arrowFired && t >= 0.3f)
                 {
                     arrowFired = true;
@@ -850,7 +866,8 @@ namespace CrimsonVeil.Veil
                 {
                     attackTime = -1f;
                     t = -1f;
-                    recoverTimer = VeilCasting.Recovery(ShapeForm);
+                    recoverTimer = VeilCasting.Recovery(ShapeForm) + Combo.Current.ExtraRecovery;
+                    Combo.End();
                     ThrustingDown = false;
                     DownStrike = false;
                     aimTiltTarget = 0f;

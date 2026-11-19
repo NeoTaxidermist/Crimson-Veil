@@ -62,10 +62,12 @@ namespace CrimsonVeil.Combat
                     hitThisSwing.Add(target);
 
                     Vector3 point = col.ClosestPoint((a + b) * 0.5f);
+                    var blow = veil.Combo.Current;
                     var info = new DamageInfo
                     {
-                        amount = VeilCombatProfile.Damage(form),
-                        knockback = new Vector2(veil.Facing * VeilCombatProfile.Knockback(form), upwardKnock),
+                        amount = VeilCombatProfile.Damage(form) * blow.DamageScale,
+                        knockback = new Vector2(veil.Facing * VeilCombatProfile.Knockback(form) * blow.KnockbackScale,
+                                                upwardKnock * (blow.finisher ? 1.4f : 1f)),
                         point = point,
                         kind = VeilCombatProfile.Kind(form),
                         source = gameObject,
@@ -74,9 +76,11 @@ namespace CrimsonVeil.Combat
                     {
                         veil.NotifyHitLanded(); // feeds the scarf; a downward spear bounces the hero up
                         Hit?.Invoke(target, info);
-                        CombatFx.HitStop(form == VeilForm.Spear || form == VeilForm.Shield ? 0.08f : 0.055f);
-                        CombatFx.Shake(form == VeilForm.Shield ? 0.45f : 0.3f);
-                        CombatFx.Burst(point, new Vector2(veil.Facing, 0.4f), CombatFx.Crimson, 22);
+                        // the finisher lands heavier: a longer stop, a harder shake, a bigger spray
+                        float heavy = blow.finisher ? 1.6f : 1f;
+                        CombatFx.HitStop((form == VeilForm.Spear || form == VeilForm.Shield ? 0.08f : 0.055f) * heavy);
+                        CombatFx.Shake((form == VeilForm.Shield ? 0.45f : 0.3f) * heavy);
+                        CombatFx.Burst(point, new Vector2(veil.Facing, 0.4f), CombatFx.Crimson, blow.finisher ? 40 : 22);
                     }
                 }
             }

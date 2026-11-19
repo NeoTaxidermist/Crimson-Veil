@@ -132,6 +132,35 @@ namespace CrimsonVeil.Tests
         }
 
         [UnityTest]
+        public IEnumerator SwordSwordWhip_IsOneCombo_EndingInTheWhipsFinisher()
+        {
+            var blows = new System.Collections.Generic.List<VeilCombo.Blow>();
+            veil.ComboBlow += b => blows.Add(b);
+            yield return Wait(0.3f);
+            input.cast = VeilForm.Sword;
+            yield return Wait(0.3f);
+            input.cast = VeilForm.Sword;          // late in the blow: the follow-up
+            float end = Time.time + 1.2f;
+            while (blows.Count < 2 && Time.time < end) yield return null;
+            yield return Wait(0.3f);
+            input.cast = VeilForm.Whip;           // pours into the whip mid-chain
+            end = Time.time + 1.2f;
+            while (blows.Count < 3 && Time.time < end) yield return null;
+            Assert.AreEqual(3, blows.Count);
+            Assert.AreEqual(new[] { 0, 1, 2 }, blows.ConvertAll(b => b.step).ToArray());
+            Assert.IsTrue(blows[2].finisher);
+            Assert.AreEqual(VeilForm.Whip, blows[2].form);
+            Assert.IsTrue(blows[2].morph, "the whip's first blow is the morph strike");
+            Assert.AreEqual(2, blows[2].variety);
+            while (veil.IsAttacking) yield return null;
+            yield return Wait(VeilCombo.ResetAfter + 0.5f);
+            input.cast = VeilForm.Sword;
+            end = Time.time + 1f;
+            while (blows.Count < 4 && Time.time < end) yield return null;
+            Assert.AreEqual(0, blows[3].step, "after a pause: the first blow again");
+        }
+
+        [UnityTest]
         public IEnumerator SwordAimedUp_CutsAboveTheHead()
         {
             yield return Wait(0.3f);

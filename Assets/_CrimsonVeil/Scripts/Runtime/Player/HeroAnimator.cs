@@ -190,7 +190,8 @@ namespace CrimsonVeil.Player
             if (striking && (!wasStriking || s.attackT < lastAttackT - 0.3f)) swing++;
             wasStriking = striking;
             lastAttackT = s.attackT;
-            ctx.swing = swing;
+            // which blow of the chain: the veil's combo (a pause starts it again from the first)
+            ctx.swing = veil != null ? veil.Combo.Step : swing;
         }
 
         RigJoint pelvis, neckJ, shoulderL, shoulderR, wristL, wristR, toeL, toeR;

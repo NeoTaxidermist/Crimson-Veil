@@ -5,6 +5,13 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.40.2] – 2026-11-19
+### V boji se kruhy nechytají
+- **Bič se v boji vždycky použije jako zbraň.** Kruhy slouží k pohybu a hádankám, ne k boji. Když je do 6 m živý nepřítel, žádný kruh se nerozsvítí a seslaný bič udeří, i když nad hrdinou visí kruh a i ve skoku (`VeilController.InCombat`). Boj trvá ještě 1 s po posledním nepříteli v dosahu, aby kruhy na hranici neblikaly.
+- Mimo boj se nic nemění: rozsvícený kruh bič chytí.
+- Vyzkoušeno ve hře u startu pod kruhem: bič zasáhl zjeva a kruhu si nevšiml.
+- Test (`GrappleSwingPlayTests`): v boji kruh nesvítí a bič udeří, po boji se kruh zase rozsvítí.
+
 ## [0.40.1] – 2026-11-19
 ### Kombo v boji: přerušení, dosah, smrt
 - **Zásah nepřítelem kombo přeruší** (`VeilController.Interrupt`):

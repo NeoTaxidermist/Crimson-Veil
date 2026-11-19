@@ -195,5 +195,36 @@ namespace CrimsonVeil.Tests
             Assert.IsFalse(controller.Motor.IsSwinging);
             Assert.IsNull(veil.Latched, "letting go frees the whip");
         }
+
+        [UnityTest]
+        public IEnumerator InAFight_TheWhipStrikes_AndTheRingStaysDark()
+        {
+            var veil = player.AddComponent<VeilController>();
+            var low = new GameObject("LowRing");
+            low.transform.SetParent(root.transform);
+            low.transform.position = new Vector3(-3f, 6f, 0f);
+            low.AddComponent<GrapplePoint>();
+            var foe = new GameObject("TestWraith");
+            foe.transform.SetParent(root.transform);
+            foe.transform.position = new Vector3(-4.2f, 0f, 0f);
+            var cap = foe.AddComponent<CapsuleCollider>();
+            cap.center = new Vector3(0f, 1f, 0f); cap.height = 2f; cap.radius = 0.4f;
+            var e = foe.AddComponent<CrimsonVeil.Combat.Enemy>();
+            e.Brain.Settings.windupTime = 10f;   // passive
+            yield return Wait(0.5f);
+            Assert.IsTrue(veil.InCombat, "an enemy within reach: a fight");
+            Assert.IsNull(veil.GrappleCandidate, "in a fight no ring lights up");
+            input.cast = VeilForm.Whip;
+            yield return Wait(0.3f);
+            Assert.IsFalse(controller.Motor.IsSwinging, "the whip did not catch the ring");
+            Assert.IsNull(veil.Latched);
+            Assert.AreEqual(0, veil.Combo.Step, "it struck: the first blow of a combo");
+            Assert.AreEqual(VeilForm.Whip, veil.Combo.Current.form);
+
+            Object.Destroy(foe);   // the fight is over
+            yield return Wait(VeilController.CombatMemory + 0.6f);
+            Assert.IsFalse(veil.InCombat);
+            Assert.IsNotNull(veil.GrappleCandidate, "the ring is for getting about again");
+        }
     }
 }

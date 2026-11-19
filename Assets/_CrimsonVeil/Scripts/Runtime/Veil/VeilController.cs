@@ -618,11 +618,23 @@ namespace CrimsonVeil.Veil
 
         /// <summary>0..1: how close a living enemy is (the scarf bristles).</summary>
         public float Danger { get; private set; }
+
+        /// <summary>
+        /// A living enemy is within <see cref="CombatRadius"/> (or was a moment ago): a fight. In a fight the rings are
+        /// left alone - they are for getting about and for puzzles - so the whip always strikes and no ring lights up.
+        /// </summary>
+        public bool InCombat => sinceFoe < CombatMemory;
+        /// <summary>How near (m) a living enemy makes a fight.</summary>
+        public const float CombatRadius = 6f;
+        /// <summary>Seconds a fight lasts after the last enemy is gone or out of range (no flicker at its edge).</summary>
+        public const float CombatMemory = 1f;
+        float sinceFoe = 99f;
         /// <summary>0..1 pull of a secret nearby, and the direction to it (the loose scarf leans that way).</summary>
         public float HintPull { get; private set; }
         public Vector2 HintDirection { get; private set; }
         const float DangerRadius = 6f;
         float senseTimer, dangerTarget;
+        bool foeNear;
         bool relicsChecked;
         readonly Collider[] senseBuffer = new Collider[24];
 
@@ -660,8 +672,12 @@ namespace CrimsonVeil.Veil
                     if (!alive) continue;
                     float d = Vector2.Distance(c.ClosestPoint(a), a);
                     dangerTarget = Mathf.Max(dangerTarget, 1f - d / DangerRadius);
+                    if (d <= CombatRadius) foeNear = true;
                 }
+                if (foeNear) sinceFoe = 0f;
+                foeNear = false;
             }
+            sinceFoe += dt;
             Danger = Mathf.MoveTowards(Danger, dangerTarget, dt * 3f);
         }
 
@@ -671,7 +687,8 @@ namespace CrimsonVeil.Veil
             if (Latched != null && (player == null || !player.Motor.IsSwinging)) Latched = null;
             CrimsonVeil.World.GrapplePoint candidate = null;
             // Any ring in reach lights up once the hero knows the whip and has the strength to cast it.
-            if (Latched == null && player != null && IsUnlocked(VeilForm.Whip) && Charge.CanAfford(VeilCasting.Cost(VeilForm.Whip)))
+            // (not in a fight: there the whip is a weapon)
+            if (Latched == null && player != null && !InCombat && IsUnlocked(VeilForm.Whip) && Charge.CanAfford(VeilCasting.Cost(VeilForm.Whip)))
                 candidate = CrimsonVeil.World.GrapplePoint.FindBest(player.GripPosition, Facing, ~0);
             if (candidate != GrappleCandidate)
             {

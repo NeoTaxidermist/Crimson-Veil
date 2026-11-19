@@ -5,6 +5,34 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.33.0] – 2026-11-19
+### Přidáno
+- **Motion capture z Mixama na hrdinovi.** Zdroje (164 FBX) leží v `ArtSource/mocap/` a `Art/Mocap/`, obě složky jsou mimo git, protože licence dovoluje pohyb použít ve hře, ale ne šířit soubory.
+  - `HeroMocapBaker` (Editor) naimportuje zdroje jako humanoidní animace. Hrdinovi postaví humanoidní avatar v kódu (import jeho modelu zůstává beze změny) a narovná ho z I-pózy do T-pózy, od které převod měří.
+  - Každý klip přehraje na hrdinovi a zaznamená pohyb jeho vlastních kostí do klipu jeho kostry (`Animations/Hero/*.anim`). Ten je v gitu: je to pohyb převedený na naši postavu, ne zdroj.
+  - Upečeno je 15 klipů: stání a dýchání, rozhlížení, visení, vytahování na římsu, tvrdý dopad, kotoul, dva seky mečem, bodnutí kopím, mluvení, smutek, vztek, kývnutí, ukazování a vstávání.
+  - U úderů se zaznamená okamžik zásahu (snímek, kdy se ruka pohybuje nejrychleji).
+- **`HeroMocap`** prolne zachycený pohyb s procedurální pózou:
+  - každá kost se natočí k pózе z klipu podle váhy, která plynule najíždí a odjíždí;
+  - obličej, vlasy, látka a šerpa zůstávají svým systémům;
+  - ruce se po prolnutí dál pokládají na římsu.
+- **Kde se používá:**
+  - **vytahování na římsu** v kroku s postupem výstupu. V poslední čtvrtině se plynule předává hře, protože klip končí v podřepu a hra hrdinu postaví;
+  - **visení** (jen když hrdina nedrží zbraň);
+  - **útoky:** meč střídá dva seky, bič používá sek mečem (bič v Mixamu není), kopí bodá. Zásah v klipu je položený na okamžik zásahu ve hře;
+  - **stání** po čtvrt sekundě v klidu.
+  - Běh, skoky, luk a zbraně ze šály zůstávají procedurální.
+- Cutscény přehrají klip přes `Play`/`StopScript` a mají přednost před volbou hry.
+
+### Testy
+- `HeroMocapTests`:
+  - co se kdy hraje (vytahování v kroku s výstupem, visení bez zbraně, střídání seků, bodnutí, stání, běh bez mocapu);
+  - zásah v klipu odpovídá zásahu ve hře;
+  - upečené klipy jsou v projektu, hýbou kostmi hrdiny, nesahají na obličej, vlasy ani látku a útoky znají okamžik zásahu.
+- `HeroMocapPlayTests` na skutečném modelu:
+  - vytahování zvedne ruce k římse a po odeznění vrátí procedurální pózu;
+  - cutscéna přehraje svůj klip přes volbu hry a pak ho pustí.
+
 ## [0.32.1] – 2026-11-19
 ### Opraveno
 - **Šála v podřepu procházela podlahou a po roztržení vypadala useknutá.**

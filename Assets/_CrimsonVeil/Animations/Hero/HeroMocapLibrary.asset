@@ -1,0 +1,75 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 796861014e2fa634e9152abb9504bc0a, type: 3}
+  m_Name: HeroMocapLibrary
+  m_EditorClassIdentifier: CrimsonVeil.Runtime::CrimsonVeil.Player.HeroMocapLibrary
+  entries:
+  - key: Idle
+    clip: {fileID: 7400000, guid: 4e550e9ee2ac5ed4c9414bee18953da0, type: 2}
+    loop: 1
+    impact: 0
+  - key: LookAround
+    clip: {fileID: 7400000, guid: c0bfea05b8d79d34ba2c5ecb3e46b838, type: 2}
+    loop: 1
+    impact: 0
+  - key: HangIdle
+    clip: {fileID: 7400000, guid: 836a70af352068e4a9d657b63da34f9e, type: 2}
+    loop: 1
+    impact: 0
+  - key: Mantle
+    clip: {fileID: 7400000, guid: f3fdbe3a0c0ea0f408cbb8e339325a78, type: 2}
+    loop: 0
+    impact: 0
+  - key: HardLanding
+    clip: {fileID: 7400000, guid: 60575c39deceb0f4585c909907a1cf08, type: 2}
+    loop: 0
+    impact: 0
+  - key: Roll
+    clip: {fileID: 7400000, guid: cc12976f0189fe345b0737e1ccd65a73, type: 2}
+    loop: 0
+    impact: 0
+  - key: SlashA
+    clip: {fileID: 7400000, guid: 23154e056e32fb545bbfe5f2f6b86191, type: 2}
+    loop: 0
+    impact: 0.59090906
+  - key: SlashB
+    clip: {fileID: 7400000, guid: 0772f1a217d25214fa66e128ec119d79, type: 2}
+    loop: 0
+    impact: 0.42622948
+  - key: Stab
+    clip: {fileID: 7400000, guid: b03f95b15ad8fd549b5675b2d2761191, type: 2}
+    loop: 0
+    impact: 0.28571427
+  - key: Talk
+    clip: {fileID: 7400000, guid: d92266646ee09be498c7cb33c3ebd575, type: 2}
+    loop: 1
+    impact: 0
+  - key: Sad
+    clip: {fileID: 7400000, guid: 31d58d6f2cecc59459d7c9fb6a062272, type: 2}
+    loop: 1
+    impact: 0
+  - key: Angry
+    clip: {fileID: 7400000, guid: 67e43ff3ddfa49b43b23352934aee6c9, type: 2}
+    loop: 0
+    impact: 0
+  - key: Nod
+    clip: {fileID: 7400000, guid: 62c82a719886a6445b7da910dfcd21af, type: 2}
+    loop: 0
+    impact: 0
+  - key: Point
+    clip: {fileID: 7400000, guid: cc8371fd3365e9543a2408bb4b74eaa5, type: 2}
+    loop: 0
+    impact: 0
+  - key: GetUp
+    clip: {fileID: 7400000, guid: 14871bcb4e2253e4a9f4a79f48986da5, type: 2}
+    loop: 0
+    impact: 0

@@ -54,6 +54,7 @@ GameObject:
   - component: {fileID: 336091914274216243}
   - component: {fileID: 8432667715012866920}
   - component: {fileID: 9039647577719511093}
+  - component: {fileID: 7658614028624605097}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -433,6 +434,21 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: CrimsonVeil.Runtime::CrimsonVeil.Player.HeroFace
   model: {fileID: 2239127941129956613}
+--- !u!114 &7658614028624605097
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2481503692788009236}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f13e4d1306039ed489f88980a2688e6e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CrimsonVeil.Runtime::CrimsonVeil.Player.HeroMocap
+  library: {fileID: 11400000, guid: b69b0150234d99c45b328ab5338296b7, type: 2}
+  model: {fileID: 2239127941129956613}
+  strength: 1
 --- !u!1 &6980102738665917204
 GameObject:
   m_ObjectHideFlags: 0

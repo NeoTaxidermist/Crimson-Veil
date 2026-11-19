@@ -53,3 +53,8 @@ __pycache__/
 /Assets/Screenshots/
 /Assets/Screenshots.meta
 /Playtests/
+
+# Mixamo / motion-capture sources: never in the repo (their licence allows using the motion in the game, not passing the files on)
+/ArtSource/mocap/
+/Assets/_CrimsonVeil/Art/Mocap/
+/Assets/_CrimsonVeil/Art/Mocap.meta

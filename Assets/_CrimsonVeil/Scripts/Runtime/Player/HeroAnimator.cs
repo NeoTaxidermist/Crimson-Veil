@@ -32,6 +32,7 @@ namespace CrimsonVeil.Player
             if (player == null) player = GetComponentInParent<PlayerController>();
             if (veil == null && player != null) veil = player.GetComponent<VeilController>();
             if (model == null) model = transform;
+            mocap = GetComponent<HeroMocap>();
             IsReady = Setup();
             if (IsReady)
             {
@@ -120,6 +121,11 @@ namespace CrimsonVeil.Player
             return spine != null && thighL != null && thighR != null && armL != null && armR != null;
         }
 
+        HeroMocap mocap;
+        float stillTime, lastAttackT = -1f;
+        int swing;
+        bool wasStriking;
+
         RigJoint pelvis, neckJ, shoulderL, shoulderR, wristL, wristR, toeL, toeR;
         Transform upperArmL, upperArmR, lowerArmL, lowerArmR, handL, handR;
 
@@ -184,6 +190,17 @@ namespace CrimsonVeil.Player
             }
             var p = Solver.Step(Time.deltaTime, s);
             Apply(p);
+            // motion capture over the procedural pose (before the hands are set on the lip, so they stay on it)
+            if (mocap != null)
+            {
+                bool still = s.grounded && s.speed < 0.2f;
+                stillTime = still ? stillTime + Time.deltaTime : 0f;
+                bool striking = s.attacking && s.attackT >= 0f;
+                if (striking && (!wasStriking || s.attackT < lastAttackT - 0.3f)) swing++;
+                wasStriking = striking;
+                lastAttackT = s.attackT;
+                mocap.Apply(HeroMocap.Choose(s, stillTime, swing), Time.deltaTime);
+            }
             if (s.hanging || s.climbing) ReachLip(s);
             if (Hands != null)
             {

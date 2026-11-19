@@ -148,6 +148,14 @@ namespace CrimsonVeil.EditorTools
                 SetRef(player.AddComponent<SpringBones>(), "root", hero.transform);
                 HeroCloth(player, hero.transform);
                 SetRef(player.AddComponent<HeroFace>(), "model", hero.transform);   // the face (cutscenes)
+                // motion capture over the procedural animation (when the baked clips are there)
+                var mocapLib = AssetDatabase.LoadAssetAtPath<HeroMocapLibrary>(HeroMocapBaker.LibraryPath);
+                if (mocapLib != null)
+                {
+                    var mocap = player.AddComponent<HeroMocap>();
+                    SetRef(mocap, "library", mocapLib);
+                    SetRef(mocap, "model", hero.transform);
+                }
                 var handBone = CrimsonVeil.Core.RigJoint.FindDeep(hero.transform, "Hand.R");
                 if (handBone != null) SetRef(veil, "hand", handBone);
                 var drawBone = CrimsonVeil.Core.RigJoint.FindDeep(hero.transform, "Hand.L");

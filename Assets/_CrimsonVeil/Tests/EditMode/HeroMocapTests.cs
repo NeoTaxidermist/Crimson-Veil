@@ -87,6 +87,7 @@ namespace CrimsonVeil.Tests
                 var paths = new System.Collections.Generic.HashSet<string>();
                 foreach (var b in AnimationUtility.GetCurveBindings(e.clip)) paths.Add(b.path.Substring(b.path.LastIndexOf('/') + 1));
                 Assert.Contains("UpperArm.R", new System.Collections.Generic.List<string>(paths), key + " drives his arms");
+                Assert.IsTrue(paths.Contains("UpperChest") && paths.Contains("Thumb.R.2"), key + " drives the upper chest and the thumb's tip too");
                 Assert.IsFalse(paths.Contains("Jaw") || paths.Contains("Hair.0.0") || paths.Contains("Cloth.0.0"), "not the face, hair or cloth");
             }
             foreach (var key in new[] { HeroMocap.SlashA, HeroMocap.SlashB, HeroMocap.Stab })

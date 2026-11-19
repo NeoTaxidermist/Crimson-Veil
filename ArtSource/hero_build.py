@@ -13,6 +13,43 @@ from mathutils import Vector, Matrix
 ROOT = r"C:\Dev\CrimsonVeil"
 bpy.ops.wm.open_mainfile(filepath=ROOT + r"\ArtSource\Hero.blend")
 rig = bpy.data.objects["HeroRig"]
+
+# The mesh is built round the rig's joints as they were drawn after the concept (GEOMETRY_JOINTS); once it is built,
+# a few pivots are moved to where the joints really turn (ANATOMY_JOINTS - measured against a standard humanoid
+# skeleton, Mixamo's, as a reference only: the shoulder in the middle of the shoulder, the hip at the head of the thigh,
+# the neck at its base) and the chest gets an upper part. Only the pivots move: the mesh stays as it is, so he keeps
+# his shape and turns more truly round them. Every run starts from the drawn joints again.
+GEOMETRY_JOINTS = {  # bone: (head, tail) in the rig's space, as drawn
+    "Chest": ((0, 0, 1.32), (0, -0.01, 1.54)), "Neck": ((0, -0.01, 1.54), (0, -0.02, 1.6)),
+    "Shoulder.L": ((0.05, 0, 1.47), (0.215, 0.01, 1.455)), "UpperArm.L": ((0.215, 0.01, 1.455), (0.285, 0.035, 1.18)),
+    "Shoulder.R": ((-0.05, 0, 1.47), (-0.215, 0.01, 1.455)), "UpperArm.R": ((-0.215, 0.01, 1.455), (-0.285, 0.035, 1.18)),
+    "UpperLeg.L": ((0.1, 0, 0.93), (0.115, -0.03, 0.52)), "UpperLeg.R": ((-0.1, 0, 0.93), (-0.115, -0.03, 0.52)),
+}
+
+
+def _rig_edit(fn):
+    win = bpy.context.window_manager.windows[0]
+    ctx = dict(window=win, screen=win.screen, active_object=rig, object=rig, selected_objects=[rig])
+    bpy.context.view_layer.objects.active = rig
+    rig.select_set(True)
+    with bpy.context.temp_override(**ctx):
+        bpy.ops.object.mode_set(mode='EDIT')
+        fn(rig.data.edit_bones)
+        bpy.ops.object.mode_set(mode='OBJECT')
+
+
+def _restore_drawn_joints(eb):
+    up = eb.get("UpperChest")
+    if up is not None:
+        for c in list(up.children):
+            c.parent = eb["Chest"]
+        eb.remove(up)
+    for name, (h, t) in GEOMETRY_JOINTS.items():
+        if name in eb:
+            eb[name].head, eb[name].tail = Vector(h), Vector(t)
+
+
+_rig_edit(_restore_drawn_joints)
 INK, CRIMSON, PALE = 0, 1, 2   # PALE: the eyes' whites and the teeth (see HeroFace's cutscene look)
 
 verts, faces, fmat, vweights = [], [], [], []
@@ -722,7 +759,8 @@ def build_hand(side):
         direction = d + fwd * math.tan(math.radians(spread))
         finger("Finger.%s.%d" % (side, i), knuckles + fwd * off, direction, lens, r0)
     # thumb: from the front of the palm, forward and down, towards the palm side
-    finger("Thumb." + side, wrist + d * 0.03 + fwd * 0.03 + palm_in * 0.008, d * 0.6 + fwd * 0.75 + palm_in * 0.25, (0.034, 0.027), 0.013)
+    # (three joints like a real thumb - the standard humanoid's - over the same length as before)
+    finger("Thumb." + side, wrist + d * 0.03 + fwd * 0.03 + palm_in * 0.008, d * 0.6 + fwd * 0.75 + palm_in * 0.25, (0.027, 0.019, 0.015), 0.013)
 
 
 build_hand("L")
@@ -1448,11 +1486,49 @@ for vi, w in enumerate(vweights):
 mod = ob.modifiers.new("Armature", 'ARMATURE')
 mod.object = rig
 
+# The pivots where the joints really turn (see GEOMETRY_JOINTS); the mesh stays where it was built.
+UPPER_CHEST_FROM = 1.43   # the chest's upper part: from here to the base of the neck
+NECK_BASE = 1.51
+
+
+def _anatomy(eb):
+    chest = eb["Chest"]
+    up = eb.new("UpperChest")
+    up.head, up.tail = Vector((0, -0.004, UPPER_CHEST_FROM)), Vector((0, -0.008, NECK_BASE))
+    up.parent = chest
+    chest.tail = up.head
+    up.use_connect = True
+    for name in ("Neck", "Shoulder.L", "Shoulder.R"):
+        eb[name].parent = up
+    eb["Neck"].head = up.tail
+    for sd, sx in (("L", 1), ("R", -1)):
+        sh = Vector((sx * 0.19, 0.008, 1.445))          # the middle of the shoulder, not its outside
+        eb["UpperArm." + sd].head = sh
+        eb["Shoulder." + sd].tail = sh
+        eb["UpperLeg." + sd].head = Vector((sx * 0.09, 0, 0.95))   # the head of the thigh bone
+
+
+_rig_edit(_anatomy)
+# The upper chest takes the skin above the middle of the chest (blended across its joint).
+_chest = ob.vertex_groups.get("Chest")
+_upper = ob.vertex_groups.get("UpperChest") or ob.vertex_groups.new(name="UpperChest")
+if _chest is not None:
+    for v in me.vertices:
+        for g in v.groups:
+            if g.group == _chest.index and g.weight > 0:
+                u = max(0.0, min(1.0, (v.co.z - (UPPER_CHEST_FROM - 0.05)) / 0.1))
+                u = u * u * (3 - 2 * u)
+                if u > 0:
+                    w = g.weight
+                    _chest.add([v.index], w * (1 - u), 'REPLACE')
+                    _upper.add([v.index], w * u, 'REPLACE')
+
 bpy.ops.wm.save_as_mainfile(filepath=ROOT + r"\ArtSource\Hero.blend")
 result = {"verts": len(verts), "faces": len(faces), "hair_chains": len(chains), "chain_angles": [round(c[0]) for c in chains],
           "boot": round(_boot_len, 3),
           "cloth_bones": len([b for b in rig.data.bones if b.name.startswith("Cloth.") or b.name.startswith("Sash.")]),
           "face_bones": sorted(b.name for b in rig.data.bones if b.name.startswith(FACE_BONES)),
+          "upper_chest": "UpperChest" in rig.data.bones, "thumb": [b.name for b in rig.data.bones if b.name.startswith("Thumb.L")],
           "dims": [round(x, 3) for x in ob.dimensions]}
 
 # ---------------------------------------------------------------- export to the game

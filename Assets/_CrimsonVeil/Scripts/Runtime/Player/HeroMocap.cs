@@ -127,12 +127,12 @@ namespace CrimsonVeil.Player
         /// <summary>The bones a captured clip drives (body, arms, legs, fingers; not the face, hair, cloth or sash).</summary>
         public static readonly string[] BoneNames =
         {
-            "Hips", "Spine", "Chest", "Neck", "Head",
+            "Hips", "Spine", "Chest", "UpperChest", "Neck", "Head",
             "Shoulder.L", "UpperArm.L", "LowerArm.L", "Hand.L", "Shoulder.R", "UpperArm.R", "LowerArm.R", "Hand.R",
             "UpperLeg.L", "LowerLeg.L", "Foot.L", "Toe.L", "UpperLeg.R", "LowerLeg.R", "Foot.R", "Toe.R",
-            "Thumb.L.0", "Thumb.L.1", "Finger.L.0.0", "Finger.L.0.1", "Finger.L.0.2", "Finger.L.1.0", "Finger.L.1.1", "Finger.L.1.2",
+            "Thumb.L.0", "Thumb.L.1", "Thumb.L.2", "Finger.L.0.0", "Finger.L.0.1", "Finger.L.0.2", "Finger.L.1.0", "Finger.L.1.1", "Finger.L.1.2",
             "Finger.L.2.0", "Finger.L.2.1", "Finger.L.2.2", "Finger.L.3.0", "Finger.L.3.1", "Finger.L.3.2",
-            "Thumb.R.0", "Thumb.R.1", "Finger.R.0.0", "Finger.R.0.1", "Finger.R.0.2", "Finger.R.1.0", "Finger.R.1.1", "Finger.R.1.2",
+            "Thumb.R.0", "Thumb.R.1", "Thumb.R.2", "Finger.R.0.0", "Finger.R.0.1", "Finger.R.0.2", "Finger.R.1.0", "Finger.R.1.1", "Finger.R.1.2",
             "Finger.R.2.0", "Finger.R.2.1", "Finger.R.2.2", "Finger.R.3.0", "Finger.R.3.1", "Finger.R.3.2",
         };
 

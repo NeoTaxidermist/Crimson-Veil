@@ -246,11 +246,11 @@ MonoBehaviour:
   wind: {x: -0.3, y: 0.05}
   arrowMaterial: {fileID: 2100000, guid: d5091d161340156418c7df6be668e41a, type: 2}
   arrowSpeed: 26
-  hand: {fileID: 3538522687630678429}
+  hand: {fileID: 2843531251155000460}
   canonicalForearmAngle: -15
   runGuardAngle: -25
   whipLag: 0.16
-  drawHand: {fileID: 2001109480714135967}
+  drawHand: {fileID: 5234894964189249462}
   stringMaterial: {fileID: 2100000, guid: d5091d161340156418c7df6be668e41a, type: 2}
   startUnlocked: 02000000
 --- !u!114 &4684705822456326274
@@ -557,18 +557,18 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 9e1b4aec7f13a0846b4f0cff868ddf28, type: 3}
---- !u!4 &2001109480714135967 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: -8980989118742830223, guid: 9e1b4aec7f13a0846b4f0cff868ddf28, type: 3}
-  m_PrefabInstance: {fileID: 1772240682200500974}
-  m_PrefabAsset: {fileID: 0}
 --- !u!4 &2239127941129956613 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 9e1b4aec7f13a0846b4f0cff868ddf28, type: 3}
   m_PrefabInstance: {fileID: 1772240682200500974}
   m_PrefabAsset: {fileID: 0}
---- !u!4 &3538522687630678429 stripped
+--- !u!4 &2843531251155000460 stripped
 Transform:
-  m_CorrespondingSourceObject: {fileID: -6232110932308421773, guid: 9e1b4aec7f13a0846b4f0cff868ddf28, type: 3}
+  m_CorrespondingSourceObject: {fileID: -4616749158678768030, guid: 9e1b4aec7f13a0846b4f0cff868ddf28, type: 3}
+  m_PrefabInstance: {fileID: 1772240682200500974}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &5234894964189249462 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -3441217711488256680, guid: 9e1b4aec7f13a0846b4f0cff868ddf28, type: 3}
   m_PrefabInstance: {fileID: 1772240682200500974}
   m_PrefabAsset: {fileID: 0}

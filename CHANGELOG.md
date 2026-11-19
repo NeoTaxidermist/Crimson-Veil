@@ -5,6 +5,19 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.34.0] – 2026-11-19
+### Kostra podle anatomie (inspirace standardní humanoidní kostrou)
+- Klouby hrdiny jsou porovnané se standardní humanoidní kostrou (Mixamo X Bot). Převzaté jsou jen polohy otočných bodů. Síť, váhy kůže a tvar těla zůstávají naše.
+  - Rameno se otáčí uprostřed ramene (x ±0,19 místo ±0,215, o 6 cm blíž ke středu), kyčel v hlavici stehenní kosti (x ±0,09, výška 0,95) a krk u své paty (1,51).
+  - Hrudník je rozdělený na dvě kosti: `Chest` (žebra, 1,32–1,43) a nový `UpperChest` (1,43–1,51), na kterém visí krk a ramena. Kůže hrudníku se mezi ně plynule dělí podle výšky.
+  - Palec má tři články jako skutečný (stejná délka jako dřív). V pěsti se ohne i špička palce.
+- `hero_build.py` postaví síť kolem původně kreslených kloubů a otočné body přesune až potom. Každé spuštění začíná z kreslených kloubů, takže skript jde pouštět opakovaně.
+- Mocap převádí i horní hrudník a špičku palce. Všech 15 klipů je znovu upečených na novou kostru.
+- Testy:
+  - `HeroModelTests`: klouby jsou tam, kde se otáčí skutečné tělo; palec má tři články;
+  - `HeroHandsTests`: špička palce se v pěsti ohne;
+  - `HeroMocapTests`: klipy hýbou horním hrudníkem i špičkou palce.
+
 ## [0.33.0] – 2026-11-19
 ### Přidáno
 - **Motion capture z Mixama na hrdinovi.** Zdroje (164 FBX) leží v `ArtSource/mocap/` a `Art/Mocap/`, obě složky jsou mimo git, protože licence dovoluje pohyb použít ve hře, ale ne šířit soubory.

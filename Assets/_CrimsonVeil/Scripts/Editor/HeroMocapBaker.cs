@@ -27,17 +27,17 @@ namespace CrimsonVeil.EditorTools
         /// <summary>Our bones for Unity's humanoid ones (the face, hair, cloth and sash are left to their own systems).</summary>
         public static readonly Dictionary<string, string> HumanMap = new Dictionary<string, string>
         {
-            { "Hips", "Hips" }, { "Spine", "Spine" }, { "Chest", "Chest" }, { "Neck", "Neck" }, { "Head", "Head" },
+            { "Hips", "Hips" }, { "Spine", "Spine" }, { "Chest", "Chest" }, { "UpperChest", "UpperChest" }, { "Neck", "Neck" }, { "Head", "Head" },
             { "LeftShoulder", "Shoulder.L" }, { "LeftUpperArm", "UpperArm.L" }, { "LeftLowerArm", "LowerArm.L" }, { "LeftHand", "Hand.L" },
             { "RightShoulder", "Shoulder.R" }, { "RightUpperArm", "UpperArm.R" }, { "RightLowerArm", "LowerArm.R" }, { "RightHand", "Hand.R" },
             { "LeftUpperLeg", "UpperLeg.L" }, { "LeftLowerLeg", "LowerLeg.L" }, { "LeftFoot", "Foot.L" }, { "LeftToes", "Toe.L" },
             { "RightUpperLeg", "UpperLeg.R" }, { "RightLowerLeg", "LowerLeg.R" }, { "RightFoot", "Foot.R" }, { "RightToes", "Toe.R" },
-            { "Left Thumb Proximal", "Thumb.L.0" }, { "Left Thumb Intermediate", "Thumb.L.1" },
+            { "Left Thumb Proximal", "Thumb.L.0" }, { "Left Thumb Intermediate", "Thumb.L.1" }, { "Left Thumb Distal", "Thumb.L.2" },
             { "Left Index Proximal", "Finger.L.0.0" }, { "Left Index Intermediate", "Finger.L.0.1" }, { "Left Index Distal", "Finger.L.0.2" },
             { "Left Middle Proximal", "Finger.L.1.0" }, { "Left Middle Intermediate", "Finger.L.1.1" }, { "Left Middle Distal", "Finger.L.1.2" },
             { "Left Ring Proximal", "Finger.L.2.0" }, { "Left Ring Intermediate", "Finger.L.2.1" }, { "Left Ring Distal", "Finger.L.2.2" },
             { "Left Little Proximal", "Finger.L.3.0" }, { "Left Little Intermediate", "Finger.L.3.1" }, { "Left Little Distal", "Finger.L.3.2" },
-            { "Right Thumb Proximal", "Thumb.R.0" }, { "Right Thumb Intermediate", "Thumb.R.1" },
+            { "Right Thumb Proximal", "Thumb.R.0" }, { "Right Thumb Intermediate", "Thumb.R.1" }, { "Right Thumb Distal", "Thumb.R.2" },
             { "Right Index Proximal", "Finger.R.0.0" }, { "Right Index Intermediate", "Finger.R.0.1" }, { "Right Index Distal", "Finger.R.0.2" },
             { "Right Middle Proximal", "Finger.R.1.0" }, { "Right Middle Intermediate", "Finger.R.1.1" }, { "Right Middle Distal", "Finger.R.1.2" },
             { "Right Ring Proximal", "Finger.R.2.0" }, { "Right Ring Intermediate", "Finger.R.2.1" }, { "Right Ring Distal", "Finger.R.2.2" },

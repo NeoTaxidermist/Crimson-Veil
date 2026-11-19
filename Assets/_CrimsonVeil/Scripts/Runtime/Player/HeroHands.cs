@@ -16,6 +16,8 @@ namespace CrimsonVeil.Player
         public static readonly float[] FistCurl = { 48f, 62f, 34f };
         /// <summary>The thumb's second joint, closing over the fingers.</summary>
         public const float ThumbCurl = 35f;
+        /// <summary>The thumb's tip joint in a fist (the thumb has three joints like a real one).</summary>
+        public const float ThumbTipCurl = 30f;
 
         sealed class Joint
         {
@@ -27,7 +29,7 @@ namespace CrimsonVeil.Player
         sealed class Hand
         {
             public Joint[][] fingers; // 4 x 3
-            public Joint thumb0, thumb1;
+            public Joint thumb0, thumb1, thumb2; // (thumb2: the tip joint, where the rig has one)
             public Quaternion thumbClose; // local delta of the thumb's base joint in a fist
             public float grip;
         }
@@ -96,6 +98,8 @@ namespace CrimsonVeil.Player
             Vector3 thumbDir = t1.position - t0.position;
             hand.thumb0 = MakeJoint(t0, thumbDir, palmIn);
             hand.thumb1 = MakeJoint(t1, thumbDir, palmIn);
+            var t2 = Find(handBone, $"Thumb.{side}.2");
+            if (t2 != null) hand.thumb2 = MakeJoint(t2, t2.position - t1.position, palmIn);
             // In a fist the thumb swings from pointing forward to across the front of the curled fingers.
             Vector3 closed = (down * 0.75f + palmIn * 0.55f - front * 0.35f).normalized;
             Quaternion world = Quaternion.FromToRotation(thumbDir.normalized, closed);
@@ -144,6 +148,8 @@ namespace CrimsonVeil.Player
                 }
             h.thumb0.bone.localRotation = h.thumb0.rest * Quaternion.Slerp(Quaternion.identity, h.thumbClose, g);
             h.thumb1.bone.localRotation = h.thumb1.rest * Quaternion.AngleAxis(ThumbCurl * g, h.thumb1.axis);
+            if (h.thumb2 != null)
+                h.thumb2.bone.localRotation = h.thumb2.rest * Quaternion.AngleAxis(ThumbTipCurl * g, h.thumb2.axis);
         }
     }
 }

@@ -22,6 +22,40 @@ namespace CrimsonVeil.Tests
                 CollectionAssert.Contains(names, b);
         }
 
+        static Transform Bone(string name) => Hero().GetComponentsInChildren<Transform>(true).First(t => t.name == name);
+
+        [Test]
+        public void TheJoints_TurnWhereARealBodyTurns()
+        {
+            // (a standard humanoid skeleton taken as a reference for the pivots only; the mesh and its shape are his own)
+            var up = Bone("UpperChest");
+            Assert.AreEqual("Chest", up.parent.name, "the chest bends in two: the ribs and the upper chest");
+            Assert.AreEqual("UpperChest", Bone("Neck").parent.name);
+            Assert.AreEqual("UpperChest", Bone("Shoulder.L").parent.name);
+            Assert.AreEqual("UpperChest", Bone("Shoulder.R").parent.name);
+            Assert.That(Bone("Neck").position.y, Is.InRange(1.49f, 1.53f), "the neck turns at its base");
+            foreach (var s in new[] { "L", "R" })
+            {
+                var arm = Bone("UpperArm." + s).position;
+                Assert.That(Mathf.Abs(arm.x), Is.InRange(0.17f, 0.205f), "the shoulder turns in the middle of the shoulder, not at its outside");
+                Assert.That(arm.y, Is.InRange(1.43f, 1.46f));
+                var hip = Bone("UpperLeg." + s).position;
+                Assert.That(Mathf.Abs(hip.x), Is.InRange(0.08f, 0.1f), "the thigh turns at the head of its bone");
+                Assert.That(hip.y, Is.InRange(0.94f, 0.97f));
+            }
+        }
+
+        [Test]
+        public void TheThumb_HasThreeJoints_LikeARealOne()
+        {
+            foreach (var s in new[] { "L", "R" })
+            {
+                var tip = Bone($"Thumb.{s}.2");
+                Assert.AreEqual($"Thumb.{s}.1", tip.parent.name);
+                Assert.AreEqual($"Thumb.{s}.0", tip.parent.parent.name);
+            }
+        }
+
         [Test]
         public void WindsweptHair_IsMadeOfSpringChains()
         {

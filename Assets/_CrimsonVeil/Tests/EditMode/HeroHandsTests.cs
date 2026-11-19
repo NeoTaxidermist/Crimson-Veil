@@ -57,6 +57,12 @@ namespace CrimsonVeil.Tests
                     float openToBody = Mathf.Abs(tip.position.x - hips.position.x);
                     hands.Apply(1f, 1f, 10f);
                     Assert.Less(Mathf.Abs(tip.position.x - hips.position.x), openToBody, $"the {side} fingers curl into the palm, not out");
+                    // the thumb's tip joint bends too in a fist
+                    var thumbTip = Find($"Thumb.{side}.2");
+                    hands.Apply(0f, 0f, 10f);
+                    var tipRest = thumbTip.localRotation;
+                    hands.Apply(1f, 1f, 10f);
+                    Assert.Greater(Quaternion.Angle(tipRest, thumbTip.localRotation), HeroHands.ThumbTipCurl * 0.9f, $"the {side} thumb's tip curls");
                 }
             }
             finally

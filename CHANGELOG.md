@@ -5,6 +5,30 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.31.0] – 2026-11-19
+### Přidáno
+- **Obličejová kostra hrdiny** (pro cutscény). Skript `hero_build.py` přidává 9 kostí, všechny visí na hlavě:
+  - **čelist** (`Jaw`) má kloub před ušima. Bere spodní ret, bradu a dolní čelist; hranice vede rty a po tvářích stoupá ke kloubu;
+  - **oči** (`Eye.L/R`) jsou koule o poloměru 12,5 mm v očních důlcích. Na každé je malá rohovka, aby byl v detailu vidět směr pohledu;
+  - **víčka** (`Lid.U.L/R`, `Lid.D.L/R`) jsou tenké skořepiny přes oční kouli, otáčejí se kolem jejího středu. Zavřená se setkají kousek pod středem oka;
+  - **obočí** (`Brow.L/R`) nese kůži nadočnicového oblouku a posouvá se nahoru a dolů, při mračení i ke kořeni nosu.
+- **`HeroFace`**: komponenta, která obličej ovládá (je na hráči):
+  - **výrazy**: `Neutral`, `Determined`, `Angry`, `Surprised`, `Sad`, `Pain`, `Weary`. Přechází mezi nimi plynule (`SetExpression`);
+  - **mrkání**: samo každé 2,2–5,5 s, občas dvakrát za sebou. Rychle zavře, chvilku podrží a pomaleji otevře;
+  - **pohled**: oči sledují bod (`LookAt`) rychlým pohybem a horní víčko jde s pohledem nahoru i dolů;
+  - **mluvení**: čelist pracuje po slabikách s nestejnou délkou i výškou a s pauzami (`Talking`).
+
+### Testy
+- `HeroFaceTests`:
+  - kosti obličeje existují, visí na hlavě a každá hýbe kusem obličeje;
+  - výrazy vypadají, jak mají;
+  - mrknutí je rychlé, zavřené, otevřené a celé kratší než 0,3 s;
+  - mluvení otvírá a zavírá čelist s pauzami.
+- `HeroFacePlayTests` na skutečném modelu:
+  - údiv spustí bradu a zvedne obočí;
+  - mrknutí zavře víčko a znovu ho otevře;
+  - oči se otočí za bodem.
+
 ## [0.30.1] – 2026-11-19
 ### Opraveno
 - **Hrdina už nemá kouty.** V 0.30.0 se nad čelem zanořila pod kůži celá přední vlasová hmota, včetně boků nad spánky. Zepředu tak měl vysoké holé spánky. Model bude sloužit i pro cutscény zblízka, takže teď:

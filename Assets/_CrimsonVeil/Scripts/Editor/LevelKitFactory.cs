@@ -146,6 +146,7 @@ namespace CrimsonVeil.EditorTools
                 SetRef(anim, "veilAnchor", anchor);
                 SetRef(player.AddComponent<SpringBones>(), "root", hero.transform);
                 HeroCloth(player, hero.transform);
+                SetRef(player.AddComponent<HeroFace>(), "model", hero.transform);   // the face (cutscenes)
                 var handBone = CrimsonVeil.Core.RigJoint.FindDeep(hero.transform, "Hand.R");
                 if (handBone != null) SetRef(veil, "hand", handBone);
                 var drawBone = CrimsonVeil.Core.RigJoint.FindDeep(hero.transform, "Hand.L");

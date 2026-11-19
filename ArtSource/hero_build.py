@@ -912,6 +912,18 @@ loft([((0, yc, z), rx, ry, {"back": 1.14, "front": e[0] if e else 1.0}) for z, y
      blend_z([(1.5, "Chest"), (1.6, "Neck")]), mat=CRIMSON, n=36)
 
 HEAD = W("Head")
+
+# The face rig (for the story's cutscenes): the jaw, the eyes in their sockets, the upper and lower lids, the brows.
+# Measured on the head (ArtSource/hero_build.py's HEAD_RINGS + face_bump): the sockets' floor at y -0.126 under
+# x +-0.031, z 1.704; the brow ridge at z 1.722 (y -0.144); the lips meet at z ~1.648.
+EYE_R = 0.0125                                   # an eyeball's radius
+EYE_C = {"L": Vector((0.031, -0.1175, 1.705)), "R": Vector((-0.031, -0.1175, 1.705))}
+LID_R = EYE_R + 0.0012                           # the lids slide over the eyeball
+LID_UP_EDGE, LID_DN_EDGE = 22.0, -32.0           # degrees: where the open lids' edges are (up from the eye's level)
+JAW_HINGE = Vector((0.0, -0.01, 1.668))          # just in front of the ears, at their height
+JAW_CHIN = Vector((0.0, -0.128, 1.612))
+BROW_C = {"L": Vector((0.03, -0.143, 1.723)), "R": Vector((-0.03, -0.143, 1.723))}
+FACE_BONES = ("Jaw", "Eye.", "Lid.", "Brow.")
 HF = -0.05  # the head juts forward on a long neck: the face is ahead of the chest line, as in the concept
 
 # ---------------------------------------------------------------- pauldrons
@@ -1002,8 +1014,17 @@ _ctx = dict(window=_win, screen=_win.screen, active_object=rig, object=rig, sele
 with bpy.context.temp_override(**_ctx):
     bpy.ops.object.mode_set(mode='EDIT')
 eb = rig.data.edit_bones
-for bn in [bn for bn in eb if bn.name.startswith("Hair.") or bn.name.startswith("Cloth.") or bn.name.startswith("Sash.")]:
+for bn in [bn for bn in eb if bn.name.startswith("Hair.") or bn.name.startswith("Cloth.") or bn.name.startswith("Sash.")
+           or bn.name.startswith(FACE_BONES)]:
     eb.remove(bn)
+# The face: the jaw hinged in front of the ears; each eye and its two lids pivot on the eyeball's centre (pointing
+# forward, the way it looks); the brows sit on the brow ridge (they are moved, not turned).
+_fwd = Vector((0, -1, 0))
+bn = eb.new("Jaw"); bn.head, bn.tail = JAW_HINGE, JAW_CHIN; bn.parent = eb["Head"]
+for _sd in ("L", "R"):
+    for _nm in ("Eye.", "Lid.U.", "Lid.D."):
+        bn = eb.new(_nm + _sd); bn.head, bn.tail = EYE_C[_sd], EYE_C[_sd] + _fwd * 0.02; bn.parent = eb["Head"]
+    bn = eb.new("Brow." + _sd); bn.head, bn.tail = BROW_C[_sd], BROW_C[_sd] + _fwd * 0.015; bn.parent = eb["Head"]
 # Cloth chains of the tunic's free panels and the sash ends, hanging from the hips (bones point down the cloth).
 for n, ang in CLOTH_CHAINS.items():
     a = math.radians(ang)
@@ -1107,10 +1128,78 @@ while _z <= HEAD_RINGS[-1][0] + 1e-6:
     rx, yf, yb = head_ring(_z)
     _hs.append(((0.0, HEAD_AXIS_Y, _z), rx, 1.0, {"front": HEAD_AXIS_Y - yf, "back": yb - HEAD_AXIS_Y}))
     _z += 0.004
-loft(_hs, HEAD, n=72,
+def _ss(u):
+    u = max(0.0, min(1.0, u))
+    return u * u * (3 - 2 * u)
+
+
+def face_w(p, s):
+    """The head's skin: the lower lip, the chin and the jaw go with the jaw (split at the lips, the line rising
+    along the cheeks towards the hinge); the brow ridges with the brows; the rest with the head."""
+    ax = abs(p.x)
+    w = {}
+    # the jaw's line: at the lips in front, climbing over the cheek to the hinge under the ear
+    z_line = 1.649 + 0.016 * _ss((ax - 0.022) / 0.05) + 0.01 * _ss((p.y + 0.09) / 0.07)
+    jaw = _ss((z_line - p.z) / 0.008) * _ss((0.015 - p.y) / 0.04)
+    if jaw > 1e-3:
+        w["Jaw"] = jaw
+    if p.y < -0.11 and 1.708 < p.z < 1.74:
+        side = "L" if p.x > 0 else "R"
+        brow = _g((ax - 0.03) / 0.02) * _g((p.z - 1.723) / 0.008) * _ss((-0.118 - p.y) / 0.012)
+        if brow > 1e-3:
+            w["Brow." + side] = brow
+    rest = 1.0 - sum(w.values())
+    if rest > 1e-4:
+        w["Head"] = rest
+    return w
+
+
+loft(_hs, face_w, n=72,
      disp=lambda i, rel: face_bump(_hs[i][0][2], abs(rel.x), -rel.y / max(rel.length, 1e-6)))
 for sx in (1, -1):  # ears
     blob((sx * 0.074, 0.008, 1.69), (0.012, 0.018, 0.028), HEAD, seg=12, rings=8)
+
+
+def lid(c, r, e0, e1, bone, thick=0.0011, n_az=16, n_el=6, az=80.0):
+    """An eyelid: a thin spherical shell round the eyeball's centre c, over its front from elevation e0 to e1
+    (degrees up from the eye's level) and +-az degrees to the sides; it pivots on c (its bone) to open and close."""
+    outer, inner = [], []
+    for j in range(n_az + 1):
+        ph = math.radians(-az + 2 * az * j / n_az)
+        ro, ri = [], []
+        for i in range(n_el + 1):
+            el = math.radians(e0 + (e1 - e0) * i / n_el)
+            d = Vector((math.sin(ph) * math.cos(el), -math.cos(ph) * math.cos(el), math.sin(el)))
+            ro.append(add_vert(c + d * r, {bone: 1.0}))
+            ri.append(add_vert(c + d * (r - thick), {bone: 1.0}))
+        outer.append(ro); inner.append(ri)
+
+    def quad(q, outward):
+        n = (verts[q[1]] - verts[q[0]]).cross(verts[q[3]] - verts[q[0]])
+        if n.dot(outward) < 0:
+            q = tuple(reversed(q))
+        faces.append(tuple(q)); fmat.append(INK)
+
+    for j in range(n_az):
+        for i in range(n_el):
+            mid = (verts[outer[j][i]] + verts[outer[j + 1][i + 1]]) / 2 - c
+            quad((outer[j][i], outer[j + 1][i], outer[j + 1][i + 1], outer[j][i + 1]), mid)
+            quad((inner[j][i], inner[j + 1][i], inner[j + 1][i + 1], inner[j][i + 1]), -mid)
+        for i, sgn in ((0, -1.0 if e1 > e0 else 1.0), (n_el, 1.0 if e1 > e0 else -1.0)):   # the rims
+            mid = (verts[outer[j][i]] + verts[outer[j + 1][i]]) / 2 - c
+            quad((outer[j][i], outer[j + 1][i], inner[j + 1][i], inner[j][i]), Vector((0, 0, sgn)) + mid * 0.2)
+
+
+# The eyes: a ball in each socket on its own bone (it looks about), the lids over it - the upper from above the
+# eye's top down to just over the iris (LID_UP_EDGE), the lower up to under it; closing, they meet a little below
+# the middle (see HeroFace in the game).
+for _sd in ("L", "R"):
+    c = EYE_C[_sd]
+    blob(tuple(c), (EYE_R, EYE_R, EYE_R), W("Eye." + _sd), seg=18, rings=12)
+    # the cornea: a low dome on the front of the ball, so where he looks reads in the light of a close-up
+    blob(tuple(c + Vector((0, -EYE_R * 0.8, 0))), (0.0062, 0.0042, 0.0062), W("Eye." + _sd), seg=14, rings=8)
+    lid(c, LID_R, 88.0, LID_UP_EDGE, "Lid.U." + _sd)
+    lid(c, LID_R, -84.0, LID_DN_EDGE, "Lid.D." + _sd)
 
 # The hair, after the concept: one smooth mass of hair over the skull, out of which only a few locks run to a point -
 # the spikes of the drawing's outline (the fringe forward over the brow, the rest swept back and up).
@@ -1306,6 +1395,7 @@ bpy.ops.wm.save_as_mainfile(filepath=ROOT + r"\ArtSource\Hero.blend")
 result = {"verts": len(verts), "faces": len(faces), "hair_chains": len(chains), "chain_angles": [round(c[0]) for c in chains],
           "boot": round(_boot_len, 3),
           "cloth_bones": len([b for b in rig.data.bones if b.name.startswith("Cloth.") or b.name.startswith("Sash.")]),
+          "face_bones": sorted(b.name for b in rig.data.bones if b.name.startswith(FACE_BONES)),
           "dims": [round(x, 3) for x in ob.dimensions]}
 
 # ---------------------------------------------------------------- export to the game

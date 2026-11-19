@@ -384,7 +384,9 @@ namespace CrimsonVeil.Tests
             var stop = HeroMocap.Choose(Ground(0.5f), c).body;
             Assert.AreEqual(HeroMocap.RunStop, stop.key);
             Assert.AreEqual(HeroMocap.Mask.Legs, stop.mask, "the legs brake, the arms stay the game's");
-            Assert.AreEqual(HeroMocap.Gait, HeroMocap.Choose(Ground(5f), c).body.Layer, "setting off again, he runs");
+            Assert.AreEqual(HeroMocap.RunStop, HeroMocap.Choose(Ground(4.7f), c).body.key,
+                "the brake pulls up at once (it takes 2-3 frames: played out at a run he stopped in the run's flight)");
+            Assert.AreEqual(HeroMocap.Gait, HeroMocap.Choose(Ground(7f), c).body.Layer, "setting off again, he runs");
             Assert.AreEqual(1f, HeroMocap.MaskWeight(HeroMocap.Mask.Legs, "LowerLeg.L"));
             Assert.AreEqual(0f, HeroMocap.MaskWeight(HeroMocap.Mask.Legs, "UpperArm.R"));
         }

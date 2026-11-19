@@ -178,6 +178,44 @@ namespace CrimsonVeil.Tests
             Assert.Contains(HeroMocap.RunStop, new List<string>(played), "the last steps brake");
         }
 
+        /// <summary>The lowest of the feet's joints over his ground (m).</summary>
+        float FeetLowest()
+        {
+            float y = 9f;
+            foreach (var n in new[] { "Foot.L", "Foot.R", "Toe.L", "Toe.R" }) y = Mathf.Min(y, RigJoint.FindDeep(player.transform, n).position.y);
+            return y - Pos.y;
+        }
+
+        [UnityTest]
+        public IEnumerator StoppingFromARun_AtAnyPointOfTheStride_HeBrakesOnTheFloor()
+        {
+            // (the brake takes 2-3 frames: played out at a run, a stop in the run's flight left him a moment in the air)
+            yield return StartAt(new Vector3(-40f, 0.05f, 0f));
+            yield return Wait(0.6f);
+            float standing = FeetLowest();
+            foreach (float phase in new[] { 0f, 0.25f, 0.5f, 0.75f })
+            {
+                yield return StartAt(new Vector3(-40f, 0.05f, 0f));
+                input.moveX = 1f;
+                yield return Wait(0.7f);
+                yield return Until(() => Mathf.Abs(Mathf.DeltaAngle(mocap.GaitPhase * 360f, phase * 360f)) < 20f, 1f);
+                input.moveX = 0f;
+                // (the brake's first instants are still the run - a frame or so, at 60 fps; the fault held him in the
+                // run's flight for a quarter of a second)
+                float from = Time.time;
+                yield return Wait(0.05f);
+                float highest = 0f; string when = "";
+                yield return Wait(0.3f, () =>
+                {
+                    float h = FeetLowest() - standing;
+                    if (h > highest) { highest = h; when = $"{Time.time - from:F3}s after, {mocap.Current} w{mocap.Weight:F2}, {Speed:F1} m/s, frame {Time.deltaTime * 1000f:F0} ms"; }
+                });
+                Assert.Less(highest, 0.03f, $"stopping at {phase:F2} of the stride: a foot stays on the floor as he brakes ({when})");
+                Assert.Contains(HeroMocap.RunStop, new List<string>(played), "the last steps brake");
+                yield return Wait(0.6f);
+            }
+        }
+
         [UnityTest]
         public IEnumerator TurningRoundAtARun_HeSkidsRound_AndRunsBack()
         {

@@ -145,7 +145,11 @@ namespace CrimsonVeil.Player
             int facing = player.Motor.Facing;
             if (lastFacing != 0 && facing != lastFacing && s.grounded && sinceFast < 0.25f) ctx.sinceTurn = 0f;
             lastFacing = facing;
-            if (s.grounded && s.speed < 1f && sinceFast < 0.3f && ctx.sinceStop > HeroMocap.StopTime && ctx.sinceTurn > 0.3f) ctx.sinceStop = 0f;
+            // (the moment the keys let go of a run: the brake is 2-3 frames, and played out at a run its last stride left
+            // him a moment in the air - the run's flight - while he stopped; setting off again ends the pull-up)
+            bool keys = player.InputSource != null && Mathf.Abs(player.InputSource.MoveX) > 0.1f;
+            if (s.grounded && !keys && s.speed < HeroMocap.StopFromSpeed + HeroMocap.StopBrakeMargin && sinceFast < 0.3f && ctx.sinceStop > HeroMocap.StopTime && ctx.sinceTurn > 0.3f) ctx.sinceStop = 0f;
+            if (keys && ctx.sinceStop < HeroMocap.StopTime) ctx.sinceStop = 99f;
             sinceBlow = s.attacking ? 0f : sinceBlow + dt;
             sinceFast = s.grounded && s.speed >= HeroMocap.StopFromSpeed && sinceBlow > 0.5f ? 0f : sinceFast + dt;   // (a blow's lunge is no run)
             bool still = s.grounded && s.speed < 0.2f;

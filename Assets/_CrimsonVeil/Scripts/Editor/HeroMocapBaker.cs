@@ -547,8 +547,9 @@ namespace CrimsonVeil.EditorTools
             I(HeroMocap.BowShot, LB + "standing aim recoil.fbx", mirror: true),
             I(HeroMocap.Hurt, SS + "sword and shield impact.fbx"),
             I(HeroMocap.Stagger, SS + "sword and shield impact (2).fbx", hips: Gnd),
-            I(HeroMocap.Turn, "Running Turn 180.fbx"),
-            I(HeroMocap.RunStop, LB + "standing run forward stop.fbx"),
+            // (a skid round and a pull-up always have a foot on the floor: each frame stands on it)
+            I(HeroMocap.Turn, "Running Turn 180.fbx", hips: Gnd),
+            I(HeroMocap.RunStop, LB + "standing run forward stop.fbx", hips: Gnd, from: 0.3f),   // (from the first foot down: before it the stride was in the air)
             I(HeroMocap.Death, SS + "sword and shield death.fbx", hips: Gnd),
         };
     }

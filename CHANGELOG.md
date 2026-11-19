@@ -5,6 +5,15 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.41.5] – 2026-11-19
+### Zastavení z běhu bez levitace
+- **Opraveno: při zastavení z běhu nohy na chvilku levitovaly nad zemí.** Sešly se tři věci:
+  - **Klip dobrzdění začínal ve vzduchu.** Jeho prvních 0,2 s byl ještě poslední běžecký krok, asi 7 cm nad zemí. Teď začíná až dopadem nohy na zem a každý jeho snímek stojí na podlaze. Totéž platí pro otočku v běhu, která visela až 11 cm.
+  - **Dobrzdění se spouštělo pozdě**, až pod 1 m/s. Brzdění trvá jen pár snímků a do té doby se hrál běh, klidně ve fázi letu. Teď naskočí hned, jak hrdina z běhu pustí šipku a zpomalí pod 5,5 m/s. Když se hned znovu rozběhne, dobrzdění se zruší.
+  - **Běh odcházel pomalu.** Odcházející klip mizel čtvrt sekundy a jeho krok se při zastavení zamrazil, takže hrdina „visel“ v letové fázi běhu. Teď odchází klip stejně rychle, jak nastupuje nový, a dobrzdění s otočkou nastoupí rychleji (`HeroMocap.Choice.snap`).
+- Test `HeroMoveSetPlayTests.StoppingFromARun_AtAnyPointOfTheStride_HeBrakesOnTheFloor`: zastavení z běhu ve čtyřech fázích kroku, při brzdění zůstane noha na zemi. Teď 0–0,1 cm, se starou verzí 4,3 cm (mez 3 cm).
+- `HeroMocapTests`: dobrzdění naskočí už při 4,7 m/s, při rozběhu znovu běží.
+
 ## [0.41.4] – 2026-11-19
 ### Kontrola ostatních animací: seky už nevisí nad zemí
 Po opravě chodidel jsem prošel všech 47 upečených klipů.

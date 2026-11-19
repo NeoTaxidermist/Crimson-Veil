@@ -88,6 +88,9 @@ namespace CrimsonVeil.Player
             public bool gait;
             public string key2;
             public float mix, speed;
+            /// <summary>Comes in at once (and what it replaces goes as quickly): out of a run, a stop or a skid round - the
+            /// run left slowly, its steps stopped mid-stride, and he hung a moment in the run's flight.</summary>
+            public bool snap;
             public static Choice None => new Choice();
             public bool IsNone => string.IsNullOrEmpty(key) || weight <= 0f;
             public string Layer => gait ? Gait : key;
@@ -159,6 +162,10 @@ namespace CrimsonVeil.Player
 
         /// <summary>A turn or a stop is out of a run this fast (m/s).</summary>
         public const float TurnFromSpeed = 3f, StopFromSpeed = 4f;
+
+        /// <summary>The pull-up starts as the run brakes, still this much (m/s) over <see cref="StopFromSpeed"/> - not once
+        /// he has nearly stopped (the brake takes 2-3 frames: played out at a run it left him in the run's flight).</summary>
+        public const float StopBrakeMargin = 1.5f;
 
         /// <summary>Through the bow's attack (0..1): fully drawn, and the string let go.</summary>
         public const float BowFullDraw = 0.3f, BowLoose = 0.36f;
@@ -264,10 +271,10 @@ namespace CrimsonVeil.Player
             }
             // turning round at a run: he skids round on his feet (the game turns the body: the clip has the limbs)
             if (c.sinceTurn < TurnTime && !s.crouching && !(s.attacking && s.attackT >= 0f))
-                return new Choice { key = Turn, bySeconds = true, seconds = c.sinceTurn, weight = 0.75f, mask = armed ? Mask.Legs : Mask.NoHipsTurn };
+                return new Choice { key = Turn, bySeconds = true, seconds = c.sinceTurn, weight = 0.75f, mask = armed ? Mask.Legs : Mask.NoHipsTurn, snap = true };
             // pulling up out of a run: the last steps brake and he straightens (unless he sets off again)
-            if (c.sinceStop < StopTime && s.speed < 1.5f && !s.crouching && !(s.attacking && s.attackT >= 0f))
-                return new Choice { key = RunStop, bySeconds = true, seconds = c.sinceStop, weight = 0.8f, mask = Mask.Legs };
+            if (c.sinceStop < StopTime && s.speed < StopFromSpeed + StopBrakeMargin && !s.crouching && !(s.attacking && s.attackT >= 0f))
+                return new Choice { key = RunStop, bySeconds = true, seconds = c.sinceStop, weight = 0.8f, mask = Mask.Legs, snap = true };
             // (crouch-walking stays procedural: the captured one shuffles short steps, at the game's speed a scurry)
             if (s.crouching)
                 return s.speed > 0.2f ? Choice.None : new Choice { key = CrouchIdle, weight = 0.7f, mask = gear };
@@ -500,6 +507,9 @@ namespace CrimsonVeil.Player
             if (hips != null) hips.localPosition = hipsBlend;
         }
 
+        /// <summary>How fast (weight per second) clips come in and go: an idle settling in, a blow or a gait, a snap.</summary>
+        public const float SlowFade = 3.5f, QuickFade = 10f, SnapFade = 25f;
+
         void Advance(Channel ch, Choice want, float dt)
         {
             Layer top = ch.layers.Count > 0 ? ch.layers[ch.layers.Count - 1] : null;
@@ -526,13 +536,14 @@ namespace CrimsonVeil.Player
             }
             else top = null;
 
+            // driven blows and the like come in quickly, the idle settles in slowly; what is replaced goes as quickly as
+            // its replacement comes (a run left over a quarter second, its steps stopped mid-stride: he hung in its flight)
+            float inSpeed = top == null ? SlowFade : want.snap ? SnapFade : want.driven || want.bySeconds || want.gait ? QuickFade : SlowFade;
             foreach (var l in ch.layers)
             {
                 bool wanted = l == top;
                 l.target = wanted ? want.weight : 0f;
-                bool driven = wanted && (want.driven || want.bySeconds);
-                // driven blows and the like come in quickly, the idle settles in slowly
-                l.fadeSpeed = driven || (wanted && want.gait) ? 10f : 3.5f;
+                l.fadeSpeed = wanted ? inSpeed : Mathf.Max(SlowFade, inSpeed);
                 l.weight = Mathf.MoveTowards(l.weight, l.target, dt * l.fadeSpeed);
                 float len = Mathf.Max(0.01f, l.entry.clip.length);
                 if (wanted && want.gait)

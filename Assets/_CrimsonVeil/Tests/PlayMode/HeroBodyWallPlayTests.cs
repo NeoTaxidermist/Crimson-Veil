@@ -116,7 +116,21 @@ namespace CrimsonVeil.Tests
             float floor = -low;
             if (wall > intoWall) { intoWall = wall; worst = $"{(side > 0 ? "right" : "left")} wall, {phase} at x {Pos.x:F2} y {Pos.y:F2} state {controller.Motor.State}, the deepest point {rightY - Pos.y:F2} m over the feet"; }
             if (floor > intoFloor) intoFloor = floor;
+            if (controller.Motor.State == MotorState.WallSlide)
+            {
+                if (slideFrames++ == 0) slideStart = Time.time;
+                // (once the pose has come round from the jump into the slide: it takes a few tenths of a second)
+                if (Time.time - slideStart > SlideSettle) offWall = Mathf.Max(offWall, -wall);
+            }
         }
+
+        /// <summary>How long (s) the body takes to come round from the jump into the wall slide's pose.</summary>
+        const float SlideSettle = 0.35f;
+        float slideStart;
+
+        /// <summary>Sliding down the wall: how far the nearest of the body was from its face at worst (m).</summary>
+        float offWall;
+        int slideFrames;
 
         /// <summary>
         /// Measures the body as it is drawn: at the end of the frame, after all the animation (a coroutine runs between
@@ -138,7 +152,7 @@ namespace CrimsonVeil.Tests
             controller.Teleport(at);
             input.moveX = 0f; input.aimY = 0f; input.stand = false;
             yield return Watch(0.5f, "settling");
-            intoWall = 0f; intoFloor = 0f; worst = "-";
+            intoWall = 0f; intoFloor = 0f; worst = "-"; offWall = 0f; slideFrames = 0;
         }
 
         void AssertOut(string what)
@@ -233,6 +247,27 @@ namespace CrimsonVeil.Tests
             yield return Watch(3f, "somersault", () => controller.Motor.IsGrounded);
             yield return Watch(0.5f, "landed");
             AssertOut("the somersault");
+        }
+
+        [UnityTest] public IEnumerator SlidingDownAWall_Right() { side = 1; return SlidingDownAWall(); }
+        [UnityTest] public IEnumerator SlidingDownAWall_Left() { side = -1; return SlidingDownAWall(); }
+        /// <summary>
+        /// Jumping at the wall and holding towards it he slides down it, a hand braced on it and a foot against it: on
+        /// the stone, not in it, and not hanging in front of it (kept out of the wall, the hand and the knee the pose
+        /// reaches out with held the body 0.3-0.5 m off the face it slid down).
+        /// </summary>
+        IEnumerator SlidingDownAWall()
+        {
+            yield return StartAt(new Vector3(X(Wall - 1.5f), 0.05f, 0f));
+            input.moveX = X(1f);
+            input.jump = true; input.jumpHeld = true;
+            yield return Watch(2f, "jump at it", () => controller.Motor.State == MotorState.WallSlide);
+            input.jumpHeld = false;
+            Assert.AreEqual(MotorState.WallSlide, controller.Motor.State, "sliding down the wall");
+            yield return Watch(0.9f, "sliding down it");
+            Assert.Greater(slideFrames, 10, "slid down it a while");
+            AssertOut("sliding down a wall");
+            Assert.Less(offWall, 0.05f, $"the braced hands and foot on the stone (the nearest of the body was {offWall:F2} m off the wall; without them 0.10 m, the hips 0.3 m back)");
         }
 
         [UnityTest] public IEnumerator HangingOnALip_AndClimbing_Right() { side = 1; return HangingOnALip_AndClimbing(); }

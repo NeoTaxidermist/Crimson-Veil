@@ -5,6 +5,17 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.44.2] – 2026-11-20
+### Opraveno
+- **Skluz po zdi visel před zdí.** Vedlejší účinek kontaktu se zdí z verze 0.44.0. Při skluzu po zdi je hrdina otočený ke zdi a opírá se o ni oběma rukama a nohou, jenže póza je natahovala jen přibližně: pravá ruka zajela 0,3 m do kamene a koleno 8 cm. Kontakt se zdí pak odsunul celé tělo, takže boky byly přes 0,6 m od zdi a hrdina klouzal ve vzduchu před ní.
+- Nově `HeroAnimator.BraceOnWall`:
+  - obě ruce i zapřená noha se přitáhnou přesně na povrch zdi (inverzní kinematika, jako ruce na hraně);
+  - dlaně leží naplocho na kameni a prsty míří nahoru. Natažené rovně proti zdi zajížděly prsty 17 cm do kamene;
+  - lokty jdou dolů a od zdi, koleno se ohne nahoru a od zdi;
+  - teprve potom kontakt se zdí udrží mimo kámen zbytek těla.
+- Ustálený skluz je teď 2–3 cm od zdi, tělo se odsune jen o 4 cm. Bez opravy byl nejbližší bod těla 10 cm od zdi a boky 0,3 m dál.
+- Test `HeroBodyWallPlayTests` (skluz po zdi, vpravo i vlevo): tělo není ve zdi a po přechodu do pózy skluzu (0,35 s) od ní není dál než 5 cm.
+
 ## [0.44.1] – 2026-11-20
 ### Opraveno
 - **Testy zdí ověřovaly jen zeď vpravo.** `HeroBodyWallPlayTests` teď dělá každý pohyb do zdi vpravo i vlevo (hrdina otočený doleva), tedy 16 testů místo 8. Vlevo dva těsně selhaly: dash 5,0 cm a salto 5,2 cm v kameni. Vpravo procházely jen o vlásek.

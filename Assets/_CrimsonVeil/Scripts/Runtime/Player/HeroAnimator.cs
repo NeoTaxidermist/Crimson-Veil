@@ -301,6 +301,8 @@ namespace CrimsonVeil.Player
             // on the ground the body lies on it: the sole, a heel, a knee, a hand on the floor - not through it, not over it
             KeepOnGround(s, Time.deltaTime);
             // and out of the walls: the capsule stops at a wall, the body bent out of it (a lean, a slide, a somersault) not
+            // sliding down a wall the braced hand and foot are set on the stone (then the rest is kept out of it)
+            if (s.wallSliding) BraceOnWall();
             KeepOffWalls(s, Time.deltaTime);
             if (s.hanging || s.climbing) ReachLip(s);
             if (s.swinging) GripRope();
@@ -583,6 +585,60 @@ namespace CrimsonVeil.Player
         }
 
         bool wallFree;
+        Transform legUpperL, legLowerL, legFootL;
+        /// <summary>How far (m, + right) the body is put out of a wall this frame.</summary>
+        public float WallOffset => wallOffset;
+
+        /// <summary>How far (m) the wrist and the ankle of the braced limbs are from the wall's face in a wall slide.</summary>
+        public const float BraceHand = 0.05f, BraceFoot = 0.1f;
+
+        /// <summary>
+        /// Sliding down a wall he faces it, one hand braced high on it and a foot against it
+        /// (<see cref="HeroPoseSolver.WallSlidePose"/>). The pose only reaches out roughly: the hand and the knee went
+        /// into the stone, and kept out of it (<see cref="KeepOffWalls"/>) the whole body hung half a metre in front
+        /// of the wall it slid down. The hand and the foot are reached onto its face.
+        /// </summary>
+        void BraceOnWall()
+        {
+            int side = player.Motor.AttachSide;
+            if (side == 0) return;
+            var centre = player.transform.position;
+            float reach = 1.2f;
+            float face = float.NaN;
+            int n = Physics.RaycastNonAlloc(centre + Vector3.up * 1.2f, new Vector3(side, 0f, 0f), wallHits, reach, ~0, QueryTriggerInteraction.Ignore);
+            float nearest = reach;
+            for (int i = 0; i < n; i++)
+            {
+                var h = wallHits[i];
+                if (Mathf.Abs(h.normal.x) < 0.5f || h.collider.transform.IsChildOf(player.transform)) continue;
+                if (h.collider.GetComponentInParent<IHostile>() != null) continue;
+                if (h.distance < nearest) { nearest = h.distance; face = h.point.x; }
+            }
+            if (float.IsNaN(face)) return;
+            var away = new Vector3(-side, 0f, 0f);
+            // both hands on the stone (the high one braced, the low one pressing: it stuck 0.3 m into it), the elbows down
+            // and away from it
+            foreach (var (upper, lower, hand) in new[] { (upperArmL, lowerArmL, handL), (upperArmR, lowerArmR, handR) })
+            {
+                if (upper == null) continue;
+                var target = new Vector3(face - side * BraceHand, hand.position.y, hand.position.z);
+                LimbReach.Solve(upper, lower, hand, target, upper.position + away * 0.5f + Vector3.down * 0.4f, 1f);
+                // the palm flat on the stone, the fingers up it (reaching straight at it they went 0.17 m into it)
+                var finger = RigJoint.FindDeep(hand, hand.name.EndsWith(".L") ? "Finger.L.2.0" : "Finger.R.2.0");
+                if (finger != null)
+                {
+                    Vector3 along = finger.position - hand.position;
+                    if (along.sqrMagnitude > 1e-6f) hand.rotation = Quaternion.FromToRotation(along, Vector3.up) * hand.rotation;
+                }
+            }
+            if (legUpperL == null) { legUpperL = RigJoint.FindDeep(model, "UpperLeg.L"); legLowerL = RigJoint.FindDeep(model, "LowerLeg.L"); legFootL = RigJoint.FindDeep(model, "Foot.L"); }
+            if (legFootL != null)
+            {
+                // the sole against the stone, the knee folded up and away from it (not through it)
+                var target = new Vector3(face - side * BraceFoot, legFootL.position.y, legFootL.position.z);
+                LimbReach.Solve(legUpperL, legLowerL, legFootL, target, legUpperL.position + Vector3.up * 0.5f + away * 0.5f, 1f);
+            }
+        }
 
         /// <summary>
         /// The last word on the walls, once the hair and the cloth have swung (<see cref="SpringBones"/>), the face and

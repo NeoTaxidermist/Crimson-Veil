@@ -5,6 +5,22 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.43.0] – 2026-11-20
+### Přidáno
+- **Hlídání verzí: každý commit má vlastní verzi a záznam v CHANGELOGu.** Git hooky ve složce `.githooks/` (zapnout jednou na klon: `git config core.hooksPath .githooks` a `git config push.followTags true`):
+  - `pre-commit` zastaví commit, ve kterém chybí změna CHANGELOG.md, nová verze vyšší než ta předchozí, obsah její sekce, nebo kde zůstal text pod `[Unreleased]`;
+  - `post-commit` dá commitu tag jeho verze (`vX.Y.Z`, anotovaný, takže s `push.followTags` odchází na GitHub spolu s commitem);
+  - `pre-push` nepustí na GitHub commit bez tagu verze nebo bez změny CHANGELOGu.
+- Testy (`ChangelogTests`): pod `[Unreleased]` nic není; všechny verze mají tvar `## [X.Y.Z] – RRRR-MM-DD`, jsou jedinečné, sestupně a mají obsah; hooky jsou na místě a mají konce řádků LF.
+
+### Změněno
+- **README podle současného stavu hry:**
+  - nový úvodní snímek a čtyři záběry ze skutečné úrovně;
+  - 18 GIFů pohybů a boje natočených ve hře (jako galerie animací);
+  - snímky a popisy všech devíti nepřátel a bytostí;
+  - aktuální ovládání (plížení, skluz, kopí, bič, luk, Ctrl, mapa), technika, struktura projektu, počty testů a pravidlo verzí.
+- Staré snímky prototypu (`Docs/prototype-*.png`) jsou pryč, nahradily je `Docs/hero.jpg`, `Docs/world/`, `Docs/moves/` a `Docs/enemies/`.
+
 ## [0.42.1] – 2026-11-19
 ### Na laně se neotočí zády ke směru houpání
 - **Opraveno: při rozhoupávání se hrdina otočil a houpal se po zádech.** Otáčel se hned při stisku šipky, i když se zrovna houpal opačným směrem, takže letěl zády napřed, dokud se houpání neobrátilo.

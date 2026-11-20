@@ -17,3 +17,7 @@
 *.blend binary
 *.wav  binary
 *.ogg  binary
+
+# Git hooks need LF
+.githooks/*  text eol=lf
+*.gif  binary

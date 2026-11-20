@@ -5,6 +5,12 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.43.1] – 2026-11-20
+### Opraveno
+- **Na laně nohy v úvrati přeskočily do jiné pózy.** Klip houpání se přehrával dokola podle fáze kyvadla, jenže zachycené houpání není čistá smyčka: na konci klipu jsou nohy o desítky stupňů jinde než na začátku. Kousek před přední úvratí (fáze 0,88) klip přetekl z konce na začátek a nohy se otočily až o 110° během jediného snímku. Vypadalo to jako zásek hry, i když žádný nebyl.
+- Teď se klip v tom místě nepřetáčí (`HeroMocap.SwingClipTime`). Od přední úvratě k zadní běží půlka klipu jako dřív a cestou zpátky tentýž úsek pozpátku, takže póza nohou jde plynule celým kyvem.
+- Test `HeroMocapTests` (houpání nikde nepřeskočí): projde celý kyv po 1/400 a žádná kost nohou se v jednom kroku neotočí o víc než pár stupňů. Se starým přehráváním dokola to bylo 110° ve fázi 0,88, s opravou nejvýš 2,2°.
+
 ## [0.43.0] – 2026-11-20
 ### Přidáno
 - **Hlídání verzí: každý commit má vlastní verzi a záznam v CHANGELOGu.** Git hooky ve složce `.githooks/` (zapnout jednou na klon: `git config core.hooksPath .githooks` a `git config push.followTags true`):

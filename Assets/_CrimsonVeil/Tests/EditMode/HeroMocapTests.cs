@@ -297,6 +297,47 @@ namespace CrimsonVeil.Tests
         }
 
         [Test]
+        public void TheWhip_TheCapturedSwing_NeverJumps_AtAnyPointOfThePendulum()
+        {
+            // the forward end, the back end half the clip on, and back the same way
+            Assert.AreEqual(HeroMocap.SwingSync, HeroMocap.SwingClipTime(0f), 1e-5f);
+            Assert.AreEqual(HeroMocap.SwingSync + 0.5f, HeroMocap.SwingClipTime(0.5f), 1e-5f);
+            Assert.AreEqual(HeroMocap.SwingClipTime(0.2f), HeroMocap.SwingClipTime(0.8f), 1e-5f, "the way back retraces the way out");
+            Assert.AreEqual(HeroMocap.SwingClipTime(0.999f), HeroMocap.SwingClipTime(1.001f), 0.01f, "round the forward end the clip time goes on smoothly");
+
+            var lib = AssetDatabase.LoadAssetAtPath<HeroMocapLibrary>(LibraryPath);
+            var hero = (GameObject)Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_CrimsonVeil/Art/Hero/Hero.fbx"));
+            try
+            {
+                Assert.IsTrue(lib.TryGet(HeroMocap.Swing, out var swing));
+                string[] legs = { "UpperLeg.L", "UpperLeg.R", "LowerLeg.L", "LowerLeg.R", "Foot.L", "Foot.R" };
+                var bones = new Transform[legs.Length];
+                for (int i = 0; i < legs.Length; i++) bones[i] = CrimsonVeil.Core.RigJoint.FindDeep(hero.transform, legs[i]);
+                const int n = 400;   // one swing at about 1/200 s a step
+                var prev = new Quaternion[legs.Length];
+                float worst = 0f, worstAt = 0f;
+                for (int k = 0; k <= n + 1; k++)
+                {
+                    float phase = (float)k / n;   // a little past the forward end, round again
+                    swing.clip.SampleAnimation(hero, swing.clip.length * HeroMocap.SwingClipTime(phase));
+                    for (int i = 0; i < legs.Length; i++)
+                    {
+                        var q = bones[i].localRotation;
+                        if (k > 0)
+                        {
+                            float d = Quaternion.Angle(prev[i], q);
+                            if (d > worst) { worst = d; worstAt = phase; }
+                        }
+                        prev[i] = q;
+                    }
+                }
+                // the old loop round the pendulum turned a leg by tens of degrees in one step, just before the forward end
+                Assert.Less(worst, 4f, $"no leg turns by more than a few degrees in 1/400 of a swing (worst {worst:F1}° at phase {worstAt:F3})");
+            }
+            finally { Object.DestroyImmediate(hero); }
+        }
+
+        [Test]
         public void TheWhip_TheSwingFollowsThePendulum()
         {
             var s = new HeroState { swinging = true };

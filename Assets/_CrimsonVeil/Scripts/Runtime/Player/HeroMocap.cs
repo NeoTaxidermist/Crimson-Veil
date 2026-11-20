@@ -173,6 +173,18 @@ namespace CrimsonVeil.Player
         /// <summary>Where in the captured swing (0..1) he is at the forward end of the pendulum.</summary>
         public const float SwingSync = 0.12f;
 
+        /// <summary>
+        /// Where in the captured swing (0..1) the pendulum's phase puts him: from the forward end (<see cref="SwingSync"/>)
+        /// half the clip on to the back end, and the same stretch backwards on the way forward again. The captured swing
+        /// is no clean loop (its end and its start have the legs tens of degrees apart): looped round the pendulum, the
+        /// legs jumped from the one to the other just before the forward end, at every swing.
+        /// </summary>
+        public static float SwingClipTime(float phase)
+        {
+            float tri = 1f - Mathf.Abs(1f - 2f * Mathf.Repeat(phase, 1f));   // 0 at the forward end, 1 at the back end, back to 0
+            return SwingSync + 0.5f * tri;
+        }
+
         /// <summary>Speeds (m/s) at which the walk is all there is, the run, the sprint.</summary>
         public const float WalkSpeed = 1.6f, RunSpeed = 5.5f, SprintSpeed = 8.5f;
 
@@ -212,7 +224,7 @@ namespace CrimsonVeil.Player
                 if (c.sinceHangStart < HangCatchTime) return new Choice { key = HangCatch, bySeconds = true, seconds = c.sinceHangStart, weight = 0.7f };
                 return new Choice { key = HangIdle, weight = 0.6f };
             }
-            if (s.swinging) return new Choice { key = Swing, driven = true, time01 = Mathf.Repeat(c.swingPhase + SwingSync, 1f), weight = 0.75f * SwingWeight(c.swingAmplitude), mask = Mask.LegsOnly };   // (the captured swinger's arms swap hands on the rope)
+            if (s.swinging) return new Choice { key = Swing, driven = true, time01 = SwingClipTime(c.swingPhase), weight = 0.75f * SwingWeight(c.swingAmplitude), mask = Mask.LegsOnly };   // (the captured swinger's arms swap hands on the rope)
 
             if (s.attacking && s.attackT >= 0f)
             {

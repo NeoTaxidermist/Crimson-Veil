@@ -285,7 +285,8 @@ namespace CrimsonVeil.Veil
             float braidScale = rope ? RopeBraidScale(arc, sim.Settings.length) * RopeBraidTwist : 1f;
             bool shield = veil.ShapeForm == VeilForm.Shield;
             float shieldCut = Mathf.Ceil(hf * (n - 1)) / (n - 1) + 0.002f;
-            Vector3 shieldCentre = p[0] + new Vector3(VeilFormLibrary.ShieldCenter.x * facing, VeilFormLibrary.ShieldCenter.y, 0f);
+            Vector2 sc = veil.ShieldCentre;   // (up round the crouched body)
+            Vector3 shieldCentre = p[0] + new Vector3(sc.x * facing, sc.y, 0f);
             float gripFraction = Mathf.Max(hf, VeilFormLibrary.GripFraction(veil.ShapeForm));
             // A sword's flame tongues run along its blade, from the crossguard: the hilt stays a clean hilt.
             if (veil.ShapeForm == VeilForm.Sword)

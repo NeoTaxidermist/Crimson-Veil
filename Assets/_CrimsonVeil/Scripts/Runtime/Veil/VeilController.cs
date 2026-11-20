@@ -453,11 +453,17 @@ namespace CrimsonVeil.Veil
         /// <summary>0..1 how far the shield's ring has drawn in round the crouched body (it fits a tunnel).</summary>
         public float ShieldLow { get; private set; }
 
-        /// <summary>The shield's ring round the crouched body: this share of its size (clear of floor and a low ceiling).</summary>
-        public const float LowShieldScale = 0.5f;
+        /// <summary>
+        /// The shield's ring round the crouched body: this share of its size across and up (an oval, as the crouched
+        /// body is taller than it is wide: round the whole of it, the head too, and still within a 1.35 m tunnel).
+        /// </summary>
+        public static readonly Vector2 LowShieldScale = new Vector2(0.58f, 0.63f);
 
-        /// <summary>How far (m) the crouched ring's centre rides up from the standing one's (round the bent chest).</summary>
-        public const float LowShieldLift = 0.2f;
+        /// <summary>How far (m) the crouched ring's centre rides up from the standing one's (to the crouched body's middle).</summary>
+        public const float LowShieldLift = 0.38f;
+
+        /// <summary>The shield ring's centre from the neck (facing right): it rides up round the crouched body.</summary>
+        public Vector2 ShieldCentre => VeilFormLibrary.ShieldCenter + new Vector2(0f, LowShieldLift * Mathf.SmoothStep(0f, 1f, ShieldLow));
 
         /// <summary>Share of the usual lunge a low blow steps in with.</summary>
         public const float LowLunge = 0.5f;
@@ -1072,8 +1078,7 @@ namespace CrimsonVeil.Veil
                 if (weapon && ShapeForm == VeilForm.Shield && ShieldLow > 0f)
                 {
                     float k = Mathf.SmoothStep(0f, 1f, ShieldLow);
-                    rest = VeilFormLibrary.ShieldCenter + new Vector2(0f, LowShieldLift * k)
-                           + (rest - VeilFormLibrary.ShieldCenter) * Mathf.Lerp(1f, LowShieldScale, k);
+                    rest = ShieldCentre + Vector2.Scale(rest - VeilFormLibrary.ShieldCenter, Vector2.Lerp(Vector2.one, LowShieldScale, k));
                 }
                 // The shield bubble sits round the body: only its root follows the hand.
                 float follow = weapon && ShapeForm == VeilForm.Shield ? 1f - VeilFormLibrary.BubbleWeight(basePoint) : 1f;

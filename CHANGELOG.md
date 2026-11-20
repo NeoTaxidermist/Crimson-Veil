@@ -5,6 +5,14 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.45.1] – 2026-11-20
+### Opraveno
+- **Kruh štítu v podřepu procházel hlavou.** V0.45.0 ho stáhla na kruh o poloměru 0,58 m, ale skrčené tělo sahá od jeho středu až 0,82 m. Hlava a vlasy (1,30 m nad zemí) tak byly 24 cm venku.
+- Kruh je teď ovál kolem celé skrčené postavy, protože ta je vyšší než širší. Je 1,4 m široký a 1,5 m vysoký a střed má posunutý do středu těla (`VeilController.LowShieldScale`, `LowShieldLift`).
+- Tělo teď sahá nejvýš do 0,84 vzdálenosti ke kruhu, nad hlavou je asi 12 cm rezervy. Plameny kruhu šlehají od nového středu (`VeilController.ShieldCentre`).
+- Cena za to: v tunelu vysokém 1,35 m, kde tělo samo sahá do 1,30 m, zasáhne kruh do stropu 10 cm a do podlahy 12 cm.
+- Nový test `HeroMoveSetPlayTests`: v podřepu na volné ploše i v tunelu leží celé vykreslené tělo uvnitř kruhu, včetně hlavy. Výjimkou jsou chodidla na podlaze, kolem nich kruh vede po zemi. S kruhem z 0.45.0 test selže.
+
 ## [0.45.0] – 2026-11-20
 ### Přidáno
 - **Útok z podřepu je nízký úder a hrdina při něm zůstane dole.** Dřív šipka dolů na zemi zároveň přikrčovala i mířila. Přes podřep se přehrál úder natočený vestoje, nohy se napůl zvedly a kolizní kapsle zůstala nízká. Teď na zemi znamená dolů přikrčení. Útok z podřepu je samostatný pohyb: nohy drží podřep, trup se skloní nad kolena a úder vede nízko nad zemí. Platí to i při plížení (dolů + dopředu) a pod nízkým stropem. Hrdina zůstane dole až do konce úderu, i když dolů pustí (`MotorLogic.HoldLow`). Každá zbraň má vlastní nízký úder (`HeroAttackChoreography.ApplyLow`):

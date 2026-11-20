@@ -583,6 +583,91 @@ namespace CrimsonVeil.Tests
             }
         }
 
+        /// <summary>
+        /// The shield's ring as drawn - its centre and its half-width and half-height (crouched it is an oval) - and how
+        /// far out towards it the drawn body reaches (the scarf and the feet on the floor excluded): 1 on the ring, less inside.
+        /// </summary>
+        const float FeetOnTheFloor = 0.15f;
+
+        /// <summary>
+        /// How far (m) the crouched ring's flame may lick into the floor or a 1.35 m tunnel's roof: the crouched body is
+        /// 1.3 m tall, so a ring round it with room over the head reaches a little into the stone.
+        /// </summary>
+        const float RingIntoStone = 0.15f;
+
+        /// <summary>Widens <paramref name="box"/> (relative to the hero) to the shield ring's points as drawn now.</summary>
+        void GrowByRing(ref Rect box)
+        {
+            var p = veil.Simulation.Positions;
+            int n = veil.Simulation.Count;
+            for (int i = Mathf.CeilToInt(veil.HandFraction * (n - 1)); i < n; i++)
+            {
+                float x = (p[i].x - Pos.x) * controller.Motor.Facing, y = p[i].y - Pos.y;
+                box = Rect.MinMaxRect(Mathf.Min(box.xMin, x), Mathf.Min(box.yMin, y), Mathf.Max(box.xMax, x), Mathf.Max(box.yMax, y));
+            }
+        }
+
+        /// <summary>
+        /// How far out towards the ring (an oval filling <paramref name="ring"/>, relative to the hero) the drawn body
+        /// reaches: 1 on the ring, less inside it (the scarf and the feet on the floor excluded).
+        /// </summary>
+        float BodyTowardsRing(Rect ring, out Vector2 worstPoint)
+        {
+            float body = 0f;
+            worstPoint = Vector2.zero;
+            var mesh = new Mesh();
+            foreach (var smr in player.GetComponentsInChildren<SkinnedMeshRenderer>())
+            {
+                if (!smr.enabled) continue;
+                smr.BakeMesh(mesh, true);
+                var t = smr.transform;
+                foreach (var v in mesh.vertices)
+                {
+                    Vector3 w = t.TransformPoint(v);
+                    var l = new Vector2((w.x - Pos.x) * controller.Motor.Facing, w.y - Pos.y);
+                    // (the feet stand on the floor: the ring runs along it past them, as standing it goes into it)
+                    if (l.y < FeetOnTheFloor) continue;
+                    var d = l - ring.center;
+                    float e = new Vector2(d.x / (ring.width * 0.5f), d.y / (ring.height * 0.5f)).magnitude;
+                    if (e > body) { body = e; worstPoint = l; }
+                }
+            }
+            Object.Destroy(mesh);
+            return body;
+        }
+
+        [UnityTest]
+        public IEnumerator Crouched_TheShieldsRing_GoesRoundTheWholeBody_NotThroughTheHead()
+        {
+            foreach (bool tunnel in new[] { false, true })
+            {
+                yield return StartAt(tunnel ? new Vector3((TunnelLeft + TunnelRight) * 0.5f, 0.05f, 0f) : new Vector3(-12f, 0.05f, 0f));
+                input.aimY = tunnel ? 0f : -1f;
+                yield return Wait(0.4f);
+                Assert.IsTrue(controller.Motor.IsCrouching);
+                input.held = VeilForm.Shield; input.cast = VeilForm.Shield;
+                yield return Wait(0.8f);
+                Assert.Greater(veil.ShieldLow, 0.99f);
+                var probe = player.GetComponent<EndOfFrameProbe>();
+                if (probe == null) probe = player.AddComponent<EndOfFrameProbe>();
+                // the ring's shape over a turn of it (it spins, its gap with it), then the body against it
+                var ring = Rect.MinMaxRect(99f, 99f, -99f, -99f);
+                probe.each = () => GrowByRing(ref ring);
+                yield return Wait(0.6f);
+                float worst = 0f;
+                Vector2 at = Vector2.zero;
+                probe.each = () => { float b = BodyTowardsRing(ring, out var w); if (b > worst) { worst = b; at = w; } };
+                yield return Wait(0.3f);
+                probe.each = null;
+                input.held = null; input.aimY = 0f;
+                Debug.Log($"[crouched ring{(tunnel ? " in the tunnel" : "")}] ring x {ring.xMin:F2}..{ring.xMax:F2} y {ring.yMin:F2}..{ring.yMax:F2}; the body reaches {worst:F2} of the way to it, at ({at.x:F2}, {at.y:F2})");
+                Assert.Less(worst, 0.9f, $"{(tunnel ? "in the tunnel" : "crouched")}: the ring goes round the whole crouched body with room to spare, the head too");
+                Assert.Greater(ring.yMin, -RingIntoStone, "not deep in the floor");
+                if (tunnel) Assert.Less(ring.yMax + Pos.y, TunnelBottom + RingIntoStone, "nor deep in the tunnel's roof");
+                yield return Wait(1.5f);
+            }
+        }
+
         [UnityTest]
         public IEnumerator InTheLowTunnel_TheShieldsRingDrawsIn_AndABlowUpStaysLow()
         {
@@ -601,8 +686,8 @@ namespace CrimsonVeil.Tests
             input.held = null;
             Debug.Log($"[low shield] ring {bottom:F2} .. {top:F2} m");
             Assert.Greater(veil.ShieldLow, 0.99f, "crouched, the ring drew in");
-            Assert.Greater(bottom, -0.1f, "the ring is not in the floor");
-            Assert.Less(top, TunnelBottom + 0.1f, "nor in the tunnel's roof");
+            Assert.Greater(bottom, -RingIntoStone, "the ring is not deep in the floor");
+            Assert.Less(top, TunnelBottom + RingIntoStone, "nor deep in the tunnel's roof");
             yield return Wait(1.5f);
             // up and a blow under the roof: no rising strike into it, a low blow
             input.aimY = 1f;

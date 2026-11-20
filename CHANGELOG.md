@@ -5,6 +5,38 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.44.0] – 2026-11-20
+### Přidáno
+- **Tělo zůstává mimo zdi při každém pohybu.** Kolizní kapsle hrdiny je úzká a svislá. Zastaví se u zdi, ale tělo se z ní vyklání, takže hlava, ruce a kolena zajížděly do kamene. Naměřeno proti zdi na skutečném hrdinovi, po vykreslení snímku:
+
+  | pohyb | dřív |
+  |---|---|
+  | dash | 0,44 m |
+  | plížení | 0,32 m |
+  | salto | 0,31 m |
+  | skluz | 0,28 m |
+  | tvrdý dopad | 0,28 m |
+  | visení na hraně | 0,24 m |
+  | běh | 0,11 m |
+  | kotoul | 0,10 m |
+
+- Nový kontakt se zdí (`HeroAnimator.KeepOffWalls`), obdoba kontaktu se zemí:
+  - z kůže celého těla (4000 bodů včetně vlasů, každý připnutý ke své kosti) se každý snímek v pásech po 5 cm výšky najde, jak daleko tělo trčí z kapsle doprava a doleva;
+  - jeden paprsek ze středu těla na pás zjistí, kde je zeď;
+  - tělo se od ní odsune, okamžitě (ani na jeden snímek do zdi), s rezervou 1,5 cm, nejvýš o 0,6 m; zpět se vrací plynule;
+  - podlahy, stropy a nepřátelé jako zeď nepočítají.
+- Při visení na hraně se tělo odsune taky a ruce na hranu dosáhnou samy (`ReachLip`). Zápěstí je teď o 5 cm výš a kousek před hranou (`HeroPoseSolver.LipHandOffset`): ve výšce rohu vězela dlaň 8 cm v kameni.
+- Na laně dál platí vlastní kontrola houpání z verze 0.43.2.
+
+#### Testy
+- `HeroBodyWallPlayTests` na skutečném hrdinovi u zdi. Měří se každý vrchol kůže na konci snímku, tak jak se vykreslí, a tělo smí do zdi nejvýš 5 cm:
+  - chůze a běh do zdi;
+  - skluz, plížení a dash do zdi;
+  - kotoul po seskoku do zdi;
+  - tvrdý dopad u zdi;
+  - salto u zdi;
+  - visení na hraně.
+
 ## [0.43.2] – 2026-11-20
 ### Opraveno
 - **Při houpání na biči tělo procházelo zdí.** Kolizní kapsle hrdiny zůstává i na laně svisle pod rukama, ale tělo visí podél lana a natáčí se kolem rukou. Když ho houpání vyneslo vysoko a lano bylo skoro vodorovné, tělo trčelo z rukou do strany přímo do zdi, kam svislá kapsle nedosáhla, a nic ho nezastavilo.

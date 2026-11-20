@@ -122,6 +122,7 @@ namespace CrimsonVeil.Player
             toeL = Tip("Toe.L", 0.05f, up);
             toeR = Tip("Toe.R", 0.05f, up);
             SetupContacts();
+            SetupBodyPoints();
             return spine != null && thighL != null && thighR != null && armL != null && armR != null;
         }
 
@@ -298,6 +299,8 @@ namespace CrimsonVeil.Player
             }
             // on the ground the body lies on it: the sole, a heel, a knee, a hand on the floor - not through it, not over it
             KeepOnGround(s, Time.deltaTime);
+            // and out of the walls: the capsule stops at a wall, the body bent out of it (a lean, a slide, a somersault) not
+            KeepOffWalls(s, Time.deltaTime);
             if (s.hanging || s.climbing) ReachLip(s);
             if (s.swinging) GripRope();
             if (Hands != null)
@@ -437,6 +440,144 @@ namespace CrimsonVeil.Player
             if (contact && Physics.Raycast(player.transform.position + Vector3.up * 0.5f, Vector3.down, out var h2, 1.5f, ~0, QueryTriggerInteraction.Ignore))
                 SkinOverFloor = SkinLowest() - h2.point.y;
             else SkinOverFloor = float.NaN;
+        }
+
+        // --- walls -----------------------------------------------------------------------------------------------
+
+        /// <summary>Points of the whole skin (hair and all), each in the space of the bone nearest it at rest.</summary>
+        Transform[] bodyBones;
+        Vector3[][] bodyPoints;
+        const int BodyPointCount = 4000;
+        /// <summary>The body is looked at in bands of this height (m): per band only its furthest point each way is cast.</summary>
+        const float WallBand = 0.05f;
+        const int WallBands = 64;
+        readonly float[] bandRight = new float[WallBands], bandLeft = new float[WallBands];
+        float wallOffset;
+        readonly RaycastHit[] wallHits = new RaycastHit[6];
+        /// <summary>How far (m) the drawn body may be pushed back out of a wall.</summary>
+        public const float WallMaxPush = 0.6f;
+        /// <summary>The body's half width the controller's capsule already keeps out of a wall (m).</summary>
+        public const float WallCapsule = 0.2f;
+        /// <summary>How far (m) clear of a wall the body is put once it touches one.</summary>
+        public const float WallClearance = 0.015f;
+
+        /// <summary>How far (m) the drawn body went into a wall this frame, after it was pushed out (0 = clear of it).</summary>
+        public float SkinInWall { get; private set; }
+
+        void SetupBodyPoints()
+        {
+            var bones = new List<Transform>();
+            var pts = new List<List<Vector3>>();
+            var all = new List<Vector3>();
+            var mesh = new Mesh();
+            foreach (var skin in model.GetComponentsInChildren<SkinnedMeshRenderer>())
+            {
+                if (skin.sharedMesh == null || skin.bones == null || skin.bones.Length == 0) continue;
+                skin.BakeMesh(mesh, true);
+                var local = new List<Vector3>();
+                mesh.GetVertices(local);
+                var toWorld = skin.transform.localToWorldMatrix;
+                foreach (var v in local) all.Add(toWorld.MultiplyPoint3x4(v));
+                foreach (var b in skin.bones) if (b != null && !bones.Contains(b)) { bones.Add(b); pts.Add(new List<Vector3>()); }
+            }
+            Destroy(mesh);
+            if (bones.Count == 0 || all.Count == 0) return;
+            int step = Mathf.Max(1, all.Count / BodyPointCount);
+            for (int i = 0; i < all.Count; i += step)
+            {
+                var w = all[i];
+                int best = 0; float bestD = float.MaxValue;
+                for (int b = 0; b < bones.Count; b++)
+                {
+                    float d = (bones[b].position - w).sqrMagnitude;
+                    if (d < bestD) { bestD = d; best = b; }
+                }
+                pts[best].Add(bones[best].InverseTransformPoint(w));
+            }
+            var keepB = new List<Transform>(); var keepP = new List<Vector3[]>();
+            for (int b = 0; b < bones.Count; b++) if (pts[b].Count > 0) { keepB.Add(bones[b]); keepP.Add(pts[b].ToArray()); }
+            bodyBones = keepB.ToArray();
+            bodyPoints = keepP.ToArray();
+        }
+
+        /// <summary>
+        /// How far (m) the drawn body goes into a wall on its right and on its left: from the body's middle (the capsule's
+        /// axis) along each point of the skin sticking out of the capsule, the first wall in the way. Floors, roofs and
+        /// creatures are no walls.
+        /// </summary>
+        public void SkinIntoWalls(out float right, out float left)
+        {
+            right = 0f; left = 0f;
+            if (bodyBones == null) return;
+            var centre = player.transform.position;
+            float bottom = centre.y - 0.6f;   // (bands from below the feet - a somersault, a roll - up over the head)
+            for (int i = 0; i < WallBands; i++) { bandRight[i] = WallCapsule; bandLeft[i] = WallCapsule; }
+            for (int b = 0; b < bodyBones.Length; b++)
+            {
+                var m = bodyBones[b].localToWorldMatrix;
+                foreach (var lp in bodyPoints[b])
+                {
+                    var w = m.MultiplyPoint3x4(lp);
+                    int band = Mathf.Clamp((int)((w.y - bottom) / WallBand), 0, WallBands - 1);
+                    float dx = w.x - centre.x;
+                    if (dx > bandRight[band]) bandRight[band] = dx;
+                    else if (-dx > bandLeft[band]) bandLeft[band] = -dx;
+                }
+            }
+            for (int i = 0; i < WallBands; i++)
+            {
+                float y = bottom + (i + 0.5f) * WallBand;
+                if (bandRight[i] > WallCapsule) right = Mathf.Max(right, Into(centre, y, 1, bandRight[i]));
+                if (bandLeft[i] > WallCapsule) left = Mathf.Max(left, Into(centre, y, -1, bandLeft[i]));
+            }
+        }
+
+        /// <summary>How far a point <paramref name="reach"/> out from the body's middle at height y goes into a wall that way.</summary>
+        float Into(Vector3 centre, float y, int side, float reach)
+        {
+            var from = new Vector3(centre.x, y, centre.z);
+            int n = Physics.RaycastNonAlloc(from, new Vector3(side, 0f, 0f), wallHits, reach, ~0, QueryTriggerInteraction.Ignore);
+            float nearest = reach;
+            for (int i = 0; i < n; i++)
+            {
+                var h = wallHits[i];
+                if (Mathf.Abs(h.normal.x) < 0.5f) continue;   // a floor's or a roof's face, grazed
+                if (h.collider.transform.IsChildOf(player.transform)) continue;
+                if (h.collider.GetComponentInParent<IHostile>() != null) continue;   // creatures are no walls
+                if (h.distance < nearest) nearest = h.distance;
+            }
+            return reach - nearest;
+        }
+
+        /// <summary>
+        /// The capsule stops at a wall; the body bent out of it does not: leaning into a run or a dash, crawling, sliding,
+        /// in the somersault, landing hard, the head, the hands, the knees went up to 0.44 m into the stone. The drawn
+        /// body is put back out of it - at once (not into a wall, not for a frame), and back again smoothly. Hanging on a
+        /// lip (the knees went 0.24 m into its face) the body is put back too and the hands then reach onto the lip; on
+        /// the rope the swing keeps the body clear itself (<see cref="PlayerController.SwingBodyBlocked"/>).
+        /// </summary>
+        void KeepOffWalls(in HeroState s, float dt)
+        {
+            float want = 0f;
+            // (on the lip too: the hands are reached onto it afterwards; on the rope the swing keeps the body clear)
+            bool free = !s.swinging && bodyBones != null;
+            if (free)
+            {
+                SkinIntoWalls(out float right, out float left);
+                // (a little clear of the stone: the hair and the cloth swing on after this)
+                if (right > 0f) right += WallClearance;
+                if (left > 0f) left += WallClearance;
+                want = Mathf.Clamp(left - right, -WallMaxPush, WallMaxPush);
+            }
+            bool further = Mathf.Abs(want) > Mathf.Abs(wallOffset) || want * wallOffset < 0f;
+            wallOffset = further ? want : Mathf.Lerp(wallOffset, want, 1f - Mathf.Exp(-20f * dt));
+            hips.position += Vector3.right * wallOffset;
+            if (free)
+            {
+                SkinIntoWalls(out float r2, out float l2);
+                SkinInWall = Mathf.Max(r2, l2);
+            }
+            else SkinInWall = 0f;
         }
 
         /// <summary>The fingers (null when the model has no finger bones).</summary>

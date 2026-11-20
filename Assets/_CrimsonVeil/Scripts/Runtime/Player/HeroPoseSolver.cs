@@ -718,7 +718,7 @@ namespace CrimsonVeil.Player
         /// </summary>
         public static Vector2 LipHandOffset(float t)
         {
-            var grip = new Vector2(-0.03f, 0.0f);
+            var grip = new Vector2(-0.04f, 0.05f);   // (the wrist level with the corner put the palm 8 cm into the stone)
             var flat = new Vector2(0.08f, 0.04f);
             return Vector2.Lerp(grip, flat, Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(ClimbPullEnd - 0.05f, ClimbPressEnd - 0.05f, t)));
         }

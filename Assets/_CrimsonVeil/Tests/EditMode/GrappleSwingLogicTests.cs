@@ -36,6 +36,21 @@ namespace CrimsonVeil.Tests
         }
 
         [Test]
+        public void TheBodyHittingAWall_StopsTheSwingThere_AndItBouncesBackALittle()
+        {
+            var m = new MotorLogic(new MotorSettings()) { Velocity = new Vector2(-6f, 0f) };
+            Assert.IsTrue(m.BeginSwing(Anchor, Anchor + new Vector2(0f, -3f)));
+            Assert.Less(m.SwingAngularVelocity, 0f, "swinging left");
+            float before = m.SwingAngularVelocity;
+            var hit = Anchor + new Vector2(-2f, -2.2f);
+            m.BlockSwing(hit);
+            Assert.AreEqual(Mathf.Atan2(-2f, 2.2f), m.SwingAngle, 1e-4f, "the swing is where the hands stopped");
+            Assert.AreEqual(-before * MotorLogic.SwingBounce, m.SwingAngularVelocity, 1e-4f, "it comes back off the wall, a little");
+            Assert.AreEqual(Vector2.zero, m.Velocity);
+            Assert.IsTrue(m.IsSwinging, "still on the whip");
+        }
+
+        [Test]
         public void CannotLatch_OntoARingBelowOrOutOfReach()
         {
             var m = new MotorLogic(new MotorSettings());

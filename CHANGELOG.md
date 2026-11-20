@@ -5,6 +5,16 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.43.2] – 2026-11-20
+### Opraveno
+- **Při houpání na biči tělo procházelo zdí.** Kolizní kapsle hrdiny zůstává i na laně svisle pod rukama, ale tělo visí podél lana a natáčí se kolem rukou. Když ho houpání vyneslo vysoko a lano bylo skoro vodorovné, tělo trčelo z rukou do strany přímo do zdi, kam svislá kapsle nedosáhla, a nic ho nezastavilo.
+- Teď se každý krok houpání navíc ověří kapslí položenou podél těla na laně, od podpaží po holeně (`PlayerController.SwingBodyBlocked`). Kontrola běží od náklonu lana 15°, pod ním stačí svislá kapsle.
+  - Když by tělo vjelo do zdi, hrdina se zastaví přesně u ní a houpání se od ní lehce odrazí zpátky, s 20 % rychlosti (`MotorLogic.BlockSwing`).
+  - Nepřátelé jako zeď nepočítají.
+- Testy:
+  - `GrappleSwingLogicTests`: náraz zastaví houpání tam, kde se ruce zastavily, a houpání se vrátí zpátky s pětinou rychlosti;
+  - `GrappleSwingPlayTests`: hrdina se houpe vysoko proti zdi mimo dosah svislé kapsle a tělo do ní nevjede. Bez opravy vjelo 1,08 m.
+
 ## [0.43.1] – 2026-11-20
 ### Opraveno
 - **Na laně nohy v úvrati přeskočily do jiné pózy.** Klip houpání se přehrával dokola podle fáze kyvadla, jenže zachycené houpání není čistá smyčka: na konci klipu jsou nohy o desítky stupňů jinde než na začátku. Kousek před přední úvratí (fáze 0,88) klip přetekl z konce na začátek a nohy se otočily až o 110° během jediného snímku. Vypadalo to jako zásek hry, i když žádný nebyl.

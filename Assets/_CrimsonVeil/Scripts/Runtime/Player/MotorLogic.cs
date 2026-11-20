@@ -294,6 +294,22 @@ namespace CrimsonVeil.Player
             return true;
         }
 
+        /// <summary>
+        /// The body on the whip ran into a wall with the hands at <paramref name="grip"/>: the swing stops there and
+        /// bounces back a little (<see cref="SwingBounce"/>), the way a body knocked against stone does.
+        /// </summary>
+        public void BlockSwing(Vector2 grip)
+        {
+            if (State != MotorState.Swinging) return;
+            Vector2 d = grip - SwingAnchor;
+            if (d.sqrMagnitude > 1e-4f) SwingAngle = Mathf.Atan2(d.x, -d.y);
+            SwingAngularVelocity *= -SwingBounce;
+            Velocity = Vector2.zero;
+        }
+
+        /// <summary>How much of the swing's speed comes back off a wall the body hits.</summary>
+        public const float SwingBounce = 0.2f;
+
         /// <summary>Lets go of the whip without a leap (the whip melted, a cutscene…).</summary>
         public void ReleaseSwing()
         {

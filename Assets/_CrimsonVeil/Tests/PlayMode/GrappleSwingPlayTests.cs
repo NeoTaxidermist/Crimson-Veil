@@ -127,6 +127,42 @@ namespace CrimsonVeil.Tests
         }
 
         /// <summary>
+        /// Swung out high, the body hangs along the rope sideways from the hands. A wall there (left of the ring, out of
+        /// the upright capsule's reach under the hands) stops the body, not just the hands: before, he swung into it up to
+        /// his shoulders.
+        /// </summary>
+        [UnityTest]
+        public IEnumerator SwungOutHigh_TheBodyStopsAtAWall_NotInIt()
+        {
+            const float face = -4f;   // the wall's right face, relative to the ring
+            Box(new Vector3(Ring.x + face - 1f, Ring.y + 0.25f, 0f), new Vector3(2f, 3.5f, 4f));   // y ring-1.5 .. ring+2
+            yield return Wait(0.2f);
+            // hands 3.5 m out at 80 degrees right of the ring, still: he falls into the swing and out high on the left
+            float a = 80f * Mathf.Deg2Rad;
+            var grip = Ring + new Vector3(Mathf.Sin(a), -Mathf.Cos(a), 0f) * 3.5f;
+            float gripHeight = controller.GripPosition.y - player.transform.position.y;
+            controller.Teleport(grip - Vector3.up * gripHeight);
+            Assert.IsTrue(controller.Motor.BeginSwing(Ring, controller.GripPosition));
+            float deepest = -9f, leftmost = float.MaxValue;
+            float end = Time.time + 2.5f;
+            while (Time.time < end)
+            {
+                yield return null;
+                var g = controller.GripPosition;
+                Vector3 dir = (g - Ring).normalized;
+                Vector3 shins = g + dir * (gripHeight - PlayerController.SwingBodyEnd);
+                Vector3 chest = g + dir * PlayerController.SwingBodyTop;
+                bool level = shins.y < Ring.y + 2f && shins.y > Ring.y - 1.5f;
+                if (level) deepest = Mathf.Max(deepest, (Ring.x + face) - (shins.x - PlayerController.SwingBodyRadius));
+                deepest = Mathf.Max(deepest, (Ring.x + face) - (chest.x - PlayerController.SwingBodyRadius));
+                leftmost = Mathf.Min(leftmost, g.x);
+            }
+            Assert.IsTrue(controller.Motor.IsSwinging, "still on the whip");
+            Assert.Less(leftmost, Ring.x - 2f, "he did swing out towards the wall");
+            Assert.Less(deepest, 0.05f, $"the body never goes into the wall (it went {deepest:F2} m in)");
+        }
+
+        /// <summary>
         /// The prototype scene's high perch, relative to its ring: ring at (2, 7.8), a perch 6 m up from x -10 to -6
         /// — far above a jump. Standing near the ring, latch, pump, let go at the high back-swing: up onto the perch.
         /// </summary>

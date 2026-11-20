@@ -141,7 +141,13 @@ namespace CrimsonVeil.Player
             }
             else if (Motor.State != MotorState.LedgeHang)
             {
-                lastFlags = controller.Move(new Vector3(v.x, v.y, 0f) * dt);
+                Vector3 step = new Vector3(v.x, v.y, 0f) * dt;
+                if (Motor.IsSwinging)
+                {
+                    float free = SwingStepFree(step);
+                    if (free < 1f) { step *= free; Motor.BlockSwing(GripPosition + step); }
+                }
+                lastFlags = controller.Move(step);
             }
 
             var p = transform.position;
@@ -154,6 +160,51 @@ namespace CrimsonVeil.Player
 
             UpdateFlip(dt);
             UpdateVisual(dt);
+        }
+
+        /// <summary>
+        /// The body on the whip hangs along the rope from the hands (<see cref="UpdateVisual"/> turns it round them), but
+        /// the controller's capsule stays upright under them: swung out high, the body stuck out sideways through a wall
+        /// the capsule never touched. This capsule lies along the rope from below the hands to the shins.
+        /// </summary>
+        public const float SwingBodyTop = 0.3f, SwingBodyEnd = 0.45f, SwingBodyRadius = 0.22f;
+        /// <summary>Below this tilt of the rope (degrees) the upright capsule is the body well enough.</summary>
+        public const float SwingBodyTilt = 15f;
+        readonly Collider[] overlap = new Collider[16];
+
+        /// <summary>Does the body hanging along the rope from hands at <paramref name="grip"/> run into the level?</summary>
+        public bool SwingBodyBlocked(Vector3 grip)
+        {
+            Vector3 anchor = new Vector3(Motor.SwingAnchor.x, Motor.SwingAnchor.y, grip.z);
+            Vector3 dir = grip - anchor;
+            if (dir.sqrMagnitude < 1e-4f) return false;
+            dir.Normalize();
+            if (Vector3.Angle(dir, Vector3.down) < SwingBodyTilt) return false;
+            int n = Physics.OverlapCapsuleNonAlloc(grip + dir * SwingBodyTop, grip + dir * (gripHeight - SwingBodyEnd), SwingBodyRadius,
+                                                   overlap, environment, QueryTriggerInteraction.Ignore);
+            for (int i = 0; i < n; i++)
+            {
+                var c = overlap[i];
+                if (c.transform.IsChildOf(transform)) continue;
+                if (c.GetComponentInParent<CrimsonVeil.Combat.IHostile>() != null) continue;   // creatures are no walls
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>How much (0..1) of this step on the whip the body can take before it runs into the level.</summary>
+        float SwingStepFree(Vector3 step)
+        {
+            Vector3 grip = GripPosition;
+            if (!SwingBodyBlocked(grip + step)) return 1f;
+            if (SwingBodyBlocked(grip)) return 1f;   // already against it (caught the ring there): don't stick fast
+            float lo = 0f, hi = 1f;
+            for (int i = 0; i < 5; i++)
+            {
+                float mid = (lo + hi) * 0.5f;
+                if (SwingBodyBlocked(grip + step * mid)) hi = mid; else lo = mid;
+            }
+            return lo;
         }
 
         [Header("Crouch")]

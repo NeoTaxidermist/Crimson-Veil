@@ -37,6 +37,7 @@ namespace CrimsonVeil.Player
             mocap = GetComponent<HeroMocap>();
             health = player != null ? player.GetComponent<PlayerHealth>() : null;
             IsReady = Setup();
+            if (IsReady && GetComponent<HeroWallTouchUp>() == null) gameObject.AddComponent<HeroWallTouchUp>().Animator = this;
             if (IsReady)
             {
                 var hands = new HeroHands(model, hips); // (in the bind pose: the fingers' rest is measured here)
@@ -561,6 +562,7 @@ namespace CrimsonVeil.Player
             float want = 0f;
             // (on the lip too: the hands are reached onto it afterwards; on the rope the swing keeps the body clear)
             bool free = !s.swinging && bodyBones != null;
+            wallFree = free;
             if (free)
             {
                 SkinIntoWalls(out float right, out float left);
@@ -578,6 +580,31 @@ namespace CrimsonVeil.Player
                 SkinInWall = Mathf.Max(r2, l2);
             }
             else SkinInWall = 0f;
+        }
+
+        bool wallFree;
+
+        /// <summary>
+        /// The last word on the walls, once the hair and the cloth have swung (<see cref="SpringBones"/>), the face and
+        /// the fingers are set: whatever of the body they carried into a wall is put back out with the rest. (After the
+        /// main fit the hair, a hand, swung on up to 5 cm into the stone.) Not on the lip or the rope: there the hands
+        /// hold on.
+        /// </summary>
+        public void WallTouchUp()
+        {
+            if (!wallFree || bodyBones == null || player.Motor.State == MotorState.LedgeHang || player.Motor.State == MotorState.Climbing) return;
+            SkinIntoWalls(out float right, out float left);
+            if (right <= 0f && left <= 0f) { SkinInWall = 0f; return; }
+            if (right > 0f) right += WallClearance;
+            if (left > 0f) left += WallClearance;
+            float more = Mathf.Clamp(wallOffset + left - right, -WallMaxPush, WallMaxPush) - wallOffset;
+            if (Mathf.Abs(more) < 1e-5f) return;
+            wallOffset += more;
+            var shift = Vector3.right * more;
+            hips.position += shift;
+            if (veilAnchor != null) veilAnchor.position += shift;
+            SkinIntoWalls(out float r2, out float l2);
+            SkinInWall = Mathf.Max(r2, l2);
         }
 
         /// <summary>The fingers (null when the model has no finger bones).</summary>

@@ -5,6 +5,11 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.44.1] – 2026-11-20
+### Opraveno
+- **Testy zdí ověřovaly jen zeď vpravo.** `HeroBodyWallPlayTests` teď dělá každý pohyb do zdi vpravo i vlevo (hrdina otočený doleva), tedy 16 testů místo 8. Vlevo dva těsně selhaly: dash 5,0 cm a salto 5,2 cm v kameni. Vpravo procházely jen o vlásek.
+- Příčina: po kontaktu se zdí se tělo ještě dopohybuje. Vlasy a látka se zhoupnou na pružinách a prsty se sevřou, a to všechno až po korekci. Nový závěrečný krok `HeroAnimator.WallTouchUp` proto běží na konci animace, po pružinách a obličeji a před šálou (`HeroWallTouchUp`, pořadí 30). Co se do zdi ještě dostalo, odsune s celým tělem i s kotvou šály. Neběží na hraně ani na laně, kde se ruce drží.
+
 ## [0.44.0] – 2026-11-20
 ### Přidáno
 - **Tělo zůstává mimo zdi při každém pohybu.** Kolizní kapsle hrdiny je úzká a svislá. Zastaví se u zdi, ale tělo se z ní vyklání, takže hlava, ruce a kolena zajížděly do kamene. Naměřeno proti zdi na skutečném hrdinovi, po vykreslení snímku:

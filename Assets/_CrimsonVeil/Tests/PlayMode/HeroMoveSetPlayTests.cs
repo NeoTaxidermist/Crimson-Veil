@@ -513,6 +513,158 @@ namespace CrimsonVeil.Tests
             Assert.Contains(HeroMocap.DownStrike, new List<string>(played), "the strike under the feet");
         }
 
+        /// <summary>A low thing to strike (a trigger: the hero steps into it, not against it); counts the blows.</summary>
+        HitDummy LowTarget(float ahead, float height, float bottom = 0f)
+        {
+            var b = Box("low target", new Vector3(Pos.x + ahead, bottom + height * 0.5f, 0f), new Vector3(0.4f, height, 1f));
+            b.GetComponent<Collider>().isTrigger = true;
+            return b.AddComponent<HitDummy>();
+        }
+
+        /// <summary>The lowest point (m over the floor) of the weapon part of the veil.</summary>
+        float WeaponLow()
+        {
+            var p = veil.Simulation.Positions;
+            int n = veil.Simulation.Count;
+            int start = Mathf.Clamp(Mathf.FloorToInt(veil.HandFraction * (n - 1)), 0, n - 1);
+            float low = 99f;
+            for (int i = start; i < n; i++) low = Mathf.Min(low, p[i].y);
+            return low;
+        }
+
+        static readonly (VeilForm form, float ahead)[] LowBlows =
+        {
+            (VeilForm.Sword, 1.2f), (VeilForm.Spear, 1.6f), (VeilForm.Whip, 2.4f), (VeilForm.Shield, 0.9f), (VeilForm.Bow, 5f),
+        };
+
+        [UnityTest]
+        public IEnumerator FromTheCrouch_EveryWeapon_StrikesLow_AndHeStaysDownThroughIt()
+        {
+            foreach (var (form, ahead) in LowBlows)
+            {
+                yield return StartAt(new Vector3(-12f, 0.05f, 0f));
+                input.aimY = -1f;
+                yield return Wait(0.5f);
+                Assert.IsTrue(controller.Motor.IsCrouching, "down held: crouched");
+                var target = LowTarget(ahead, 0.35f);
+                input.cast = form;
+                bool started = false, stood = false, low = true, standingClip = false;
+                float headTop = 0f, weaponLow = 99f, lowest = 99f, lowestAt = -1f;
+                yield return Until(() => started && veil.AttackProgress < 0f, 3f, () =>
+                {
+                    if (veil.AttackProgress < 0f) return;
+                    if (!started) { started = true; low = veil.LowBlow; }
+                    // down let go mid-blow: he stays down until it ends
+                    if (veil.AttackProgress > 0.2f) input.aimY = 0f;
+                    if (!controller.Motor.IsCrouching) stood = true;
+                    headTop = Mathf.Max(headTop, HeadHeight);
+                    if (veil.AttackProgress > 0.3f && veil.AttackProgress < 0.75f) weaponLow = Mathf.Min(weaponLow, WeaponLow() - Pos.y);
+                    if (veil.AttackProgress > 0.1f && WeaponLow() - Pos.y < lowest) { lowest = WeaponLow() - Pos.y; lowestAt = veil.AttackProgress; }
+                    if (mocap.Current == HeroMocap.SlashA || mocap.Current == HeroMocap.Stab || mocap.Current == HeroMocap.WhipA
+                        || mocap.Current == HeroMocap.ShieldBash) standingClip = true;
+                });
+                yield return Wait(0.3f);
+                Debug.Log($"[low blow] {form}: head {headTop:F2} m, weapon low {weaponLow:F2} m (lowest {lowest:F2} at {lowestAt:F2}), hits {target.Hits}");
+                Assert.IsTrue(started, $"{form}: the blow was struck");
+                Assert.IsTrue(low, $"{form}: from the crouch it is a low blow");
+                Assert.IsFalse(stood, $"{form}: he stays down through the blow, down let go or not");
+                Assert.IsFalse(standingClip, $"{form}: not a blow captured standing laid over the crouch");
+                Assert.Less(headTop, 1.1f, $"{form}: the head stays low (under a tunnel's roof)");
+                Assert.AreEqual(1, target.Hits, $"{form}: it strikes a thing {0.35f} m tall on the floor");
+                if (form != VeilForm.Bow && form != VeilForm.Shield)
+                    Assert.Less(weaponLow, 0.5f, $"{form}: the weapon sweeps low over the floor");
+                // (the whip's lash lies along the floor; the shield's bash bursts the ring out all round, standing too)
+                if (form != VeilForm.Whip && form != VeilForm.Shield)
+                    Assert.Greater(lowest, -0.12f, $"{form}: over the floor, not into it");
+                Assert.IsFalse(controller.Motor.IsCrouching, $"{form}: once it is over, down let go, he stands up");
+                foreach (var a in Object.FindObjectsByType<VeilArrow>(FindObjectsSortMode.None)) Object.Destroy(a.gameObject);
+                Object.Destroy(target.gameObject);
+                yield return Wait(1.5f);   // (the weapon melts back)
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator InTheLowTunnel_TheShieldsRingDrawsIn_AndABlowUpStaysLow()
+        {
+            yield return StartAt(new Vector3((TunnelLeft + TunnelRight) * 0.5f, 0.05f, 0f));
+            yield return Wait(0.3f);
+            Assert.IsTrue(controller.Motor.IsCrouching, "under the tunnel's roof he is down");
+            input.held = VeilForm.Shield; input.cast = VeilForm.Shield;
+            float bottom = 99f, top = -99f;
+            yield return Wait(1f, () =>
+            {
+                if (veil.TransformProgress < 0.95f || veil.ShieldLow < 0.99f) return;
+                var p = veil.Simulation.Positions;
+                int n = veil.Simulation.Count;
+                for (int i = Mathf.CeilToInt(veil.HandFraction * (n - 1)); i < n; i++) { bottom = Mathf.Min(bottom, p[i].y); top = Mathf.Max(top, p[i].y); }
+            });
+            input.held = null;
+            Debug.Log($"[low shield] ring {bottom:F2} .. {top:F2} m");
+            Assert.Greater(veil.ShieldLow, 0.99f, "crouched, the ring drew in");
+            Assert.Greater(bottom, -0.1f, "the ring is not in the floor");
+            Assert.Less(top, TunnelBottom + 0.1f, "nor in the tunnel's roof");
+            yield return Wait(1.5f);
+            // up and a blow under the roof: no rising strike into it, a low blow
+            input.aimY = 1f;
+            yield return Wait(0.1f);
+            input.cast = VeilForm.Sword;
+            float blade = -9f, bladeAt = -1f, bladeMorph = 0f;
+            yield return Until(() => veil.AttackProgress >= 0.5f, 2f);
+            Assert.IsTrue(veil.LowBlow, "a low blow");
+            Assert.IsFalse(veil.Rising, "no rising strike under a roof");
+            Assert.IsTrue(controller.Motor.IsGrounded, "he stays on the floor");
+            input.aimY = 0f;
+            // (the whole of the next blow: the cut stays under the roof)
+            yield return Wait(1.2f);
+            input.cast = VeilForm.Sword;
+            yield return Until(() => veil.AttackProgress >= 0.95f, 2f, () =>
+            {
+                if (veil.AttackProgress < 0.05f || veil.ShapeMorph < 0.95f) return;   // (the formed blade: the scarf pouring into it streams up first)
+                var p = veil.Simulation.Positions;
+                int n = veil.Simulation.Count;
+                for (int i = Mathf.CeilToInt(veil.HandFraction * (n - 1)); i < n; i++) if (p[i].y > blade) { blade = p[i].y; bladeAt = veil.AttackProgress; bladeMorph = veil.ShapeMorph; }
+            });
+            Debug.Log($"[low cut in the tunnel] blade top {blade:F2} m at t {bladeAt:F2}, morph {bladeMorph:F2}");
+            Assert.Less(blade, TunnelBottom + 0.1f, "the low cut stays under the tunnel's roof");
+        }
+
+        [UnityTest]
+        public IEnumerator UpOutOfTheCrouch_ARisingStrike_CarriesHimUp_AndThrowsTheFoeUp()
+        {
+            foreach (var form in new[] { VeilForm.Sword, VeilForm.Spear, VeilForm.Whip })
+            {
+                yield return StartAt(new Vector3(-12f, 0.05f, 0f));
+                input.aimY = -1f;
+                yield return Wait(0.4f);
+                var target = LowTarget(0.3f, 1.2f, 1.6f);   // over him
+                float y0 = Pos.y;
+                input.aimY = 1f;     // let go of down, up held: and the blow
+                yield return null;
+                input.cast = form;
+                float top = y0;
+                bool rising = false;
+                yield return Until(() => veil.AttackProgress >= 0.95f, 2f, () => { top = Mathf.Max(top, Pos.y); rising |= veil.Rising; });
+                input.aimY = 0f;
+                yield return Until(() => controller.Motor.IsGrounded, 3f);
+                Debug.Log($"[rising] {form}: rose {top - y0:F2} m, hits {target.Hits}, knock up {target.LastKnock.y:F1}");
+                Assert.IsTrue(rising, $"{form}: a rising strike");
+                Assert.Greater(top - y0, 1f, $"{form}: it carries him up into the air");
+                Assert.AreEqual(1, target.Hits, $"{form}: it strikes what is over him");
+                Assert.GreaterOrEqual(target.LastKnock.y, VeilController.RiseKnock * 0.99f, $"{form}: and throws it up");
+                Object.Destroy(target.gameObject);
+                yield return Wait(1.5f);
+            }
+            // standing (not just up out of the crouch), up and a blow is the usual cut overhead: no leap
+            yield return StartAt(new Vector3(-12f, 0.05f, 0f));
+            input.aimY = 1f;
+            yield return Wait(0.6f);
+            input.cast = VeilForm.Sword;
+            yield return Until(() => veil.AttackProgress >= 0.5f, 2f);
+            Assert.IsFalse(veil.Rising, "standing: no rising strike");
+            Assert.IsTrue(controller.Motor.IsGrounded, "he stays on the ground");
+            input.aimY = 0f;
+        }
+
         [UnityTest]
         public IEnumerator TheWhip_CatchesARing_HeSwingsBothFistsOnTheRope_AndLetsGoWithAJump()
         {
@@ -581,6 +733,20 @@ namespace CrimsonVeil.Tests
             Assert.IsTrue(health.Model.Current < life || health.AbsorbCount > absorbed, "the blow lands (on him or on the scarf)");
             yield return Wait(0.5f);
             Assert.IsTrue(played.Contains(HeroMocap.Stagger) || playedUpper.Contains(HeroMocap.Hurt), "he reels from it");
+        }
+    }
+
+    /// <summary>A thing to strike: counts the blows that land on it and keeps the last one's knock.</summary>
+    public sealed class HitDummy : MonoBehaviour, IDamageable
+    {
+        public int Hits { get; private set; }
+        public Vector2 LastKnock { get; private set; }
+
+        public bool ReceiveHit(in DamageInfo info)
+        {
+            Hits++;
+            LastKnock = info.knockback;
+            return true;
         }
     }
 }

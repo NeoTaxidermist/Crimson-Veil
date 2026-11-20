@@ -66,8 +66,11 @@ namespace CrimsonVeil.Combat
                     var info = new DamageInfo
                     {
                         amount = VeilCombatProfile.Damage(form) * blow.DamageScale,
-                        knockback = new Vector2(veil.Facing * VeilCombatProfile.Knockback(form) * blow.KnockbackScale,
-                                                upwardKnock * (blow.finisher ? 1.4f : 1f)),
+                        // (a rising strike out of the crouch throws it up rather than away)
+                        knockback = veil.Rising
+                            ? new Vector2(veil.Facing * VeilCombatProfile.Knockback(form) * 0.3f, VeilController.RiseKnock * (blow.finisher ? 1.2f : 1f))
+                            : new Vector2(veil.Facing * VeilCombatProfile.Knockback(form) * blow.KnockbackScale,
+                                          upwardKnock * (blow.finisher ? 1.4f : 1f)),
                         point = point,
                         kind = VeilCombatProfile.Kind(form),
                         source = gameObject,

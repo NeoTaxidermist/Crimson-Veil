@@ -164,6 +164,114 @@ namespace CrimsonVeil.Player
             At(Hold, 1f),
         };
 
+        // ---- Low blows, struck from the crouch: the legs stay the crouch's (the keys' leg values are only the crouch's
+        // for reference), the trunk bent over the knees, and the blow sweeps low over the floor. The arm rides on the
+        // bent trunk, and the trunk bent forward carries the arm back and down with it: a level arm takes the lean
+        // (spine + chest) on top of its 90 degrees.
+        static readonly Key LowHold = new Key(0f, H, 18f, 32f, 55f, 30f, 10f, 22f, 92f, 122f, 80f, 128f);
+
+        // A low cut at the ankles: the blade raised only so far that it stays under a tunnel's roof (the forearm
+        // level, the blade ~20 degrees up), then chopped down level just over the floor, the body leaning into it.
+        static readonly Key[] SwordLow =
+        {
+            At(LowHold, 0f),
+            K(0.26f, 30f, 46f, 40f, 70f, 26f, 6f, 22f, 92f, 122f, 80f, 128f),    // raised low in front, under the roof
+            K(0.50f, 50f, 16f, 10f, 60f, 40f, 12f, 14f, 92f, 122f, 80f, 128f),      // chopped down level over the floor
+            K(0.66f, 62f, 18f, 5f, 60f, 42f, 12f, 14f, 92f, 122f, 80f, 128f),     // follow-through low in front
+            K(0.82f, 40f, 25f, 25f, 55f, 34f, 10f, 18f, 92f, 122f, 80f, 128f),
+            At(LowHold, 1f),
+        };
+
+        // A lunge from the crouch: drawn back to the hip, then driven out level just over the floor.
+        static readonly Key[] SpearLow =
+        {
+            At(LowHold, 0f),
+            K(0.30f, -10f, 100f, 30f, 60f, 26f, 6f, 20f, 92f, 122f, 80f, 128f),  // drawn back to the hip
+            K(0.45f, 48f, 0f, 20f, 10f, 40f, 10f, 16f, 92f, 122f, 80f, 128f),   // driven out low
+            K(0.65f, 46f, 5f, 20f, 15f, 38f, 10f, 16f, 92f, 122f, 80f, 128f),   // hold the reach
+            At(LowHold, 1f),
+        };
+
+        // A lash along the floor: the hand drawn back low behind the hip, driven forward at shoulder height and
+        // stopped there, so the loop rolls out ahead and the lash comes down along the ground.
+        static readonly Key[] WhipLow =
+        {
+            At(LowHold, 0f),
+            K(0.38f, -45f, 40f, 35f, 40f, 26f, 4f, 20f, 92f, 122f, 80f, 128f),   // hand back low behind the hip
+            K(0.50f, 95f, 2f, -10f, 30f, 40f, 12f, 14f, 92f, 122f, 80f, 128f),   // driven forward low, stopped
+            K(0.70f, 92f, 4f, -10f, 30f, 40f, 12f, 14f, 92f, 122f, 80f, 128f),   // hold while it cracks
+            K(0.86f, 60f, 20f, 15f, 45f, 34f, 10f, 18f, 92f, 122f, 80f, 128f),
+            At(LowHold, 1f),
+        };
+
+        // Crouched behind the shield: braced low, a short shove forward with the shoulder.
+        static readonly Key[] ShieldLow =
+        {
+            At(LowHold, 0f),
+            K(0.20f, 50f, 70f, 20f, 50f, 34f, 8f, 20f, 92f, 122f, 80f, 128f),    // braced low
+            K(0.40f, 70f, 5f, -10f, 20f, 44f, 12f, 14f, 92f, 122f, 80f, 128f),   // shove with the shoulder
+            K(0.60f, 65f, 15f, 0f, 20f, 40f, 10f, 16f, 92f, 122f, 80f, 128f),
+            At(LowHold, 1f),
+        };
+
+        // A shot from the crouch: the trunk stays bent low over the knees (under a tunnel's roof), the bow level.
+        static readonly Key[] BowLow =
+        {
+            At(LowHold, 0f),
+            K(0.12f, 122f, 2f, 110f, 20f, 30f, 6f, 12f, 92f, 122f, 80f, 128f),     // bow up, hand to the string
+            K(0.30f, 122f, 0f, 106f, 135f, 30f, 6f, 12f, 92f, 122f, 80f, 128f),    // full draw (release here)
+            K(0.40f, 124f, 0f, 16f, 40f, 30f, 6f, 12f, 92f, 122f, 80f, 128f),     // release, hand flies back
+            K(0.70f, 112f, 10f, 40f, 30f, 32f, 8f, 16f, 92f, 122f, 80f, 128f),
+            At(LowHold, 1f),
+        };
+
+        public static Key[] LowFor(VeilForm form)
+        {
+            switch (form)
+            {
+                case VeilForm.Sword: return SwordLow;
+                case VeilForm.Spear: return SpearLow;
+                case VeilForm.Whip: return WhipLow;
+                case VeilForm.Shield: return ShieldLow;
+                case VeilForm.Bow: return BowLow;
+                default: return null;
+            }
+        }
+
+        /// <summary>The low blow's key pose at time t (the bow raised into its aim, as standing).</summary>
+        public static Key SampleLow(VeilForm form, float t, float aim = 0f)
+        {
+            var keys = LowFor(form);
+            if (keys == null) return LowHold;
+            var k = SampleKeys(form, keys, t);
+            if (form == VeilForm.Bow && Mathf.Abs(aim) > 1e-3f)
+            {
+                float raise = Mathf.SmoothStep(0f, 1f, t / 0.12f) * (1f - Mathf.SmoothStep(0f, 1f, (t - 0.7f) / 0.3f));
+                k.armR += aim * raise;
+                k.armL += aim * raise;
+            }
+            return k;
+        }
+
+        /// <summary>
+        /// Overlays a low blow on the crouch: the arms, trunk and head take the blow; the legs are left the crouch's,
+        /// so he stays down through it.
+        /// </summary>
+        public static HeroPose ApplyLow(HeroPose pose, VeilForm form, float t, float aim = 0f)
+        {
+            if (t < 0f || LowFor(form) == null) return pose;
+            var k = SampleLow(form, t, aim);
+            float w = 1f - Mathf.SmoothStep(0f, 1f, (t - 0.85f) / 0.15f);
+            pose.armR = Mathf.Lerp(pose.armR, k.armR, w);
+            pose.elbowR = Mathf.Lerp(pose.elbowR, k.elbowR, w);
+            pose.armL = Mathf.Lerp(pose.armL, k.armL, w);
+            pose.elbowL = Mathf.Lerp(pose.elbowL, k.elbowL, w);
+            pose.spine = Mathf.Lerp(pose.spine, k.spine, w);
+            pose.chest = Mathf.Lerp(pose.chest, k.chest, w);
+            pose.head = Mathf.Lerp(pose.head, k.head, w);
+            return pose;
+        }
+
         static Key[] Aimed(VeilForm form, bool up)
         {
             switch (form)
@@ -299,7 +407,8 @@ namespace CrimsonVeil.Player
         static Key KeyAt(VeilForm form, Key[] keys, int i)
         {
             int last = keys.Length - 1;
-            return i == 0 || i == last ? Ready(form, keys[i]) : keys[i];
+            // (a low blow starts and ends in the crouched guard)
+            return i == 0 || i == last ? Ready(form, keys[i], keys == LowFor(form)) : keys[i];
         }
 
         /// <summary>Rate of change at key i (per unit of attack time): zero in the ready stance at either end.</summary>
@@ -322,9 +431,11 @@ namespace CrimsonVeil.Player
 
         static Key FromArray(float t, float[] f) => new Key(t, f[0], f[1], f[2], f[3], f[4], f[5], f[6], f[7], f[8], f[9], f[10]);
 
-        static Key Ready(VeilForm form, Key k)
+        static Key Ready(VeilForm form, Key k, bool low = false)
         {
-            HeroPoseSolver.WeaponHold(form, 0f, out float arm, out float elbow);
+            float arm, elbow;
+            if (low) HeroPoseSolver.WeaponHoldLow(form, out arm, out elbow);
+            else HeroPoseSolver.WeaponHold(form, 0f, out arm, out elbow);
             k.armR = arm;
             k.elbowR = elbow;
             return k;

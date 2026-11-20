@@ -415,6 +415,33 @@ namespace CrimsonVeil.Player
             if (velocity.y > 0f) IsGrounded = false;
         }
 
+        /// <summary>
+        /// A blow struck from the crouch is played out in it: he stays down until it ends, even if down is let go
+        /// (set by the veil while such a blow is under way).
+        /// </summary>
+        public bool HoldLow { get; set; }
+
+        /// <summary>Share of the jump's take-off speed a rising strike out of the crouch leaps with.</summary>
+        public const float RiseFactor = 0.85f;
+
+        /// <summary>
+        /// A rising strike: up out of the crouch, the blow carries him into the air (only from the ground, with room
+        /// over him). The double jump stays for after it.
+        /// </summary>
+        public bool Rise()
+        {
+            if (!IsGrounded || State != MotorState.Normal || IsDashing || IsSliding) return false;
+            Velocity.y = Settings.JumpVelocity * RiseFactor;
+            IsJumping = false;     // no jump-cut: the blow, not the jump key, carries him
+            IsGrounded = false;
+            IsCrouching = false;
+            HoldLow = false;
+            coyoteTimer = 0f;
+            bufferTimer = 0f;
+            Jumped?.Invoke();
+            return true;
+        }
+
         /// <summary>A short step forward into an attack (only on the ground).</summary>
         public void Lunge(float speed)
         {
@@ -543,7 +570,7 @@ namespace CrimsonVeil.Player
             // Crouched: down held on the ground, or no room over him to stand up.
             // (planted - Ctrl held - down aims a blow low instead: no crouching)
             bool downHeld = input.aimY < -0.5f && !input.stand;
-            IsCrouching = IsGrounded && State == MotorState.Normal && !IsDashing && (downHeld || contacts.lowCeiling || IsSliding);
+            IsCrouching = IsGrounded && State == MotorState.Normal && !IsDashing && (downHeld || contacts.lowCeiling || IsSliding || HoldLow);
             if (!IsGrounded) { slideTimer = 0f; rollTimer = 0f; }   // slid or rolled off an edge: the momentum carries on as a fall
 
             // Ledge grab: falling or near the apex, pushing into a ledge.

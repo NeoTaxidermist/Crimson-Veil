@@ -239,6 +239,10 @@ namespace CrimsonVeil.Player
                     float level = 1f - Mathf.Clamp01(Mathf.Abs(s.attackAim) / 70f);
                     return new Choice { key = AirSlash, driven = true, time01 = s.attackT, weight = 0.75f * level, mask = Mask.NoHipsTurn };
                 }
+                // from the crouch he stays down: the legs keep the crouch, the low blow is the procedural's (the captured
+                // blows are all struck standing - laid over the crouch, the legs half stood up)
+                if (s.lowBlow && s.grounded)
+                    return s.speed > 0.2f ? Choice.None : new Choice { key = CrouchIdle, weight = 0.7f, mask = Mask.Legs };
                 // standing, the whole body fights; on the move only the waist up (the legs keep going); aimed steeply up
                 // or down only the legs
                 var mask = s.grounded && s.speed < 2f && !s.sliding ? Mask.Full : Mask.Upper;
@@ -434,7 +438,8 @@ namespace CrimsonVeil.Player
             {
                 masks[m] = new float[bones.Length];
                 for (int i = 0; i < bones.Length; i++) masks[m][i] = MaskWeight((Mask)m, bones[i].name);
-                hipsPosition[m] = (Mask)m != Mask.Upper;
+                // (the drawing arm alone moves no hips: crouched, the standing archer's hips stood him half up)
+                hipsPosition[m] = (Mask)m != Mask.Upper && (Mask)m != Mask.DrawArm;
             }
         }
 

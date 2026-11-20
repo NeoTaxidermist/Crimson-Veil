@@ -285,6 +285,7 @@ namespace CrimsonVeil.Veil
             Drawing = false;
             ThrustingDown = false;
             DownStrike = false;
+            EndLowAndRise();
             aimTiltTarget = 0f;
             recoverTimer = Mathf.Max(recoverTimer, recover);
             Combo.Reset();
@@ -325,6 +326,7 @@ namespace CrimsonVeil.Veil
             pendingAttack = null;
             ThrustingDown = false;
             DownStrike = false;
+            EndLowAndRise();
             Drawing = false;
             aimTiltTarget = 0f;
             if (form == VeilForm.Flow && TransformProgress > 0.05f) releaseTime = 0f; // start exhaling
@@ -404,7 +406,14 @@ namespace CrimsonVeil.Veil
             Drawing = false;
             drawTime = 0f;
             bool airborne = player != null && player.Motor != null && !player.IsGrounded;
-            AttackAim = AimNow(ShapeForm, airborne);
+            var motor = player != null ? player.Motor : null;
+            // From the crouch: a low blow, played out in it. Just up out of it with up held: a rising strike.
+            LowBlow = motor != null && VeilAim.LowBlow(player.IsGrounded, motor.IsCrouching, motor.IsSliding);
+            Rising = motor != null && !LowBlow && !motor.IsCrouching && input != null
+                     && VeilAim.RisingStrike(player.IsGrounded, sinceCrouched, input.AimY, ShapeForm);
+            AttackAim = Rising ? AimNow(ShapeForm, false, 90f) : AimNow(ShapeForm, airborne);
+            if (Rising && !motor.Rise()) Rising = false;
+            if (LowBlow) motor.HoldLow = true;
             ThrustingDown = ShapeForm == VeilForm.Spear && airborne && AttackAim <= -80f;
             // A strike under the feet in the air (sword or spear) bounces the hero up off what it hits.
             DownStrike = airborne && AttackAim <= -60f && (ShapeForm == VeilForm.Sword || ShapeForm == VeilForm.Spear);
@@ -419,6 +428,8 @@ namespace CrimsonVeil.Veil
             // well up off the forearm, as it is gripped); it turns over the wind-up.
             if (armDriven && ShapeForm == VeilForm.Sword && AttackAim < 0f)
                 aimTiltTarget = SwordDownWrist * Mathf.Clamp01(-AttackAim / 90f);
+            // Low, the spear's point dips to the ankles.
+            if (LowBlow && ShapeForm == VeilForm.Spear) aimTiltTarget = AttackAim + SpearLowDip;
             // (the spear swings round onto its line during the draw-back instead of jumping there)
             if (ThrustingDown || (turnsItself && ShapeForm != VeilForm.Spear)) aimTilt = aimTiltTarget;
             Attacked?.Invoke(Form);
@@ -426,6 +437,40 @@ namespace CrimsonVeil.Veil
 
         /// <summary>Wrist turn (degrees) of a sword driven straight down: the point goes under the feet.</summary>
         public const float SwordDownWrist = -40f;
+
+        /// <summary>How far (degrees) a low thrust's point dips below level: it runs just over the floor.</summary>
+        public const float SpearLowDip = -3f;
+
+        /// <summary>The blow under way was struck from the crouch: low, and he stays down for it (VeilAim.LowBlow).</summary>
+        public bool LowBlow { get; private set; }
+
+        /// <summary>The blow under way is a rising strike out of the crouch: it carried him up (VeilAim.RisingStrike).</summary>
+        public bool Rising { get; private set; }
+
+        /// <summary>Seconds since the hero was last crouched on the ground (0 while crouched).</summary>
+        float sinceCrouched = 99f;
+
+        /// <summary>0..1 how far the shield's ring has drawn in round the crouched body (it fits a tunnel).</summary>
+        public float ShieldLow { get; private set; }
+
+        /// <summary>The shield's ring round the crouched body: this share of its size (clear of floor and a low ceiling).</summary>
+        public const float LowShieldScale = 0.5f;
+
+        /// <summary>How far (m) the crouched ring's centre rides up from the standing one's (round the bent chest).</summary>
+        public const float LowShieldLift = 0.2f;
+
+        /// <summary>Share of the usual lunge a low blow steps in with.</summary>
+        public const float LowLunge = 0.5f;
+
+        /// <summary>A rising strike throws what it hits up: this upward knock (m/s).</summary>
+        public const float RiseKnock = 8f;
+
+        void EndLowAndRise()
+        {
+            LowBlow = false;
+            Rising = false;
+            if (player != null && player.Motor != null) player.Motor.HoldLow = false;
+        }
 
         /// <summary>Direction (degrees from the facing, +up) the current blow is aimed in, aim assist included.</summary>
         public float AttackAim { get; private set; }
@@ -447,7 +492,7 @@ namespace CrimsonVeil.Veil
         {
             float limit = VeilAim.Limit(form);
             if (limit <= 0f || input == null) return 0f;
-            float angle = Mathf.Clamp(keyed ?? VeilAim.Direction(input.MoveX, input.AimY, airborne, form), -limit, limit);
+            float angle = Mathf.Clamp(keyed ?? VeilAim.Direction(input.MoveX, input.AimY, airborne, form, LowBlow), -limit, limit);
             aimKeyed = angle;
             float reach = VeilAim.Reach(form);
             Vector3 a = anchor != null ? anchor.position : transform.position;
@@ -506,6 +551,12 @@ namespace CrimsonVeil.Veil
                 m.ScarfGlide = Form == VeilForm.Flow && Charge.Value > 0.02f;
                 m.Umbrella = shieldHeld && !player.IsGrounded;
                 if (m.IsGliding && m.GlideTime <= 0f && Form == VeilForm.Flow) Charge.Drain(VeilCasting.GlideDrain, dt);
+                bool low = VeilAim.LowBlow(m.IsGrounded, m.IsCrouching, m.IsSliding);
+                sinceCrouched = low ? 0f : sinceCrouched + dt;
+                // the ring round the crouched body draws in (round the standing one it went into the floor)
+                ShieldLow = Mathf.MoveTowards(ShieldLow, ShapeForm == VeilForm.Shield && low ? 1f : 0f, dt / 0.15f);
+                // (a low blow keeps him down until it ends; a drawn bow too, while it is held)
+                if (LowBlow && attackTime < 0f) EndLowAndRise();
             }
             if (recoverTimer > 0f) recoverTimer -= dt;
             Combo.Tick(dt);
@@ -944,7 +995,8 @@ namespace CrimsonVeil.Veil
                     && HeroAttackChoreography.Lunge(ShapeForm, out float lungeSpeed, out float lungeAt) && t >= lungeAt)
                 {
                     lunged = true;
-                    if (!(input != null && input.StandHeld && player.IsGrounded)) player.Motor.Lunge(lungeSpeed);
+                    // (from the crouch a short shuffle into it, not a stride)
+                    if (!(input != null && input.StandHeld && player.IsGrounded)) player.Motor.Lunge(lungeSpeed * (LowBlow ? LowLunge : 1f));
                 }
                 if (t >= 1f)
                 {
@@ -955,6 +1007,7 @@ namespace CrimsonVeil.Veil
                     ThrustingDown = false;
                     DownStrike = false;
                     aimTiltTarget = 0f;
+                    EndLowAndRise();
                 }
                 AttackProgress = t;
             }
@@ -1015,6 +1068,13 @@ namespace CrimsonVeil.Veil
                 // Pose around the canonical grip, move onto the real hand, turn with the forearm.
                 Vector2 rest = VeilWeaponPose.Idle(ShapeForm, basePoint, weapon, time);
                 rest = VeilWeaponPose.Apply(ShapeForm, rest, weapon, t, armDriven);
+                // Crouched, the shield's ring draws in round the low body.
+                if (weapon && ShapeForm == VeilForm.Shield && ShieldLow > 0f)
+                {
+                    float k = Mathf.SmoothStep(0f, 1f, ShieldLow);
+                    rest = VeilFormLibrary.ShieldCenter + new Vector2(0f, LowShieldLift * k)
+                           + (rest - VeilFormLibrary.ShieldCenter) * Mathf.Lerp(1f, LowShieldScale, k);
+                }
                 // The shield bubble sits round the body: only its root follows the hand.
                 float follow = weapon && ShapeForm == VeilForm.Shield ? 1f - VeilFormLibrary.BubbleWeight(basePoint) : 1f;
                 rest += weapon ? handDelta * follow : handDelta * (HandFraction > 0f ? f / HandFraction : 1f);

@@ -16,10 +16,12 @@ namespace CrimsonVeil.Veil
         /// <summary>
         /// The aimed direction from the inputs: up, up-ahead, ahead, down-ahead, down. Straight down only in the air
         /// (a strike under the feet); on the ground "down" means low and ahead for the weapons that reach there, and
-        /// a level blow for the sword and spear (a cut into the floor is no use).
+        /// a level blow for the sword and spear (a cut into the floor is no use). Crouched, "down" is the crouch
+        /// itself: the blow goes level, low along the ground from the low body (see <see cref="LowBlow"/>).
         /// </summary>
-        public static float Direction(float moveX, float aimY, bool airborne, VeilForm form)
+        public static float Direction(float moveX, float aimY, bool airborne, VeilForm form, bool crouched = false)
         {
+            if (crouched && !airborne) return 0f;
             bool moving = Mathf.Abs(moveX) > 0.3f;
             if (aimY > 0.5f) return moving ? 45f : 90f;
             if (aimY < -0.5f)
@@ -29,6 +31,23 @@ namespace CrimsonVeil.Veil
             }
             return 0f;
         }
+
+        /// <summary>
+        /// A blow struck from the crouch (on the ground, crouched, not sliding) is a low blow: he stays down and it
+        /// sweeps low over the floor - the ankles, things on the ground, a tunnel's height.
+        /// </summary>
+        public static bool LowBlow(bool grounded, bool crouching, bool sliding) => grounded && crouching && !sliding;
+
+        /// <summary>Seconds after leaving the crouch in which up + a blow is still a rising strike out of it.</summary>
+        public const float RiseWindow = 0.4f;
+
+        /// <summary>
+        /// A rising strike: just up out of the crouch (within <see cref="RiseWindow"/>), on the ground, up held, a
+        /// sword, spear or whip - the blow carries the hero up into the air with it.
+        /// </summary>
+        public static bool RisingStrike(bool grounded, float sinceCrouched, float aimY, VeilForm form)
+            => grounded && sinceCrouched <= RiseWindow && aimY > 0.5f
+               && (form == VeilForm.Sword || form == VeilForm.Spear || form == VeilForm.Whip);
 
         /// <summary>Furthest a weapon can be aimed up / down (degrees). The shield is a ring round the body: not aimed.</summary>
         public static float Limit(VeilForm form)

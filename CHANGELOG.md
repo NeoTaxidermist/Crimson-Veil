@@ -5,6 +5,34 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.45.0] – 2026-11-20
+### Přidáno
+- **Útok z podřepu je nízký úder a hrdina při něm zůstane dole.** Dřív šipka dolů na zemi zároveň přikrčovala i mířila. Přes podřep se přehrál úder natočený vestoje, nohy se napůl zvedly a kolizní kapsle zůstala nízká. Teď na zemi znamená dolů přikrčení. Útok z podřepu je samostatný pohyb: nohy drží podřep, trup se skloní nad kolena a úder vede nízko nad zemí. Platí to i při plížení (dolů + dopředu) a pod nízkým stropem. Hrdina zůstane dole až do konce úderu, i když dolů pustí (`MotorLogic.HoldLow`). Každá zbraň má vlastní nízký úder (`HeroAttackChoreography.ApplyLow`):
+  - meč: krátký nápřah, který se vejde pod strop tunelu, a sek dolů vodorovně těsně nad zemí;
+  - kopí: výpad z podřepu, hrot jde těsně nad podlahou;
+  - bič: šlehnutí ve výšce ramen, švihák dopadne a táhne se po zemi skoro 3 m daleko;
+  - luk: výstřel z podřepu, luk vodorovně před tělem, míření dorovná na nízký cíl;
+  - štít: nízký nápor zpoza štítu. Kruh štítu se v podřepu stáhne na polovinu a posune k hrudi, takže se vejde do tunelu vysokého 1,35 m (dřív zajížděl 0,44 m pod podlahu).
+- **Výskok s úderem z podřepu.** Hrdina pustí dolů, drží nahoru a zaútočí (do 0,4 s po podřepu, mečem, kopím nebo bičem). Úder ho vynese 2,4 m do vzduchu a zasažený cíl odhodí vzhůru (`VeilAim.RisingStrike`, `MotorLogic.Rise`). Dvojskok zůstává k dispozici. Vestoje je nahoru + úder dál obyčejný sek nad hlavu a pod nízkým stropem z výskoku nic není.
+
+### Opraveno
+- V podřepu se zbraní mířila čepel do podlahy, protože se zbraň držela jako vestoje. Teď je nízký kryt: předloktí vodorovně a čepel vzhůru před tělem. Luk se drží zvednutý a kopí výš (`HeroPoseSolver.WeaponHoldLow`).
+- Natahování tětivy z pohybového klipu bralo i výšku boků stojícího lukostřelce, takže při výstřelu z podřepu se hrdina napůl postavil a hlava vyjela o 0,26 m. Vrstva `DrawArm` už boky nehýbe.
+
+### Testy
+- `HeroMoveSetPlayTests` na skutečném hrdinovi:
+  - všech pět zbraní z podřepu zasáhne cíl 0,35 m vysoký na zemi;
+  - hrdina zůstane dole po celý úder, i když dolů pustí, a potom se postaví;
+  - hlava zůstává pod 1,1 m;
+  - zbraň (mimo bič a nápor štítu) nezajede do podlahy;
+  - v tunelu se kruh štítu vejde mezi podlahu a strop a nízký sek zůstane pod stropem;
+  - výskok s úderem každou ze tří zbraní zasáhne cíl nad hlavou a odhodí ho nahoru.
+- Nové EditMode testy `LowBlowTests` (míření, pohyb, póza a klip).
+- Ověřeno, že bez změn testy selžou:
+  - meč netrefil, čepel byla 1,2 m pod podlahou;
+  - hlava při luku byla na 1,22 m;
+  - kruh štítu byl 0,44 m pod podlahou.
+
 ## [0.44.2] – 2026-11-20
 ### Opraveno
 - **Skluz po zdi visel před zdí.** Vedlejší účinek kontaktu se zdí z verze 0.44.0. Při skluzu po zdi je hrdina otočený ke zdi a opírá se o ni oběma rukama a nohou, jenže póza je natahovala jen přibližně: pravá ruka zajela 0,3 m do kamene a koleno 8 cm. Kontakt se zdí pak odsunul celé tělo, takže boky byly přes 0,6 m od zdi a hrdina klouzal ve vzduchu před ní.

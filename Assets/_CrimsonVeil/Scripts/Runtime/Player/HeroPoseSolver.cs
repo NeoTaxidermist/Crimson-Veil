@@ -112,6 +112,8 @@ namespace CrimsonVeil.Player
         public float attackT;
         /// <summary>Where the blow is aimed, degrees from the facing (+up), see VeilAim.</summary>
         public float attackAim;
+        /// <summary>The blow is struck from the crouch: the legs stay down, the blow sweeps low (VeilAim.LowBlow).</summary>
+        public bool lowBlow;
         public bool wallSliding;
         public bool hanging;
         public bool climbing;
@@ -168,6 +170,27 @@ namespace CrimsonVeil.Player
                     arm = Mathf.Lerp(HoldArm, RunHoldArm, run); elbow = Mathf.Lerp(18f, 40f, run); return;
             }
         }
+
+        /// <summary>
+        /// The ready stance crouched: the hand is down by the knees, so a blade held as standing points into the floor -
+        /// the forearm comes up level and the blade stands up ahead in a low guard; the spear is couched higher and
+        /// the bow held up level in front (low, its lower limb went into the floor).
+        /// </summary>
+        public static void WeaponHoldLow(VeilForm form, out float arm, out float elbow)
+        {
+            switch (form)
+            {
+                case VeilForm.Bow:
+                    arm = 118f; elbow = 4f; return;
+                case VeilForm.Spear:
+                    arm = 50f; elbow = 62f; return;
+                default:
+                    arm = LowHoldArm; elbow = LowHoldElbow; return;
+            }
+        }
+
+        /// <summary>The crouched guard of a blade (shoulder, elbow): the forearm level, the blade up ahead.</summary>
+        public const float LowHoldArm = 30f, LowHoldElbow = 50f;
 
         /// <summary>How clenched the sword hand is (0 open .. 1 a fist) for how far a weapon has formed in it: it closes
         /// as the hilt / stock / grip forms in the palm, and opens again as the weapon melts.</summary>
@@ -320,6 +343,7 @@ namespace CrimsonVeil.Player
                 // The weapon follows the forearm, so this *is* the weapon's pose.
                 float w = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(s.weaponHeld));
                 WeaponHold(s.attackForm, Mathf.SmoothStep(0f, 1f, run), out float hold, out float holdElbow);
+                if (s.crouching && s.grounded && !s.sliding) WeaponHoldLow(s.attackForm, out hold, out holdElbow);
                 float sway = Mathf.Sin(time * 1.4f) * 3f * (1f - run) + Mathf.Sin(Phase * Mathf.PI * 4f) * 2.5f * run;
                 target.armR = Mathf.Lerp(target.armR, hold + sway, w);
                 target.elbowR = Mathf.Lerp(target.elbowR, holdElbow, w);
@@ -327,7 +351,9 @@ namespace CrimsonVeil.Player
 
             bool attacking = s.attacking && s.attackT >= 0f && !s.hanging && !s.climbing && !s.swinging;
             if (attacking)
-                target = HeroAttackChoreography.Apply(target, s.attackForm, s.attackT, run, s.attackAim);
+                target = s.lowBlow && s.grounded
+                    ? HeroAttackChoreography.ApplyLow(target, s.attackForm, s.attackT, s.attackAim)
+                    : HeroAttackChoreography.Apply(target, s.attackForm, s.attackT, run, s.attackAim);
 
             // Hanging from a ledge with a weapon cast: the left hand keeps the lip, the right lets go and wields it.
             float free = HangFreeArm(s.hanging, s.weaponHeld);

@@ -77,6 +77,7 @@ Material:
     - _FlipbookBlending: 0
     - _FlipbookMode: 0
     - _FlowSpeed: 0.6
+    - _Glint: 0.9
     - _LightAmount: 0.45
     - _Mode: 0
     - _QueueOffset: 0

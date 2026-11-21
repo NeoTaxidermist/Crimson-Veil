@@ -5,6 +5,22 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.49.0] – 2026-11-21
+### Přidáno
+- **3D šála, fáze 4 z 5: zbraně jsou tělesa v prostoru.** Dosud to byly ploché pruhy natočené ke kameře. Teď:
+  - **průřezy:** ztuhlá látka se vyklene podle zbraně (`WeaponCup`). Čepel meče a hrot kopí mají hřbet uprostřed (`BladeRidge`, 0,5 poloviny šířky). Rukojeť meče, násada kopí, šňůra biče, ramena luku a pruhy opletu jsou kulaté (`RoundCup`, 0,9). Kruh štítu je silný pás. Světlo po nich obíhá jako po skutečném tělese: horní polovina čepele je světlejší než spodní;
+  - **odlesk:** ztuhlá zbraň zachytí světlo na hřbetu a hranách (`_Glint` v shaderu): horký rudý lesk s bílým jádrem. Volná látka ho nemá;
+  - **oplet je skutečná šroubovice:** pruhy opletu se točí kolem čepele i do hloubky (`WeaponBraidDepth`), takže jsou střídavě před čepelí a za ní. Řazení kreslení z fáze 3 je kreslí ve správném pořadí;
+  - **kruh štítu obepíná tělo v prostoru:** je nakloněný (`ShieldTilt`, 0,45 m hloubky na metr). Půlka před hrdinou se přiblíží ke kameře a ta za ním vede za jeho tělem. Ze strany vypadá stejně jako dřív a krytí se nemění.
+- Na světlo zbraní působí víc než na měkkou látku (dvojnásobně).
+
+### Testy
+- `VeilWeaponLookTests` (EditMode):
+  - oplet je šroubovice o stálém poloměru, střídavě před čepelí a za ní, a na volné látce není;
+  - průřezy: čepel a hrot mají hřbet, rukojeť, násada, bič, luk i oplet jsou kulaté a volná látka se řídí svým vlastním vyklenutím;
+  - kruh štítu: přední půlka ke kameře, zadní za tělo, zrcadlově podle směru pohledu a jen u hotového štítu.
+- Prošlo všech 547 EditMode a 120 PlayMode testů.
+
 ## [0.48.0] – 2026-11-21
 ### Přidáno
 - **3D šála, fáze 3 z 5: šála se kreslí jako látka v prostoru.** Dosud byla stuha plochý pás natočený vždy ke kameře a její zkrut se jen předstíral (užší šířka a tmavší barva v místě otočení). Teď:

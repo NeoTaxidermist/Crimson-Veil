@@ -34,6 +34,46 @@ namespace CrimsonVeil.Tests
         }
 
         [Test]
+        public void TheBraid_IsAHelix_InFrontOfTheBladeAndBehindIt()
+        {
+            bool front = false, behind = false;
+            for (float f = 0f; f <= 1f; f += 0.01f)
+            {
+                float side = VeilRenderer.WeaponBraid(f, 1.3f, 0.7f, 0.2f, 1f), depth = VeilRenderer.WeaponBraidDepth(f, 1.3f, 0.7f, 0.2f, 1f);
+                Assert.AreEqual(0.2f * 0.24f, new Vector2(side, depth).magnitude, 1e-4f, "round the blade at one radius");
+                Assert.AreEqual(0f, VeilRenderer.WeaponBraidDepth(f, 1.3f, 0.7f, 0.2f, 0f), 1e-6f, "loose cloth isn't braided");
+                if (depth < -0.04f) front = true;
+                if (depth > 0.04f) behind = true;
+            }
+            Assert.IsTrue(front && behind, "it winds in front of the blade and behind it");
+        }
+
+        [Test]
+        public void SetWeapons_AreSolid_ARidgedBlade_RoundShaftsAndCords()
+        {
+            VeilFormLibrary.SwordHilt(out _, out _, out float guard);
+            Assert.AreEqual(VeilRenderer.BladeRidge, VeilRenderer.WeaponCup(VeilForm.Sword, 0.95f, true), "the blade has a ridge");
+            Assert.AreEqual(VeilRenderer.RoundCup, VeilRenderer.WeaponCup(VeilForm.Sword, guard * 0.5f, true), "its grip is round");
+            Assert.AreEqual(VeilRenderer.RoundCup, VeilRenderer.WeaponCup(VeilForm.Spear, 0.5f, true), "a round shaft");
+            Assert.AreEqual(VeilRenderer.BladeRidge, VeilRenderer.WeaponCup(VeilForm.Spear, 0.95f, true), "a ridged head");
+            Assert.AreEqual(VeilRenderer.RoundCup, VeilRenderer.WeaponCup(VeilForm.Whip, 0.7f, true));
+            Assert.AreEqual(VeilRenderer.RoundCup, VeilRenderer.WeaponCup(VeilForm.Bow, 0.7f, true));
+            Assert.AreEqual(VeilRenderer.RoundCup, VeilRenderer.WeaponCup(VeilForm.Sword, 0.7f, false), "the braided strands are cords");
+            Assert.AreEqual(0f, VeilRenderer.WeaponCup(VeilForm.Flow, 0.7f, true), "loose cloth bows by its own measure");
+            Assert.Greater(VeilRenderer.RoundCup, VeilRenderer.BladeRidge, "a cord rounder than a blade");
+        }
+
+        [Test]
+        public void TheShieldRing_CirclesTheBody_FrontHalfTowardsTheCamera()
+        {
+            // the camera looks along +z: towards it is -z
+            Assert.Less(VeilRenderer.ShieldRingDepth(0.8f, 1f, 1f), -0.2f, "facing right: the half in front of him comes towards the camera");
+            Assert.Greater(VeilRenderer.ShieldRingDepth(-0.8f, 1f, 1f), 0.2f, "the half behind him passes behind his body");
+            Assert.AreEqual(VeilRenderer.ShieldRingDepth(0.8f, 1f, 1f), VeilRenderer.ShieldRingDepth(-0.8f, -1f, 1f), 1e-6f, "mirror-true");
+            Assert.AreEqual(0f, VeilRenderer.ShieldRingDepth(0.8f, 1f, 0f), 1e-6f, "only once it has set");
+        }
+
+        [Test]
         public void ARope_KeepsItsBraidTurnsInMetres_NotDrawnOutIntoALine()
         {
             Assert.AreEqual(1f, VeilRenderer.RopeBraidScale(2.5f, 2.6f), 1e-5f, "as long as the scarf: the weapon's own braid");

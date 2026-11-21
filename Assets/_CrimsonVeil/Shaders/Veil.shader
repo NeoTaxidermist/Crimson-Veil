@@ -24,6 +24,7 @@ Shader "CrimsonVeil/Veil"
         _BackShade ("Reverse Shade", Range(0, 1)) = 0.6
         _KeyLight ("Key Light Direction (towards the light)", Vector) = (-0.45, 0.8, -0.4, 0)
         _LightAmount ("Light Across the Folds", Range(0, 1)) = 0.45
+        _Glint ("Glint on Weapons (their ridge and edges catch the light)", Range(0, 2)) = 0.9
     }
     SubShader
     {
@@ -50,6 +51,7 @@ Shader "CrimsonVeil/Veil"
                 float _BackShade;
                 float4 _KeyLight;
                 float _LightAmount;
+                float _Glint;
             CBUFFER_END
 
             struct Attributes
@@ -85,8 +87,10 @@ Shader "CrimsonVeil/Veil"
 
             // The cloth's shade from its real orientation (1 for a face turned to the camera): its reverse is deep wine,
             // and a soft key light runs across the bow of the cloth and its twists.
-            half VolumeShade(Varyings i)
+            // (glint: the light caught by a set weapon - the ridge of a blade, the round of a shaft)
+            half VolumeShade(Varyings i, out half glint)
             {
+                glint = 0.0;
                 if (_Volume <= 0.0) return 1.0;
                 float3 n = i.normalWS;
                 float len2 = dot(n, n);
@@ -100,14 +104,19 @@ Shader "CrimsonVeil/Veil"
                 float3 key = normalize(_KeyLight.xyz);
                 float lit = saturate(dot(n, key) * 0.5 + 0.5);
                 float flat = saturate(dot(toCam, key) * 0.5 + 0.5);   // a face square to the camera keeps its colour
-                shade *= 1.0 + _LightAmount * (lit - flat) * 1.6;
+                float hard = saturate(i.data.x);
+                // a set weapon is solid: the light models it more firmly than soft cloth
+                shade *= 1.0 + _LightAmount * (1.0 + hard) * (lit - flat) * 1.6;
+                float3 h = normalize(key + toCam);
+                glint = pow(saturate(dot(n, h)), 18.0) * hard * _Glint * _Volume;
                 shade *= lerp(0.82, 1.0, saturate(abs(facing) * 3.0));   // the cloth's edge, turned away, a shade deeper
                 return lerp(1.0, shade, _Volume);
             }
 
             half4 Shade(Varyings i)
             {
-                half3 vtint = i.color.rgb * VolumeShade(i);
+                half glint;
+                half3 vtint = i.color.rgb * VolumeShade(i, glint);
                 float along = i.uv.x;
                 float across = i.uv.y * 2.0 - 1.0;           // -1 .. 1
                 float hard = saturate(i.data.x);
@@ -203,6 +212,7 @@ Shader "CrimsonVeil/Veil"
                 // wine and never as a grey veil over the background
                 float darkInk = (1.0 - smoothstep(0.3, 1.0, shadeV)) * clothV * (1.0 - smoothstep(0.3, 0.55, along));
                 outA = lerp(outA, saturate(outA * 2.2), darkInk);
+                col += _ClothLight.rgb * glint * 0.8 + glint * 0.25;   // a hot red sheen, white at its heart
                 return half4(col, outA);
             }
         ENDHLSL

@@ -517,8 +517,14 @@ namespace CrimsonVeil.Veil
                     float front = 4f * hard * loose;
                     // As a weapon the strands don't vanish into the blade: they braid around it like
                     // twisting flames (a helix running up the blade), wilder while it ignites.
+                    // A real helix: round the blade in depth too, in front of it and behind it in turn (PaintOrder).
+                    float braidZ = 0f;
                     if (!main)
-                        off += WeaponBraid(f * braidScale, time, st.phase, w, hard) * (1f + 1.5f * front) * (1f - coiled) * (rope ? RopeBraidSwell : 1f);
+                    {
+                        float braidGain = (1f + 1.5f * front) * (1f - coiled) * (rope ? RopeBraidSwell : 1f);
+                        off += WeaponBraid(f * braidScale, time, st.phase, w, hard) * braidGain;
+                        braidZ = WeaponBraidDepth(f * braidScale, time, st.phase, w, hard) * braidGain;
+                    }
 
                     Vector3 ov = nrm * off;
                     // The band itself is kept from rising over the head; the tongues further back fan as in the key
@@ -526,7 +532,7 @@ namespace CrimsonVeil.Veil
                     if (ov.y > 0f) ov.y *= branch ? Mathf.Lerp(0.55f, 0.5f, hard) : 0.5f;
                     else if (branch) ov.y *= Mathf.Lerp(0.55f, 1f, hard);
                     // (the dark under-layer lies behind the band: the cloth is drawn with depth now)
-                    c += ov + new Vector3(0f, -w * HangBelowNeck * loose * Mathf.SmoothStep(0f, 1f, f * 4f), (s == 0 ? UnderLayerDepth : (s - 1) * 0.012f) * loose);
+                    c += ov + new Vector3(0f, -w * HangBelowNeck * loose * Mathf.SmoothStep(0f, 1f, f * 4f), (s == 0 ? UnderLayerDepth : (s - 1) * 0.012f) * loose + braidZ);
                     // Loose, a strand is cloth of its own (VeilStrands): it runs where its simulation has it - round
                     // the band, over and under the others - from where it comes off the band; set into a weapon it
                     // is the braid drawn above.
@@ -561,6 +567,9 @@ namespace CrimsonVeil.Veil
                         outward.z = 0f;
                         if (outward.sqrMagnitude > 1e-6f)
                             c += outward.normalized * (lick * (main ? 0.05f : 0.3f) + (main ? 0f : 0.04f * set));
+                        // ... and it circles the body in three dimensions: tilted, its forward half comes round in
+                        // front of the hero and its rear half passes behind him (its outline in the picture unchanged).
+                        c.z += ShieldRingDepth(c.x - shieldCentre.x, facing, set);
                     }
 
                     // Tendrils emerge from the ribbon: thin where they split, then full.
@@ -578,7 +587,9 @@ namespace CrimsonVeil.Veil
                     if (!main) alpha = Mathf.Lerp(Mathf.Min(1f, alpha * 1.2f), alpha, hard); // fuller tongues (the sheet)
 
                     float twist = Mathf.Lerp(twistAt[i0], twistAt[i0 + 1], fr) + strandTwist * loose;
-                    float cup = CupDepth * loose;
+                    // set into a weapon the cloth is solid: a ridged blade, a round shaft, lash and limbs (the light runs
+                    // round them)
+                    float cup = CupDepth * loose + WeaponCup(form, f, main) * hard;
                     c = AboveFloor(sim, c, sw, FloorHold(form, loose));
                     WriteVertex(baseV + i * 2, baseF + i, c, nrm, sw, alpha, st, hard, vit, front, twist, cup);
                     if (i > 0) lastTan = c - lastC;
@@ -697,6 +708,42 @@ namespace CrimsonVeil.Veil
         public static float FoldBack(float over) => over <= 0f ? over : 0.1f * (1f - Mathf.Exp(-over / 0.1f));
 
         /// <summary>Sideways offset of a strand braided around a weapon: a travelling helix, zero for loose cloth.</summary>
+        /// <summary>The braid's depth (m) off the weapon: the other half of the helix of <see cref="WeaponBraid"/> - behind
+        /// the blade (positive) as it comes back across it, in front of it on the way out.</summary>
+        public static float WeaponBraidDepth(float f, float time, float phase, float width, float hard)
+            => Mathf.Cos(f * 16f - time * 3.2f + phase) * width * 0.24f * hard;
+
+        /// <summary>
+        /// The weapon's cross-section, in half widths of bow (<see cref="CupSection"/>): a sword's blade is ridged down
+        /// its middle and its grip is round, a spear has a round shaft and a ridged leaf-head, a whip's lash, a bow's
+        /// limbs and the braided strands are round cords, the shield's ring a thick band.
+        /// </summary>
+        public static float WeaponCup(VeilForm form, float t, bool core)
+        {
+            if (!core) return RoundCup;
+            switch (form)
+            {
+                case VeilForm.Sword:
+                    VeilFormLibrary.SwordHilt(out _, out _, out float guard);
+                    return t < guard ? RoundCup : BladeRidge;
+                case VeilForm.Spear: return t < 0.86f ? RoundCup : BladeRidge;
+                case VeilForm.Whip:
+                case VeilForm.Bow: return RoundCup;
+                case VeilForm.Shield: return 0.6f;
+                default: return 0f;
+            }
+        }
+
+        /// <summary>A round cord (shaft, lash, limb) and a blade's ridge, in half widths of bow.</summary>
+        public const float RoundCup = 0.9f, BladeRidge = 0.5f;
+
+        /// <summary>How far the shield's ring is tilted round the hero: depth (m) per metre across the picture.</summary>
+        public const float ShieldTilt = 0.45f;
+
+        /// <summary>Depth (m) of a point of the shield's ring <paramref name="across"/> m in front of (+, the way the hero
+        /// faces) or behind its centre: the front half towards the camera, the rear half away, once it has set.</summary>
+        public static float ShieldRingDepth(float across, float facing, float set) => -across * facing * ShieldTilt * set;
+
         public static float WeaponBraid(float f, float time, float phase, float width, float hard)
             => Mathf.Sin(f * 16f - time * 3.2f + phase) * width * 0.24f * hard;
 

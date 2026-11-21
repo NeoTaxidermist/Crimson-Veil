@@ -97,6 +97,7 @@ namespace CrimsonVeil.Player
         public void Simulate(float dt)
         {
             if (dt <= 0f) return;
+            using var marker = CrimsonVeil.Core.Perf.Begin(CrimsonVeil.Core.Perf.Id.Player);
             dt = Mathf.Min(dt, 1f / 30f);
 
             var input = new MotorInput();

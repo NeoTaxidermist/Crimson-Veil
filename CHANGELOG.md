@@ -5,6 +5,33 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.45.2] – 2026-11-21
+### Opraveno
+- **Postava každý snímek alokovala paměť a sběrač odpadu (GC) pak dělal pauzy.** Úklid paměti trval v editoru až 10 ms a snímek se natáhl na 27–30 ms, což je viditelné škubnutí. Nejvíc odpadu vznikalo v boji. Odstraněno, chování se nemění:
+  - choreografie úderů vytvářela nová pole čísel pro každou klíčovou pózu, několikrát za snímek. Za jedno kolo pohybů to dělalo stovky kilobajtů. Teď počítá ve vlastních bufferech;
+  - `HeroMocap` každý snímek kopíroval rotace všech kostí do nového pole a při každé změně klipu vytvářel novou vrstvu. Teď používá připravený buffer a vrstvy recykluje;
+  - skluz po zdi (`BraceOnWall`, v0.44.2) každý snímek vytvářel pole a hledal kosti prstů podle jména (každé jméno kosti je nový řetězec). Kosti se teď najdou jednou při startu;
+  - obličej vytvářel každý snímek pole dvou očí, vylézání na hranu dvě pole klíčových póz, kamera pole dvou vzdáleností, čtení zbraní z klávesnice pole pěti zbraní a nepřátelé pole materiálů;
+  - šála jako bič každý snímek vytvářela nový delegát (`TurnAgo`). Tvar zbraně se počítal znovu při každém seslání, teď se počítá jednou pro každou zbraň;
+  - kontakt se zdí a šála se každý snímek u každého collideru v dosahu ptaly, jestli patří tvoru (`GetComponentInParent`). Teď si odpověď pamatují. V editoru každý neúspěšný dotaz vytvářel odpad a stál čas.
+
+### Přidáno
+- **Profilovací značky postavy** (`Core/Perf.cs`): `CV.Player`, `CV.HeroAnimator` (`.Pose`, `.Ground`, `.Walls`), `CV.HeroMocap` (`.Sample`), `CV.HeroWallTouchUp`, `CV.SpringBones`, `CV.HeroFace`, `CV.Veil`, `CV.VeilRenderer`, `CV.EnemyAnimator`. V okně Profiler ukážou čas a alokace každé části. Jsou jen v editoru a ve vývojovém buildu, v ostrém buildu nedělají nic.
+- Naměřeno ve skutečné úrovni v editoru (snímek celkem asi 10 ms):
+
+  | část | čas za snímek |
+  |---|---|
+  | pružiny | 1,2–1,8 ms |
+  | kreslení šály | 1,2 ms |
+  | animace postavy | 0,4–0,9 ms |
+  | z toho kontakt se zdí | 0,3 ms |
+
+  Dopad z 11 m do kotoulu zásek nezpůsobil, nejhorší snímek měl 17 ms.
+
+### Testy
+- `HeroMoveSetPlayTests.TheHero_AllocatesNoGarbage_FrameByFrame` přes profiler editoru změří alokované bajty pod každou značkou postavy, a to během kola pohybů: běh, salto, podřep, plížení, skluz, kombo mečem, bič a skluz po vysoké zdi. První kolo se nepočítá, protože první použití čehokoli smí alokovat. Ve druhém kole musí být všude 0 B. Předtím to byly stovky kilobajtů.
+- `NoGarbageTests` (EditMode): tvar zbraně z paměti je stejný jako nově spočítaný, sdílené buffery nemíchají jeden úder do druhého a vylézání dává pokaždé stejnou pózu.
+
 ## [0.45.1] – 2026-11-20
 ### Opraveno
 - **Kruh štítu v podřepu procházel hlavou.** V0.45.0 ho stáhla na kruh o poloměru 0,58 m, ale skrčené tělo sahá od jeho středu až 0,82 m. Hlava a vlasy (1,30 m nad zemí) tak byly 24 cm venku.

@@ -64,6 +64,7 @@ Zbraň se seslá a rovnou udeří. Údery navazují do komba a mezi údery jde z
 - **Pohyb (`MotorLogic`):** coyote time, jump buffer, variabilní výška skoku, „apex hang“, rychlejší pád, dash i dash-jump se zachováním hybnosti, chycení hrany, plížení, skluz, kotoul po pádu z výšky, houpání na biči, nízký úder z podřepu a výskok s úderem. Logika je oddělená od Unity, takže se dá testovat v EditMode.
 - **Šála (`VeilSimulation`):** řetěz Verletových bodů. Tělo hrdiny odtrhává střídavé Lamb-Oseenovy víry s frekvencí podle Strouhalova čísla `f = St·U/D`, takže čím rychleji běží, tím divočeji šála víří. Formy zbraní nastaví cílový tvar a „tvrdost“, ale víry působí dál a zbraň pořád žije.
 - **Animace hrdiny:** základem je procedurální póza (`HeroPoseSolver`, `HeroAnimator`). `HeroMocap` přes ni prolíná klipy z motion capture upečené na kostru hrdiny (`HeroMocapBaker`, menu *Crimson Veil > Mocap*). Kontakt se zemí drží chodidla, ruce i tělo na podlaze a kontakt se zdí drží celé tělo mimo zdi, i když se při pohybu vyklání z kolizní kapsle. Obličej má čelist, víčka a obočí pro cutscény (`HeroFace`).
+- **Výkon:** každá část postavy má profilovací značku `CV.*` (`Core/Perf.cs`, okno Profiler ukáže čas i alokace) a test hlídá, že postava za snímek nealokuje žádnou paměť, takže sběrač odpadu nedělá pauzy.
 - **Nepřátelé (`Combat/Creatures`):** každá bytost má vlastní chování a procedurální animaci nad modelem z Blenderu.
 - **Vizuální styl:** vrstvy hloubky se se vzdáleností noří do mlhy. Finální průchod `InkGrade` hlídá paletu a cokoli, co není výrazně rudé, převede na šeď.
 
@@ -91,7 +92,7 @@ Docs/          obrázky a GIFy pro toto README
 ```
 
 ## Testy
-Unity → Window → General → Test Runner: **526 EditMode** a **118 PlayMode** testů. PlayMode testy ověřují každý pohyb a kombo na skutečném prefabu hrdiny (`HeroMoveSetPlayTests`).
+Unity → Window → General → Test Runner: **530 EditMode** a **119 PlayMode** testů. PlayMode testy ověřují každý pohyb a kombo na skutečném prefabu hrdiny (`HeroMoveSetPlayTests`).
 
 ## Verze a CHANGELOG
 Každý commit má vlastní verzi podle [SemVer](https://semver.org/lang/cs/): sekci `## [X.Y.Z] – RRRR-MM-DD` v [CHANGELOG.md](CHANGELOG.md) a tag `vX.Y.Z`. Hlídají to git hooky v `.githooks/`:

@@ -228,6 +228,7 @@ namespace CrimsonVeil.Veil
         {
             var sim = veil.Simulation;
             if (sim == null || mesh == null) return;
+            using var marker = CrimsonVeil.Core.Perf.Begin(CrimsonVeil.Core.Perf.Id.VeilDraw);
 
             var p = sim.Positions;
             int n = sim.Count;

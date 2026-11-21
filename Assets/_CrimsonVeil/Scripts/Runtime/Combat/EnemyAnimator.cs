@@ -46,6 +46,7 @@ namespace CrimsonVeil.Combat
         float dissolve;
         float hurtFlash;
         MaterialPropertyBlock block;
+        int eyeSlots = -1;
 
         public bool IsReady { get; private set; }
 
@@ -111,6 +112,7 @@ namespace CrimsonVeil.Combat
         void LateUpdate()
         {
             if (visualRoot == null) return;
+            using var marker = Perf.Begin(Perf.Id.Enemy);
             float dt = Time.deltaTime;
             float t = Time.time;
             var state = enemy.Brain.State;
@@ -158,7 +160,9 @@ namespace CrimsonVeil.Combat
             {
                 float flare = 1f + windup * eyeFlare + hurtFlash * 2f;
                 if (state == EnemyState.Dead) flare = 1f - dissolve;
-                int index = Mathf.Clamp(eyeMaterialIndex, 0, eyes.sharedMaterials.Length - 1);
+                // (the slot count is fixed: sharedMaterials hands back a new array on every call)
+                if (eyeSlots < 0) eyeSlots = eyes.sharedMaterials.Length;
+                int index = Mathf.Clamp(eyeMaterialIndex, 0, eyeSlots - 1);
                 eyes.GetPropertyBlock(block, index);
                 block.SetColor(BaseColorId, eyeColor * flare);
                 eyes.SetPropertyBlock(block, index);

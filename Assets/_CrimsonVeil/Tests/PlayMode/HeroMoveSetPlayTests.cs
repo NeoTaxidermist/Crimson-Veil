@@ -317,6 +317,130 @@ namespace CrimsonVeil.Tests
             Assert.Greater(HeadHeight, 1.35f, "and comes up standing");
         }
 
+        /// <summary>A round of the moves: running both ways, jumps and a somersault, the crouch and a crawl, a slide,
+        /// blows of the sword and the whip, a slide down a tall wall (one the test puts beyond the ring).</summary>
+        IEnumerator MoveRound()
+        {
+            yield return StartAt(new Vector3(-12f, 0.05f, 0f));
+            input.moveX = 1f; yield return Wait(0.6f);
+            input.jump = true; input.jumpHeld = true; yield return Wait(0.25f);
+            input.jump = true; yield return Wait(0.6f);   // the double jump: the somersault
+            input.jumpHeld = false; input.moveX = -1f; yield return Wait(0.6f);
+            input.moveX = 0f; input.aimY = -1f; yield return Wait(0.4f);
+            input.moveX = 1f; yield return Wait(0.4f);   // crawling
+            input.dash = true; yield return Wait(0.5f);   // a slide
+            input.aimY = 0f; input.moveX = 0f; yield return Wait(0.3f);
+            yield return Chain(VeilForm.Sword, VeilForm.Sword);
+            input.cast = VeilForm.Whip; yield return Wait(0.8f);
+            // a slide down the tall wall: jump at it and keep pushing into it
+            yield return StartAt(new Vector3(TallWall - 1.5f, 0.05f, 0f));
+            input.moveX = 1f; input.jump = true; input.jumpHeld = true;
+            yield return Until(() => controller.Motor.State == MotorState.WallSlide, 2f);
+            input.jumpHeld = false; yield return Wait(0.8f);
+            input.moveX = 0f; yield return Wait(0.3f);
+        }
+
+        const float TallWall = 60f;
+   // the face of the wall the garbage test slides down
+
+        /// <summary>
+        /// The managed memory allocated under each of the hero's profiler markers (Perf), frame by frame as the profiler
+        /// records it - exact bytes, the sum over every frame read.
+        /// </summary>
+        sealed class GarbageMeter
+        {
+            public readonly Dictionary<string, double> Bytes = new Dictionary<string, double>();
+            /// <summary>In how many frames each marker allocated anything.</summary>
+            public readonly Dictionary<string, int> Frames = new Dictionary<string, int>();
+            int read = -1;
+
+            public void Start()
+            {
+                UnityEditorInternal.ProfilerDriver.ClearAllFrames();
+                UnityEditorInternal.ProfilerDriver.memoryRecordMode = UnityEditorInternal.ProfilerMemoryRecordMode.None;
+                UnityEditorInternal.ProfilerDriver.enabled = true;
+                UnityEngine.Profiling.Profiler.enabled = true;
+                read = -1;
+            }
+
+            /// <summary>Reads the frames recorded since the last call (the profiler keeps only the last few hundred).</summary>
+            public void ReadNew()
+            {
+                int last = UnityEditorInternal.ProfilerDriver.lastFrameIndex;
+                for (int f = Mathf.Max(read + 1, UnityEditorInternal.ProfilerDriver.firstFrameIndex); f < last; f++)
+                {
+                    using (var view = UnityEditorInternal.ProfilerDriver.GetHierarchyFrameDataView(f, 0,
+                               UnityEditor.Profiling.HierarchyFrameDataView.ViewModes.Default, UnityEditor.Profiling.HierarchyFrameDataView.columnGcMemory, false))
+                    {
+                        if (view == null || !view.valid) continue;
+                        Walk(view, view.GetRootItemID());
+                    }
+                    read = f;
+                }
+            }
+
+            void Walk(UnityEditor.Profiling.HierarchyFrameDataView view, int id)
+            {
+                var children = new List<int>();
+                view.GetItemChildren(id, children);
+                foreach (var c in children)
+                {
+                    string name = view.GetItemName(c);
+                    if (name.StartsWith("CV."))
+                    {
+                        Bytes.TryGetValue(name, out double v);
+                        double here = view.GetItemColumnDataAsDouble(c, UnityEditor.Profiling.HierarchyFrameDataView.columnGcMemory);
+                        Bytes[name] = v + here;
+                        Frames.TryGetValue(name, out int k);
+                        Frames[name] = k + (here > 0 ? 1 : 0);
+                    }
+                    Walk(view, c);
+                }
+            }
+
+            public void Stop()
+            {
+                ReadNew();
+                UnityEditorInternal.ProfilerDriver.enabled = false;
+            }
+
+            public double Of(Perf.Id id) => Bytes.TryGetValue(Perf.Names[(int)id], out double v) ? v : 0;
+        }
+
+        [UnityTest]
+        public IEnumerator TheHero_AllocatesNoGarbage_FrameByFrame()
+        {
+            // The first round warms up (a clip, a move, a path met for the first time may allocate once), the second is
+            // measured: each part of the hero must allocate nothing - every byte is garbage the collector must clear
+            // later, in a pause. (It was kilobytes a frame: new arrays for every key of a blow's choreography - hundreds
+            // of kilobytes a round of blows - a copy of the bones each frame in the motion capture, an array of the two
+            // arms and a search by name for the fingers sliding down a wall, an array of the two eyes.)
+            Box("tall wall", new Vector3(TallWall + 2f, 8f, 0f), new Vector3(4f, 16f, 4f));
+            yield return MoveRound();
+            var meter = new GarbageMeter();
+            meter.Start();
+            bool slid = false, struck = false;
+            var probe = player.AddComponent<EndOfFrameProbe>();
+            int frames = 0;
+            probe.each = () =>
+            {
+                slid |= controller.Motor.State == MotorState.WallSlide;
+                struck |= veil.IsAttacking;
+                if (++frames % 60 == 0) meter.ReadNew();
+            };
+            yield return MoveRound();
+            probe.each = null;
+            meter.Stop();
+            var sb = new System.Text.StringBuilder($"[garbage] a round of the moves ({frames} frames):");
+            foreach (var kv in meter.Bytes) sb.Append($" {kv.Key} {kv.Value:F0} B in {meter.Frames[kv.Key]} frames;");
+            Debug.Log(sb.ToString());
+            Assert.IsTrue(slid, "the round slid down the wall (its brace was measured)");
+            Assert.IsTrue(struck, "and struck blows");
+            Assert.Greater(meter.Bytes.Count, 5, "the profiler saw the hero's markers");
+            foreach (var id in new[] { Perf.Id.Player, Perf.Id.Animator, Perf.Id.TouchUp, Perf.Id.Springs, Perf.Id.Face, Perf.Id.Veil, Perf.Id.VeilDraw })
+                Assert.AreEqual(0, meter.Of(id), $"{Perf.Names[(int)id]}: no garbage frame by frame");
+        }
+
         [UnityTest]
         public IEnumerator DroppingStandingStill_IsAHardLanding_NoRoll()
         {

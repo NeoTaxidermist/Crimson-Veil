@@ -390,6 +390,9 @@ namespace CrimsonVeil.Player
             public Mask mask;
         }
 
+        /// <summary>Layers no channel uses, kept for the next clip.</summary>
+        readonly List<Layer> pool = new List<Layer>();
+
         sealed class Channel
         {
             public readonly List<Layer> layers = new List<Layer>();
@@ -399,7 +402,7 @@ namespace CrimsonVeil.Player
         Transform[] bones;
         float[][] masks;            // per Mask, per bone: how much the clip moves it
         bool[] hipsPosition;        // per Mask: whether the clip places the hips
-        Quaternion[] proc, sampled, sampled2;
+        Quaternion[] proc, sampled, sampled2, blended;
         Transform hips;
         float gaitPhase;            // 0..1 through the gait's cycle (left foot ahead at 0)
         Pick script;                // a cutscene's request (wins over the game's)
@@ -430,6 +433,7 @@ namespace CrimsonVeil.Player
             proc = new Quaternion[bones.Length];
             sampled = new Quaternion[bones.Length];
             sampled2 = new Quaternion[bones.Length];
+            blended = new Quaternion[bones.Length];
             hips = CrimsonVeil.Core.RigJoint.FindDeep(model, "Hips");
             int maskCount = System.Enum.GetValues(typeof(Mask)).Length;
             masks = new float[maskCount][];
@@ -501,6 +505,9 @@ namespace CrimsonVeil.Player
 
         public void StopScript() => scripted = false;
 
+        /// <summary>How many clips were sampled onto the model this frame (each a whole pass over its bones).</summary>
+        public int SamplesThisFrame { get; private set; }
+
         /// <summary>The body channel alone (the upper body lets go).</summary>
         public void Apply(Choice want, float dt) => Apply(new Pick { body = want }, dt);
 
@@ -508,6 +515,8 @@ namespace CrimsonVeil.Player
         public void Apply(Pick want, float dt)
         {
             if (!IsReady || dt <= 0f) return;
+            using var marker = CrimsonVeil.Core.Perf.Begin(CrimsonVeil.Core.Perf.Id.Mocap);
+            SamplesThisFrame = 0;
             if (scripted) want = script;
 
             Advance(body, want.body, dt);
@@ -516,7 +525,7 @@ namespace CrimsonVeil.Player
 
             for (int i = 0; i < bones.Length; i++) proc[i] = bones[i].localRotation;
             Vector3 hipsProc = hips != null ? hips.localPosition : Vector3.zero;
-            var blended = (Quaternion[])proc.Clone();
+            System.Array.Copy(proc, blended, proc.Length);   // (a buffer of its own: a fresh copy each frame was garbage)
             Vector3 hipsBlend = hipsProc;
             Blend(body, blended, ref hipsBlend);
             Blend(upper, blended, ref hipsBlend);
@@ -535,13 +544,20 @@ namespace CrimsonVeil.Player
                 string id = want.Layer;
                 if (top == null || top.id != id || top.target <= 0f)
                 {
-                    var found = ch.layers.Find(l => l.id == id);
+                    Layer found = null;   // (a search with a lambda over the id: a closure each time)
+                    foreach (var l in ch.layers) if (l.id == id) { found = l; break; }
                     if (found != null) ch.layers.Remove(found);
                     else
                     {
-                        found = new Layer { id = id, time = 0f };
+                        // (a layer of the pool: a new one for every change of clip was garbage)
+                        if (pool.Count > 0) { found = pool[pool.Count - 1]; pool.RemoveAt(pool.Count - 1); }
+                        else found = new Layer();
+                        found.id = id; found.time = 0f; found.weight = 0f; found.target = 0f; found.fadeSpeed = 0f;
+                        found.hasSecond = false; found.mix = 0f;
                         // a gait comes in with its feet where the steps already are
-                        if (want.gait && ch.layers.TrueForAll(l => l.id != Gait)) gaitPhase = Mathf.Repeat(gaitPhase, 1f);
+                        bool gaitOn = false;
+                        foreach (var l in ch.layers) if (l.id == Gait) { gaitOn = true; break; }
+                        if (want.gait && !gaitOn) gaitPhase = Mathf.Repeat(gaitPhase, 1f);
                     }
                     ch.layers.Add(found);
                     top = found;
@@ -583,7 +599,11 @@ namespace CrimsonVeil.Player
                     l.time = l.entry.loop ? Mathf.Repeat(l.time, len) : Mathf.Min(l.time, len);
                 }
             }
-            ch.layers.RemoveAll(l => l.weight <= 0f && l.target <= 0f);
+            for (int i = ch.layers.Count - 1; i >= 0; i--)
+            {
+                var l = ch.layers[i];
+                if (l.weight <= 0f && l.target <= 0f) { ch.layers.RemoveAt(i); pool.Add(l); }
+            }
         }
 
         static float Stride(in HeroMocapLibrary.Entry e) => GaitStride(e.key, e.clip != null ? e.clip.length : 0f, e.stride);
@@ -609,12 +629,14 @@ namespace CrimsonVeil.Player
             {
                 if (l.weight <= 0f) continue;
                 bool gait = l.id == Gait;
-                l.entry.clip.SampleAnimation(model.gameObject, gait ? GaitTime(l.entry) : l.time);
+                using (CrimsonVeil.Core.Perf.Begin(CrimsonVeil.Core.Perf.Id.MocapSample)) l.entry.clip.SampleAnimation(model.gameObject, gait ? GaitTime(l.entry) : l.time);
+                SamplesThisFrame++;
                 for (int i = 0; i < bones.Length; i++) sampled[i] = bones[i].localRotation;
                 Vector3 hipsSampled = hips != null ? hips.localPosition : Vector3.zero;
                 if (l.hasSecond && l.mix > 0f)
                 {
-                    l.entry2.clip.SampleAnimation(model.gameObject, GaitTime(l.entry2));
+                    using (CrimsonVeil.Core.Perf.Begin(CrimsonVeil.Core.Perf.Id.MocapSample)) l.entry2.clip.SampleAnimation(model.gameObject, GaitTime(l.entry2));
+                    SamplesThisFrame++;
                     for (int i = 0; i < bones.Length; i++) sampled[i] = Quaternion.Slerp(sampled[i], bones[i].localRotation, l.mix);
                     if (hips != null) hipsSampled = Vector3.Lerp(hipsSampled, hips.localPosition, l.mix);
                 }

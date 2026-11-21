@@ -78,11 +78,13 @@ namespace CrimsonVeil.Player
             }
         }
 
+        static readonly VeilForm[] Weapons = { VeilForm.Sword, VeilForm.Spear, VeilForm.Whip, VeilForm.Shield, VeilForm.Bow };
+
         public VeilForm? CastPressed
         {
             get
             {
-                foreach (var f in new[] { VeilForm.Sword, VeilForm.Spear, VeilForm.Whip, VeilForm.Shield, VeilForm.Bow })
+                foreach (var f in Weapons)   // (read every frame: a new array of them each time was garbage)
                     if (For(f).WasPressedThisFrame()) return f;
                 return null;
             }

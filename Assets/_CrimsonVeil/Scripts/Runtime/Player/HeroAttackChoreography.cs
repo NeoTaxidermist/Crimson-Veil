@@ -387,12 +387,13 @@ namespace CrimsonVeil.Player
                 if (t > b.t && i + 1 < last) continue;
                 float h = Mathf.Max(1e-4f, b.t - a.t);
                 float u = Mathf.Clamp01((t - a.t) / h);
-                var ta = Tangent(form, keys, i);
-                var tb = Tangent(form, keys, i + 1);
-                var o = new float[Fields];
-                var fa = ToArray(a); var fb = ToArray(b);
-                for (int f = 0; f < Fields; f++) o[f] = Hermite(fa[f], fb[f], ta[f] * h, tb[f] * h, u);
-                return FromArray(t, o);
+                // (into buffers of its own: new arrays for each key and tangent were most of the hero's garbage in a
+                // fight - hundreds of kilobytes a round of blows; the pose is made on the main thread only)
+                Tangent(form, keys, i, TanA);
+                Tangent(form, keys, i + 1, TanB);
+                ToArray(a, ValA); ToArray(b, ValB);
+                for (int f = 0; f < Fields; f++) Out[f] = Hermite(ValA[f], ValB[f], TanA[f] * h, TanB[f] * h, u);
+                return FromArray(t, Out);
             }
             return KeyAt(form, keys, last);
         }
@@ -412,22 +413,27 @@ namespace CrimsonVeil.Player
         }
 
         /// <summary>Rate of change at key i (per unit of attack time): zero in the ready stance at either end.</summary>
-        static float[] Tangent(VeilForm form, Key[] keys, int i)
+        static void Tangent(VeilForm form, Key[] keys, int i, float[] m)
         {
-            var m = new float[Fields];
             int last = keys.Length - 1;
-            if (i == 0 || i == last) return m;
-            var p = ToArray(KeyAt(form, keys, i - 1));
-            var n = ToArray(KeyAt(form, keys, i + 1));
+            if (i == 0 || i == last) { System.Array.Clear(m, 0, Fields); return; }
+            ToArray(KeyAt(form, keys, i - 1), ValP);
+            ToArray(KeyAt(form, keys, i + 1), ValN);
             float span = Mathf.Max(1e-4f, keys[i + 1].t - keys[i - 1].t);
             // (0.8: a little tighter than Catmull-Rom, so a fast swing doesn't overshoot wildly between keys)
-            for (int f = 0; f < Fields; f++) m[f] = 0.8f * (n[f] - p[f]) / span;
-            return m;
+            for (int f = 0; f < Fields; f++) m[f] = 0.8f * (ValN[f] - ValP[f]) / span;
         }
 
         const int Fields = 11;
 
-        static float[] ToArray(Key k) => new[] { k.armR, k.elbowR, k.armL, k.elbowL, k.spine, k.chest, k.head, k.thighL, k.kneeL, k.thighR, k.kneeR };
+        static readonly float[] TanA = new float[Fields], TanB = new float[Fields], ValA = new float[Fields], ValB = new float[Fields],
+                                ValP = new float[Fields], ValN = new float[Fields], Out = new float[Fields];
+
+        static void ToArray(Key k, float[] o)
+        {
+            o[0] = k.armR; o[1] = k.elbowR; o[2] = k.armL; o[3] = k.elbowL; o[4] = k.spine; o[5] = k.chest; o[6] = k.head;
+            o[7] = k.thighL; o[8] = k.kneeL; o[9] = k.thighR; o[10] = k.kneeR;
+        }
 
         static Key FromArray(float t, float[] f) => new Key(t, f[0], f[1], f[2], f[3], f[4], f[5], f[6], f[7], f[8], f[9], f[10]);
 

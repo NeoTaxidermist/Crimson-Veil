@@ -102,6 +102,7 @@ namespace CrimsonVeil.Player
         {
             float dt = Time.deltaTime;
             if (dt <= 0f || chains.Count == 0) return;
+            using var marker = CrimsonVeil.Core.Perf.Begin(CrimsonVeil.Core.Perf.Id.Springs);
             Vector3 bodyVel = (root.position - lastRootPos) / dt;
             lastRootPos = root.position;
             Vector3 wind = -bodyVel * drag;

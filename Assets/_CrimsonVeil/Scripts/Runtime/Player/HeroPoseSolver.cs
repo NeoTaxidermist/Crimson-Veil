@@ -663,6 +663,9 @@ namespace CrimsonVeil.Player
         /// comes to the lip, the legs kick), the press (arms lock straight down onto the lip, the chest leans over it),
         /// the knee swung up onto the top, then standing up.
         /// </summary>
+        static readonly HeroPose[] ClimbKeys = new HeroPose[6];
+        static readonly float[] ClimbTimes = { 0f, ClimbPullEnd, ClimbPressEnd, ClimbKneeEnd, ClimbStep, 1f };
+
         public static HeroPose ClimbPose(float t)
         {
             t = Mathf.Clamp01(t);
@@ -700,9 +703,10 @@ namespace CrimsonVeil.Player
                 spine = 6f, chest = 2f, thighL = 12f, kneeL = 16f, thighR = -5f, kneeR = 10f,
                 armL = 10f, elbowL = 20f, armR = 5f, elbowR = 25f,
             };
-            var keys = new[] { hang, chin, press, knee, step, up };
-            var times = new[] { 0f, ClimbPullEnd, ClimbPressEnd, ClimbKneeEnd, ClimbStep, 1f };
-            var p = HeroPose.Spline(keys, times, t);
+            // (into arrays of its own: two new ones each frame of the climb were garbage)
+            var keys = ClimbKeys;
+            keys[0] = hang; keys[1] = chin; keys[2] = press; keys[3] = knee; keys[4] = step; keys[5] = up;
+            var p = HeroPose.Spline(keys, ClimbTimes, t);
 
             // pulling up, the feet scrabble up the wall in turns (they push, they find no hold), then hang loose
             if (t < ClimbPullEnd)

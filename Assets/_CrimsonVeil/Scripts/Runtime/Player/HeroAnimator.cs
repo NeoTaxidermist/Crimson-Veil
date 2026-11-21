@@ -118,6 +118,10 @@ namespace CrimsonVeil.Player
             upperArmL = upperL; upperArmR = upperR;
             lowerArmL = Find("LowerArm.L"); lowerArmR = Find("LowerArm.R");
             handL = Find("Hand.L"); handR = Find("Hand.R");
+            // (for the brace on a wall: found here, as a search reads every bone's name - a new string each)
+            braceFingerL = handL != null ? RigJoint.FindDeep(handL, "Finger.L.2.0") : null;
+            braceFingerR = handR != null ? RigJoint.FindDeep(handR, "Finger.R.2.0") : null;
+            legUpperL = Find("UpperLeg.L"); legLowerL = Find("LowerLeg.L"); legFootL = Find("Foot.L");
             wristL = Tip("Hand.L", 0.08f, forward);
             wristR = Tip("Hand.R", 0.08f, forward);
             toeL = Tip("Toe.L", 0.05f, up);
@@ -257,7 +261,7 @@ namespace CrimsonVeil.Player
         void LateUpdate()
         {
             if (!IsReady || player == null || player.Motor == null) return;
-
+            using var marker = CrimsonVeil.Core.Perf.Begin(CrimsonVeil.Core.Perf.Id.Animator);
             var s = new HeroState
             {
                 speed = Mathf.Abs(player.Velocity.x),
@@ -290,8 +294,8 @@ namespace CrimsonVeil.Player
                 var feet = player.transform.position;
                 s.hangArm = HeroPoseSolver.HangArm((player.LipPoint.x - feet.x) * player.Motor.AttachSide, player.LipPoint.y - feet.y);
             }
-            var p = Solver.Step(Time.deltaTime, s);
-            Apply(p);
+            HeroPose p;
+            using (CrimsonVeil.Core.Perf.Begin(CrimsonVeil.Core.Perf.Id.Pose)) { p = Solver.Step(Time.deltaTime, s); Apply(p); }
             // motion capture over the procedural pose (before the hands are set on the lip, so they stay on it)
             if (mocap != null)
             {
@@ -300,11 +304,11 @@ namespace CrimsonVeil.Player
                 mocap.Apply(HeroMocap.Choose(s, ctx), Time.deltaTime);
             }
             // on the ground the body lies on it: the sole, a heel, a knee, a hand on the floor - not through it, not over it
-            KeepOnGround(s, Time.deltaTime);
+            using (CrimsonVeil.Core.Perf.Begin(CrimsonVeil.Core.Perf.Id.Ground)) KeepOnGround(s, Time.deltaTime);
             // and out of the walls: the capsule stops at a wall, the body bent out of it (a lean, a slide, a somersault) not
             // sliding down a wall the braced hand and foot are set on the stone (then the rest is kept out of it)
             if (s.wallSliding) BraceOnWall();
-            KeepOffWalls(s, Time.deltaTime);
+            using (CrimsonVeil.Core.Perf.Begin(CrimsonVeil.Core.Perf.Id.Walls)) KeepOffWalls(s, Time.deltaTime);
             if (s.hanging || s.climbing) ReachLip(s);
             if (s.swinging) GripRope();
             if (Hands != null)
@@ -547,7 +551,7 @@ namespace CrimsonVeil.Player
                 var h = wallHits[i];
                 if (Mathf.Abs(h.normal.x) < 0.5f) continue;   // a floor's or a roof's face, grazed
                 if (h.collider.transform.IsChildOf(player.transform)) continue;
-                if (h.collider.GetComponentInParent<IHostile>() != null) continue;   // creatures are no walls
+                if (IsCreature(h.collider)) continue;   // creatures are no walls
                 if (h.distance < nearest) nearest = h.distance;
             }
             return reach - nearest;
@@ -599,6 +603,35 @@ namespace CrimsonVeil.Player
         /// into the stone, and kept out of it (<see cref="KeepOffWalls"/>) the whole body hung half a metre in front
         /// of the wall it slid down. The hand and the foot are reached onto its face.
         /// </summary>
+        Transform braceFingerL, braceFingerR;
+
+        readonly System.Collections.Generic.Dictionary<Collider, bool> creatureColliders = new System.Collections.Generic.Dictionary<Collider, bool>();
+
+        /// <summary>A creature's collider (creatures are no walls): looked up once per collider, then remembered.</summary>
+        bool IsCreature(Collider c)
+        {
+            if (!creatureColliders.TryGetValue(c, out bool creature))
+            {
+                creature = c.GetComponentInParent<IHostile>() != null;
+                if (creatureColliders.Count > 256) creatureColliders.Clear();   // (a level's worth: forget the old ones)
+                creatureColliders[c] = creature;
+            }
+            return creature;
+        }
+
+        static void BraceHandOnWall(Transform upper, Transform lower, Transform hand, Transform finger, float face, int side, Vector3 away)
+        {
+            if (upper == null) return;
+            var target = new Vector3(face - side * BraceHand, hand.position.y, hand.position.z);
+            LimbReach.Solve(upper, lower, hand, target, upper.position + away * 0.5f + Vector3.down * 0.4f, 1f);
+            // the palm flat on the stone, the fingers up it (reaching straight at it they went 0.17 m into it)
+            if (finger != null)
+            {
+                Vector3 along = finger.position - hand.position;
+                if (along.sqrMagnitude > 1e-6f) hand.rotation = Quaternion.FromToRotation(along, Vector3.up) * hand.rotation;
+            }
+        }
+
         void BraceOnWall()
         {
             int side = player.Motor.AttachSide;
@@ -612,27 +645,17 @@ namespace CrimsonVeil.Player
             {
                 var h = wallHits[i];
                 if (Mathf.Abs(h.normal.x) < 0.5f || h.collider.transform.IsChildOf(player.transform)) continue;
-                if (h.collider.GetComponentInParent<IHostile>() != null) continue;
+                if (IsCreature(h.collider)) continue;
                 if (h.distance < nearest) { nearest = h.distance; face = h.point.x; }
             }
             if (float.IsNaN(face)) return;
             var away = new Vector3(-side, 0f, 0f);
             // both hands on the stone (the high one braced, the low one pressing: it stuck 0.3 m into it), the elbows down
             // and away from it
-            foreach (var (upper, lower, hand) in new[] { (upperArmL, lowerArmL, handL), (upperArmR, lowerArmR, handR) })
-            {
-                if (upper == null) continue;
-                var target = new Vector3(face - side * BraceHand, hand.position.y, hand.position.z);
-                LimbReach.Solve(upper, lower, hand, target, upper.position + away * 0.5f + Vector3.down * 0.4f, 1f);
-                // the palm flat on the stone, the fingers up it (reaching straight at it they went 0.17 m into it)
-                var finger = RigJoint.FindDeep(hand, hand.name.EndsWith(".L") ? "Finger.L.2.0" : "Finger.R.2.0");
-                if (finger != null)
-                {
-                    Vector3 along = finger.position - hand.position;
-                    if (along.sqrMagnitude > 1e-6f) hand.rotation = Quaternion.FromToRotation(along, Vector3.up) * hand.rotation;
-                }
-            }
-            if (legUpperL == null) { legUpperL = RigJoint.FindDeep(model, "UpperLeg.L"); legLowerL = RigJoint.FindDeep(model, "LowerLeg.L"); legFootL = RigJoint.FindDeep(model, "Foot.L"); }
+            // (the bones are found at setup: a little array of the two arms, the hand's name and a search for its finger
+            // each frame were garbage)
+            BraceHandOnWall(upperArmL, lowerArmL, handL, braceFingerL, face, side, away);
+            BraceHandOnWall(upperArmR, lowerArmR, handR, braceFingerR, face, side, away);
             if (legFootL != null)
             {
                 // the sole against the stone, the knee folded up and away from it (not through it)

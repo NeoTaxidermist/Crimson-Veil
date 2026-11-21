@@ -107,15 +107,15 @@ namespace CrimsonVeil.CameraSystem
         float ProbeDrop(Vector3 feet, int facing)
         {
             // Depth of the ground a few metres ahead (and straight below when airborne).
-            float worst = 0f;
-            foreach (float ahead in new[] { dropProbeAhead * 0.5f, dropProbeAhead })
-            {
-                var from = feet + new Vector3(facing * ahead, 0.5f, 0f);
-                float depth = Physics.Raycast(from, Vector3.down, out var hit, 30f, environment, QueryTriggerInteraction.Ignore)
-                    ? feet.y - hit.point.y : 30f;
-                worst = Mathf.Max(worst, depth);
-            }
-            return worst;
+            // (half way and the whole way ahead; an array of the two each frame was garbage)
+            return Mathf.Max(DropAt(feet, facing, dropProbeAhead * 0.5f), DropAt(feet, facing, dropProbeAhead));
+        }
+
+        float DropAt(Vector3 feet, int facing, float ahead)
+        {
+            var from = feet + new Vector3(facing * ahead, 0.5f, 0f);
+            return Physics.Raycast(from, Vector3.down, out var hit, 30f, environment, QueryTriggerInteraction.Ignore)
+                ? feet.y - hit.point.y : 30f;
         }
 
         /// <summary>Platformer framing: lead from movement, floor-locked height (see <see cref="CameraFocus"/>).</summary>

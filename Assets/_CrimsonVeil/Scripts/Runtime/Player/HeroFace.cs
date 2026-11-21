@@ -211,6 +211,7 @@ namespace CrimsonVeil.Player
         public void Tick(float dt)
         {
             if (!IsReady || dt <= 0f) return;
+            using var marker = CrimsonVeil.Core.Perf.Begin(CrimsonVeil.Core.Perf.Id.Face);
             CutsceneLook = Mathf.MoveTowards(CutsceneLook, lookGoal, dt * lookSpeed);
             ApplyLook();
             blend = Mathf.Min(1f, blend + dt / blendTime);
@@ -264,13 +265,17 @@ namespace CrimsonVeil.Player
             float lower = Mathf.Clamp(p.lidLower, -0.3f, 1f) * LidLowerShutDeg + Mathf.Min(0f, p.lookPitch) * -0.3f;
             Turn(lidUL, lidULRest, right, upper); Turn(lidUR, lidURRest, right, upper);
             Turn(lidDL, lidDLRest, right, -lower); Turn(lidDR, lidDRRest, right, -lower);
-            foreach (var (eye, rest) in new[] { (eyeL, eyeLRest), (eyeR, eyeRRest) })
-            {
-                eye.localRotation = rest;
-                eye.rotation = Quaternion.AngleAxis(p.lookYaw, up) * Quaternion.AngleAxis(-p.lookPitch, right) * eye.rotation;
-            }
+            // (both eyes alike; a little array of the two each frame was garbage)
+            Look(eyeL, eyeLRest, p, up, right);
+            Look(eyeR, eyeRRest, p, up, right);
             Brow(browL, browLRest, p.browL, p.frown, -1f, up, right);
             Brow(browR, browRRest, p.browR, p.frown, 1f, up, right);
+        }
+
+        static void Look(Transform eye, Quaternion rest, in FacePose p, Vector3 up, Vector3 right)
+        {
+            eye.localRotation = rest;
+            eye.rotation = Quaternion.AngleAxis(p.lookYaw, up) * Quaternion.AngleAxis(-p.lookPitch, right) * eye.rotation;
         }
 
         static void Turn(Transform b, Quaternion rest, Vector3 axis, float degrees)

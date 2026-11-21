@@ -13,6 +13,7 @@ namespace CrimsonVeil.Player
 
         void LateUpdate()
         {
+            using var marker = CrimsonVeil.Core.Perf.Begin(CrimsonVeil.Core.Perf.Id.TouchUp);
             if (Animator != null && Animator.isActiveAndEnabled) Animator.WallTouchUp();
         }
     }

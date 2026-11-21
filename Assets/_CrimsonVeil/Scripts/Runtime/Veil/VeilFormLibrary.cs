@@ -69,9 +69,22 @@ namespace CrimsonVeil.Veil
         /// </summary>
         public static float BuildShape(VeilForm form, Vector2[] output)
         {
-            var points = ControlPoints(form, out int weaponStartIndex);
-            return Resample(points, weaponStartIndex, output);
+            // (a weapon's shape never changes: worked out once per form and length, then copied - built anew at every
+            // cast, its lists were garbage)
+            var key = ((int)form, output.Length);
+            if (!Shapes.TryGetValue(key, out var built))
+            {
+                var pts = new Vector2[output.Length];
+                var points = ControlPoints(form, out int weaponStartIndex);
+                float hand = Resample(points, weaponStartIndex, pts);
+                built = (pts, hand);
+                Shapes[key] = built;
+            }
+            System.Array.Copy(built.points, output, output.Length);
+            return built.hand;
         }
+
+        static readonly Dictionary<(int, int), (Vector2[] points, float hand)> Shapes = new Dictionary<(int, int), (Vector2[] points, float hand)>();
 
         public static List<Vector2> ControlPoints(VeilForm form, out int weaponStartIndex)
         {

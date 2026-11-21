@@ -77,6 +77,8 @@ namespace CrimsonVeil.Veil
         }
 
         /// <summary>The forearm turn (degrees) <paramref name="secondsAgo"/> seconds ago.</summary>
+        Func<float, float> turnAgo;
+
         float TurnAgo(float secondsAgo)
         {
             if (turnCount == 0) return forearmTurn;
@@ -594,6 +596,7 @@ namespace CrimsonVeil.Veil
         public void Tick(float dt)
         {
             if (dt <= 0f) return;
+            using var marker = CrimsonVeil.Core.Perf.Begin(CrimsonVeil.Core.Perf.Id.Veil);
             time += dt;
 
             UpdateGrapple();
@@ -755,13 +758,9 @@ namespace CrimsonVeil.Veil
                     var c = senseBuffer[i];
                     if (c == null || c.transform.IsChildOf(transform)) continue;
                     bool alive = false;
-                    var creature = c.GetComponentInParent<CrimsonVeil.Combat.CreatureBase>();
-                    if (creature != null) alive = !creature.IsDead;
-                    else
-                    {
-                        var enemy = c.GetComponentInParent<CrimsonVeil.Combat.Enemy>();
-                        alive = enemy != null && enemy.Health != null && !enemy.Health.IsDead;
-                    }
+                    var who = Being(c);
+                    if (who is CrimsonVeil.Combat.CreatureBase creature) alive = !creature.IsDead;
+                    else if (who is CrimsonVeil.Combat.Enemy enemy) alive = enemy.Health != null && !enemy.Health.IsDead;
                     if (!alive) continue;
                     float d = Vector2.Distance(c.ClosestPoint(a), a);
                     dangerTarget = Mathf.Max(dangerTarget, 1f - d / DangerRadius);
@@ -923,7 +922,7 @@ namespace CrimsonVeil.Veil
             for (int i = 0; i < count; i++)
             {
                 var c = obstacleBuffer[i];
-                if (!IsObstacle(c, transform.root)) continue;
+                if (!IsObstacle(c, transform.root, IsEnemy)) continue;
                 var b = c.bounds;
                 if (a.z < b.min.z - 0.2f || a.z > b.max.z + 0.2f) continue; // not in the hero's plane (background)
                 list.Add(Rect.MinMaxRect(b.min.x, b.min.y, b.max.x, b.max.y));
@@ -931,16 +930,55 @@ namespace CrimsonVeil.Veil
         }
 
         /// <summary>Is this collider solid level geometry the scarf should drape against?</summary>
-        public static bool IsObstacle(Collider c, Transform hero)
+        public static bool IsObstacle(Collider c, Transform hero) => IsObstacle(c, hero, null);
+
+        static bool IsObstacle(Collider c, Transform hero, Func<Collider, bool> isEnemy)
         {
             if (c == null || c.isTrigger || !c.enabled) return false;
             if (c is CharacterController) return false; // the hero, walking creatures
             if (hero != null && c.transform.IsChildOf(hero)) return false;
             var body = c.attachedRigidbody;
             if (body != null && !body.isKinematic) return false; // loose props, arrows
-            if (c.GetComponentInParent<CrimsonVeil.Combat.Enemy>() != null) return false;
+            if (isEnemy != null ? isEnemy(c) : c.GetComponentInParent<CrimsonVeil.Combat.Enemy>() != null) return false;
             return true;
         }
+
+        readonly Dictionary<Collider, Component> beings = new Dictionary<Collider, Component>();
+
+        /// <summary>
+        /// The creature or wraith a collider belongs to (null: none), looked up once per collider and then remembered
+        /// (the senses ask it of everything near four times a second: in the editor every miss was garbage).
+        /// </summary>
+        Component Being(Collider c)
+        {
+            if (!beings.TryGetValue(c, out var who) || (who == null && !ReferenceEquals(who, null)))
+            {
+                who = c.GetComponentInParent<CrimsonVeil.Combat.CreatureBase>();
+                if (who == null) who = c.GetComponentInParent<CrimsonVeil.Combat.Enemy>();
+                if (who == null) who = null;   // (not Unity's "missing" stand-in: a plain null)
+                if (beings.Count > 512) beings.Clear();
+                beings[c] = who;
+            }
+            return who;
+        }
+
+        readonly Dictionary<Collider, bool> enemyColliders = new Dictionary<Collider, bool>();
+        Func<Collider, bool> isEnemy;
+
+        /// <summary>
+        /// An enemy's collider: looked up once per collider, then remembered (asked of every collider in the scarf's
+        /// reach every frame, the search up the hierarchy cost time - and in the editor garbage).
+        /// </summary>
+        Func<Collider, bool> IsEnemy => isEnemy ??= c =>
+        {
+            if (!enemyColliders.TryGetValue(c, out bool enemy))
+            {
+                enemy = c.GetComponentInParent<CrimsonVeil.Combat.Enemy>() != null;
+                if (enemyColliders.Count > 512) enemyColliders.Clear();
+                enemyColliders[c] = enemy;
+            }
+            return enemy;
+        };
 
         void StopMelt()
         {
@@ -1130,7 +1168,8 @@ namespace CrimsonVeil.Veil
                 VeilFormLibrary.WhipHandleSpan(out _, out _, out float stockEnd);
                 int handIndex = Mathf.Clamp(Mathf.CeilToInt(stockEnd * (n - 1)), 0, n - 1); // the stiff handle, then the lash
                 Array.Copy(restBuf, whipBuf, n);
-                VeilWeaponPose.WhipChain(restBuf, handIndex, TurnAgo, whipLag, whipBuf);
+                // (the delegate made once: passing the method itself made a new one every frame of the whip)
+                VeilWeaponPose.WhipChain(restBuf, handIndex, turnAgo ??= TurnAgo, whipLag, whipBuf);
                 Array.Copy(whipBuf, restBuf, n);
                 if (t >= 0f && !whipCracked && t >= VeilWeaponPose.WhipCrackAt)
                 {

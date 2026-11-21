@@ -22,7 +22,7 @@ namespace CrimsonVeil.Veil
         [Tooltip("Points in each end curl.")]
         [SerializeField, Range(6, 40)] int curlPoints = 34;
         [Tooltip("Global multiplier of the curl size.")]
-        [SerializeField] float curlScale = 0.9f;
+        [SerializeField] float curlScale = 1.7f;
         [Tooltip("How far (m) the tendrils fan away from the main ribbon at their ends.")]
         [SerializeField] float tendrilSpread = 0.38f;
 
@@ -165,13 +165,13 @@ namespace CrimsonVeil.Veil
         }
 
         /// <summary>
-        /// Signed turns of a loose end's spiral. In the key art every end rolls down and under (the main mass into a
-        /// vortex below the band, the upper tongue into a hook) - the opposite sense to the weapon's flame tongues -
-        /// and winds in about LooseCurlTurns times as far as before, into a tight brush-stroke spiral.
+        /// Signed turns of a loose end's whorl of smoke (+ rolls down, - up, for a scarf streaming either way: BuildCurl
+        /// turns with the facing). As in the new key art the scarf ends in an S of whorls: the band and the tongues
+        /// above it curl up and back over, the tongues below it roll down and under.
         /// </summary>
-        public static float LooseCurl(Strand st) => -st.curlSign * st.curlTurns * LooseCurlTurns;
+        public static float LooseCurl(Strand st) => (st.side > 0.05f ? 1f : -1f) * st.curlTurns * LooseCurlTurns;
 
-        public const float LooseCurlTurns = 0.45f;
+        public const float LooseCurlTurns = 1.05f;
 
         /// <summary>
         /// Opacity of strand <paramref name="s"/> of the loose scarf at veil fraction <paramref name="f"/>: near the
@@ -184,7 +184,7 @@ namespace CrimsonVeil.Veil
         public const float ClothUntil = 0.3f;
 
         /// <summary>How far (in band widths) the loose scarf hangs below the line of the neck.</summary>
-        public const float HangBelowNeck = 0.3f;
+        public const float HangBelowNeck = 0.1f;
 
         public int SampleCount => samples;
         public int PointsPerStrand => perStrand;
@@ -630,9 +630,9 @@ namespace CrimsonVeil.Veil
                     Vector3 d = curl[Mathf.Min(k + 1, curlPoints)] - curl[k - 1];
                     d.z = 0f;
                     Vector3 nrm = d.sqrMagnitude > 1e-10f ? new Vector3(-d.y, d.x, 0f).normalized : Vector3.up;
-                    // Loose, the tip of a flame: it narrows to a hairline as it hooks over and fades into smoke (the key
-                    // art; a broad stroke wound into a whorl made a ball of wool of the scarf's end).
-                    float sw = lastW * Mathf.Lerp(1f, Mathf.Lerp(TipWidth, 0.03f, lastHard), Mathf.Pow(u, Mathf.Lerp(0.8f, 0.6f, lastHard)));
+                    // Loose, a curl of smoke: it narrows to a thin line within its first third and winds on as that line
+                    // into an open whorl, fading (the key art; a broad stroke wound into a whorl made a ball of wool).
+                    float sw = lastW * Mathf.Lerp(1f, Mathf.Lerp(TipWidth, 0.03f, lastHard), Mathf.Pow(u, Mathf.Lerp(SmokeTaper, 0.6f, lastHard)));
                     float alpha = lastA * Mathf.Lerp(1f, Mathf.Lerp(TipAlpha, 0.55f, lastHard), u);
                     curl[k] = AboveFloor(sim, curl[k], sw, FloorHold(form, looseEnd));
                     WriteVertex(baseV + (samples - 1 + k) * 2, baseF + samples - 1 + k, curl[k], nrm, sw, alpha, st, lastHard, vit, lastFront, lastTwist, lastCup * (1f - u));
@@ -988,7 +988,9 @@ namespace CrimsonVeil.Veil
             => Mathf.Lerp(0.45f, 1f, Mathf.SmoothStep(0f, 1f, u / 0.35f)) * Mathf.Lerp(1f, 0.45f, Mathf.SmoothStep(0f, 1f, (u - 0.55f) / 0.45f));
 
         /// <summary>A loose end's tip: its width (of the stroke's) and opacity where it ends - a hairline fading out.</summary>
-        public const float TipWidth = 0.02f, TipAlpha = 0.1f;
+        public const float TipWidth = 0.04f, TipAlpha = 0.3f;
+        /// <summary>How fast a loose end narrows into its line of smoke (the power of its taper: under 1, fast).</summary>
+        public const float SmokeTaper = 0.4f;
 
         /// <summary>How far (m) behind the band its dark under-layer lies.</summary>
         public const float UnderLayerDepth = 0.015f;

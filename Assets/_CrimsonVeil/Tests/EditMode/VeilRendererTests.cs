@@ -153,13 +153,21 @@ namespace CrimsonVeil.Tests
         [Test]
         public void LooseEnds_HookOverIntoAFlamesTip_NotABallOfWool()
         {
-            var main = VeilRenderer.Strands[1];
-            // weapon tongues flick with curlSign; the loose ends hook the other way
-            Assert.AreEqual(-Mathf.Sign(main.curlSign), Mathf.Sign(VeilRenderer.LooseCurl(main)));
+            // an S of whorls: the band and the tongues above it curl up and over, those below roll down and under
+            Assert.Less(VeilRenderer.LooseCurl(VeilRenderer.Strands[1]), 0f, "the band curls up and back");
+            bool up = false, down = false;
             foreach (var st in VeilRenderer.Strands)
-                Assert.That(Mathf.Abs(VeilRenderer.LooseCurl(st)), Is.InRange(0.15f, 0.6f), "a hook at the tip, never a whorl wound round itself");
-            Assert.Less(VeilRenderer.TipWidth, 0.05f, "narrowing to a hairline");
-            Assert.Less(VeilRenderer.TipAlpha, 0.2f, "fading into smoke");
+            {
+                float c = VeilRenderer.LooseCurl(st);
+                if (st.side > 0.05f) Assert.Greater(c, 0f, "below the band: down and under"); else Assert.Less(c, 0f, "above it: up and over");
+                up |= c < 0f; down |= c > 0f;
+                Assert.That(Mathf.Abs(c), Is.InRange(0.4f, 1.2f), "an open whorl, never wound round and round itself");
+            }
+            Assert.IsTrue(up && down);
+            // of a thin line of smoke, not a broad stroke wound up (that made a ball of wool)
+            Assert.Less(VeilRenderer.TipWidth, 0.05f, "narrowing to a thin line");
+            Assert.Less(VeilRenderer.SmokeTaper, 0.6f, "within its first stretch");
+            Assert.Less(VeilRenderer.TipAlpha, 0.5f, "fading into smoke");
             // a tongue swells out of the band and narrows towards its tip
             Assert.Greater(VeilRenderer.TongueWidth(0.4f), VeilRenderer.TongueWidth(0f) * 1.8f);
             Assert.Less(VeilRenderer.TongueWidth(1f), VeilRenderer.TongueWidth(0.4f) * 0.6f);
@@ -178,13 +186,15 @@ namespace CrimsonVeil.Tests
         }
 
         [Test]
-        public void RestShape_IsTheSheetsLevelS_AndLoops()
+        public void RestShape_IsTheSheetsS_LiftedAsInTheKeyArt_AndLoops()
         {
-            // ArtSource/ref/scarf_anim_sheet.png: down ~0.4 m at 1.2 m, back up near the neck's line at 2 m, down again
+            // ArtSource/ref/scarf_anim_sheet.png's S (a dip at 1.2 m, a crest at 2 m), lifted off the neck as in the key art
+            Assert.AreEqual(0f, VeilRestShape.Lift(0f), 1e-6f, "at the neck");
             for (float time = 0f; time < VeilRestShape.Duration; time += 0.2f)
             {
                 float trough = VeilRestShape.Height(1.2f, time), crest = VeilRestShape.Height(2f, time);
-                Assert.That(trough, Is.InRange(-0.5f, -0.25f), "the first dip");
+                Assert.That(trough, Is.InRange(-0.1f, 0.25f), "its dip no lower than the neck: it flies at the shoulders and above");
+                Assert.Greater(crest, 0.15f, "rising above the neck");
                 Assert.Greater(crest - trough, 0.15f, "an S, not a straight streamer");
                 Assert.Less(VeilRenderer.ScarfWidth(0f), 0.2f);
             }
@@ -229,8 +239,9 @@ namespace CrimsonVeil.Tests
         [Test]
         public void Scarf_HangsFromTheNeck_NotCentredOnIt()
         {
-            // Centred on the neck, half of the broad band (and its upper layers) rose over the head when running.
-            Assert.Greater(VeilRenderer.HangBelowNeck, 0.15f);
+            // Centred on the neck, half of the broad band (and its upper layers) rose over the head when running; the key
+            // art's scarf flies high, so it hangs only a little.
+            Assert.Greater(VeilRenderer.HangBelowNeck, 0.05f);
             Assert.Less(VeilRenderer.HangBelowNeck, 0.5f, "still wraps the neck");
         }
 

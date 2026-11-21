@@ -5,6 +5,21 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.52.0] – 2026-11-21
+### Změněno
+- **Šála blíž key artu, druhý krok.** Ve srovnání vedle sebe byly vidět čtyři rozdíly a všechny jsou upravené:
+  - **šála stoupá:** ke křivce S z animačního listu se přičítá zdvih (`VeilRestShape.Lift`, 0,45 m během prvních 1,2 m), takže šála vlaje ve výšce ramen a výš, ne pod nimi. Pod krk se táhne jen málo (`HangBelowNeck` 0,1 místo 0,3);
+  - **konce jsou velké otevřené víry z kouře:** víry jsou zpátky (`LooseCurlTurns` 1,05, `curlScale` 1,7), ale tah se během první třetiny zúží na tenkou linku (`SmokeTaper`) a vytočí se do vzdušného víru. Dřív se do víru stáčel široký tah, proto vznikalo klubko;
+  - **tvar S z vírů:** pás a jazyky nad ním se stáčejí nahoru a dozadu, jazyky pod ním dolů a pod sebe (`LooseCurl` podle toho, jestli jazyk leží nad pásem nebo pod ním);
+  - **tělo je sytý tah:** místo jemných vlasových proužků jsou v něm široké tmavší karmínové tahy a látka je až ke koncům skoro neprůhledná. U zbraní se nic nemění.
+
+### Testy
+- `VeilRendererTests` (EditMode):
+  - konce tvoří tvar S z vírů (nahoru nad pásem, dolů pod ním), jsou to otevřené víry (0,4–1,2 otáčky) z tenké linky, které vyprchají;
+  - křivka v klidu je S z listu zvednuté jako v key artu: u krku bez zdvihu, prohlubeň ne níž než krk, vrchol nad ním;
+  - šála visí pod krkem jen málo.
+- Prošlo všech 552 EditMode a 121 PlayMode testů.
+
 ## [0.51.0] – 2026-11-21
 ### Změněno
 - **Šála podle nového key artu: plamen místo klubka.** Konec šály vypadal jako zašmodrchané klubko vlny. Dělalo to devět pramenů, které se proplétaly šroubovicí a každý se stáčel do velké spirály (až 1,6 m, přes jednu otáčku). Teď je šála jako na obrázku: jeden plynoucí pás, který se vzadu rozevře do plamenných jazyků:

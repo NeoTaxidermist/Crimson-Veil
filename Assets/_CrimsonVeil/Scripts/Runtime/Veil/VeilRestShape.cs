@@ -46,8 +46,16 @@ namespace CrimsonVeil.Veil
             int i0 = Mathf.FloorToInt(f) % n, i1 = (i0 + 1) % n;
             float u = f - Mathf.Floor(f);
             u = u * u * (3f - 2f * u);
-            return Mathf.Lerp(At(i0, d), At(i1, d), u);
+            return Mathf.Lerp(At(i0, d), At(i1, d), u) + Lift(d);
         }
+
+        /// <summary>
+        /// How far (m) the key art lifts the sheet's S at <paramref name="d"/> m from the neck: the scarf rises off the
+        /// neck and flies at the height of the shoulders and above (the sheet's streamed level, sagging below them).
+        /// </summary>
+        public static float Lift(float d) => LiftHeight * Mathf.SmoothStep(0f, 1f, d / LiftOver);
+
+        public const float LiftHeight = 0.45f, LiftOver = 1.2f;
 
         static float At(int frame, float d)
         {

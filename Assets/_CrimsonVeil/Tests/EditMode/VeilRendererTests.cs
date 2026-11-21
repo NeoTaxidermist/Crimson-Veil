@@ -58,17 +58,83 @@ namespace CrimsonVeil.Tests
         [Test]
         public void LooseScarf_TwistsShowingItsDarkReverse()
         {
-            float minW = 1f, minShade = 1f, maxShade = 0f;
+            // The ribbon really turns over in depth: its width across the picture follows |cos| of the twist, and its
+            // bright face turns from the camera (towards it is -z) to away from it, where the reverse shows.
+            Vector3 nrm = Vector3.down;
+            float minW = 1f, maxDepth = 0f;
+            bool faceSeen = false, reverseSeen = false;
             for (float t = 0f; t <= 1f; t += 0.01f)
             {
                 float tw = VeilRenderer.Twist(t, 0f);
-                minW = Mathf.Min(minW, VeilRenderer.TwistWidth(tw));
-                float sh = VeilRenderer.TwistShade(tw);
-                minShade = Mathf.Min(minShade, sh); maxShade = Mathf.Max(maxShade, sh);
+                var side = VeilRenderer.RibbonSide(nrm, tw);
+                var face = VeilRenderer.RibbonFace(nrm, tw);
+                Assert.AreEqual(1f, side.magnitude, 1e-4f, "the cloth keeps its width, only turned");
+                Assert.AreEqual(0f, Vector3.Dot(side, face), 1e-4f, "the face is square to the width");
+                minW = Mathf.Min(minW, new Vector2(side.x, side.y).magnitude);
+                maxDepth = Mathf.Max(maxDepth, Mathf.Abs(side.z));
+                if (face.z < -0.5f) faceSeen = true;
+                if (face.z > 0.5f) reverseSeen = true;
             }
-            Assert.Less(minW, 0.9f, "narrows a little where it turns");
-            Assert.AreEqual(1f, maxShade, 1e-3f, "the bright crimson face");
-            Assert.Less(minShade, 0.75f, "and the deeper wine reverse");
+            Assert.Less(minW, 0.2f, "edge-on where it turns");
+            Assert.Greater(maxDepth, 0.95f, "turned right into depth");
+            Assert.IsTrue(faceSeen, "the bright crimson face towards the camera");
+            Assert.IsTrue(reverseSeen, "and the deep wine reverse");
+            Assert.AreEqual(-1f, VeilRenderer.RibbonFace(nrm, 0f).z, 1e-5f, "untwisted it faces the camera");
+        }
+
+        [Test]
+        public void TheCloth_BowsOutAcrossItsMiddle_ItsNormalsFollowingTheBow()
+        {
+            Vector3 left = new Vector3(0f, 0.1f, 0f), right = new Vector3(0f, -0.1f, 0f), face = Vector3.back;
+            VeilRenderer.CupSection(left, right, face, VeilRenderer.CupDepth, out var c, out var nl, out var nr);
+            Assert.AreEqual(0f, c.y, 1e-5f, "in the middle");
+            Assert.AreEqual(-0.1f * VeilRenderer.CupDepth, c.z, 1e-5f, "bowing out towards its face");
+            Assert.Greater(nl.y, 0.2f, "the edge's normal leans out over its edge");
+            Assert.Less(nr.y, -0.2f);
+            Assert.AreEqual(1f, nl.magnitude, 1e-4f);
+            // edge-on (face across the picture) it still shows the depth of its bow
+            VeilRenderer.CupSection(new Vector3(0f, 0f, 0.1f), new Vector3(0f, 0f, -0.1f), Vector3.up, VeilRenderer.CupDepth, out c, out _, out _);
+            Assert.Greater(c.y, 0.02f, "edge-on, not a hairline");
+            VeilRenderer.CupSection(left, right, face, 0f, out c, out nl, out _);
+            Assert.AreEqual(Vector3.zero, c, "a weapon stays flat (for now)");
+            Assert.AreEqual(face, nl);
+        }
+
+        [Test]
+        public void TheCloth_IsPaintedBackToFront_StrandsInFrontOfTheBandCoverIt()
+        {
+            // three pieces of two vertices each: the band (z 0), a strand wound round behind it (z 0.3), one in front (z -0.3)
+            var verts = new[]
+            {
+                new Vector3(0f, 0f, 0f), new Vector3(1f, 0f, 0f),
+                new Vector3(0f, 0f, 0.3f), new Vector3(1f, 0f, 0.3f),
+                new Vector3(0f, 0f, -0.3f), new Vector3(1f, 0f, -0.3f),
+            };
+            int[] first = { 0, 2, 4 }, count = { 2, 2, 2 }, order = { 0, 1, 2 };
+            var key = new float[3];
+            Vector3 eye = new Vector3(0f, 0f, -10f), forward = Vector3.forward;
+            VeilRenderer.PaintOrder(verts, first, count, key, order, eye, forward, 1);
+            CollectionAssert.AreEqual(new[] { 1, 0, 2 }, order, "behind first, the band, then the strand in front over it");
+
+            // the strand swings round: next frame it is in front of the one that was
+            for (int v = 2; v < 4; v++) verts[v].z = -0.5f;
+            VeilRenderer.PaintOrder(verts, first, count, key, order, eye, forward, 1);
+            CollectionAssert.AreEqual(new[] { 0, 2, 1 }, order);
+
+            // layers lying together keep the drawing's order (a later strand counts a little nearer)
+            for (int v = 0; v < verts.Length; v++) verts[v].z = 0f;
+            VeilRenderer.PaintOrder(verts, first, count, key, order, eye, forward, 1);
+            CollectionAssert.AreEqual(new[] { 0, 1, 2 }, order);
+        }
+
+        [Test]
+        public void ATongue_IsDrawnOnEveryOtherSample_NeverLeavingOutItsEnd()
+        {
+            Assert.IsFalse(VeilRenderer.Skipped(0, 2, 103));
+            Assert.IsTrue(VeilRenderer.Skipped(1, 2, 103));
+            Assert.IsFalse(VeilRenderer.Skipped(102, 2, 103));
+            Assert.IsFalse(VeilRenderer.Skipped(101, 2, 102), "the last sample is always drawn");
+            for (int i = 0; i < 103; i++) Assert.IsFalse(VeilRenderer.Skipped(i, 1, 103), "the band: every sample");
         }
 
         [Test]

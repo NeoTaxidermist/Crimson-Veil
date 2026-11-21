@@ -5,6 +5,36 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.48.0] – 2026-11-21
+### Přidáno
+- **3D šála, fáze 3 z 5: šála se kreslí jako látka v prostoru.** Dosud byla stuha plochý pás natočený vždy ke kameře a její zkrut se jen předstíral (užší šířka a tmavší barva v místě otočení). Teď:
+  - **skutečný zkrut:** šířka stuhy se otáčí kolem jejího směru do hloubky (`RibbonSide`). Z boku se zúží tam, kde je stuha natočená hranou, a za otočkou ukazuje druhou stranu. Při pohledu ze strany je to vidět jako opravdové přetočení;
+  - **vyklenutí:** stuha má tři řady bodů. Střed látky se vyklene o 24 % poloviny šířky (`CupSection`), takže látka není papírový proužek a i natočená hranou je z ní něco vidět;
+  - **oboustranná látka:** líc je jasně rudý, rub tmavé víno. Rozhoduje o tom skutečná normála látky v shaderu (`_Volume`, `_BackShade`), ne odstín předem namalovaný do barvy;
+  - **měkké světlo** shora zepředu (`_KeyLight`, `_LightAmount`) obíhá přes vyklenutí a zkrut. Plocha natočená ke kameře si nechává původní barvu, takže malba šály zůstává;
+  - **pořadí kreslení:** šála se kreslí po kouscích (12 úseků) odzadu dopředu podle vzdálenosti od kamery (`PaintOrder`). Pramen, který se ovine před pás, ho překryje, a ten za ním je zakrytý. Do fáze 2 se vše kreslilo v pevném pořadí, takže proplétání z boku nebylo vidět;
+  - tmavá spodní vrstva leží 1,5 cm za pásem.
+- Zbraně se zatím kreslí jako dřív: ploché, s opletem přes čepel. Ve 3D budou ve fázi 4.
+- Dýmové nitky (`VeilSmoke`) zůstávají ploché.
+
+### Změněno
+- **Kreslení šály je rychlejší: 1,44 ms za snímek místo 1,96 ms**, i když má stuha o třetinu víc bodů a navíc normály a řazení:
+  - prameny se počítají jen v každém druhém bodě a body mezi nimi se dopočítají jako střed sousedů (jsou od sebe zhruba 1,5 cm);
+  - místo každého pramene se dohledává jednou na bod, ne třikrát;
+  - kontrola přehybů počítá úhel v rovině.
+- Odpad z paměti dál žádný.
+
+### Opraveno
+- Při vývoji jsem zkoušel hloubkový předprůchod (látka si zapisuje hloubku). Malované vrstvy šály se pak navzájem prořezávaly do zubatých švů, takže jsem ho nahradil řazením kousků. Do hry se nedostal.
+
+### Testy
+- `VeilRendererTests` (EditMode):
+  - stuha se otáčí do hloubky, z boku se zúží na hranu a ukáže rub, přičemž si drží šířku;
+  - látka se vyklene uprostřed a normály na okrajích se naklánějí s vyklenutím; natočená hranou pořád ukazuje vyklenutí;
+  - kreslí se odzadu dopředu: pramen před pásem se kreslí po něm; když se pramen přetočí, pořadí se změní; vrstvy ležící u sebe si drží pořadí z kresby;
+  - pramen se kreslí v každém druhém bodě, ale nikdy nevynechá konec.
+- Prošlo všech 544 EditMode a 120 PlayMode testů, včetně testu, že hrdina za snímek nealokuje paměť.
+
 ## [0.47.0] – 2026-11-21
 ### Přidáno
 - **3D šála, fáze 2 z 5: prameny jsou látka samy o sobě.** Jazyky, které se od pásu oddělují, byly dosud jen kresba: posun od středové čáry šály v rovině obrazu. Teď je každý z osmi skutečný simulovaný řetěz o 14 bodech (`VeilStrands`, krokuje ho `VeilController` po šále):

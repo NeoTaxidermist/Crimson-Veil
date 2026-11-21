@@ -72,12 +72,30 @@ namespace CrimsonVeil.Veil
         GameObject meshObject;
         Mesh mesh;
         Vector3[] centre, normalAt;
-        float[] hardAt, widthAt, alphaAt, shadeAt;
-        Vector3[] vertices;
+        float[] hardAt, widthAt, alphaAt, twistAt;
+        Vector3[] vertices, normals;
         Color[] colors;
         Vector2[] uv2;
         Vector3[] curl;
-        int samples, perStrand;
+        // per strand sample: the face's normal (bright side) and how deep the cloth bows across (in half widths)
+        Vector3[] faceAt;
+        float[] cupAt;
+        // a simulated strand's course along the drawn samples and its direction there
+        Vector3[] simPt, simRun;
+        int samples, perStrand, centreBase;
+        // The cloth is drawn back to front in pieces (PaintOrder): a strand winding round in front of the band covers
+        // it, one behind is covered (one mesh otherwise paints in its own order, and depth-tested layers of the
+        // painted cloth cut each other into jagged seams).
+        int[] trisAll, trisSorted, chunkTri, chunkTris, chunkV, chunkVs, order;
+        float[] chunkKey;
+        Camera viewer;
+
+        /// <summary>Segments of a strand in one piece of the painter's order.</summary>
+        public const int ChunkSegments = 12;
+        /// <summary>How much nearer (m) each later strand of the drawing counts in the order: layers lying together
+        /// keep their painted order instead of flickering.</summary>
+        public const float LayerBias = 0.004f;
+
         Vector3 lastAnchor;
         float speedSmoothed;
         float sinceSwirl = 10f;
@@ -104,12 +122,44 @@ namespace CrimsonVeil.Veil
         public static float Twist(float t, float time)
             => Mathf.PI * (-0.1f + 0.6f * t + 1.6f * t * t + 0.06f * Mathf.Sin(2.2f * Mathf.PI * t - 0.9f * time));
 
-        /// <summary>Width factor of the twisted ribbon: a little narrower (0.72) where it turns (the sheet: no hard pinch).</summary>
-        public static float TwistWidth(float twist) => Mathf.Lerp(0.72f, 1f, Mathf.Abs(Mathf.Cos(twist)));
+        /// <summary>
+        /// The direction across the ribbon, its in-picture normal <paramref name="nrm"/> turned by
+        /// <paramref name="twist"/> round the ribbon's course into depth: flat to the camera at 0, edge-on at a
+        /// quarter turn (it is seen |cos| as wide), the other way round at a half.
+        /// </summary>
+        public static Vector3 RibbonSide(Vector3 nrm, float twist)
+        {
+            float c = Mathf.Cos(twist), s = Mathf.Sin(twist);
+            return new Vector3(nrm.x * c, nrm.y * c, s);
+        }
 
-        /// <summary>Shade of the ribbon's face: 1 on the bright face, BackShade on the dark wine reverse.</summary>
-        public static float TwistShade(float twist)
-            => Mathf.Lerp(BackShade, 1f, Mathf.SmoothStep(0f, 1f, (Mathf.Cos(twist) + 0.25f) / 0.5f));
+        /// <summary>The normal of the ribbon's bright face (towards the camera at twist 0, away from it at a half turn:
+        /// there the dark wine reverse shows - the CrimsonVeil/Veil shader shades by it).</summary>
+        public static Vector3 RibbonFace(Vector3 nrm, float twist)
+        {
+            float c = Mathf.Cos(twist), s = Mathf.Sin(twist);
+            return new Vector3(nrm.x * s, nrm.y * s, -c);
+        }
+
+        /// <summary>How deep (in half widths) loose cloth bows out across its middle: no flat paper strip, and
+        /// edge-on it still shows that much of itself.</summary>
+        public const float CupDepth = 0.24f;
+
+        /// <summary>
+        /// The ribbon's cross-section between its edges <paramref name="left"/> and <paramref name="right"/>: its middle
+        /// bows out along the face normal <paramref name="face"/> by <paramref name="cup"/> half widths, and the normals at
+        /// the edges lean out with the slope of the bow (the light runs across the cloth as across a real fold).
+        /// </summary>
+        public static void CupSection(Vector3 left, Vector3 right, Vector3 face, float cup, out Vector3 centre, out Vector3 nLeft, out Vector3 nRight)
+        {
+            Vector3 half = (left - right) * 0.5f;
+            float hw = half.magnitude;
+            centre = right + half + face * (cup * hw);
+            if (hw < 1e-6f || cup <= 0f) { nLeft = nRight = face; return; }
+            Vector3 lean = half * (2f * cup / hw);
+            nLeft = (face + lean).normalized;
+            nRight = (face - lean).normalized;
+        }
 
         /// <summary>
         /// Signed turns of a loose end's spiral. In the key art every end rolls down and under (the main mass into a
@@ -119,9 +169,6 @@ namespace CrimsonVeil.Veil
         public static float LooseCurl(Strand st) => -st.curlSign * st.curlTurns * LooseCurlTurns;
 
         public const float LooseCurlTurns = 1.35f;
-
-        /// <summary>The reverse of the scarf, relative to its face (key art: deep wine under bright crimson).</summary>
-        public const float BackShade = 0.6f;
 
         /// <summary>
         /// Opacity of strand <paramref name="s"/> of the loose scarf at veil fraction <paramref name="f"/>: near the
@@ -151,35 +198,65 @@ namespace CrimsonVeil.Veil
             hardAt = new float[samples];
             widthAt = new float[samples];
             alphaAt = new float[samples];
-            shadeAt = new float[samples];
+            twistAt = new float[samples];
             curl = new Vector3[curlPoints + 1];
+            simPt = new Vector3[samples];
+            simRun = new Vector3[samples];
 
+            // Every strand is a ribbon of three rows: its two edges (pairs, as ClampFolds wants them) and, after all
+            // the pairs, the row down its middle, where the cloth bows out (CupSection).
             int per = perStrand * 2;
-            vertices = new Vector3[per * Strands.Length];
+            centreBase = per * Strands.Length;
+            vertices = new Vector3[centreBase + perStrand * Strands.Length];
+            normals = new Vector3[vertices.Length];
             colors = new Color[vertices.Length];
             uv2 = new Vector2[vertices.Length];
+            faceAt = new Vector3[perStrand * Strands.Length];
+            cupAt = new float[faceAt.Length];
             var uvs = new Vector2[vertices.Length];
-            var tris = new int[(perStrand - 1) * 6 * Strands.Length];
+            var tris = new int[(perStrand - 1) * 12 * Strands.Length];
             int k = 0;
             for (int s = 0; s < Strands.Length; s++)
             {
-                int baseV = s * per;
+                int baseV = s * per, baseC = centreBase + s * perStrand;
                 for (int i = 0; i < perStrand; i++)
                 {
                     // Keep the curl mostly out of the shader's tail erosion: it ends at 0.9.
                     float t = 0.9f * i / (perStrand - 1);
                     uvs[baseV + i * 2] = new Vector2(t, 0f);
                     uvs[baseV + i * 2 + 1] = new Vector2(t, 1f);
+                    uvs[baseC + i] = new Vector2(t, 0.5f);
                     if (i == perStrand - 1) continue;
-                    int v = baseV + i * 2;
-                    tris[k++] = v; tris[k++] = v + 2; tris[k++] = v + 1;
-                    tris[k++] = v + 1; tris[k++] = v + 2; tris[k++] = v + 3;
+                    int l = baseV + i * 2, r = l + 1, c = baseC + i;
+                    tris[k++] = l; tris[k++] = l + 2; tris[k++] = c;
+                    tris[k++] = c; tris[k++] = l + 2; tris[k++] = c + 1;
+                    tris[k++] = c; tris[k++] = c + 1; tris[k++] = r;
+                    tris[k++] = r; tris[k++] = c + 1; tris[k++] = r + 2;
                 }
             }
+
+            // pieces of ChunkSegments segments along every strand
+            int perChunks = (perStrand - 1 + ChunkSegments - 1) / ChunkSegments;
+            int chunks = perChunks * Strands.Length;
+            chunkTri = new int[chunks]; chunkTris = new int[chunks]; chunkV = new int[chunks]; chunkVs = new int[chunks];
+            chunkKey = new float[chunks]; order = new int[chunks];
+            for (int s = 0, ch = 0; s < Strands.Length; s++)
+                for (int c = 0; c < perChunks; c++, ch++)
+                {
+                    int first = c * ChunkSegments, segs = Mathf.Min(ChunkSegments, perStrand - 1 - first);
+                    chunkTri[ch] = (s * (perStrand - 1) + first) * 12;
+                    chunkTris[ch] = segs * 12;
+                    chunkV[ch] = centreBase + s * perStrand + first;
+                    chunkVs[ch] = segs + 1;
+                    order[ch] = ch;
+                }
+            trisAll = tris;
+            trisSorted = new int[tris.Length];
 
             mesh = new Mesh { name = "VeilCloth" };
             mesh.MarkDynamic();
             mesh.vertices = vertices;
+            mesh.normals = normals;
             mesh.uv = uvs;
             mesh.triangles = tris;
 
@@ -335,11 +412,9 @@ namespace CrimsonVeil.Veil
                 // The bow's string is part of the same ribbon: a thin glowing thread between the limb tips.
                 if (bow) weaponProfile *= Mathf.Lerp(1f, 0.32f, VeilFormLibrary.BowStringWeight(t));
                 // Keeps its volume until nearly set, so the transformation reads as the scarf winding in, not thinning out.
-                // the loose ribbon twists: it pinches where it turns edge-on and shows its dark reverse
-                float tw = Twist(t, time);
-                float looseHere = 1f - hard;
-                flowProfile *= Mathf.Lerp(1f, TwistWidth(tw), looseHere);
-                shadeAt[i] = Mathf.Lerp(1f, TwistShade(tw), looseHere);
+                // The loose ribbon twists for real (RibbonSide): it turns edge-on and over, showing its dark reverse.
+                // (mirror-true: the other way round when the hero faces the other way)
+                twistAt[i] = Twist(t, time) * (1f - hard) * facing;
                 widthAt[i] = Mathf.Lerp(flowW * flowProfile, formW * weaponProfile, hard * hard * hard) * Mathf.Lerp(0.45f, 1f, vit);
 
                 // (the loose scarf's length follows its strength in the cloth itself - VeilSimulation.LengthScale - so
@@ -370,7 +445,7 @@ namespace CrimsonVeil.Veil
                 bool branch = st.start > 0f;
                 int baseV = s * per;
                 Vector3 lastC = centre[0], lastTan = Vector3.right;
-                float lastW = 0f, lastA = 0f, lastHard = 0f, lastFront = 0f, lastShade = 1f;
+                float lastW = 0f, lastA = 0f, lastHard = 0f, lastFront = 0f;
                 // As a weapon, each strand ends somewhere along the blade, where its flame tongue peels off.
                 // (On a bow every strand runs the whole way round, so both limbs are equally full.)
                 // (every layer burns all round the shield, and runs the whole rope: braided all the way to the ring)
@@ -381,9 +456,38 @@ namespace CrimsonVeil.Veil
                 // just the slim shaft, not every layer of the scarf bundled together.
                 float start = branch && !bow ? Mathf.Lerp(st.start, Mathf.Max(st.start, gripFraction), weaponness) : st.start;
 
+                // A simulated strand's course (VeilStrands) at the drawn samples, once: where it runs and which way.
+                int si = s < MainStrand ? s : s - 1;
+                bool simulated = strands != null && !main && weaponness < 0.999f;
+                // A tongue runs only part of the scarf on as many samples as the band: every other one is enough, the
+                // ones between are laid half way (FillBetween).
+                int step = branch ? 2 : 1;
+                float defStart = 0f, defEnd = 1f;
+                if (simulated)
+                {
+                    var def = strands.Defs[si];
+                    defStart = def.start; defEnd = def.end;
+                    for (int i = 0; i < samples; i++)
+                    {
+                        if (Skipped(i, step, samples)) continue;
+                        simPt[i] = strands.At(si, Mathf.InverseLerp(defStart, defEnd, Mathf.Lerp(start, end, (float)i / (samples - 1))));
+                    }
+                    for (int i = 0; i < samples; i++)
+                    {
+                        if (Skipped(i, step, samples)) continue;
+                        Vector3 run = simPt[Mathf.Min(i + step, samples - 1)] - simPt[Mathf.Max(i - step, 0)];
+                        run.z = 0f;
+                        simRun[i] = run;
+                    }
+                }
+                float strandTwist = branch ? st.phase * 0.25f * facing : 0f;
+                int baseF = s * perStrand;
+                float lastTwist = 0f, lastCup = 0f;
+
                 // 1) Body: follows the scarf from `start` to `end`.
                 for (int i = 0; i < samples; i++)
                 {
+                    if (Skipped(i, step, samples)) continue;
                     float u = (float)i / (samples - 1);
                     float f = Mathf.Lerp(start, end, u);
                     float fi = f * (samples - 1);
@@ -421,28 +525,27 @@ namespace CrimsonVeil.Veil
                     // art - the upper one climbs into its hook, the lower ones stay close under the band.
                     if (ov.y > 0f) ov.y *= branch ? Mathf.Lerp(0.55f, 0.5f, hard) : 0.5f;
                     else if (branch) ov.y *= Mathf.Lerp(0.55f, 1f, hard);
-                    c += ov + new Vector3(0f, -w * HangBelowNeck * loose * Mathf.SmoothStep(0f, 1f, f * 4f), (s - 1) * 0.012f);
+                    // (the dark under-layer lies behind the band: the cloth is drawn with depth now)
+                    c += ov + new Vector3(0f, -w * HangBelowNeck * loose * Mathf.SmoothStep(0f, 1f, f * 4f), (s == 0 ? UnderLayerDepth : (s - 1) * 0.012f) * loose);
                     // Loose, a strand is cloth of its own (VeilStrands): it runs where its simulation has it - round
                     // the band, over and under the others - from where it comes off the band; set into a weapon it
                     // is the braid drawn above.
-                    if (strands != null && !main)
+                    if (simulated)
                     {
-                        int si = s < MainStrand ? s : s - 1;
-                        var def = strands.Defs[si];
-                        float simW = loose * Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(def.start, def.start + 0.04f, f));
+                        float simW = loose * Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(defStart, defStart + 0.04f, f));
                         if (simW > 0f)
                         {
-                            float us = Mathf.InverseLerp(def.start, def.end, f);
-                            c = Vector3.Lerp(c, strands.At(si, us), simW);
+                            c = Vector3.Lerp(c, simPt[i], simW);
                             // its width across its own course, not the band's (across the band's, a strand turning
                             // away from it folded into spikes)
-                            Vector3 run = strands.At(si, Mathf.Min(1f, us + 0.02f)) - strands.At(si, Mathf.Max(0f, us - 0.02f));
-                            run.z = 0f;
+                            Vector3 run = simRun[i];
                             if (run.sqrMagnitude > 1e-8f)
                             {
                                 var own = new Vector3(-run.y, run.x, 0f).normalized;
-                                if (Vector3.Dot(own, nrm) < 0f) own = -own;
-                                nrm = Vector3.Slerp(nrm, own, simW).normalized;
+                                if (own.x * nrm.x + own.y * nrm.y < 0f) own = -own;
+                                nrm = Vector3.Lerp(nrm, own, simW);
+                                float nl = nrm.magnitude;
+                                nrm = nl > 1e-6f ? nrm / nl : own;
                             }
                         }
                     }
@@ -474,13 +577,15 @@ namespace CrimsonVeil.Veil
                     if (branch) alpha *= Mathf.SmoothStep(0f, 1f, u * 5f) * Mathf.Lerp(1f, 0.12f, coiled);
                     if (!main) alpha = Mathf.Lerp(Mathf.Min(1f, alpha * 1.2f), alpha, hard); // fuller tongues (the sheet)
 
-                    float shade = Mathf.Lerp(shadeAt[i0], shadeAt[i0 + 1], fr);
+                    float twist = Mathf.Lerp(twistAt[i0], twistAt[i0 + 1], fr) + strandTwist * loose;
+                    float cup = CupDepth * loose;
                     c = AboveFloor(sim, c, sw, FloorHold(form, loose));
-                    WriteVertex(baseV + i * 2, c, nrm, sw, alpha, st, hard, vit, front, shade);
+                    WriteVertex(baseV + i * 2, baseF + i, c, nrm, sw, alpha, st, hard, vit, front, twist, cup);
                     if (i > 0) lastTan = c - lastC;
-                    lastC = c; lastW = sw; lastA = alpha; lastHard = hard; lastFront = front; lastShade = shade;
+                    lastC = c; lastW = sw; lastA = alpha; lastHard = hard; lastFront = front; lastTwist = twist; lastCup = cup;
                 }
 
+                if (step > 1) FillBetween(baseV, baseF);
                 // 2) End curl: loose cloth winds into a spiral; on a weapon the end becomes a flame tongue
                 // that licks upwards and back off the blade.
                 float looseEnd = 1f - lastHard;
@@ -510,9 +615,20 @@ namespace CrimsonVeil.Veil
                     float sw = lastW * Mathf.Lerp(1f, Mathf.Lerp(0.14f, 0.03f, lastHard), Mathf.Pow(u, Mathf.Lerp(1.7f, 0.6f, lastHard)));
                     float alpha = lastA * Mathf.Lerp(1f, 0.55f, u);
                     curl[k] = AboveFloor(sim, curl[k], sw, FloorHold(form, looseEnd));
-                    WriteVertex(baseV + (samples - 1 + k) * 2, curl[k], nrm, sw, alpha, st, lastHard, vit, lastFront, lastShade);
+                    WriteVertex(baseV + (samples - 1 + k) * 2, baseF + samples - 1 + k, curl[k], nrm, sw, alpha, st, lastHard, vit, lastFront, lastTwist, lastCup * (1f - u));
                 }
                 ClampFolds(vertices, uv2, baseV, perStrand);
+
+                // 3) The middle row: the cloth bows out between its edges, and its normals follow the bow.
+                int baseC = centreBase + baseF;
+                for (int i = 0; i < perStrand; i++)
+                {
+                    int v = baseV + i * 2, cv = baseC + i;
+                    CupSection(vertices[v], vertices[v + 1], faceAt[baseF + i], cupAt[baseF + i], out vertices[cv], out normals[v], out normals[v + 1]);
+                    normals[cv] = faceAt[baseF + i];
+                    colors[cv] = colors[v];
+                    uv2[cv] = uv2[v];
+                }
             }
 
             // Loose cloth stays behind the hero: when he stops, the swinging band and its layers must not sweep
@@ -535,7 +651,23 @@ namespace CrimsonVeil.Veil
                 }
             }
 
+            if (viewer == null || !viewer.isActiveAndEnabled) viewer = Camera.main;
+            if (viewer != null)
+            {
+                var vt = viewer.transform;
+                PaintOrder(vertices, chunkV, chunkVs, chunkKey, order, vt.position, vt.forward, Strands.Length > 0 ? chunkKey.Length / Strands.Length : 1);
+                for (int o = 0, k = 0; o < order.Length; o++)
+                {
+                    int ch = order[o];
+                    System.Array.Copy(trisAll, chunkTri[ch], trisSorted, k, chunkTris[ch]);
+                    k += chunkTris[ch];
+                }
+            }
+            else System.Array.Copy(trisAll, trisSorted, trisAll.Length);
+
             mesh.vertices = vertices;
+            mesh.normals = normals;
+            mesh.SetTriangles(trisSorted, 0, false);
             mesh.colors = colors;
             mesh.SetUVs(1, uv2);
             mesh.RecalculateBounds();
@@ -713,11 +845,10 @@ namespace CrimsonVeil.Veil
                 int v = baseV + k * 2;
                 if (data != null && data[v].x > 0.5f) continue; // a weapon keeps its own shape
                 Vector3 c0 = (verts[v - 2] + verts[v - 1]) * 0.5f, c1 = (verts[v] + verts[v + 1]) * 0.5f, c2 = (verts[v + 2] + verts[v + 3]) * 0.5f;
-                Vector3 a = c1 - c0, b = c2 - c1;
-                a.z = 0f; b.z = 0f;
-                float la = a.magnitude, lb = b.magnitude;
+                float ax = c1.x - c0.x, ay = c1.y - c0.y, bx = c2.x - c1.x, by = c2.y - c1.y;
+                float la = Mathf.Sqrt(ax * ax + ay * ay), lb = Mathf.Sqrt(bx * bx + by * by);
                 if (la < 1e-5f || lb < 1e-5f) continue;
-                float turn = Vector3.Angle(a, b) * Mathf.Deg2Rad;
+                float turn = Mathf.Atan2(Mathf.Abs(ax * by - ay * bx), ax * bx + ay * by);
                 if (turn < 1e-3f) continue;
                 float radius = 0.5f * (la + lb) / turn;
                 Vector3 half = (verts[v] - verts[v + 1]) * 0.5f;
@@ -729,11 +860,69 @@ namespace CrimsonVeil.Veil
             }
         }
 
-        void WriteVertex(int v, Vector3 c, Vector3 nrm, float width, float alpha, Strand st, float hard, float vit, float glow = 0f, float shade = 1f)
+        /// <summary>
+        /// The painter's order of the cloth's pieces: each piece (<paramref name="firstV"/>, <paramref name="countV"/> of
+        /// its middle row in <paramref name="verts"/>) is as far from the viewer as its middle along the view (a later
+        /// strand a little nearer, LayerBias); <paramref name="order"/> comes out farthest first. Sorted in place by
+        /// insertion: from one frame to the next it is nearly sorted already.
+        /// </summary>
+        public static void PaintOrder(Vector3[] verts, int[] firstV, int[] countV, float[] key, int[] order, Vector3 eye, Vector3 forward, int chunksPerStrand)
         {
-            vertices[v] = c + nrm * (width * 0.5f);
-            vertices[v + 1] = c - nrm * (width * 0.5f);
-            var col = st.tint * (1f + 0.9f * glow) * shade;
+            for (int ch = 0; ch < key.Length; ch++)
+            {
+                float sum = 0f;
+                int a = firstV[ch], n = countV[ch];
+                for (int v = a; v < a + n; v++)
+                {
+                    var d = verts[v];
+                    sum += (d.x - eye.x) * forward.x + (d.y - eye.y) * forward.y + (d.z - eye.z) * forward.z;
+                }
+                key[ch] = sum / Mathf.Max(1, n) - LayerBias * (ch / Mathf.Max(1, chunksPerStrand));
+            }
+            for (int i = 1; i < order.Length; i++)
+            {
+                int o = order[i];
+                float k = key[o];
+                int j = i - 1;
+                while (j >= 0 && key[order[j]] < k) { order[j + 1] = order[j]; j--; }
+                order[j + 1] = o;
+            }
+        }
+
+        /// <summary>Whether sample <paramref name="i"/> is left out when every <paramref name="step"/>-th is drawn (the
+        /// last one never is).</summary>
+        public static bool Skipped(int i, int step, int count) => step > 1 && i % step != 0 && i != count - 1;
+
+        /// <summary>Lays the samples left out of a tongue's body (every other one) half way between their neighbours.</summary>
+        void FillBetween(int baseV, int baseF)
+        {
+            for (int i = 1; i < samples - 1; i += 2)
+            {
+                int v = baseV + i * 2, f = baseF + i;
+                vertices[v] = (vertices[v - 2] + vertices[v + 2]) * 0.5f;
+                vertices[v + 1] = (vertices[v - 1] + vertices[v + 3]) * 0.5f;
+                var face = faceAt[f - 1] + faceAt[f + 1];
+                float fl = face.magnitude;
+                faceAt[f] = fl > 1e-6f ? face / fl : faceAt[f - 1];
+                cupAt[f] = (cupAt[f - 1] + cupAt[f + 1]) * 0.5f;
+                var col = (colors[v - 2] + colors[v + 2]) * 0.5f;
+                colors[v] = colors[v + 1] = col;
+                uv2[v] = uv2[v + 1] = (uv2[v - 2] + uv2[v + 2]) * 0.5f;
+            }
+        }
+
+        /// <summary>How far (m) behind the band its dark under-layer lies.</summary>
+        public const float UnderLayerDepth = 0.015f;
+
+        void WriteVertex(int v, int f, Vector3 c, Vector3 nrm, float width, float alpha, Strand st, float hard, float vit, float glow, float twist, float cup)
+        {
+            float cs = Mathf.Cos(twist), sn = Mathf.Sin(twist), hw = width * 0.5f;
+            var side = new Vector3(nrm.x * cs * hw, nrm.y * cs * hw, sn * hw);   // RibbonSide * half width
+            vertices[v] = c + side;
+            vertices[v + 1] = c - side;
+            faceAt[f] = new Vector3(nrm.x * sn, nrm.y * sn, -cs);                 // RibbonFace
+            cupAt[f] = cup;
+            var col = st.tint * (1f + 0.9f * glow);
             col.a = alpha;
             col.r *= Mathf.Lerp(0.6f, 1f, vit);
             colors[v] = colors[v + 1] = col;

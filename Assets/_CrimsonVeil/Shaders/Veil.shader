@@ -2,6 +2,9 @@
 // streaks flowing along the length, ragged soft edges and a tail that dissolves into smoke.
 // uv.x = 0 at the neck → 1 at the tip, uv.y = 0..1 across the ribbon.
 // uv2.x = hardness (0 cloth → 1 weapon), uv2.y = strand seed. Vertex colour = tint * alpha.
+// Normal = the cloth's bright face (VeilRenderer.RibbonFace): with _Volume the side turned away from the camera is
+// the dark wine reverse and a soft key light runs across the folds. (Its strands are painted back to front:
+// VeilRenderer.PaintOrder.)
 Shader "CrimsonVeil/Veil"
 {
     Properties
@@ -17,22 +20,17 @@ Shader "CrimsonVeil/Veil"
         _ClothDeep ("Cloth Wine", Color) = (0.36, 0.0, 0.01, 1)
         _ClothMid ("Cloth Crimson", Color) = (0.8, 0.02, 0.03, 1)
         _ClothLight ("Cloth Light", Color) = (1.0, 0.04, 0.04, 1)
+        _Volume ("Volume (two-sided cloth, light across its folds)", Range(0, 1)) = 0
+        _BackShade ("Reverse Shade", Range(0, 1)) = 0.6
+        _KeyLight ("Key Light Direction (towards the light)", Vector) = (-0.45, 0.8, -0.4, 0)
+        _LightAmount ("Light Across the Folds", Range(0, 1)) = 0.45
     }
     SubShader
     {
         Tags { "RenderType" = "Transparent" "Queue" = "Transparent" "RenderPipeline" = "UniversalPipeline" "IgnoreProjector" = "True" }
-        Blend SrcAlpha OneMinusSrcAlpha
-        ZWrite Off
         Cull Off
 
-        Pass
-        {
-            Name "Forward"
-            Tags { "LightMode" = "UniversalForward" }
-
-            HLSLPROGRAM
-            #pragma vertex vert
-            #pragma fragment frag
+        HLSLINCLUDE
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "CVCommon.hlsl"
 
@@ -48,6 +46,10 @@ Shader "CrimsonVeil/Veil"
                 half4 _ClothDeep;
                 half4 _ClothMid;
                 half4 _ClothLight;
+                float _Volume;
+                float _BackShade;
+                float4 _KeyLight;
+                float _LightAmount;
             CBUFFER_END
 
             struct Attributes
@@ -56,6 +58,7 @@ Shader "CrimsonVeil/Veil"
                 half4 color : COLOR;
                 float2 uv : TEXCOORD0;
                 float2 uv2 : TEXCOORD1;
+                float3 normalOS : NORMAL;
             };
 
             struct Varyings
@@ -64,20 +67,47 @@ Shader "CrimsonVeil/Veil"
                 half4 color : COLOR;
                 float2 uv : TEXCOORD0;
                 float2 data : TEXCOORD1;
+                float3 normalWS : TEXCOORD2;
+                float3 positionWS : TEXCOORD3;
             };
 
             Varyings vert(Attributes v)
             {
                 Varyings o;
-                o.positionCS = TransformObjectToHClip(v.positionOS.xyz);
+                o.positionWS = TransformObjectToWorld(v.positionOS.xyz);
+                o.positionCS = TransformWorldToHClip(o.positionWS);
+                o.normalWS = TransformObjectToWorldNormal(v.normalOS, false);
                 o.color = v.color;
                 o.uv = v.uv;
                 o.data = v.uv2;
                 return o;
             }
 
-            half4 frag(Varyings i) : SV_Target
+            // The cloth's shade from its real orientation (1 for a face turned to the camera): its reverse is deep wine,
+            // and a soft key light runs across the bow of the cloth and its twists.
+            half VolumeShade(Varyings i)
             {
+                if (_Volume <= 0.0) return 1.0;
+                float3 n = i.normalWS;
+                float len2 = dot(n, n);
+                if (len2 < 1e-6) return 1.0;
+                n *= rsqrt(len2);
+                float3 toCam = GetWorldSpaceNormalizeViewDir(i.positionWS);
+                float facing = dot(n, toCam);
+                float face = smoothstep(-0.12, 0.12, facing);
+                half shade = lerp(_BackShade, 1.0, face);
+                n = facing < 0.0 ? -n : n;                  // the side we see is lit, front or reverse
+                float3 key = normalize(_KeyLight.xyz);
+                float lit = saturate(dot(n, key) * 0.5 + 0.5);
+                float flat = saturate(dot(toCam, key) * 0.5 + 0.5);   // a face square to the camera keeps its colour
+                shade *= 1.0 + _LightAmount * (lit - flat) * 1.6;
+                shade *= lerp(0.82, 1.0, saturate(abs(facing) * 3.0));   // the cloth's edge, turned away, a shade deeper
+                return lerp(1.0, shade, _Volume);
+            }
+
+            half4 Shade(Varyings i)
+            {
+                half3 vtint = i.color.rgb * VolumeShade(i);
                 float along = i.uv.x;
                 float across = i.uv.y * 2.0 - 1.0;           // -1 .. 1
                 float hard = saturate(i.data.x);
@@ -161,11 +191,11 @@ Shader "CrimsonVeil/Veil"
                 // wine instead of darkening to black, and a thin wash turns a lighter, clear red - watercolour on
                 // paper, never grey.
                 float clothV = _Cloth * lerp(1.0, _WeaponInk, hard);
-                float shadeV = saturate(max(i.color.r, max(i.color.g, i.color.b)));
+                float shadeV = saturate(max(vtint.r, max(vtint.g, vtint.b)));
                 half3 clothCol = lerp(_ClothDeep.rgb, col, smoothstep(0.25, 1.0, shadeV));
                 // a thin wash is clear bright red (pink on the paper), never a dark shade seen through
                 clothCol = lerp(_ClothLight.rgb, clothCol, smoothstep(0.3, 0.85, alpha * i.color.a));
-                col = lerp(col * i.color.rgb, clothCol * max(1.0, i.color.r), clothV);
+                col = lerp(col * vtint, clothCol * max(1.0, vtint.r), clothV);
                 // the ribbon is painted, not smoke: the layers' soft vertex alpha is lifted on the cloth
                 float va = lerp(i.color.a, saturate(i.color.a * 1.6), clothV);
                 float outA = saturate(alpha * va);
@@ -175,6 +205,20 @@ Shader "CrimsonVeil/Veil"
                 outA = lerp(outA, saturate(outA * 2.2), darkInk);
                 return half4(col, outA);
             }
+        ENDHLSL
+
+        Pass
+        {
+            Name "Forward"
+            Tags { "LightMode" = "UniversalForward" }
+            Blend SrcAlpha OneMinusSrcAlpha
+            ZWrite Off
+            ZTest LEqual
+
+            HLSLPROGRAM
+            #pragma vertex vert
+            #pragma fragment frag
+            half4 frag(Varyings i) : SV_Target { return Shade(i); }
             ENDHLSL
         }
     }

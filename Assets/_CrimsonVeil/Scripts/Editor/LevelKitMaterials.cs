@@ -90,7 +90,7 @@ namespace CrimsonVeil.EditorTools
                 shaft = MistMat("LightShaft", mist, "_MODE_SHAFT", 1, Color.white, 0.16f, new Vector2(2f, 4f), new Vector2(0.01f, -0.02f), new Vector2(0.35f, 0.3f)),
                 moon = Mat("Moon", unlit, new Color(3.4f, 3.4f, 3.3f)),
 
-                veil = VeilMat("Veil", 0.45f, 0.75f, 0.6f, cloth: true),
+                veil = VeilMat("Veil", 0.45f, 0.75f, 0.6f, cloth: true, volume: true),
                 wisp = VeilMat("VeilSmoke", 0.9f, 0.95f, 0.5f, cloth: true), // red brush filaments, not grey smoke
                 burst = Transparent(Mat("InkBurst", particles, new Color(1.1f, 0.05f, 0.06f, 1f))),
                 rope = Transparent(Mat("Rope", particles, new Color(1.1f, 0.04f, 0.05f, 1f))),
@@ -143,7 +143,7 @@ namespace CrimsonVeil.EditorTools
             return m;
         }
 
-        static Material VeilMat(string name, float edgeSoftness, float erosion, float flowSpeed, bool cloth = false)
+        static Material VeilMat(string name, float edgeSoftness, float erosion, float flowSpeed, bool cloth = false, bool volume = false)
         {
             var m = Mat(name, Shader.Find("CrimsonVeil/Veil"), Color.white);
             m.SetColor("_Deep", cloth ? new Color(0.34f, 0.0f, 0.025f) : new Color(0.6f, 0.02f, 0.04f)); // smoke: wine red, never grey
@@ -159,6 +159,8 @@ namespace CrimsonVeil.EditorTools
             m.SetColor("_ClothDeep", new Color(0.36f, 0.0f, 0.01f));
             m.SetColor("_ClothMid", new Color(0.8f, 0.02f, 0.03f));
             m.SetColor("_ClothLight", new Color(1.0f, 0.04f, 0.04f));
+            // The scarf is cloth in three dimensions: two-sided, lit across its folds (the smoke threads stay flat washes).
+            m.SetFloat("_Volume", volume ? 1f : 0f);
             m.renderQueue = (int)RenderQueue.Transparent;
             return m;
         }

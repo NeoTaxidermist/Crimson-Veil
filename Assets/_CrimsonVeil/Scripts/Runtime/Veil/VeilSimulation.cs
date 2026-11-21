@@ -230,6 +230,37 @@ namespace CrimsonVeil.Veil
         /// <summary>Horizontal reach of the sheet's S per metre of scarf (its waves take up the rest).</summary>
         public const float RestReach = 0.88f;
 
+        /// <summary>
+        /// Turning round, the breeze does not flip the whole scarf at once (it crumpled round the head): the turn runs
+        /// down it from the neck, the tail last, like a flag swung round. Seconds for the turn to reach the tip.
+        /// </summary>
+        public const float TurnTravel = 0.45f;
+        /// <summary>Seconds one point of the scarf takes to swing over.</summary>
+        public const float TurnBlend = 0.3f;
+
+        /// <summary>The breeze's direction (-1..1) at <paramref name="f"/> (0 neck, 1 tip), <paramref name="clock"/> s after it turned from <paramref name="from"/> to <paramref name="to"/>.</summary>
+        public static float DriftAt(float from, float to, float clock, float f)
+            => Mathf.Lerp(from, to, Mathf.SmoothStep(0f, 1f, (clock - f * TurnTravel) / TurnBlend));
+
+        /// <summary>The breeze's direction (-1..1) at <paramref name="f"/> along the scarf right now (see <see cref="TurnTravel"/>).</summary>
+        public float DriftAt(float f) => DriftAt(driftFrom, driftTo, turnClock, f);
+
+        /// <summary>
+        /// Radians the sheet's S is tilted out of the level (+ = the tail up): it streams against the hero's motion, up
+        /// behind him as he falls, instead of keeping level and catching on the ledge he dropped off.
+        /// </summary>
+        public float TrailTilt { get; set; }
+
+        /// <summary>The sheet's offset (dx along the breeze, dy up) tilted by <paramref name="tilt"/>, for a breeze towards <paramref name="dir"/>.</summary>
+        public static Vector2 Tilted(float dx, float dy, float dir, float tilt)
+        {
+            float t = tilt * (dir < 0f ? -1f : 1f);
+            float c = Mathf.Cos(t), sn = Mathf.Sin(t);
+            return new Vector2(dx * c - dy * sn, dx * sn + dy * c);
+        }
+
+        float driftFrom, driftTo, turnClock = 99f;
+
         /// <summary>Node index after which the ribbon is not held together (-1 = whole): node i and i + 1 move apart freely.</summary>
         public int DetachedAfter { get; set; } = -1;
 
@@ -329,6 +360,8 @@ namespace CrimsonVeil.Veil
             shedPhase = 0f;
             lastAnchor = anchor;
             AnchorVelocity = Vector3.zero;
+            driftFrom = driftTo = DriftDirection;
+            turnClock = 99f;
         }
 
         /// <summary>The scarf's length (m) wound round the neck.</summary>
@@ -368,6 +401,14 @@ namespace CrimsonVeil.Veil
         {
             var s = Settings;
             time += h;
+            if (DriftDirection != driftTo)
+            {
+                // a turn while the last one is still running starts from where the middle of the scarf is
+                driftFrom = driftTo == 0f ? DriftDirection : DriftAt(0.5f);
+                driftTo = DriftDirection;
+                turnClock = driftFrom == driftTo ? 99f : 0f;
+            }
+            turnClock += h;
             Vector2 air = Wind + AmbientFlow;
 
             // 1) Advect and age vortices (they live in the air, not on the body).
@@ -427,22 +468,24 @@ namespace CrimsonVeil.Veil
                 if (relAir.sqrMagnitude > s.maxRelativeWind * s.maxRelativeWind) relAir = relAir.normalized * s.maxRelativeWind;
                 airV = Vector2.Lerp(airV, bodyVel + relAir, loose);
                 // The veil floats on its own breeze: it streams behind the hero even standing still.
+                float driftHere = DriftAt(f);
                 if (DriftDirection != 0f)
-                    airV += new Vector2(DriftDirection * s.drift, s.driftLift) * (loose * Mathf.SmoothStep(0f, 1f, f * 4f));
+                    airV += new Vector2(driftHere * s.drift, s.driftLift) * (loose * Mathf.SmoothStep(0f, 1f, f * 4f));
                 if (SwirlWeight > 0f)
                     airV = Vector2.Lerp(airV, bodyVel + SwirlVelocity(p, SwirlCenter, SwirlSpeed, SwirlRadius), loose * SwirlWeight);
                 // In the whirl the cloth is gripped by the air far harder: it winds round within the turn.
                 float drag = s.airDrag * (1f + 5f * SwirlWeight * loose);
                 Vector3 acc = new Vector3((airV.x - vel.x) * drag, (airV.y - vel.y) * drag, 0f) + g;
 
-                float shaped = RestShapeWeight * loose * (DriftDirection != 0f ? 1f : 0f);
+                float shaped = RestShapeWeight * loose * Mathf.Abs(driftHere);
                 if (shaped > 0.001f)
                 {
                     // The sheet's shape: its centre line d metres back from the neck. Its S takes up length: it reaches
                     // back ~RestReach of d (a straighter target would pull the S flat). (Measured from the end of the
                     // wrap round the neck: the sheet is the part that streams off it.)
                     float dAlong = Mathf.Max(0f, f * s.length - WrapLength) * LengthScale;
-                    var target = new Vector3(a.x + Mathf.Sign(DriftDirection) * dAlong * RestReach, a.y + VeilRestShape.Height(dAlong, time), p.z);
+                    Vector2 off = Tilted(driftHere * dAlong * RestReach, VeilRestShape.Height(dAlong, time), driftHere, TrailTilt);
+                    var target = new Vector3(a.x + off.x, a.y + off.y, p.z);
                     Vector3 pull = (target - p) * (s.restShapeStiffness * (1f + 3f * unwind));
                     Vector3 still = new Vector3(anchorVel.x - vel.x, anchorVel.y - vel.y, 0f) * (s.restShapeDamping * (1f + 1.5f * unwind));
                     acc += new Vector3(pull.x + still.x, pull.y + still.y, 0f) * shaped;

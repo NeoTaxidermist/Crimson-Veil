@@ -738,8 +738,12 @@ namespace CrimsonVeil.Veil
             // round, in a somersault, when it senses a secret or bristles at danger.
             float bodySpeed = Mathf.Abs(Simulation.AnchorVelocity.x);
             // (at a run it keeps most of its S: eased off further, the wind drew it out into a straight streamer)
-            Simulation.RestShapeWeight = (1f - wrap) * Mathf.Lerp(1f, RunShapeWeight, Mathf.Clamp01(bodySpeed / 7f)) * Mathf.Abs(facingScale)
+            // (turning round it is not dropped all at once: the simulation swings it over from the neck to the tip)
+            Simulation.RestShapeWeight = (1f - wrap) * Mathf.Lerp(1f, RunShapeWeight, Mathf.Clamp01(bodySpeed / 7f))
                                          * (1f - Mathf.SmoothStep(0f, 1f, HintPull)) * (1f - 0.5f * Danger);
+            // Falling or leaping, the S streams against the motion (up behind him in a fall), eased in and out.
+            float tiltWanted = TrailTiltFor(Simulation.AnchorVelocity) * (1f - wrap);
+            Simulation.TrailTilt = Mathf.MoveTowards(Simulation.TrailTilt, tiltWanted, dt * TrailTiltRate);
             // The shield's ring circles round the body on its own: once it has formed it is not tied to the hand.
             // (Only once the ring has been thrown round: cut loose earlier, the scarf hung torn off the neck.)
             Simulation.DetachedAfter = ShapeForm == VeilForm.Shield && TransformProgress > 0.3f && morph > 0.6f
@@ -752,6 +756,24 @@ namespace CrimsonVeil.Veil
             Strands?.Step(dt, Simulation);
             UpdateBowString();
             UpdateWhipHandle();
+        }
+
+        /// <summary>Radians per second the scarf's tilt into a fall or leap follows the motion.</summary>
+        public const float TrailTiltRate = 6f;
+        /// <summary>The steepest the S tilts: up behind a falling hero, down behind a rising one.</summary>
+        public const float MaxTiltUp = 0.9f, MaxTiltDown = 0.5f;
+
+        /// <summary>
+        /// How far (radians, + = tail up) the sheet's S tilts for the hero moving at <paramref name="v"/>: it streams
+        /// opposite the motion, but only fast vertical motion counts (a hop or a step down leaves it level), and the
+        /// horizontal run and its breeze keep it from standing straight up.
+        /// </summary>
+        public static float TrailTiltFor(Vector3 v)
+        {
+            float vy = v.y;
+            float k = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(1.5f, 6f, Mathf.Abs(vy)));
+            float angle = Mathf.Atan2(-vy, Mathf.Abs(v.x) + 3f);
+            return Mathf.Clamp(angle * k, -MaxTiltDown, MaxTiltUp);
         }
 
         /// <summary>0..1: how close a living enemy is (the scarf bristles).</summary>

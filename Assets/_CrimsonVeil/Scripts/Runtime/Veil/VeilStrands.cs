@@ -193,7 +193,7 @@ namespace CrimsonVeil.Veil
                     Vector2 air = sim.SampleAirVelocity(p) - new Vector2(anchorVel.x, anchorVel.y);
                     if (air.sqrMagnitude > settings.maxRelativeWind * settings.maxRelativeWind) air = air.normalized * settings.maxRelativeWind;
                     Vector3 airV = anchorVel + new Vector3(air.x, air.y, 0f);
-                    if (sim.DriftDirection != 0f) airV += new Vector3(sim.DriftDirection * settings.drift, settings.driftLift, 0f) * Mathf.SmoothStep(0f, 1f, f * 4f);
+                    if (sim.DriftDirection != 0f) airV += new Vector3(sim.DriftAt(f) * settings.drift, settings.driftLift, 0f) * Mathf.SmoothStep(0f, 1f, f * 4f);
                     float hold = Mathf.Lerp(HoldRoot, HoldTail, u);
                     Vector3 acc = (airV - vel) * Drag + (home[j] - p) * hold + g;
                     acc.z += (zRest - p.z) * settings.depthStiffness * 0.3f;

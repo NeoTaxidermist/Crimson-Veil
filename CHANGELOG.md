@@ -5,6 +5,21 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.58.0] – 2026-11-21
+### Opraveno
+- **Šála se při otočce, seskoku a pádu nepřeruší.** Šálu jsem nahrával snímek po snímku při přikrčení, seskoku, skoku a otočce a našel dvě příčiny:
+  - **Otočka:** šála se celá najednou přehodila na druhou stranu. Vánek i tvar esíčka se v jednom okamžiku otočily, takže se celá látka naráz zhroutila do chuchvalce kolem hlavy. Teď otočka běží po šále od krku ke konci jako u švihnuté vlajky: krk se otočí první, konec asi o půl vteřiny později (`VeilSimulation.TurnTravel`, `DriftAt`). Zkrut látky a víry na koncích se otáčejí s ní, ne podle hrdiny. Při otočce s hrdinovým skutečným zrychlením je u hlavy nahromaděno polovic látky (15 bodů místo 27–30) a nejvíc skočí bod o 0,29 m za snímek místo 0,41–0,47 m.
+  - **Seskok a pád:** šála i v pádu držela svoje vodorovné esíčko. Při seskoku si proto lehla na hranu plošiny, sklouzla přes ni a přeletěla před hrdinu a zpátky. Teď se esíčko při rychlém pohybu nahoru nebo dolů plynule naklání proti pohybu (`TrailTilt`, nejvýš 0,9 rad): v pádu vlaje nahoru za hrdinou, po dopadu se plynule vrátí. Pojistka, která zakládá látku za hrudník, se při tom vypíná, jinak šálu nad hlavou usekla do rovné desky.
+- Přikrčení samotné jsem snímek po snímku prošel a chybu jsem v něm nenašel. Pokud se šála přeruší i tam, pošli mi prosím záznam nebo popis situace.
+
+### Testy
+- `VeilMotionTests`:
+  - otočka běží po šále od krku ke konci;
+  - šála se při otočce nezmuchlá u hlavy a nic v ní neskočí víc než o 35 cm za snímek;
+  - v pádu vlaje nahoru a při malém kroku dolů zůstane rovně.
+- Test cik-caku při otočce teď otáčí hrdinu jeho skutečným zrychlením (`MotorSettings.turnAcceleration`), ne naráz. Povolený podíl ostrých ohybů nad 60° jsem zvýšil ze 6 na 9 %: vlna otočky má na hřebeni na okamžik ostrý ohyb. Přeložení přes pravý úhel dál nesmí nastat nikde.
+- Prošlo všech 568 EditMode a 121 PlayMode testů.
+
 ## [0.57.0] – 2026-11-21
 ### Opraveno
 - **Šála v pohybu plyne, neskáče a neláme se.** Po šále vypadala dobře na snímku, ale v pohybu byla oproti původní 2D šále odporná: lámala se a skákala sem a tam. Šálu jsem měřil snímek po snímku a našel šest příčin:

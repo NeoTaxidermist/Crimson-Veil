@@ -368,7 +368,8 @@ namespace CrimsonVeil.Veil
             float facing = veil.Facing;
             // the loose cloth turns over with the hero as he turns round (his facing eases from one side to the other):
             // flipped in a single frame, its twist and its whorls snapped over and the cloth broke up in the turn
-            float turnFacing = Mathf.Clamp(veil.FacingBlend, -1f, 1f);
+            // (the turn runs down the scarf from the neck, VeilSimulation.TurnTravel: the tail and its whorls turn last)
+            float turnFacing = Mathf.Clamp(-sim.DriftAt(1f), -1f, 1f);
             bool bow = veil.ShapeForm == VeilForm.Bow;
             // Pulled out into a rope (the whip round a ring) the scarf runs several times its length: it must still
             // read as the braided weapon, not a stretched-out red line.
@@ -428,7 +429,7 @@ namespace CrimsonVeil.Veil
                 // Keeps its volume until nearly set, so the transformation reads as the scarf winding in, not thinning out.
                 // The loose ribbon twists for real (RibbonSide): it turns edge-on and over, showing its dark reverse.
                 // (mirror-true: the other way round when the hero faces the other way)
-                twistAt[i] = Twist(t, time) * (1f - hard) * turnFacing;
+                twistAt[i] = Twist(t, time) * (1f - hard) * Mathf.Clamp(-sim.DriftAt(t), -1f, 1f);
                 widthAt[i] = Mathf.Lerp(flowW * flowProfile, formW * weaponProfile, hard * hard * hard) * Mathf.Lerp(0.45f, 1f, vit);
                 // slipping out from behind the collar it is gathered narrow, and opens out as it flies
                 widthAt[i] *= Mathf.Lerp(1f, NeckGather(t, wrapEnd), 1f - hard);
@@ -686,8 +687,9 @@ namespace CrimsonVeil.Veil
             // out in front of the body. Anything past the chest line is softly folded back (not cut).
             // Only once the hero faces one way — while turning round the scarf swings freely across.
             // (Not while it is wound round the body in a somersault: there it must go round the front too.)
+            // (nor while it streams up over him in a fall, VeilSimulation.TrailTilt: cut at the chest line it stood as a flat board)
             float settleWanted = Mathf.InverseLerp(0.85f, 1f, Mathf.Abs(veil.FacingBlend)) * (1f - sim.SwirlWeight)
-                                 * SettleAfterSwirl(sinceSwirl);
+                                 * SettleAfterSwirl(sinceSwirl) * SettleInTilt(sim.TrailTilt);
             // eased in (out at once): it came in within a frame as he finished turning round, and the cloth still
             // swinging round in front of him jumped behind him
             settleNow = settleWanted < settleNow ? settleWanted : Mathf.MoveTowards(settleNow, settleWanted, dt * SettleRate);
@@ -1045,6 +1047,9 @@ namespace CrimsonVeil.Veil
 
         /// <summary>How much of its layer's own tint the loose cloth shows (a weapon all of it).</summary>
         public const float LooseTintContrast = 0.35f;
+
+        /// <summary>How much of the fold behind the chest is kept while the scarf is tilted by <paramref name="tilt"/> (radians).</summary>
+        public static float SettleInTilt(float tilt) => 1f - Mathf.SmoothStep(0f, 1f, Mathf.Abs(tilt) / 0.5f);
 
         /// <summary>Eases angle <paramref name="from"/> (radians) towards <paramref name="to"/> at <paramref name="rate"/>
         /// per second, the short way round.</summary>

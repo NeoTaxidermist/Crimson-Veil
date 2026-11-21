@@ -234,16 +234,45 @@ namespace CrimsonVeil.Veil
         /// Turning round, the breeze does not flip the whole scarf at once (it crumpled round the head): the turn runs
         /// down it from the neck, the tail last, like a flag swung round. Seconds for the turn to reach the tip.
         /// </summary>
-        public const float TurnTravel = 0.45f;
+        public const float TurnTravel = 0.3f;
         /// <summary>Seconds one point of the scarf takes to swing over.</summary>
-        public const float TurnBlend = 0.3f;
+        public const float TurnBlend = 0.6f;
 
-        /// <summary>The breeze's direction (-1..1) at <paramref name="f"/> (0 neck, 1 tip), <paramref name="clock"/> s after it turned from <paramref name="from"/> to <paramref name="to"/>.</summary>
-        public static float DriftAt(float from, float to, float clock, float f)
+        /// <summary>The breeze's heading (radians from +x, pi = towards -x) for a breeze towards <paramref name="dir"/>.</summary>
+        public static float HeadingOf(float dir) => dir < 0f ? Mathf.PI : 0f;
+
+        /// <summary>
+        /// The breeze's heading at <paramref name="f"/> (0 neck, 1 tip), <paramref name="clock"/> s into a turn from heading
+        /// <paramref name="from"/> to <paramref name="to"/>. It swings round through straight up: turning round, the
+        /// scarf goes over the top like the hand of a clock, at its full length (squeezed across through the neck
+        /// instead, it bunched into a ball round his head - worst crouched, with the floor right under it).
+        /// </summary>
+        public static float SwingHeading(float from, float to, float clock, float f)
             => Mathf.Lerp(from, to, Mathf.SmoothStep(0f, 1f, (clock - f * TurnTravel) / TurnBlend));
 
-        /// <summary>The breeze's direction (-1..1) at <paramref name="f"/> along the scarf right now (see <see cref="TurnTravel"/>).</summary>
-        public float DriftAt(float f) => DriftAt(driftFrom, driftTo, turnClock, f);
+        /// <summary>The breeze's direction in x (-1..1) at <paramref name="f"/>, <paramref name="clock"/> s after it turned from <paramref name="from"/> to <paramref name="to"/> (-1/+1).</summary>
+        public static float DriftAt(float from, float to, float clock, float f)
+            => Mathf.Cos(SwingHeading(HeadingOf(from), HeadingOf(to), clock, f));
+
+        /// <summary>The breeze's heading (radians) at <paramref name="f"/> along the scarf right now (see <see cref="TurnTravel"/>).</summary>
+        public float HeadingAt(float f) => SwingHeading(headingFrom, headingTo, turnClock, f);
+
+        /// <summary>The breeze's direction in x (-1..1) at <paramref name="f"/> along the scarf right now (see <see cref="TurnTravel"/>).</summary>
+        public float DriftAt(float f) => DriftDirection == 0f ? 0f : Mathf.Cos(HeadingAt(f));
+
+        /// <summary>
+        /// The sheet's place (from the neck) <paramref name="along"/> m back along a breeze of heading <paramref name="heading"/>,
+        /// its S <paramref name="height"/> up, tilted by <paramref name="tilt"/> into a fall: mid-turn it points up and its
+        /// waves are laid down (their height would flip sides as it passed the top).
+        /// </summary>
+        public static Vector2 SheetOffset(float along, float height, float heading, float tilt)
+        {
+            float c = Mathf.Cos(heading), sn = Mathf.Sin(heading);
+            Vector2 off = new Vector2(c * along, sn * along + height * Mathf.Abs(c));
+            float t = tilt * c;
+            float ct = Mathf.Cos(t), st = Mathf.Sin(t);
+            return new Vector2(off.x * ct - off.y * st, off.x * st + off.y * ct);
+        }
 
         /// <summary>
         /// Radians the sheet's S is tilted out of the level (+ = the tail up): it streams against the hero's motion, up
@@ -251,15 +280,30 @@ namespace CrimsonVeil.Veil
         /// </summary>
         public float TrailTilt { get; set; }
 
-        /// <summary>The sheet's offset (dx along the breeze, dy up) tilted by <paramref name="tilt"/>, for a breeze towards <paramref name="dir"/>.</summary>
-        public static Vector2 Tilted(float dx, float dy, float dir, float tilt)
-        {
-            float t = tilt * (dir < 0f ? -1f : 1f);
-            float c = Mathf.Cos(t), sn = Mathf.Sin(t);
-            return new Vector2(dx * c - dy * sn, dx * sn + dy * c);
-        }
+        float headingFrom, headingTo, driftTo, turnClock = 99f;
 
-        float driftFrom, driftTo, turnClock = 99f;
+        /// <summary>How much of his fall the sheet's shape drags the cloth down with, tilted by <paramref name="tilt"/> into the fall.</summary>
+        public static float FallDrag(float tilt) => 1f - Mathf.SmoothStep(0f, 1f, tilt / 0.6f);
+
+        /// <summary>Metres within which the sheet's shape lets go as its place sinks into a wall.</summary>
+        public const float ShapeWallFade = 0.25f;
+
+        /// <summary>How much of the sheet's shape holds where its place is <paramref name="depth"/> m inside a wall (1 outside).</summary>
+        public static float ShapeOutsideWalls(float depth) => 1f - Mathf.SmoothStep(0f, 1f, depth / ShapeWallFade);
+
+        /// <summary>How deep (m) <paramref name="p"/> lies inside the obstacles (0 outside them).</summary>
+        public float DepthInObstacles(Vector3 p)
+        {
+            float deepest = 0f;
+            for (int o = 0; o < Obstacles.Count; o++)
+            {
+                Rect r = Obstacles[o];
+                if (!r.Contains(new Vector2(p.x, p.y))) continue;
+                float d = Mathf.Min(Mathf.Min(p.x - r.xMin, r.xMax - p.x), Mathf.Min(p.y - r.yMin, r.yMax - p.y));
+                deepest = Mathf.Max(deepest, d);
+            }
+            return deepest;
+        }
 
         /// <summary>Node index after which the ribbon is not held together (-1 = whole): node i and i + 1 move apart freely.</summary>
         public int DetachedAfter { get; set; } = -1;
@@ -360,7 +404,8 @@ namespace CrimsonVeil.Veil
             shedPhase = 0f;
             lastAnchor = anchor;
             AnchorVelocity = Vector3.zero;
-            driftFrom = driftTo = DriftDirection;
+            driftTo = DriftDirection;
+            headingFrom = headingTo = HeadingOf(DriftDirection);
             turnClock = 99f;
         }
 
@@ -404,9 +449,11 @@ namespace CrimsonVeil.Veil
             if (DriftDirection != driftTo)
             {
                 // a turn while the last one is still running starts from where the middle of the scarf is
-                driftFrom = driftTo == 0f ? DriftDirection : DriftAt(0.5f);
+                float goal = HeadingOf(DriftDirection);
+                headingFrom = driftTo == 0f || DriftDirection == 0f ? goal : HeadingAt(0.5f);
+                headingTo = goal;
                 driftTo = DriftDirection;
-                turnClock = driftFrom == driftTo ? 99f : 0f;
+                turnClock = Mathf.Abs(headingFrom - headingTo) < 1e-4f ? 99f : 0f;
             }
             turnClock += h;
             Vector2 air = Wind + AmbientFlow;
@@ -468,26 +515,34 @@ namespace CrimsonVeil.Veil
                 if (relAir.sqrMagnitude > s.maxRelativeWind * s.maxRelativeWind) relAir = relAir.normalized * s.maxRelativeWind;
                 airV = Vector2.Lerp(airV, bodyVel + relAir, loose);
                 // The veil floats on its own breeze: it streams behind the hero even standing still.
-                float driftHere = DriftAt(f);
+                float headingHere = HeadingAt(f);
+                Vector2 breeze = new Vector2(Mathf.Cos(headingHere), Mathf.Sin(headingHere));
                 if (DriftDirection != 0f)
-                    airV += new Vector2(driftHere * s.drift, s.driftLift) * (loose * Mathf.SmoothStep(0f, 1f, f * 4f));
+                    airV += new Vector2(breeze.x * s.drift, s.driftLift + breeze.y * s.drift) * (loose * Mathf.SmoothStep(0f, 1f, f * 4f));
                 if (SwirlWeight > 0f)
                     airV = Vector2.Lerp(airV, bodyVel + SwirlVelocity(p, SwirlCenter, SwirlSpeed, SwirlRadius), loose * SwirlWeight);
                 // In the whirl the cloth is gripped by the air far harder: it winds round within the turn.
                 float drag = s.airDrag * (1f + 5f * SwirlWeight * loose);
                 Vector3 acc = new Vector3((airV.x - vel.x) * drag, (airV.y - vel.y) * drag, 0f) + g;
 
-                float shaped = RestShapeWeight * loose * Mathf.Abs(driftHere);
+                float shaped = RestShapeWeight * loose * (DriftDirection != 0f ? 1f : 0f);
                 if (shaped > 0.001f)
                 {
                     // The sheet's shape: its centre line d metres back from the neck. Its S takes up length: it reaches
                     // back ~RestReach of d (a straighter target would pull the S flat). (Measured from the end of the
                     // wrap round the neck: the sheet is the part that streams off it.)
                     float dAlong = Mathf.Max(0f, f * s.length - WrapLength) * LengthScale;
-                    Vector2 off = Tilted(driftHere * dAlong * RestReach, VeilRestShape.Height(dAlong, time), driftHere, TrailTilt);
+                    Vector2 off = SheetOffset(dAlong * RestReach, VeilRestShape.Height(dAlong, time), headingHere, TrailTilt);
                     var target = new Vector3(a.x + off.x, a.y + off.y, p.z);
+                    // Where the sheet's place is inside a wall or a ledge (he dropped off it, the S still lay over it) the
+                    // shape lets go: held to it, the cloth was pressed against the top and crumpled up there. Let go,
+                    // it drapes over the edge and follows him down.
+                    shaped *= ShapeOutsideWalls(DepthInObstacles(target));
                     Vector3 pull = (target - p) * (s.restShapeStiffness * (1f + 3f * unwind));
                     Vector3 still = new Vector3(anchorVel.x - vel.x, anchorVel.y - vel.y, 0f) * (s.restShapeDamping * (1f + 1.5f * unwind));
+                    // Falling, the cloth is not dragged down at his speed (it was pressed onto the ledge he dropped
+                    // off and crumpled there): it lags above him and is drawn after him by the neck.
+                    still.y *= FallDrag(TrailTilt);
                     acc += new Vector3(pull.x + still.x, pull.y + still.y, 0f) * shaped;
                 }
 
@@ -777,7 +832,10 @@ namespace CrimsonVeil.Veil
                     Rect r = Obstacles[o];
                     Rect grown = new Rect(r.xMin - WallSkin, r.yMin - WallSkin, r.width + 2f * WallSkin, r.height + 2f * WallSkin);
                     if (!grown.Contains(p)) continue;
-                    Vector2 outP = grown.Contains(from) ? NearestOutside(grown, p) : EntryPoint(grown, from, p);
+                    Vector2 outP;
+                    if (RoundedCorner(grown, p, CornerRadius, out Vector2 round, out bool inCorner) && inCorner) outP = round;
+                    else if (inCorner) continue;   // in the rounded-off corner: free
+                    else outP = grown.Contains(from) ? NearestOutside(grown, p) : EntryPoint(grown, from, p);
                     Vector2 push = outP - p;
                     Vector3 shift = new Vector3(push.x, push.y, 0f) * loose;
                     Positions[i] += shift;
@@ -792,6 +850,31 @@ namespace CrimsonVeil.Veil
                     p = Positions[i];
                 }
             }
+        }
+
+        /// <summary>
+        /// The corners of walls and ledges are rounded off this much for the loose cloth: dragged round the square edge
+        /// of a ledge he dropped off, the broad band bent through a right angle and crumpled there; round a curve it slides.
+        /// </summary>
+        public const float CornerRadius = 0.25f;
+
+        /// <summary>
+        /// Is <paramref name="p"/> (inside <paramref name="r"/>) in one of its corners, rounded by <paramref name="radius"/>
+        /// (<paramref name="inCorner"/>), and if so inside the rounding (returns true, <paramref name="outP"/> the nearest
+        /// point on the curve) or in the cut-off corner, outside it (false)?
+        /// </summary>
+        public static bool RoundedCorner(Rect r, Vector2 p, float radius, out Vector2 outP, out bool inCorner)
+        {
+            outP = p;
+            radius = Mathf.Min(radius, 0.5f * Mathf.Min(r.width, r.height));   // (two-argument Min: the params overload allocates)
+            float cx = Mathf.Clamp(p.x, r.xMin + radius, r.xMax - radius), cy = Mathf.Clamp(p.y, r.yMin + radius, r.yMax - radius);
+            inCorner = cx != p.x && cy != p.y;
+            if (!inCorner) return false;
+            Vector2 d = p - new Vector2(cx, cy);
+            float len = d.magnitude;
+            if (len >= radius) return false;
+            outP = new Vector2(cx, cy) + (len > 1e-6f ? d / len : new Vector2(0f, 1f)) * (radius + 1e-3f);
+            return true;
         }
 
         /// <summary>Where the segment from <paramref name="from"/> (outside) to <paramref name="to"/> (inside) enters the rectangle.</summary>
@@ -833,7 +916,10 @@ namespace CrimsonVeil.Veil
                 Rect grown = new Rect(r.xMin - margin, r.yMin - margin, r.width + 2f * margin, r.height + 2f * margin);
                 Vector2 q = new Vector2(p.x, p.y);
                 if (!grown.Contains(q)) continue;
-                q = NearestOutside(grown, q);
+                // (its corners rounded as for the cloth, CornerRadius: else the band drawn round the curve was cut square)
+                if (RoundedCorner(grown, q, CornerRadius, out Vector2 round, out bool inCorner)) q = round;
+                else if (inCorner) continue;
+                else q = NearestOutside(grown, q);
                 p.x = q.x; p.y = q.y;
             }
             return p;

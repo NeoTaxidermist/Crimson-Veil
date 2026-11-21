@@ -827,18 +827,26 @@ namespace CrimsonVeil.Veil
         public static float ShieldFlicker(float f, float time, float phase)
             => 0.98f + 0.2f * Mathf.Sin(f * 23f - time * 11f + phase) + 0.13f * Mathf.Sin(f * 11f + time * 6f + phase * 1.7f);
 
-        /// <summary>
-        /// Loose cloth drawn into the floor (a curl rolling down, the band's width round a node lying low) is laid on
-        /// it instead: the point is lifted to half its stroke's width over the floor under it. A weapon is left alone.
-        /// </summary>
         /// <summary>How firmly a stroke of this form is kept on the floor: a whip always (it is no stiff blade), else as loose as it is.</summary>
         public static float FloorHold(VeilForm form, float loose) => form == VeilForm.Whip ? 1f : loose;
 
+        /// <summary>
+        /// Loose cloth drawn into the floor (a curl rolling down, the band's width round a node lying low) is laid on
+        /// it instead: the point is lifted to half its stroke's width over the floor under it. A weapon is left alone.
+        /// A point that went into the block through its side (the scarf round the corner of a ledge he dropped off)
+        /// is not lifted onto the top: it is nearer the side, and lifted, pieces of the band snapped up to 0.6 m
+        /// onto the ledge and lay there cut flat.
+        /// </summary>
         public static Vector3 AboveFloor(VeilSimulation sim, Vector3 p, float width, float loose)
         {
             if (loose <= 0.01f) return p;
             float floor = sim.FloorUnder(p.x, p.y);
             if (float.IsNegativeInfinity(floor)) return p;
+            if (p.y < floor)
+            {
+                Vector3 shortest = sim.OutOfObstacles(p, 0f);
+                if (Mathf.Abs(shortest.x - p.x) > Mathf.Abs(shortest.y - p.y)) return p;
+            }
             float lowest = floor + 0.5f * width + VeilSimulation.WallSkin * 0.5f;
             if (p.y < lowest) p.y = Mathf.Lerp(p.y, lowest, loose);
             return p;

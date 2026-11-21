@@ -759,9 +759,9 @@ namespace CrimsonVeil.Veil
         }
 
         /// <summary>Radians per second the scarf's tilt into a fall or leap follows the motion.</summary>
-        public const float TrailTiltRate = 6f;
+        public const float TrailTiltRate = 10f;
         /// <summary>The steepest the S tilts: up behind a falling hero, down behind a rising one.</summary>
-        public const float MaxTiltUp = 0.9f, MaxTiltDown = 0.5f;
+        public const float MaxTiltUp = 1.25f, MaxTiltDown = 0.5f;
 
         /// <summary>
         /// How far (radians, + = tail up) the sheet's S tilts for the hero moving at <paramref name="v"/>: it streams
@@ -771,7 +771,7 @@ namespace CrimsonVeil.Veil
         public static float TrailTiltFor(Vector3 v)
         {
             float vy = v.y;
-            float k = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(1.5f, 6f, Mathf.Abs(vy)));
+            float k = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(1f, 4f, Mathf.Abs(vy)));
             float angle = Mathf.Atan2(-vy, Mathf.Abs(v.x) + 3f);
             return Mathf.Clamp(angle * k, -MaxTiltDown, MaxTiltUp);
         }

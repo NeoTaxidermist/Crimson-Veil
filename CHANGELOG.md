@@ -5,6 +5,29 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.59.0] – 2026-11-21
+### Opraveno
+- **Otočka v podřepu a otočka na místě:** šála se při otočce dál smotávala do chuchvalce kolem hlavy. Nejvíc to bylo vidět v podřepu, kde je pod ní hned podlaha. Šála se totiž přesouvala na druhou stranu vodorovně přes krk a cestou se zkrátila na nic. Teď se přehoupne vrchem jako ručička hodin a drží přitom celou délku (`VeilSimulation.SwingHeading`, `SheetOffset`). Vlna jde dál od krku ke konci a jeden bod se přehoupne za 0,6 s.
+  - Měřeno v podřepu u podlahy: u hlavy zůstane nejvýš 4–8 bodů látky místo 15–30. Nejostřejší ohyb je 67–77° a největší skok bodu za snímek 0,28 m.
+- **Seskok z plošiny:**
+  - Tvar esíčka už šálu netáhne dolů rychlostí pádu, takže ji nepřimáčkne na hranu (`FallDrag`).
+  - Kde by esíčko leželo uvnitř plošiny, tvar látku pustí a ta volně splyne přes hranu (`ShapeOutsideWalls`).
+  - Esíčko se do pádu naklání rychleji a víc (až 1,25 rad).
+  - Rohy zdí a plošin jsou pro látku zaoblené (25 cm, `CornerRadius`), takže šála po hraně klouže a neláme se přes pravý úhel.
+  - Vykreslení už nezvedá kusy pásu, které zajely do plošiny bokem, o 0,6 m nahoru na její vršek. Odtud byly ty useknuté ploché kusy na hraně.
+
+### Zbývá
+- Při rychlém seskoku se šála u hrany na zhruba 2 snímky ještě trochu zmačká. Po sklouznutí z hrany pak konec krátce švihne dopředu nad hlavu.
+
+### Testy
+- `VeilMotionTests`:
+  - otočka jde vrchem a šála drží délku;
+  - šála se nezmuchlá u hlavy ani při otočce na místě nebo v podřepu;
+  - nad hranou tvar pustí;
+  - rohy jsou zaoblené;
+  - po seskoku nezůstane látka ležet na plošině.
+- Prošlo všech 569 EditMode a 121 PlayMode testů. Test alokací odhalil, že `Mathf.Min` se třemi argumenty alokuje: opraveno.
+
 ## [0.58.0] – 2026-11-21
 ### Opraveno
 - **Šála se při otočce, seskoku a pádu nepřeruší.** Šálu jsem nahrával snímek po snímku při přikrčení, seskoku, skoku a otočce a našel dvě příčiny:

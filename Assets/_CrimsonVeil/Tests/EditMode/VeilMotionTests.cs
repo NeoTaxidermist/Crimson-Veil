@@ -288,6 +288,38 @@ namespace CrimsonVeil.Tests
         }
 
         [Test]
+        public void NoStrandIsDrawnThinnerThanAPixel()
+        {
+            // edge-on: it turns a little back towards the camera, at full colour
+            float cs = 0.01f, hw = 0.1f, alpha = 1f;
+            VeilRenderer.VisibleHalf(ref cs, ref hw, ref alpha, 0.01f);
+            Assert.GreaterOrEqual(Mathf.Abs(cs) * hw, 0.01f - 1e-6f, "a strand turned edge-on still shows a pixel (it broke up into dots)");
+            Assert.AreEqual(1f, alpha, 1e-6f);
+            Assert.AreEqual(0.1f, hw, 1e-6f, "its width is not changed");
+            // a hair-thin tip: drawn a pixel wide but as much fainter
+            cs = 1f; hw = 0.0025f; alpha = 0.8f;
+            VeilRenderer.VisibleHalf(ref cs, ref hw, ref alpha, 0.01f);
+            Assert.AreEqual(0.01f, hw, 1e-6f);
+            Assert.AreEqual(0.2f, alpha, 1e-5f, "as much colour, spread over the pixel");
+            // broad cloth facing the camera is left alone
+            cs = -0.9f; hw = 0.2f; alpha = 1f;
+            VeilRenderer.VisibleHalf(ref cs, ref hw, ref alpha, 0.01f);
+            Assert.AreEqual(-0.9f, cs, 1e-6f);
+            Assert.AreEqual(0.2f, hw, 1e-6f);
+
+            var go = new GameObject("cam");
+            try
+            {
+                var cam = go.AddComponent<Camera>();
+                cam.fieldOfView = 60f;
+                float near = VeilRenderer.PixelSize(cam, new Vector3(0f, 0f, 5f)), far = VeilRenderer.PixelSize(cam, new Vector3(0f, 0f, 20f));
+                Assert.Greater(near, 0f);
+                Assert.AreEqual(4f, far / near, 1e-3f, "a pixel covers more of the world farther away");
+            }
+            finally { Object.DestroyImmediate(go); }
+        }
+
+        [Test]
         public void TheLooseScarf_ShedsNoPieces()
         {
             var prefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_CrimsonVeil/LevelKit/Prefabs/Player.prefab");

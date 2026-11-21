@@ -93,6 +93,36 @@ namespace CrimsonVeil.Veil
         int[] trisAll, trisSorted, chunkTri, chunkTris, chunkV, chunkVs, order;
         float[] chunkKey;
         Camera viewer;
+        float minHalfWidth;
+
+        /// <summary>The least half width (in pixels) a strand is drawn with on screen.</summary>
+        public const float MinVisibleHalf = 0.6f;
+
+        /// <summary>World size of a screen pixel at <paramref name="at"/> for <paramref name="cam"/>.</summary>
+        public static float PixelSize(Camera cam, Vector3 at)
+        {
+            float h = Mathf.Max(1, cam.pixelHeight);
+            if (cam.orthographic) return 2f * cam.orthographicSize / h;
+            float d = Mathf.Max(0.01f, Vector3.Dot(at - cam.transform.position, cam.transform.forward));
+            return 2f * d * Mathf.Tan(cam.fieldOfView * 0.5f * Mathf.Deg2Rad) / h;
+        }
+
+        /// <summary>
+        /// Keeps a ribbon of half width <paramref name="hw"/> twisted by cos <paramref name="cs"/> at least
+        /// <paramref name="least"/> wide across the screen: it turns a little less edge-on, and a ribbon narrower than that
+        /// is widened to it and made fainter by as much.
+        /// </summary>
+        public static void VisibleHalf(ref float cs, ref float hw, ref float alpha, float least)
+        {
+            if (Mathf.Abs(cs) * hw >= least) return;
+            if (hw < least)
+            {
+                alpha *= hw / least;
+                hw = least;
+            }
+            float c = Mathf.Min(1f, least / hw);
+            cs = (cs < 0f ? -1f : 1f) * Mathf.Max(Mathf.Abs(cs), c);
+        }
 
         /// <summary>Segments of a strand in one piece of the painter's order.</summary>
         public const int ChunkSegments = 4;
@@ -363,6 +393,10 @@ namespace CrimsonVeil.Veil
             }
             centre[samples - 1] = p[n - 1];
             hardAt[samples - 1] = Mathf.Clamp01((sim.UseNodeHardness ? sim.NodeHardness[n - 1] : sim.Hardness) / formHardness);
+
+            // How wide a pixel is where the scarf is: no strand is drawn thinner than about one (see WriteVertex).
+            if (viewer == null || !viewer.isActiveAndEnabled) viewer = Camera.main;
+            minHalfWidth = viewer != null ? MinVisibleHalf * PixelSize(viewer, p[0]) : 0f;
 
             // Wound round the body in a somersault, the cloth draws in to a slim band (no crumpled blob).
             float flowW = VeilFormLibrary.Width(VeilForm.Flow) * (1f - 0.4f * sim.SwirlWeight);
@@ -1093,6 +1127,10 @@ namespace CrimsonVeil.Veil
         void WriteVertex(int v, int f, Vector3 c, Vector3 nrm, float width, float alpha, Strand st, float hard, float vit, float glow, float twist, float cup, float behind)
         {
             float cs = Mathf.Cos(twist), sn = Mathf.Sin(twist), hw = width * 0.5f;
+            // A strand narrowed to its tip or turned edge-on went thinner than a pixel and was drawn as a broken,
+            // dotted line - torn to look at. It keeps about a pixel on screen; where it is meant to be thinner still it
+            // is drawn that wide but fainter (as much colour, spread over the pixel).
+            if (minHalfWidth > 0f) VisibleHalf(ref cs, ref hw, ref alpha, minHalfWidth);
             // behind the face of the cloth (its face looks towards the camera at no twist)
             c -= new Vector3(nrm.x * sn, nrm.y * sn, -cs) * behind;
             var side = new Vector3(nrm.x * cs * hw, nrm.y * cs * hw, sn * hw);   // RibbonSide * half width

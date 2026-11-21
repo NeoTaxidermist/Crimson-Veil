@@ -5,6 +5,15 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.62.0] – 2026-11-21
+### Opraveno
+- **Přetržené prameny (nejvíc vidět v přikrčení):** tenké prameny vypadaly jako přetržené, protože se kreslily jako přerušovaná, tečkovaná čára. Pramen se ke konci zúží, a když se navíc natočí hranou ke kameře, jeho šířka na obrazovce klesne pod jeden pixel. Obraz pak z čáry nechá jen tečky.
+  - Teď má každý pramen na obrazovce aspoň zhruba jeden pixel (`VeilRenderer.VisibleHalf`, `PixelSize`). Pramen natočený hranou se trochu pootočí zpět ke kameře. Pramen, který má být tenčí než pixel, se nakreslí na pixel, ale úměrně průhlednější, takže zůstane stejně jemný a je souvislý.
+
+### Testy
+- `VeilMotionTests`: žádný pramen není na obrazovce tenčí než pixel; velikost pixelu roste se vzdáleností.
+- Prošlo všech 573 EditMode a 121 PlayMode testů.
+
 ## [0.61.0] – 2026-11-21
 ### Opraveno
 - **Pomalé sejití z hrany:** když šála sklouzla přes roh plošiny, konec švihl asi o metr dopředu před hrdinu. V pádu se teď pohyb látky dopředu tlumí (`ForwardBrake`), takže ji tvar stihne vrátit za hrdinu. Šála plynule vlaje nahoru a ve hře nejde před hrdinu dál než pár centimetrů. V simulovaném testu se švihnutí zmenšilo z 0,83 m na 0,40 m.

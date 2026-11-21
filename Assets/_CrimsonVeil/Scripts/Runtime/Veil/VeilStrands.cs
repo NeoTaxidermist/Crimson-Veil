@@ -34,6 +34,8 @@ namespace CrimsonVeil.Veil
         public const float Rub = 0.05f;
         /// <summary>How strongly (per iteration) a strand is straightened at each node: its stiffness against bending.</summary>
         public const float Bend = 0.3f;
+        /// <summary>How far (m) a strand's node may stray from its place in the bundle.</summary>
+        public const float MaxStray = 0.35f;
         /// <summary>How far (m) the band's strands hang below its centre line (as drawn).</summary>
         public const float HangBelow = 0.08f;
         /// <summary>The scarf fraction a strand starts at, at least: off the wrap round the neck.</summary>
@@ -224,11 +226,24 @@ namespace CrimsonVeil.Veil
                     for (int j = 1; j < Nodes - 1; j++)
                         pos[j] += ((pos[j - 1] + pos[j + 1]) * 0.5f - pos[j]) * Bend;
                 }
+                // a tongue never strays far from its place by the band: it is part of the scarf (left to swing back on
+                // its own after he turned round, the tongues hung under the band like the teeth of a comb for a second)
+                KeepNearHome();
                 RubTogether();
             }
             // (the body last: clamped in depth after it, a strand held close by its place was pushed back into the body)
             ClampDepth(zRest, settings.maxDepth);
             CollideWithBody(sim);
+            // nor into walls and low ceilings: there they were hidden in the stone and the drawn tongue fell to pieces
+            if (sim.Obstacles.Count > 0)
+                for (int s = 0; s < Count; s++)
+                    for (int j = 1; j < Nodes; j++)
+                    {
+                        Vector3 p = Positions[s][j], q = sim.OutOfObstacles(p, VeilSimulation.WallSkin);
+                        if (q == p) continue;
+                        Positions[s][j] = q;
+                        previous[s][j] += q - p;
+                    }
             // hardening into a weapon, the strands are laid on their places after all the rest
             for (int s = 0; s < Count; s++)
                 for (int j = 1; j < Nodes; j++)
@@ -288,6 +303,20 @@ namespace CrimsonVeil.Veil
                         pos[j] += n * (reach - dist);
                     }
             }
+        }
+
+        void KeepNearHome()
+        {
+            for (int s = 0; s < Count; s++)
+                for (int j = 1; j < Nodes; j++)
+                {
+                    Vector3 off = Positions[s][j] - Homes[s][j];
+                    float m = off.magnitude;
+                    if (m <= MaxStray) continue;
+                    Vector3 shift = off * (MaxStray / m) - off;
+                    Positions[s][j] += shift;
+                    previous[s][j] += shift;
+                }
         }
 
         void ClampDepth(float zRest, float maxDepth)

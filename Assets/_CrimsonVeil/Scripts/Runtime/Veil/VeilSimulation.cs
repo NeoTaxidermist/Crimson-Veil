@@ -174,6 +174,21 @@ namespace CrimsonVeil.Veil
         }
         /// <summary>How far (m) behind the weapon's plane the held part lies, so the fist in front of it covers it.</summary>
         public const float HeldTuck = 0.08f;
+
+        /// <summary>The sharpest bend (degrees) the loose cloth makes at a node before it is straightened.</summary>
+        public const float MaxKink = 60f;
+
+        /// <summary>How far (0..1) the bend at <paramref name="b"/> between <paramref name="a"/> and <paramref name="c"/> goes
+        /// past MaxKink (0 within it, 1 folded right back on itself).</summary>
+        public static float KinkExcess(Vector3 a, Vector3 b, Vector3 c)
+        {
+            Vector3 u = b - a, v = c - b;
+            float lu = u.magnitude, lv = v.magnitude;
+            if (lu < 1e-6f || lv < 1e-6f) return 0f;
+            float cos = Vector3.Dot(u, v) / (lu * lv);
+            float limit = Mathf.Cos(MaxKink * Mathf.Deg2Rad);
+            return cos >= limit ? 0f : (limit - cos) / (limit + 1f);
+        }
         /// <summary>
         /// Which way the scarf trails round the body while it is wound in the somersault (+1 anticlockwise,
         /// -1 clockwise; 0 = against <see cref="SwirlSpeed"/>). The body turns one way, the cloth lags the other.
@@ -537,6 +552,17 @@ namespace CrimsonVeil.Veil
                     Positions[i] += corr * (wa / sum);
                     Positions[i + 1] -= corr * (wb / sum);
                 }
+                // Cloth doesn't fold sharply: where the loose cloth bends at a node by more than MaxKink, the node is
+                // drawn towards the middle of its neighbours (gentle curves - its S - are left alone). Without it,
+                // turning round crumpled it node by node into a zigzag, drawn as broken pieces with gaps between them.
+                for (int i = 2; i < Count - 1; i++)
+                {
+                    float loose = (1f - H(i)) * Free(i) * Free(i - 1);
+                    if (loose <= 0f) continue;
+                    float kink = KinkExcess(Positions[i - 1], Positions[i], Positions[i + 1]);
+                    if (kink <= 0f) continue;
+                    Positions[i] += ((Positions[i - 1] + Positions[i + 1]) * 0.5f - Positions[i]) * (0.8f * kink * loose);
+                }
             }
 
             // 6b) A set weapon is a solid thing in the hand: once a node has hardened it sits exactly on the weapon's
@@ -751,6 +777,25 @@ namespace CrimsonVeil.Veil
         }
 
         /// <summary>The closest point just outside the rectangle.</summary>
+        /// <summary>
+        /// <paramref name="p"/> put out of every obstacle (grown by <paramref name="margin"/>) the shortest way, in the
+        /// picture plane: for what is drawn or simulated on top of the cloth (its strands, its whorls), which would
+        /// otherwise pass into a wall or a low ceiling and be cut off by it.
+        /// </summary>
+        public Vector3 OutOfObstacles(Vector3 p, float margin)
+        {
+            for (int o = 0; o < Obstacles.Count; o++)
+            {
+                Rect r = Obstacles[o];
+                Rect grown = new Rect(r.xMin - margin, r.yMin - margin, r.width + 2f * margin, r.height + 2f * margin);
+                Vector2 q = new Vector2(p.x, p.y);
+                if (!grown.Contains(q)) continue;
+                q = NearestOutside(grown, q);
+                p.x = q.x; p.y = q.y;
+            }
+            return p;
+        }
+
         public static Vector2 NearestOutside(Rect r, Vector2 p)
         {
             float l = p.x - r.xMin, ri = r.xMax - p.x, b = p.y - r.yMin, t = r.yMax - p.y;

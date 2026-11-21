@@ -22,7 +22,7 @@ namespace CrimsonVeil.Veil
         [Tooltip("Points in each end curl.")]
         [SerializeField, Range(6, 40)] int curlPoints = 34;
         [Tooltip("Global multiplier of the curl size.")]
-        [SerializeField] float curlScale = 2.4f;
+        [SerializeField] float curlScale = 1.6f;
         [Tooltip("How far (m) the tendrils fan away from the main ribbon at their ends.")]
         [SerializeField] float tendrilSpread = 0.38f;
 
@@ -82,6 +82,10 @@ namespace CrimsonVeil.Veil
         float[] cupAt;
         // a simulated strand's course along the drawn samples and its direction there
         Vector3[] simPt, simRun;
+        // each end's whorl: where it heads and how far it winds, eased in time (taken afresh from the strand's last
+        // segment every frame, a whorl swung to and fro with every flicker of the strand's tip)
+        float[] curlHeading, curlTurnsNow;
+        bool curlsStarted;
         int samples, perStrand, centreBase;
         // The cloth is drawn back to front in pieces (PaintOrder): a strand winding round in front of the band covers
         // it, one behind is covered (one mesh otherwise paints in its own order, and depth-tested layers of the
@@ -99,6 +103,7 @@ namespace CrimsonVeil.Veil
         Vector3 lastAnchor;
         float speedSmoothed;
         float sinceSwirl = 10f;
+        float settleNow;
 
         /// <summary>
         /// Width (m) of the loose scarf <paramref name="d"/> metres from the neck, measured on its animation sheet
@@ -205,6 +210,8 @@ namespace CrimsonVeil.Veil
             curl = new Vector3[curlPoints + 1];
             simPt = new Vector3[samples];
             simRun = new Vector3[samples];
+            curlHeading = new float[Strands.Length];
+            curlTurnsNow = new float[Strands.Length];
 
             // Every strand is a ribbon of three rows: its two edges (pairs, as ClampFolds wants them) and, after all
             // the pairs, the row down its middle, where the cloth bows out (CupSection).
@@ -359,6 +366,9 @@ namespace CrimsonVeil.Veil
             // Length of the loose scarf: the lesser of the hero's life and the scarf's strength.
             float reach = veil.LooseReach;
             float facing = veil.Facing;
+            // the loose cloth turns over with the hero as he turns round (his facing eases from one side to the other):
+            // flipped in a single frame, its twist and its whorls snapped over and the cloth broke up in the turn
+            float turnFacing = Mathf.Clamp(veil.FacingBlend, -1f, 1f);
             bool bow = veil.ShapeForm == VeilForm.Bow;
             // Pulled out into a rope (the whip round a ring) the scarf runs several times its length: it must still
             // read as the braided weapon, not a stretched-out red line.
@@ -418,7 +428,7 @@ namespace CrimsonVeil.Veil
                 // Keeps its volume until nearly set, so the transformation reads as the scarf winding in, not thinning out.
                 // The loose ribbon twists for real (RibbonSide): it turns edge-on and over, showing its dark reverse.
                 // (mirror-true: the other way round when the hero faces the other way)
-                twistAt[i] = Twist(t, time) * (1f - hard) * facing;
+                twistAt[i] = Twist(t, time) * (1f - hard) * turnFacing;
                 widthAt[i] = Mathf.Lerp(flowW * flowProfile, formW * weaponProfile, hard * hard * hard) * Mathf.Lerp(0.45f, 1f, vit);
                 // slipping out from behind the collar it is gathered narrow, and opens out as it flies
                 widthAt[i] *= Mathf.Lerp(1f, NeckGather(t, wrapEnd), 1f - hard);
@@ -493,7 +503,7 @@ namespace CrimsonVeil.Veil
                         simRun[i] = run;
                     }
                 }
-                float strandTwist = branch ? st.phase * 0.25f * facing : 0f;
+                float strandTwist = branch ? st.phase * 0.25f * turnFacing : 0f;
                 int baseF = s * perStrand;
                 float lastTwist = 0f, lastCup = 0f;
 
@@ -545,7 +555,7 @@ namespace CrimsonVeil.Veil
                     if (ov.y > 0f) ov.y *= branch ? Mathf.Lerp(0.55f, 0.5f, hard) : 0.5f;
                     else if (branch) ov.y *= Mathf.Lerp(0.55f, 1f, hard);
                     // (the dark under-layer lies behind the band: the cloth is drawn with depth now)
-                    c += ov + new Vector3(0f, -w * HangBelowNeck * loose * Mathf.SmoothStep(0f, 1f, f * 4f), (s == 0 ? UnderLayerDepth : (s - 1) * 0.012f) * loose + braidZ);
+                    c += ov + new Vector3(0f, -w * HangBelowNeck * loose * Mathf.SmoothStep(0f, 1f, f * 4f), (s == 0 ? 0f : (s - 1) * 0.012f) * loose + braidZ);
                     // Loose, a strand is cloth of its own (VeilStrands): it runs where its simulation has it - round
                     // the band, over and under the others - from where it comes off the band; set into a weapon it
                     // is the braid drawn above.
@@ -607,7 +617,10 @@ namespace CrimsonVeil.Veil
                     // round them)
                     float cup = CupDepth * loose + WeaponCup(form, f, main) * hard;
                     c = AboveFloor(sim, c, sw, FloorHold(form, loose));
-                    WriteVertex(baseV + i * 2, baseF + i, c, nrm, sw, alpha, st, hard, vit, front, twist, cup);
+                    if (loose > 0.01f) c = Vector3.Lerp(c, sim.OutOfObstacles(c, sw * 0.5f), loose);   // no tongue cut off by a wall or ceiling
+                    // (the dark under-layer lies behind the band's face, turning with it: kept behind it in world depth,
+                    // the band's edges swung through it as it twisted and a dark and light 'centipede' showed)
+                    WriteVertex(baseV + i * 2, baseF + i, c, nrm, sw, alpha, st, hard, vit, front, twist, cup, s == 0 ? UnderLayerDepth * loose : 0f);
                     if (i > 0) lastTan = c - lastC;
                     lastC = c; lastW = sw; lastA = alpha; lastHard = hard; lastFront = front; lastTwist = twist; lastCup = cup;
                 }
@@ -631,7 +644,14 @@ namespace CrimsonVeil.Veil
                 Vector3 flameDir = (dir * 0.35f + up * 0.9f + back * 0.35f).normalized;
                 dir = Vector3.Slerp(dir, flameDir, lastHard).normalized;
                 float heading = Mathf.Atan2(dir.y, dir.x);
-                BuildCurl(lastC, heading, facing, length, turns, curlPoints, curl);
+                if (!curlsStarted) { curlHeading[s] = heading; curlTurnsNow[s] = turns; }
+                curlHeading[s] = EaseAngle(curlHeading[s], heading, CurlEase, dt);
+                curlTurnsNow[s] = Mathf.Lerp(curlTurnsNow[s], turns, 1f - Mathf.Exp(-CurlEase * dt));
+                // (a weapon's tongue follows its blade at once: the ease is for loose cloth)
+                heading = Mathf.LerpAngle(curlHeading[s] * Mathf.Rad2Deg, heading * Mathf.Rad2Deg, lastHard) * Mathf.Deg2Rad;
+                curlHeading[s] = heading;
+                turns = Mathf.Lerp(curlTurnsNow[s], turns, lastHard);
+                BuildCurl(lastC, heading, Mathf.Lerp(turnFacing, facing, lastHard), length, turns, curlPoints, curl);
                 for (int k = 1; k <= curlPoints; k++)
                 {
                     float u = (float)k / curlPoints;
@@ -643,7 +663,8 @@ namespace CrimsonVeil.Veil
                     float sw = lastW * Mathf.Lerp(1f, Mathf.Lerp(TipWidth, 0.03f, lastHard), Mathf.Pow(u, Mathf.Lerp(SmokeTaper, 0.6f, lastHard)));
                     float alpha = lastA * Mathf.Lerp(1f, Mathf.Lerp(TipAlpha, 0.55f, lastHard), u);
                     curl[k] = AboveFloor(sim, curl[k], sw, FloorHold(form, looseEnd));
-                    WriteVertex(baseV + (samples - 1 + k) * 2, baseF + samples - 1 + k, curl[k], nrm, sw, alpha, st, lastHard, vit, lastFront, lastTwist, lastCup * (1f - u));
+                    if (looseEnd > 0.01f) curl[k] = Vector3.Lerp(curl[k], sim.OutOfObstacles(curl[k], sw * 0.5f), looseEnd);
+                    WriteVertex(baseV + (samples - 1 + k) * 2, baseF + samples - 1 + k, curl[k], nrm, sw, alpha, st, lastHard, vit, lastFront, lastTwist, lastCup * (1f - u), s == 0 ? UnderLayerDepth * looseEnd : 0f);
                 }
                 ClampFolds(vertices, uv2, baseV, perStrand);
 
@@ -659,12 +680,18 @@ namespace CrimsonVeil.Veil
                 }
             }
 
+            curlsStarted = true;
+
             // Loose cloth stays behind the hero: when he stops, the swinging band and its layers must not sweep
             // out in front of the body. Anything past the chest line is softly folded back (not cut).
             // Only once the hero faces one way — while turning round the scarf swings freely across.
             // (Not while it is wound round the body in a somersault: there it must go round the front too.)
-            float settle = Mathf.InverseLerp(0.85f, 1f, Mathf.Abs(veil.FacingBlend)) * (1f - sim.SwirlWeight)
-                           * SettleAfterSwirl(sinceSwirl);
+            float settleWanted = Mathf.InverseLerp(0.85f, 1f, Mathf.Abs(veil.FacingBlend)) * (1f - sim.SwirlWeight)
+                                 * SettleAfterSwirl(sinceSwirl);
+            // eased in (out at once): it came in within a frame as he finished turning round, and the cloth still
+            // swinging round in front of him jumped behind him
+            settleNow = settleWanted < settleNow ? settleWanted : Mathf.MoveTowards(settleNow, settleWanted, dt * SettleRate);
+            float settle = settleNow;
             if (settle > 0f)
             {
                 float ax = p[0].x;
@@ -1019,6 +1046,17 @@ namespace CrimsonVeil.Veil
         /// <summary>How much of its layer's own tint the loose cloth shows (a weapon all of it).</summary>
         public const float LooseTintContrast = 0.35f;
 
+        /// <summary>Eases angle <paramref name="from"/> (radians) towards <paramref name="to"/> at <paramref name="rate"/>
+        /// per second, the short way round.</summary>
+        public static float EaseAngle(float from, float to, float rate, float dt)
+            => from + Mathf.DeltaAngle(from * Mathf.Rad2Deg, to * Mathf.Rad2Deg) * Mathf.Deg2Rad * (1f - Mathf.Exp(-rate * dt));
+
+        /// <summary>How quickly (1/s) a loose end's whorl turns to where its strand heads.</summary>
+        public const float CurlEase = 5f;
+
+        /// <summary>How fast (per second) the fold back behind the chest comes in once he faces one way.</summary>
+        public const float SettleRate = 1.5f;
+
         /// <summary>How far (m) behind the band its dark under-layer lies.</summary>
         public const float UnderLayerDepth = 0.1f;
 
@@ -1026,9 +1064,11 @@ namespace CrimsonVeil.Veil
         /// gives way to that.</summary>
         public const float SolidCloth = 0.97f, OpaqueLoose = 1f;
 
-        void WriteVertex(int v, int f, Vector3 c, Vector3 nrm, float width, float alpha, Strand st, float hard, float vit, float glow, float twist, float cup)
+        void WriteVertex(int v, int f, Vector3 c, Vector3 nrm, float width, float alpha, Strand st, float hard, float vit, float glow, float twist, float cup, float behind)
         {
             float cs = Mathf.Cos(twist), sn = Mathf.Sin(twist), hw = width * 0.5f;
+            // behind the face of the cloth (its face looks towards the camera at no twist)
+            c -= new Vector3(nrm.x * sn, nrm.y * sn, -cs) * behind;
             var side = new Vector3(nrm.x * cs * hw, nrm.y * cs * hw, sn * hw);   // RibbonSide * half width
             vertices[v] = c + side;
             vertices[v + 1] = c - side;

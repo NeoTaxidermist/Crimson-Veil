@@ -15,9 +15,9 @@ namespace CrimsonVeil.Veil
         [SerializeField] int maxWisps = 60;
         [SerializeField] int trailPoints = 24;
         [SerializeField] float sampleInterval = 0.025f;
-        [Tooltip("Threads (and drops) a second off the loose scarf's tail: the key art's fine curls of smoke round it.")]
-        [SerializeField] float baseRate = 2.2f;
-        [SerializeField] float speedRate = 0.4f;
+        [Tooltip("Threads (and drops) a second off the loose scarf's tail. None: in motion they flew off it like broken pieces of the scarf itself.")]
+        [SerializeField] float baseRate = 0f;
+        [SerializeField] float speedRate = 0f;
         [Tooltip("Share of the loose scarf's emissions that are drops of ink flung off it (the key art's spatter).")]
         [SerializeField, Range(0f, 1f)] float dropShare = DropShare;
         [SerializeField] float weaponRate = 2f;

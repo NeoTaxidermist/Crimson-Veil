@@ -435,6 +435,9 @@ namespace CrimsonVeil.Tests
                     }
                     read = f;
                 }
+                // Read, the frames go: the editor's profiler keeps every frame it records when its window isn't open, and
+                // at hundreds of frames a second the test took tens of gigabytes until the editor stopped responding.
+                UnityEditorInternal.ProfilerDriver.ClearAllFrames();
             }
 
             void Walk(UnityEditor.Profiling.HierarchyFrameDataView view, int id)

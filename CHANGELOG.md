@@ -5,6 +5,27 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.57.0] – 2026-11-21
+### Opraveno
+- **Šála v pohybu plyne, neskáče a neláme se.** Po šále vypadala dobře na snímku, ale v pohybu byla oproti původní 2D šále odporná: lámala se a skákala sem a tam. Šálu jsem měřil snímek po snímku a našel šest příčin:
+  - **Víry na koncích mrskaly sem a tam:** jejich směr se každý snímek znovu bral z posledního kousku jazyka a byly až 2 m dlouhé, takže každé zakolísání konce jazyka se přeneslo na celý vír. Konce jazyků skákaly v běhu o 0,2–0,97 m za snímek. Teď se směr i stočení víru mění plynule (`CurlEase`, 5 za sekundu) a víry jsou kratší (`curlScale` 1,6). Průměrný skok konce je 4–10 cm za snímek a zbylý pohyb odpovídá pohybu látky.
+  - **Úlomky kolem šály:** kapky tuše a kouřové nitky z verze 0.53 vypadaly v pohybu jako ulámané kusy šály. Volná šála už nic nepouští, kouř zbraní zůstává.
+  - **Otočka:** šála se natáčela podle skokového směru pohledu, takže se v jednom snímku překlopila na druhou stranu. Zkrut a víry volné látky teď sledují plynulé otáčení hrdiny (`FacingBlend`). Pojistka, která zakládá látku za hrudník, se dřív zapnula v jediném snímku a šála skočila z předu za hrdinu. Teď nabíhá plynule (`SettleRate`).
+  - **Pás se při otočce mačkal do cik-caku:** sousední body se překlápěly tam a zpět a kreslení pak v ostrých záhybech zúžilo pás na nulu, takže vznikly kousky s mezerami. Pás teď ostré zlomy rozbaluje (`VeilSimulation.MaxKink`, 60°), ale jemné esíčko nechává být.
+  - **Jazyky se při otočce odtrhly:** zůstaly asi vteřinu viset pod pásem jako zuby hřebenu. Teď se od svého místa u pásu nevzdálí víc než 35 cm (`VeilStrands.MaxStray`).
+  - **Tmavá spodní vrstva:** ležela 10 cm za pásem pevně ve směru do scény. Když se pás natočil, prostrkoval jí a vznikla tmavě-světlá „stonožka“. Teď leží za lícem látky a natáčí se s ním.
+- **Šála v nízkém tunelu:** prameny a víry nepočítaly s překážkami, zajely do stropu, ten je zakryl a ze šály zůstaly useknuté úlomky. Teď je prameny i víry obcházejí (`VeilSimulation.OutOfObstacles`).
+- **Test alokací nafukoval Unity na desítky GB.** `TheHero_AllocatesNoGarbage_FrameByFrame` zapíná profiler a editor si bez otevřeného okna Profileru nechává každý zaznamenaný snímek, stovky za sekundu. Unity tak během testu dosáhlo 16 až 49 GB, přestalo odpovídat a Windows tu paměť odkládal na disk C:. Stejně se to dělo i s kódem verze 0.56. Test teď po každém přečtení zaznamenané snímky maže: Unity se během celé sady testů drží pod 3,1 GB.
+
+### Testy
+- Nový `VeilMotionTests` (EditMode):
+  - vír se natáčí plynule a kratší cestou;
+  - pojistka za hrudníkem nabíhá postupně;
+  - při otočce se pás nepřeloží přes pravý úhel a ostré ohyby jsou vzácné;
+  - jazyky zůstávají u pásu i při otočce;
+  - volná šála nepouští žádné úlomky, zbraň dál kouří.
+- Prošlo všech 565 EditMode a 121 PlayMode testů.
+
 ## [0.56.0] – 2026-11-21
 ### Změněno
 - **Šála v běhu drží esíčko.** V běhu se tvar S z animačního listu oslaboval na 45 % a vítr šálu natáhl skoro do přímky (konce od sebe 3,12 m z 3,5 m délky). Teď zůstává 85 % tvaru (`VeilController.RunShapeWeight`). V běhu je vzdálenost konců 2,87–3,01 m a šála si drží oblouk. Šála se přitom nikdy neprodlužovala, délka zůstává 3,5 m.

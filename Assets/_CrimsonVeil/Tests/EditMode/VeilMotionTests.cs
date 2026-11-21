@@ -233,6 +233,31 @@ namespace CrimsonVeil.Tests
         }
 
         [Test]
+        public void LeapingUp_TheTurnSwingsUnderneath_FallingOrStanding_OverTheTop()
+        {
+            float pi = Mathf.PI;
+            Assert.AreEqual(0f, VeilSimulation.TurnGoal(pi, 0f, false), 1e-4f, "from the left round to the right over the top");
+            Assert.Greater(Mathf.Sin(Mathf.Lerp(pi, VeilSimulation.TurnGoal(pi, 0f, false), 0.5f)), 0.99f, "halfway: straight up");
+            Assert.Less(Mathf.Sin(Mathf.Lerp(pi, VeilSimulation.TurnGoal(pi, 0f, true), 0.5f)), -0.99f, "leaping up: halfway straight down, under him");
+            Assert.Greater(Mathf.Sin(Mathf.Lerp(0f, VeilSimulation.TurnGoal(0f, pi, false), 0.5f)), 0.99f, "the other way round too");
+            Assert.Less(Mathf.Sin(Mathf.Lerp(0f, VeilSimulation.TurnGoal(0f, pi, true), 0.5f)), -0.99f);
+            // turning back mid-swing: the short way from where it is
+            Assert.AreEqual(2f * pi, VeilSimulation.TurnGoal(1.5f * pi, 0f, false), 1e-4f);
+            Assert.AreEqual(pi, VeilSimulation.TurnGoal(0.5f * pi, pi, true), 1e-4f);
+        }
+
+        [Test]
+        public void InAFall_TheTailStaysWithTheShape_AndTheWhorlsOpen()
+        {
+            Assert.AreEqual(1f, VeilSimulation.FallDrag(0f), 1e-5f, "standing by a wall the cloth beyond the touch still drapes limply down it");
+            Assert.AreEqual(0f, VeilSimulation.FallDrag(0.6f), 1e-5f, "falling past a ledge it keeps its shape (limp, the tail whipped round in front of him)");
+            Assert.AreEqual(1f, VeilRenderer.UnrollInTilt(0f), 1e-5f);
+            Assert.Less(VeilRenderer.UnrollInTilt(0.9f), 0.25f, "streaming up, the whorls open into tongues (wound up, half curled forward over his head)");
+            Assert.AreEqual(1f, VeilRenderer.KeepOutInTilt(0f), 1e-5f);
+            Assert.AreEqual(0f, VeilRenderer.KeepOutInTilt(0.6f), 1e-5f, "falling past a ledge the drawn band is not laid flat on its top in steps");
+        }
+
+        [Test]
         public void TheLooseScarf_ShedsNoPieces()
         {
             var prefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_CrimsonVeil/LevelKit/Prefabs/Player.prefab");

@@ -339,6 +339,13 @@ namespace CrimsonVeil.Veil
             float walled = 0f;
             for (int i = n / 2; i < n; i++) walled = Mathf.Max(walled, sim.WallContact(i));
             unroll *= 1f - 0.8f * walled;
+            // Streaming up over him in a fall the whorls open out into straight tongues: wound up they curled off to
+            // the side of the upright scarf, half of them forward over his head.
+            unroll *= UnrollInTilt(sim.TrailTilt);
+            // Falling past a ledge, what of the drawn band strays into it is left there, hidden behind its face as if
+            // the cloth trailed past behind the edge: pushed out, each strand was laid flat on the top in steps.
+            // (The cloth itself is still kept out of it by the simulation.)
+            float keepOut = KeepOutInTilt(sim.TrailTilt);
 
             // Smooth centre line + per-sample hardness.
             for (int seg = 0; seg < n - 1; seg++)
@@ -617,8 +624,8 @@ namespace CrimsonVeil.Veil
                     // set into a weapon the cloth is solid: a ridged blade, a round shaft, lash and limbs (the light runs
                     // round them)
                     float cup = CupDepth * loose + WeaponCup(form, f, main) * hard;
-                    c = AboveFloor(sim, c, sw, FloorHold(form, loose));
-                    if (loose > 0.01f) c = Vector3.Lerp(c, sim.OutOfObstacles(c, sw * 0.5f), loose);   // no tongue cut off by a wall or ceiling
+                    c = AboveFloor(sim, c, sw, FloorHold(form, loose) * keepOut);
+                    if (loose > 0.01f) c = Vector3.Lerp(c, sim.OutOfObstacles(c, sw * 0.5f), loose * keepOut);   // no tongue cut off by a wall or ceiling
                     // (the dark under-layer lies behind the band's face, turning with it: kept behind it in world depth,
                     // the band's edges swung through it as it twisted and a dark and light 'centipede' showed)
                     WriteVertex(baseV + i * 2, baseF + i, c, nrm, sw, alpha, st, hard, vit, front, twist, cup, s == 0 ? UnderLayerDepth * loose : 0f);
@@ -663,8 +670,8 @@ namespace CrimsonVeil.Veil
                     // into an open whorl, fading (the key art; a broad stroke wound into a whorl made a ball of wool).
                     float sw = lastW * Mathf.Lerp(1f, Mathf.Lerp(TipWidth, 0.03f, lastHard), Mathf.Pow(u, Mathf.Lerp(SmokeTaper, 0.6f, lastHard)));
                     float alpha = lastA * Mathf.Lerp(1f, Mathf.Lerp(TipAlpha, 0.55f, lastHard), u);
-                    curl[k] = AboveFloor(sim, curl[k], sw, FloorHold(form, looseEnd));
-                    if (looseEnd > 0.01f) curl[k] = Vector3.Lerp(curl[k], sim.OutOfObstacles(curl[k], sw * 0.5f), looseEnd);
+                    curl[k] = AboveFloor(sim, curl[k], sw, FloorHold(form, looseEnd) * keepOut);
+                    if (looseEnd > 0.01f) curl[k] = Vector3.Lerp(curl[k], sim.OutOfObstacles(curl[k], sw * 0.5f), looseEnd * keepOut);
                     WriteVertex(baseV + (samples - 1 + k) * 2, baseF + samples - 1 + k, curl[k], nrm, sw, alpha, st, lastHard, vit, lastFront, lastTwist, lastCup * (1f - u), s == 0 ? UnderLayerDepth * looseEnd : 0f);
                 }
                 ClampFolds(vertices, uv2, baseV, perStrand);
@@ -1055,6 +1062,12 @@ namespace CrimsonVeil.Veil
 
         /// <summary>How much of its layer's own tint the loose cloth shows (a weapon all of it).</summary>
         public const float LooseTintContrast = 0.35f;
+
+        /// <summary>How firmly the drawn loose cloth is put out of walls while the scarf is tilted by <paramref name="tilt"/> (radians) into a fall.</summary>
+        public static float KeepOutInTilt(float tilt) => 1f - Mathf.SmoothStep(0f, 1f, Mathf.Abs(tilt) / 0.6f);
+
+        /// <summary>How wound up the end whorls stay while the scarf is tilted by <paramref name="tilt"/> (radians) into a fall.</summary>
+        public static float UnrollInTilt(float tilt) => 1f - 0.8f * Mathf.SmoothStep(0f, 1f, Mathf.Abs(tilt) / 0.9f);
 
         /// <summary>How much of the fold behind the chest is kept while the scarf is tilted by <paramref name="tilt"/> (radians).</summary>
         public static float SettleInTilt(float tilt) => 1f - Mathf.SmoothStep(0f, 1f, Mathf.Abs(tilt) / 0.5f);

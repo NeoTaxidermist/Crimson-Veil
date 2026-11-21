@@ -250,6 +250,23 @@ namespace CrimsonVeil.Veil
         public static float SwingHeading(float from, float to, float clock, float f)
             => Mathf.Lerp(from, to, Mathf.SmoothStep(0f, 1f, (clock - f * TurnTravel) / TurnBlend));
 
+        /// <summary>Rising faster than this (m/s) as he turns round, the scarf swings round underneath instead of over the top.</summary>
+        public const float RiseUnder = 1.5f;
+
+        /// <summary>
+        /// The heading a turn from <paramref name="from"/> ends at, for a breeze towards heading <paramref name="goal"/>
+        /// (0 or pi): the nearest way round; from straight across, over the top - or, as he leaps up
+        /// (<paramref name="under"/>), underneath: swung over the top as his body rose into it, it balled up round his head.
+        /// </summary>
+        public static float TurnGoal(float from, float goal, bool under)
+        {
+            goal += 2f * Mathf.PI * Mathf.Round((from - goal) / (2f * Mathf.PI));
+            if (Mathf.Abs(Mathf.Abs(from - goal) - Mathf.PI) > 0.01f) return goal;
+            // straight across: over the top means passing straight up (sin > 0 halfway)
+            float over = Mathf.Cos(from) >= 0f ? 1f : -1f;
+            return from + (under ? -over : over) * Mathf.PI;
+        }
+
         /// <summary>The breeze's direction in x (-1..1) at <paramref name="f"/>, <paramref name="clock"/> s after it turned from <paramref name="from"/> to <paramref name="to"/> (-1/+1).</summary>
         public static float DriftAt(float from, float to, float clock, float f)
             => Mathf.Cos(SwingHeading(HeadingOf(from), HeadingOf(to), clock, f));
@@ -451,7 +468,7 @@ namespace CrimsonVeil.Veil
                 // a turn while the last one is still running starts from where the middle of the scarf is
                 float goal = HeadingOf(DriftDirection);
                 headingFrom = driftTo == 0f || DriftDirection == 0f ? goal : HeadingAt(0.5f);
-                headingTo = goal;
+                headingTo = TurnGoal(headingFrom, goal, AnchorVelocity.y > RiseUnder);
                 driftTo = DriftDirection;
                 turnClock = Mathf.Abs(headingFrom - headingTo) < 1e-4f ? 99f : 0f;
             }
@@ -507,7 +524,9 @@ namespace CrimsonVeil.Veil
                 Vector3 p = Positions[i];
                 Vector3 vel = (p - previous[i]) / h;
                 float f = (float)i / (Count - 1);
-                float loose = (1f - H(i)) * (1f - 0.85f * blocked);
+                // (not while it streams up behind him in a fall: a touch of the ledge he dropped off let the tail go
+                // limp and it whipped round in front of him)
+                float loose = (1f - H(i)) * (1f - 0.85f * blocked * FallDrag(TrailTilt));
 
                 // Feel the run wind only up to a point: the scarf trails, it doesn't become a taut sheet.
                 Vector2 airV = SampleAirVelocity(p);

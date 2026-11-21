@@ -5,6 +5,26 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.60.0] – 2026-11-21
+### Opraveno
+- **Švihnutí dopředu při seskoku.** Měření ukázalo dvě příčiny:
+  - Konec šály se jednou dotkl hrany plošiny a látka za bodem dotyku pak na 0,4 s skoro ztratila tvar. Tohle je správně, když hrdina stojí zády u zdi a šála má splývat dolů. V pádu ale konec povolil a švihl dopředu jako bič. V pádu si teď šála tvar drží (`FallDrag`).
+  - Víry na koncích jazyků se v pádu stáčely do strany, takže polovina z nich mířila dopředu nad hlavu. V pádu se teď rozvinou do rovných jazyků (`UnrollInTilt`).
+  - Při rychlém seskoku teď žádná část šály nejde před hrdinu dál než 3 cm (dřív až 1,5 m).
+- **„Schůdky“ na hraně.** Při kreslení se jednotlivé pruhy pásu vytlačovaly z plošiny a kladly se naplocho na její vršek. V pádu teď kousek látky, který zajede za hranu, zůstane schovaný za přední stěnou plošiny (`KeepOutInTilt`). Samotná látka v simulaci do plošiny dál nevnikne.
+- **Otočka ve skoku:** šála se přehoupla vrchem, tělo stoupající ve výskoku do ní narazilo a smotalo ji do chuchvalce kolem hlavy. Když hrdina stoupá, přehoupne se teď spodem pod ním (`TurnGoal`, `RiseUnder`). Jinak dál jde vrchem.
+
+### Zbývá
+- Když hrdina z hrany pomalu sejde, konec šály po sklouznutí přes hranu ještě švihne asi o metr dopředu nad hlavu. Je to plynulý oblouk, ne zlom. Zkusil jsem šálu před hrdinou v pádu omezit, ale stlačila se do chuchvalce, a to bylo horší, takže jsem to vrátil.
+- Když hrdina vyskočí těsně u vysokého bloku, šála se o blok na chvíli zmačká za hlavou.
+
+### Testy
+- `VeilMotionTests`:
+  - otočka ve výskoku jde spodem, jinak vrchem;
+  - otočka v půli cesty se vrací kratší cestou;
+  - v pádu látka drží tvar, víry se rozvinou a pruhy se nevykreslují naplocho na hranu.
+- Prošlo všech 571 EditMode a 121 PlayMode testů.
+
 ## [0.59.0] – 2026-11-21
 ### Opraveno
 - **Otočka v podřepu a otočka na místě:** šála se při otočce dál smotávala do chuchvalce kolem hlavy. Nejvíc to bylo vidět v podřepu, kde je pod ní hned podlaha. Šála se totiž přesouvala na druhou stranu vodorovně přes krk a cestou se zkrátila na nic. Teď se přehoupne vrchem jako ručička hodin a drží přitom celou délku (`VeilSimulation.SwingHeading`, `SheetOffset`). Vlna jde dál od krku ke konci a jeden bod se přehoupne za 0,6 s.

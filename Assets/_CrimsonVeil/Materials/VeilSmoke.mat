@@ -31,7 +31,7 @@ Material:
     - _Erosion: 0.95
     - _FlowSpeed: 0.5
     - _Glint: 0.9
-    - _LightAmount: 0.45
+    - _LightAmount: 0.15
     - _SolidDepth: 0
     - _Volume: 0
     - _WeaponInk: 0.85

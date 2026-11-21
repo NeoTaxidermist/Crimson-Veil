@@ -5,6 +5,25 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.54.0] – 2026-11-21
+### Změněno
+- **Šála podle key artu, čtvrtý krok: výrazné esíčko, malovaná tuš místo gumy, nákrčník v barvě šály.**
+  - **Esíčko:** šála byla moc rovná. Křivka S z animačního listu je teď 1,6× hlubší (`VeilRestShape.SDepth`) a zdvih od krku větší (0,65 m), takže se šála vzdouvá do velkého oblouku a stáčí se dolů a do vírů jako na obrázku. Vlna, která po ní běží, je vyšší a delší (20 cm, jedna vlna na délku šály, pomalejší).
+  - **Malovaná tuš místo gumy:** lesklý, gumový dojem dělalo stínování.
+    - Světlo přes záhyby je slabší (`_LightAmount` 0,15 místo 0,45) a látka je skoro plochá (`CupDepth` 0,1 místo 0,24).
+    - Okraje natočené od kamery už tolik netmavnou.
+    - Na volné látce je vypnutý šum jemných vláken a stopy štětin. Každá z devíti vrstev je kreslila na svých okrajích tmavou linkou, a tak vznikaly vodorovné proužky.
+
+    U zbraní se nic nemění.
+  - **Nákrčník:** límec a páska na paži používaly stejný materiál jako rudé věci v ruinách (`RuinCrimson`). Ve hře vycházely jasně rudé (161), kdežto šála kolem 90, takže na krku barevně nenavazovaly. Hrdina má teď vlastní materiál `HeroCrimson` v barvě šály: límec ve hře vychází 80, šála u krku 70. Ruiny si nechávají svou barvu.
+
+### Testy
+- `VeilKeyArtTests` (EditMode):
+  - límec a páska jsou v hrdinově vlastním karmínu, ne v karmínu ruin;
+  - šála je malovaná tuš ve výrazném S: slabé světlo, skoro plochá, hlubší S než v listu, dlouhá vysoká vlna.
+- `VeilRendererTests`: test vyklenutí počítá s vyklenutím šňůry zbraně; volná látka se vyklene jen málo.
+- Prošlo všech 559 EditMode a 121 PlayMode testů.
+
 ## [0.53.0] – 2026-11-21
 ### Změněno
 - **Šála podle key artu, třetí krok: barvy, krytí, čisté proplétání, krk a plynulé prameny.**

@@ -87,15 +87,18 @@ namespace CrimsonVeil.Tests
         [Test]
         public void TheCloth_BowsOutAcrossItsMiddle_ItsNormalsFollowingTheBow()
         {
+            // (a cord's bow, as a set weapon's: the loose cloth bows only a little - more read as rubber)
             Vector3 left = new Vector3(0f, 0.1f, 0f), right = new Vector3(0f, -0.1f, 0f), face = Vector3.back;
-            VeilRenderer.CupSection(left, right, face, VeilRenderer.CupDepth, out var c, out var nl, out var nr);
+            const float cup = 0.24f;
+            Assert.That(VeilRenderer.CupDepth, Is.InRange(0.05f, 0.15f), "the loose cloth bows a little");
+            VeilRenderer.CupSection(left, right, face, cup, out var c, out var nl, out var nr);
             Assert.AreEqual(0f, c.y, 1e-5f, "in the middle");
-            Assert.AreEqual(-0.1f * VeilRenderer.CupDepth, c.z, 1e-5f, "bowing out towards its face");
+            Assert.AreEqual(-0.1f * cup, c.z, 1e-5f, "bowing out towards its face");
             Assert.Greater(nl.y, 0.2f, "the edge's normal leans out over its edge");
             Assert.Less(nr.y, -0.2f);
             Assert.AreEqual(1f, nl.magnitude, 1e-4f);
             // edge-on (face across the picture) it still shows the depth of its bow
-            VeilRenderer.CupSection(new Vector3(0f, 0f, 0.1f), new Vector3(0f, 0f, -0.1f), Vector3.up, VeilRenderer.CupDepth, out c, out _, out _);
+            VeilRenderer.CupSection(new Vector3(0f, 0f, 0.1f), new Vector3(0f, 0f, -0.1f), Vector3.up, cup, out c, out _, out _);
             Assert.Greater(c.y, 0.02f, "edge-on, not a hairline");
             VeilRenderer.CupSection(left, right, face, 0f, out c, out nl, out _);
             Assert.AreEqual(Vector3.zero, c, "a weapon stays flat (for now)");

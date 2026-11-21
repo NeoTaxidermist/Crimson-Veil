@@ -16,6 +16,8 @@ namespace CrimsonVeil.EditorTools
         public Material inkFG, inkPlay, inkNear, inkMid, inkFar, inkSky, grass, banner, leaf, hero, wraith, wraithEyes;
         /// <summary>Solid crimson for the "Crimson" slot of modelled set pieces (fallen leaves, cloth on ruins).</summary>
         public Material crimson;
+        /// <summary>The hero's collar and trim: the scarf's crimson (the ruins' brighter one didn't match the scarf at the neck).</summary>
+        public Material heroCrimson;
         /// <summary>Pure ink for the hero's shadow double (the creatures themselves are shaded grey: <see cref="wraith"/>).</summary>
         public Material shadowInk;
         /// <summary>The whites of the hero's eyes and his teeth: ink in the game (the silhouette stays whole), lit pale by
@@ -76,6 +78,7 @@ namespace CrimsonVeil.EditorTools
                 // Cloth tones (folds, hem, woven band, scorched end) and the ink emblem come from the mesh.
                 banner = Tinted(Wind(Sil("BannerCrimson", sil, new Color(0.66f, 0.015f, 0.03f), 0.3f, 0.6f), 1.6f, true)),
                 crimson = Sil("RuinCrimson", sil, new Color(0.7f, 0.02f, 0.035f), 0.25f, 0.6f),
+                heroCrimson = Sil("HeroCrimson", sil, HeroCrimson, 0.25f, 0.6f),
                 leaf = Clip(Wind(Sil("LeafCrimson", sil, new Color(0.78f, 0.02f, 0.035f), 0.2f, 0.7f), 0.6f, false), maple),
                 hero = HeroLook(Sil("HeroInk", sil, new Color(0.012f, 0.012f, 0.014f), 0.12f, 0.15f)),
                 heroPale = HeroLook(Sil("HeroPale", sil, new Color(0.012f, 0.012f, 0.014f), 0.12f, 0.05f)),
@@ -143,6 +146,9 @@ namespace CrimsonVeil.EditorTools
             return m;
         }
 
+        /// <summary>The hero's collar and trim, matched to the scarf where it leaves the collar (measured in the game).</summary>
+        public static readonly Color HeroCrimson = new Color(0.3f, 0.03f, 0.028f);
+
         /// <summary>The scarf's ink, from the key art.</summary>
         public static readonly Color ClothDeep = new Color(0.26f, 0.035f, 0.035f), ClothMid = new Color(0.55f, 0.065f, 0.06f),
                                      ClothLight = new Color(0.82f, 0.11f, 0.09f);
@@ -168,6 +174,7 @@ namespace CrimsonVeil.EditorTools
             // The scarf is cloth in three dimensions: two-sided, lit across its folds (the smoke threads stay flat washes).
             m.SetFloat("_Volume", volume ? 1f : 0f);
             m.SetFloat("_SolidDepth", volume ? 1f : 0f);
+            m.SetFloat("_LightAmount", 0.15f);   // painted ink: the light only hints at its folds (more read as rubber)
             m.renderQueue = (int)RenderQueue.Transparent;
             return m;
         }

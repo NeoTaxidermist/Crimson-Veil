@@ -146,7 +146,7 @@ namespace CrimsonVeil.Veil
 
         /// <summary>How deep (in half widths) loose cloth bows out across its middle: no flat paper strip, and
         /// edge-on it still shows that much of itself.</summary>
-        public const float CupDepth = 0.24f;
+        public const float CupDepth = 0.1f;
 
         /// <summary>
         /// The ribbon's cross-section between its edges <paramref name="left"/> and <paramref name="right"/>: its middle
@@ -983,7 +983,7 @@ namespace CrimsonVeil.Veil
         public static float FlameRipple(float t, float time)
             => RippleHeight * Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.08f, 0.85f, t)) * Mathf.Sin(2f * Mathf.PI * RippleWaves * t - RippleSpeed * time);
 
-        public const float RippleHeight = 0.13f, RippleWaves = 1.2f, RippleSpeed = 3.6f;
+        public const float RippleHeight = 0.2f, RippleWaves = 0.9f, RippleSpeed = 2.6f;
         /// <summary>How much more a tongue ripples than the band.</summary>
         public const float TongueRipple = 1.4f;
 

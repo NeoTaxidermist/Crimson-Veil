@@ -111,7 +111,7 @@ Shader "CrimsonVeil/Veil"
                 shade *= 1.0 + _LightAmount * (1.0 + hard) * (lit - flat) * 1.6;
                 float3 h = normalize(key + toCam);
                 glint = pow(saturate(dot(n, h)), 18.0) * hard * _Glint * _Volume;
-                shade *= lerp(0.82, 1.0, saturate(abs(facing) * 3.0));   // the cloth's edge, turned away, a shade deeper
+                shade *= lerp(0.92, 1.0, saturate(abs(facing) * 3.0));   // the cloth's edge, turned away, a shade deeper
                 return lerp(1.0, shade, _Volume);
             }
 
@@ -181,7 +181,7 @@ Shader "CrimsonVeil/Veil"
                     // dry brush: the bristles leave streaks along the stroke - at its edges and all over the thin,
                     // fast strokes of the curls
                     float dry = CV_ValueNoise(float2(across * 9.0 + seed * 5.0, along * 2.0 + seed));
-                    clothAlpha *= lerp(1.0, smoothstep(0.15, 0.45, dry), saturate(pow(1.0 - core, 2.0) * 0.6 + smoothstep(0.6, 0.88, along) * 0.25) * lerp(0.35, 1.0, hard));
+                    clothAlpha *= lerp(1.0, smoothstep(0.15, 0.45, dry), saturate(pow(1.0 - core, 2.0) * 0.6 + smoothstep(0.6, 0.88, along) * 0.25) * hard);   // (no bristle streaks on the loose cloth: stacked, they read as stripes)
                     float sheen = CV_Fbm(float2(across * lerp(1.5, 2.4, hard) + warp * 0.5 + seed, along * 1.5 - t * 0.25));
                     // the sheet's scarf is a sheaf of fine strands running along it: thin darker and brighter
                     // streaks, a little translucent between them
@@ -190,11 +190,11 @@ Shader "CrimsonVeil/Veil"
                     float sheaf = strands * 0.65 + strands2 * 0.35;
                     // loose: broad strokes of darker crimson through a bright body (the key art), barely a hair of the
                     // sheaf; set into a weapon: the sheaf of fine strands
-                    sheen = lerp(saturate(sheen * 1.05 + sheaf * 0.12 - 0.05), saturate(sheen * 0.6 + sheaf * 0.55 - 0.08), hard);
-                    clothAlpha *= lerp(lerp(0.95, 1.0, smoothstep(0.25, 0.6, sheaf)), lerp(0.78, 1.0, smoothstep(0.25, 0.6, sheaf)), hard);
+                    sheen = lerp(saturate(sheen * 1.05 - 0.02), saturate(sheen * 0.6 + sheaf * 0.55 - 0.08), hard);
+                    clothAlpha *= lerp(1.0, lerp(0.78, 1.0, smoothstep(0.25, 0.6, sheaf)), hard);
                     half3 cc = lerp(_ClothDeep.rgb, _ClothMid.rgb, smoothstep(lerp(0.32, 0.18, hard), lerp(0.56, 0.46, hard), sheen));   // darker crimson strokes
                     cc = lerp(cc, _ClothLight.rgb * 1.15, smoothstep(0.58, 0.82, sheen) * (0.5 + core * 0.5));   // and hot bright ones
-                    cc *= lerp(0.72, 1.0, smoothstep(0.0, 0.3, edge));               // brush edges a shade deeper
+                    cc *= lerp(lerp(0.93, 0.72, hard), 1.0, smoothstep(0.0, 0.3, edge));   // a weapon's edges a shade deeper (the loose cloth's layers stacked them into stripes)
                     col = lerp(col, cc, cloth);
                     // a weapon's ink still smoulders: a little heat in its core
                     col += _ClothLight.rgb * (0.3 * hard * core) * cloth;

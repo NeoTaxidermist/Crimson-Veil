@@ -42,6 +42,34 @@ namespace CrimsonVeil.Tests
         }
 
         [Test]
+        public void TheHerosCollar_IsTheScarfsCrimson_TheRuinsKeepTheirs()
+        {
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_CrimsonVeil/LevelKit/Prefabs/Player.prefab");
+            bool collar = false;
+            foreach (var r in prefab.GetComponentsInChildren<Renderer>(true))
+                foreach (var m in r.sharedMaterials)
+                {
+                    Assert.IsFalse(m != null && m.name == "RuinCrimson", "not the ruins' brighter crimson (it didn't match the scarf at the neck)");
+                    if (m != null && m.name == "HeroCrimson") collar = true;
+                }
+            Assert.IsTrue(collar, "the collar and trim in the hero's own crimson");
+            var hero = AssetDatabase.LoadAssetAtPath<Material>("Assets/_CrimsonVeil/Materials/HeroCrimson.mat");
+            Assert.AreEqual(LevelKitMaterials.HeroCrimson.r, hero.GetColor("_BaseColor").r, 1e-3f);
+            Assert.Less(LevelKitMaterials.HeroCrimson.r, 0.5f, "a deep crimson like the scarf where it leaves the collar");
+        }
+
+        [Test]
+        public void TheScarf_IsPaintedInk_InABoldS_NotRubber()
+        {
+            var mat = AssetDatabase.LoadAssetAtPath<Material>("Assets/_CrimsonVeil/Materials/Veil.mat");
+            Assert.LessOrEqual(mat.GetFloat("_LightAmount"), 0.2f, "the light only hints at its folds (more read as rubber)");
+            Assert.LessOrEqual(VeilRenderer.CupDepth, 0.15f, "barely bowing");
+            Assert.GreaterOrEqual(VeilRestShape.SDepth, 1.4f, "the key art's S, deeper than the sheet's");
+            Assert.GreaterOrEqual(VeilRenderer.RippleHeight, 0.15f, "a flame's swell running along it");
+            Assert.Less(VeilRenderer.RippleWaves, 1.2f, "a long wave: one bold S, not a wobble");
+        }
+
+        [Test]
         public void TheTail_ShedsThreadsOfSmoke_AndDropsOfInk()
         {
             Assert.That(VeilWisps.DropShare, Is.InRange(0.15f, 0.5f), "some drops among the threads");

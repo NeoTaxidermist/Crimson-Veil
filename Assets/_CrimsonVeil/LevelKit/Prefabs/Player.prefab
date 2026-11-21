@@ -214,6 +214,13 @@ MonoBehaviour:
     depthOffset: 0.12
     depthWobble: 0.08
     weaponDepth: 0.3
+    depthStiffness: 30
+    depthDamping: 3
+    depthFlutter: 3
+    maxDepth: 0.7
+    neckRadius: 0.085
+    wrapNodes: 3
+    bodySkin: 0.03
     strouhal: 0.21
     bodyDiameter: 0.45
     idleShedFrequency: 0.8
@@ -552,7 +559,7 @@ PrefabInstance:
     - target: {fileID: 7219867370428330978, guid: 9e1b4aec7f13a0846b4f0cff868ddf28, type: 3}
       propertyPath: 'm_Materials.Array.data[1]'
       value: 
-      objectReference: {fileID: 2100000, guid: 9b71815def1108249b5247dec234e921, type: 2}
+      objectReference: {fileID: 2100000, guid: fe86d0a1cc5593c459532fdef9432228, type: 2}
     - target: {fileID: 7219867370428330978, guid: 9e1b4aec7f13a0846b4f0cff868ddf28, type: 3}
       propertyPath: 'm_Materials.Array.data[2]'
       value: 

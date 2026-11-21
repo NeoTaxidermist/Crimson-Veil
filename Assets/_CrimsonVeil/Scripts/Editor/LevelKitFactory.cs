@@ -136,7 +136,7 @@ namespace CrimsonVeil.EditorTools
                 hero.transform.SetParent(visual, false);
                 foreach (var smr in hero.GetComponentsInChildren<SkinnedMeshRenderer>())
                 {
-                    smr.sharedMaterials = HeroMaterials(smr, M.hero, M.crimson, M.heroPale); // ink body, crimson scarf and trim, eyes and teeth
+                    smr.sharedMaterials = HeroMaterials(smr, M.hero, M.heroCrimson, M.heroPale); // ink body, crimson scarf and trim, eyes and teeth
                     smr.updateWhenOffscreen = true;
                     smr.shadowCastingMode = ShadowCastingMode.Off;
                 }

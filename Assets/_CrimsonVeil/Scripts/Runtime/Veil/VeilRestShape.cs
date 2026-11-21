@@ -46,7 +46,7 @@ namespace CrimsonVeil.Veil
             int i0 = Mathf.FloorToInt(f) % n, i1 = (i0 + 1) % n;
             float u = f - Mathf.Floor(f);
             u = u * u * (3f - 2f * u);
-            return Mathf.Lerp(At(i0, d), At(i1, d), u) + Lift(d);
+            return Mathf.Lerp(At(i0, d), At(i1, d), u) * SDepth + Lift(d);
         }
 
         /// <summary>
@@ -55,7 +55,9 @@ namespace CrimsonVeil.Veil
         /// </summary>
         public static float Lift(float d) => LiftHeight * Mathf.SmoothStep(0f, 1f, d / LiftOver);
 
-        public const float LiftHeight = 0.45f, LiftOver = 1.2f;
+        public const float LiftHeight = 0.65f, LiftOver = 1.2f;
+        /// <summary>How much deeper the key art's S is than the sheet's.</summary>
+        public const float SDepth = 1.6f;
 
         static float At(int frame, float d)
         {

@@ -187,8 +187,8 @@ Shader "CrimsonVeil/Veil"
                     float sheaf = strands * 0.65 + strands2 * 0.35;
                     sheen = saturate(sheen * 0.6 + sheaf * 0.55 - 0.08);
                     clothAlpha *= lerp(0.78, 1.0, smoothstep(0.25, 0.6, sheaf));
-                    half3 cc = lerp(_ClothDeep.rgb, _ClothMid.rgb, smoothstep(0.06, 0.3, sheen));
-                    cc = lerp(cc, _ClothLight.rgb, smoothstep(0.62, 0.85, sheen) * (0.35 + core * 0.65));
+                    half3 cc = lerp(_ClothDeep.rgb, _ClothMid.rgb, smoothstep(0.18, 0.46, sheen));   // darker crimson streaks (the key art)
+                    cc = lerp(cc, _ClothLight.rgb * 1.15, smoothstep(0.58, 0.82, sheen) * (0.5 + core * 0.5));   // and hot bright ones
                     cc *= lerp(0.72, 1.0, smoothstep(0.0, 0.3, edge));               // brush edges a shade deeper
                     col = lerp(col, cc, cloth);
                     // a weapon's ink still smoulders: a little heat in its core

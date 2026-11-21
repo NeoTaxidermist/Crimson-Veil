@@ -56,29 +56,31 @@ namespace CrimsonVeil.Tests
         }
 
         [Test]
-        public void LooseScarf_TwistsShowingItsDarkReverse()
+        public void LooseScarf_SwaysRoundItsLength_ItsBrightFaceAlwaysToTheCamera()
         {
-            // The ribbon really turns over in depth: its width across the picture follows |cos| of the twist, and its
-            // bright face turns from the camera (towards it is -z) to away from it, where the reverse shows.
+            // The ribbon turns in depth for real (its width across the picture follows |cos| of the twist), but as in the
+            // key art only sways: it narrows where it leans away and never turns over into a dark knot.
             Vector3 nrm = Vector3.down;
             float minW = 1f, maxDepth = 0f;
-            bool faceSeen = false, reverseSeen = false;
-            for (float t = 0f; t <= 1f; t += 0.01f)
-            {
-                float tw = VeilRenderer.Twist(t, 0f);
-                var side = VeilRenderer.RibbonSide(nrm, tw);
-                var face = VeilRenderer.RibbonFace(nrm, tw);
-                Assert.AreEqual(1f, side.magnitude, 1e-4f, "the cloth keeps its width, only turned");
-                Assert.AreEqual(0f, Vector3.Dot(side, face), 1e-4f, "the face is square to the width");
-                minW = Mathf.Min(minW, new Vector2(side.x, side.y).magnitude);
-                maxDepth = Mathf.Max(maxDepth, Mathf.Abs(side.z));
-                if (face.z < -0.5f) faceSeen = true;
-                if (face.z > 0.5f) reverseSeen = true;
-            }
-            Assert.Less(minW, 0.2f, "edge-on where it turns");
-            Assert.Greater(maxDepth, 0.95f, "turned right into depth");
-            Assert.IsTrue(faceSeen, "the bright crimson face towards the camera");
-            Assert.IsTrue(reverseSeen, "and the deep wine reverse");
+            bool leansOneWay = false, leansTheOther = false;
+            for (float time = 0f; time < 5f; time += 0.25f)
+                for (float t = 0f; t <= 1f; t += 0.01f)
+                {
+                    float tw = VeilRenderer.Twist(t, time);
+                    var side = VeilRenderer.RibbonSide(nrm, tw);
+                    var face = VeilRenderer.RibbonFace(nrm, tw);
+                    Assert.AreEqual(1f, side.magnitude, 1e-4f, "the cloth keeps its width, only turned");
+                    Assert.AreEqual(0f, Vector3.Dot(side, face), 1e-4f, "the face is square to the width");
+                    Assert.Less(face.z, -0.5f, "its bright face towards the camera (no dark reverse turned out)");
+                    minW = Mathf.Min(minW, new Vector2(side.x, side.y).magnitude);
+                    maxDepth = Mathf.Max(maxDepth, Mathf.Abs(side.z));
+                    if (side.z > 0.3f) leansOneWay = true;
+                    if (side.z < -0.3f) leansTheOther = true;
+                }
+            Assert.That(minW, Is.InRange(0.5f, 0.7f), "narrowing where it leans away, never to a pinch");
+            Assert.Greater(maxDepth, 0.7f, "leaning into depth");
+            Assert.IsTrue(leansOneWay && leansTheOther, "swaying both ways");
+            Assert.AreEqual(0f, VeilRenderer.Twist(0f, 2f), 1e-6f, "flat where it leaves the neck");
             Assert.AreEqual(-1f, VeilRenderer.RibbonFace(nrm, 0f).z, 1e-5f, "untwisted it faces the camera");
         }
 
@@ -149,12 +151,30 @@ namespace CrimsonVeil.Tests
         }
 
         [Test]
-        public void LooseEnds_RollDownAndUnder_IntoTightSpirals()
+        public void LooseEnds_HookOverIntoAFlamesTip_NotABallOfWool()
         {
             var main = VeilRenderer.Strands[1];
-            // weapon tongues flick with curlSign; the loose ends roll the other way (key art: down and under)
+            // weapon tongues flick with curlSign; the loose ends hook the other way
             Assert.AreEqual(-Mathf.Sign(main.curlSign), Mathf.Sign(VeilRenderer.LooseCurl(main)));
-            Assert.Greater(Mathf.Abs(VeilRenderer.LooseCurl(main)), 0.8f, "the main mass winds into a whole whorl (the sheet)");
+            foreach (var st in VeilRenderer.Strands)
+                Assert.That(Mathf.Abs(VeilRenderer.LooseCurl(st)), Is.InRange(0.15f, 0.6f), "a hook at the tip, never a whorl wound round itself");
+            Assert.Less(VeilRenderer.TipWidth, 0.05f, "narrowing to a hairline");
+            Assert.Less(VeilRenderer.TipAlpha, 0.2f, "fading into smoke");
+            // a tongue swells out of the band and narrows towards its tip
+            Assert.Greater(VeilRenderer.TongueWidth(0.4f), VeilRenderer.TongueWidth(0f) * 1.8f);
+            Assert.Less(VeilRenderer.TongueWidth(1f), VeilRenderer.TongueWidth(0.4f) * 0.6f);
+        }
+
+        [Test]
+        public void AFlamesRipple_RunsBackAlongTheLooseScarf()
+        {
+            Assert.AreEqual(0f, VeilRenderer.FlameRipple(0f, 1.3f), 1e-6f, "still at the neck");
+            float max = 0f;
+            for (float t = 0f; t <= 1f; t += 0.01f) max = Mathf.Max(max, Mathf.Abs(VeilRenderer.FlameRipple(t, 0.4f)));
+            Assert.That(max, Is.InRange(0.04f, VeilRenderer.RippleHeight + 1e-4f), "a ripple, not a flail");
+            // a crest moves back along it (towards the tail) as time goes on
+            float crestAt(float time) { float best = -1f, at = 0f; for (float t = 0.5f; t <= 0.9f; t += 0.002f) { float h = VeilRenderer.FlameRipple(t, time); if (h > best) { best = h; at = t; } } return at; }
+            Assert.Greater(crestAt(0.15f), crestAt(0f), "travelling from the neck to the tail");
         }
 
         [Test]

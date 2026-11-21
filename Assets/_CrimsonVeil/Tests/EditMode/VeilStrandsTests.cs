@@ -58,28 +58,39 @@ namespace CrimsonVeil.Tests
         }
 
         [Test]
-        public void TheStrands_WindRoundTheBand_OverAndUnderEachOther()
+        public void TheStrands_FanOutLikeAFlame_SwayingInDepth_RubbingNotPassingThrough()
         {
             var (sim, strands) = Make();
-            int front = 0, behind = 0;
-            float closest = 9f;
+            float closest = 9f, spread = 0f, minZ = 9f, maxZ = -9f;
             Run(sim, strands, 1500, () =>
             {
-                // the middle of strand 2 against the band beside it: in front of it, then behind it, as its place winds round
-                int j = VeilStrands.Nodes / 2;
-                var d = strands.Defs[2];
-                Vector3 band = VeilStrands.Along(sim, Mathf.Lerp(d.start, d.end, 0.5f), out _, out _);
-                float dz = strands.Positions[2][j].z - band.z;
-                if (dz < -0.05f) front++;
-                if (dz > 0.05f) behind++;
+                // the tips fan out above and below the band (the key art's tongues), not wound into one tangle
+                float lo = 9f, hi = -9f;
+                for (int s = 0; s < strands.Count; s++)
+                {
+                    var tip = strands.Positions[s][VeilStrands.Nodes - 1];
+                    lo = Mathf.Min(lo, tip.y); hi = Mathf.Max(hi, tip.y);
+                    float dz = tip.z - VeilStrands.Along(sim, strands.Defs[s].end, out _, out _).z;
+                    minZ = Mathf.Min(minZ, dz); maxZ = Mathf.Max(maxZ, dz);
+                }
+                spread = Mathf.Max(spread, hi - lo);
                 for (int a = 0; a < strands.Count; a++)
                     for (int b = a + 1; b < strands.Count; b++)
                         for (int k = 2; k < VeilStrands.Nodes; k++)
                             closest = Mathf.Min(closest, Vector3.Distance(strands.Positions[a][k], strands.Positions[b][k]));
             });
-            Assert.Greater(front, 50, "the strand comes round in front of the band");
-            Assert.Greater(behind, 50, "and goes round behind it");
+            Assert.Greater(spread, 0.5f, "the tongues fan out across the picture");
+            Assert.Less(minZ, -0.03f, "some sway in front of the band");
+            Assert.Greater(maxZ, 0.03f, "and some behind it");
             Assert.Greater(closest, VeilStrands.Rub * 0.5f, "the strands rub, they don't pass through each other");
+        }
+
+        [Test]
+        public void TheBundle_TwistsOnlyGently_SoItFansOutInsteadOfTangling()
+        {
+            Assert.Less(VeilStrands.BraidTurns, 0.25f, "under a quarter of a turn along a strand");
+            Assert.Less(VeilStrands.BraidSway, Mathf.PI * 0.25f, "the fan sways round the band, it doesn't spin round it");
+            Assert.AreEqual(VeilStrands.BraidAngle(0.5f, 0f, 1f), VeilStrands.BraidAngle(0.5f, 2f * Mathf.PI / VeilStrands.BraidSpeed, 1f), 1e-4f, "a sway: back where it was");
         }
 
         [Test]

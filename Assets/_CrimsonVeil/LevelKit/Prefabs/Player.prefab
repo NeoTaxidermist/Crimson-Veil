@@ -273,7 +273,7 @@ MonoBehaviour:
   smoothing: 3
   flutterTwist: 0.35
   curlPoints: 34
-  curlScale: 1.6
+  curlScale: 0.9
   tendrilSpread: 0.38
 --- !u!114 &5389534785771705521
 MonoBehaviour:

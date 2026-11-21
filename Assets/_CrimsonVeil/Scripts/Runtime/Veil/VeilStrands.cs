@@ -22,9 +22,10 @@ namespace CrimsonVeil.Veil
         /// <summary>Nodes in each strand.</summary>
         public const int Nodes = 14;
         /// <summary>How far (m) a strand reaches out from the band at most (times its side).</summary>
-        public const float Reach = 0.3f;
-        /// <summary>Turns a strand's place makes round the band over its length, and how fast (rad/s) the helix turns.</summary>
-        public const float BraidTurns = 0.55f, BraidSpeed = 0.35f;
+        public const float Reach = 0.6f;
+        /// <summary>Turns a strand's place makes round the band over its length (a gentle twist: the tongues fan out like a flame
+        /// rather than winding into a tangle), how fast (rad/s) the fan sways round the band and how far (rad).</summary>
+        public const float BraidTurns = 0.15f, BraidSpeed = 0.35f, BraidSway = 0.45f;
         /// <summary>Pull (1/s²) towards its place in the bundle, at the root and at the tail (the tail swirls freely).</summary>
         public const float HoldRoot = 60f, HoldTail = 16f;
         /// <summary>Air drag (1/s) and gravity's share on a strand.</summary>
@@ -117,7 +118,7 @@ namespace CrimsonVeil.Veil
         }
 
         /// <summary>The helix turn of strand node <paramref name="u"/> (0 root .. 1 tail) at <paramref name="t"/>.</summary>
-        public static float BraidAngle(float u, float t, float phase) => BraidTurns * Mathf.PI * 2f * u + BraidSpeed * t + phase * 0.3f;
+        public static float BraidAngle(float u, float t, float phase) => BraidTurns * Mathf.PI * 2f * u + BraidSway * Mathf.Sin(BraidSpeed * t + phase) + phase * 0.05f;
 
         public void Step(float dt, VeilSimulation sim)
         {

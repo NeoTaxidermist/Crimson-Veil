@@ -5,6 +5,27 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.51.0] – 2026-11-21
+### Změněno
+- **Šála podle nového key artu: plamen místo klubka.** Konec šály vypadal jako zašmodrchané klubko vlny. Dělalo to devět pramenů, které se proplétaly šroubovicí a každý se stáčel do velké spirály (až 1,6 m, přes jednu otáčku). Teď je šála jako na obrázku: jeden plynoucí pás, který se vzadu rozevře do plamenných jazyků:
+  - **konce jsou špičky plamene:** každý konec udělá jen krátký háček (0,45 otáčky místo 1,35, délka `curlScale` 0,9 místo 1,6). Zúží se do vlásku (2 % šířky) a vyprchá do kouře (10 % krytí). Dřív to byl široký tah štětcem stočený do víru;
+  - **jazyky se rozevřou do vějíře:** svazek pramenů se po délce stočí jen málo (`BraidTurns` 0,15 místo 0,55) a dál od pásu se rozevře (`Reach` 0,6 m místo 0,3). Místo točení kolem pásu se celý vějíř jen pomalu kolébá do hloubky a zpět (`BraidSway`). Prameny se tak nesmotají do jednoho chumlu;
+  - **tvar jazyka:** jazyk vyroste z pásu, v první polovině je plný a ke špičce se zužuje (`TongueWidth`). Dřív se ke konci rozšiřoval do víru;
+  - **pás se jen vlní, nepřetáčí:** dřív se dvakrát celý přetočil, ukázal tmavý rub a uprostřed vypadal jako tmavý uzel. Teď je lícem ke kameře a jen se kolébá kolem své délky (`TwistSway`, nejvýš 0,3 π), takže se místy zúží na tři pětiny;
+  - **pohyb plamene:** po šále běží od krku ke konci vlna (`FlameRipple`, 7 cm, délka asi 2,2 m) a každý jazyk se vlní po svém;
+  - **odstíny:** výraznější tmavě karmínové pruhy a jasné světlé tahy v látce, jako na obrázku.
+- Zbraně se nemění.
+
+### Testy
+- `VeilRendererTests` (EditMode):
+  - konce udělají jen háček (žádný vír), zúží se do vlásku a vyprchají, jazyk se zužuje ke špičce;
+  - vlna plamene: u krku žádná, dál menší než 7 cm a běží od krku ke konci;
+  - pás se kolébá oběma směry do hloubky, zúží se nejvýš na 0,5–0,7 šířky a je vždy lícem ke kameře.
+- `VeilStrandsTests` (EditMode):
+  - jazyky se rozevřou nejméně na 0,5 m, kolébají se před pás i za něj a pořád jeden druhým neprojdou;
+  - svazek se stočí méně než o čtvrt otáčky a vějíř se jen kolébá, netočí.
+- Tři testy starého vzhledu (velký vír, plné přetočení, proplétání kolem pásu) jsou nahrazené novými.
+
 ## [0.50.0] – 2026-11-21
 ### Přidáno
 - **3D šála, fáze 5 z 5: údery švihnou skrz hloubku scény.** Dosud se zbraň při úderu pohybovala jen v rovině obrazu. Teď se kolem dlaně natočí do hloubky (`VeilWeaponPose.SweepTilt`, `VeilSimulation.SweepDepth`):

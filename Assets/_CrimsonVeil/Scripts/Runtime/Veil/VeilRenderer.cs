@@ -22,7 +22,7 @@ namespace CrimsonVeil.Veil
         [Tooltip("Points in each end curl.")]
         [SerializeField, Range(6, 40)] int curlPoints = 34;
         [Tooltip("Global multiplier of the curl size.")]
-        [SerializeField] float curlScale = 1.6f;
+        [SerializeField] float curlScale = 0.9f;
         [Tooltip("How far (m) the tendrils fan away from the main ribbon at their ends.")]
         [SerializeField] float tendrilSpread = 0.38f;
 
@@ -114,13 +114,16 @@ namespace CrimsonVeil.Veil
         }
 
         /// <summary>
-        /// The ribbon's twist (radians) at veil fraction <paramref name="t"/>. As in the key art the band leaves the
-        /// neck full and bright, turns over about halfway (pinching where it is edge-on) so its rear half shows the
-        /// dark wine reverse, and turns back to the bright face where it comes apart into the curls; the folds
-        /// drift a little as it flies.
+        /// The ribbon's twist (radians) at veil fraction <paramref name="t"/>. As in the key art the band shows its bright
+        /// face all the way: it leaves the neck flat, then sways round its length in waves running back along it
+        /// (TwistSway of a turn at most), narrowing where it leans away - a flame licking, never turned over into a
+        /// dark knot.
         /// </summary>
         public static float Twist(float t, float time)
-            => Mathf.PI * (-0.1f + 0.6f * t + 1.6f * t * t + 0.06f * Mathf.Sin(2.2f * Mathf.PI * t - 0.9f * time));
+            => TwistSway * Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.05f, 0.5f, t)) * Mathf.Sin(2f * Mathf.PI * 0.9f * t - 1.3f * time);
+
+        /// <summary>How far (rad) the loose ribbon sways round its length at most (0.3 pi: it narrows to three fifths).</summary>
+        public const float TwistSway = 0.3f * Mathf.PI;
 
         /// <summary>
         /// The direction across the ribbon, its in-picture normal <paramref name="nrm"/> turned by
@@ -168,7 +171,7 @@ namespace CrimsonVeil.Veil
         /// </summary>
         public static float LooseCurl(Strand st) => -st.curlSign * st.curlTurns * LooseCurlTurns;
 
-        public const float LooseCurlTurns = 1.35f;
+        public const float LooseCurlTurns = 0.45f;
 
         /// <summary>
         /// Opacity of strand <paramref name="s"/> of the loose scarf at veil fraction <paramref name="f"/>: near the
@@ -432,6 +435,10 @@ namespace CrimsonVeil.Veil
                 if (whipForm && t >= whipButt - 0.01f && t <= whipStockEnd + 0.004f) alphaAt[i] *= 1f - whipHandleShown;
             }
 
+            // A flame's ripple runs back along the loose cloth (from the neck, growing towards the tail).
+            for (int i = 0; i < samples; i++)
+                centre[i] += normalAt[i] * (FlameRipple((float)i / (samples - 1), time) * (1f - hardAt[i]));
+
             int per = perStrand * 2;
             // How far the veil is into its weapon form (0 cloth .. 1 weapon).
             float weaponness = Mathf.Clamp01(veil.Hardness / formHardness);
@@ -575,8 +582,7 @@ namespace CrimsonVeil.Veil
                     // Tendrils emerge from the ribbon: thin where they split, then full.
                     float sw = w * Mathf.Lerp(st.width, main ? 1f : 0.3f, hard) * burn;
                     if (!main) sw *= (1f + 1.6f * set) * (1f - 0.3f * lick); // bold tongues, broad brush strokes
-                    if (branch) sw *= Mathf.Lerp(Mathf.Lerp(0.45f, 0.25f, hard), Mathf.Lerp(1.2f, 0.51f, hard), Mathf.SmoothStep(0f, 1f, u))
-                                      * Mathf.Lerp(1f - 0.15f * Mathf.SmoothStep(0.6f, 1f, u), 1f, hard); // a broad stroke into its whorl
+                    if (branch) sw *= Mathf.Lerp(TongueWidth(u), Mathf.Lerp(0.25f, 0.51f, Mathf.SmoothStep(0f, 1f, u)), hard);
                     // a tongue grows out of the band from nothing (no square-cut start where it branches off)
                     if (branch) sw *= Mathf.Lerp(Mathf.SmoothStep(0f, 1f, u / 0.22f), 1f, hard);
                     float alpha = a * Mathf.Lerp(st.alpha, main ? 1f : 0.7f, hard);
@@ -586,6 +592,8 @@ namespace CrimsonVeil.Veil
                     if (branch) alpha *= Mathf.SmoothStep(0f, 1f, u * 5f) * Mathf.Lerp(1f, 0.12f, coiled);
                     if (!main) alpha = Mathf.Lerp(Mathf.Min(1f, alpha * 1.2f), alpha, hard); // fuller tongues (the sheet)
 
+                    // a tongue of flame ripples on its own, out of step with the band
+                    if (branch) c += nrm * (FlameRipple(f, time + st.phase * 0.4f) * TongueRipple * loose);
                     float twist = Mathf.Lerp(twistAt[i0], twistAt[i0 + 1], fr) + strandTwist * loose;
                     // set into a weapon the cloth is solid: a ridged blade, a round shaft, lash and limbs (the light runs
                     // round them)
@@ -622,9 +630,10 @@ namespace CrimsonVeil.Veil
                     Vector3 d = curl[Mathf.Min(k + 1, curlPoints)] - curl[k - 1];
                     d.z = 0f;
                     Vector3 nrm = d.sqrMagnitude > 1e-10f ? new Vector3(-d.y, d.x, 0f).normalized : Vector3.up;
-                    // A brush stroke: broad as it winds round its whorl (the sheet), thinning only near its centre.
-                    float sw = lastW * Mathf.Lerp(1f, Mathf.Lerp(0.14f, 0.03f, lastHard), Mathf.Pow(u, Mathf.Lerp(1.7f, 0.6f, lastHard)));
-                    float alpha = lastA * Mathf.Lerp(1f, 0.55f, u);
+                    // Loose, the tip of a flame: it narrows to a hairline as it hooks over and fades into smoke (the key
+                    // art; a broad stroke wound into a whorl made a ball of wool of the scarf's end).
+                    float sw = lastW * Mathf.Lerp(1f, Mathf.Lerp(TipWidth, 0.03f, lastHard), Mathf.Pow(u, Mathf.Lerp(0.8f, 0.6f, lastHard)));
+                    float alpha = lastA * Mathf.Lerp(1f, Mathf.Lerp(TipAlpha, 0.55f, lastHard), u);
                     curl[k] = AboveFloor(sim, curl[k], sw, FloorHold(form, looseEnd));
                     WriteVertex(baseV + (samples - 1 + k) * 2, baseF + samples - 1 + k, curl[k], nrm, sw, alpha, st, lastHard, vit, lastFront, lastTwist, lastCup * (1f - u));
                 }
@@ -957,6 +966,29 @@ namespace CrimsonVeil.Veil
                 uv2[v] = uv2[v + 1] = (uv2[v - 2] + uv2[v + 2]) * 0.5f;
             }
         }
+
+        /// <summary>
+        /// The ripple (m, across the cloth) running back along the loose scarf at fraction <paramref name="t"/>: a wave of
+        /// about 2.2 m that travels from the neck to the tail, nothing at the neck, its full height towards the end -
+        /// the cloth licks like a flame.
+        /// </summary>
+        public static float FlameRipple(float t, float time)
+            => RippleHeight * Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.08f, 0.85f, t)) * Mathf.Sin(2f * Mathf.PI * RippleWaves * t - RippleSpeed * time);
+
+        public const float RippleHeight = 0.07f, RippleWaves = 1.6f, RippleSpeed = 4.2f;
+        /// <summary>How much more a tongue ripples than the band.</summary>
+        public const float TongueRipple = 1.4f;
+
+        /// <summary>
+        /// Width of a loose tongue along its length (0 where it leaves the band .. 1 at its tip), in its strand's width:
+        /// it swells out of the band, is full through its first half and narrows towards its tip - a tongue of flame,
+        /// not a brush stroke broadening into a whorl.
+        /// </summary>
+        public static float TongueWidth(float u)
+            => Mathf.Lerp(0.45f, 1f, Mathf.SmoothStep(0f, 1f, u / 0.35f)) * Mathf.Lerp(1f, 0.45f, Mathf.SmoothStep(0f, 1f, (u - 0.55f) / 0.45f));
+
+        /// <summary>A loose end's tip: its width (of the stroke's) and opacity where it ends - a hairline fading out.</summary>
+        public const float TipWidth = 0.02f, TipAlpha = 0.1f;
 
         /// <summary>How far (m) behind the band its dark under-layer lies.</summary>
         public const float UnderLayerDepth = 0.015f;

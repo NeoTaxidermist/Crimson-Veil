@@ -157,6 +157,21 @@ namespace CrimsonVeil.Veil
         public float HeldFrom { get; set; }
         public float HeldTo { get; set; }
         public float HeldWeight { get; set; }
+
+        /// <summary>The set weapon's turn through depth (radians, + far end behind the hero) about
+        /// <see cref="WeaponPivot"/>: a blow sweeps through the depth of the scene (VeilWeaponPose.SweepTilt).</summary>
+        public float WeaponTilt { get; set; }
+        /// <summary>Where the weapon is held (the palm), the point it turns about through depth.</summary>
+        public Vector3 WeaponPivot { get; set; }
+
+        /// <summary>Depth (m) off the weapon's plane of a point <paramref name="p"/> of it turned by
+        /// <paramref name="tilt"/> about <paramref name="pivot"/>: its distance from the hand in the picture, into depth.</summary>
+        public static float SweepDepth(Vector3 p, Vector3 pivot, float tilt)
+        {
+            if (tilt == 0f) return 0f;
+            float dx = p.x - pivot.x, dy = p.y - pivot.y;
+            return Mathf.Sqrt(dx * dx + dy * dy) * Mathf.Sin(tilt);
+        }
         /// <summary>How far (m) behind the weapon's plane the held part lies, so the fist in front of it covers it.</summary>
         public const float HeldTuck = 0.08f;
         /// <summary>
@@ -569,7 +584,7 @@ namespace CrimsonVeil.Veil
                 float z = Positions[i].z;
                 float zRest = a.z + s.depthOffset;
                 z = Mathf.Clamp(z, zRest - s.maxDepth, zRest + s.maxDepth);
-                z = Mathf.Lerp(z, a.z - s.weaponDepth, weapon);
+                z = Mathf.Lerp(z, a.z - s.weaponDepth + SweepDepth(Positions[i], WeaponPivot, WeaponTilt), weapon);
                 if (HeldWeight > 0f && t >= HeldFrom && t <= HeldTo) z = Mathf.Lerp(z, a.z - s.weaponDepth + HeldTuck, HeldWeight);
                 // A weapon melting back passes over the body: drawn in front, so the torso doesn't swallow it.
                 z = Mathf.Lerp(z, a.z - s.weaponDepth, GuideWeight[i]);

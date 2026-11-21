@@ -1,3 +1,4 @@
+using CrimsonVeil.Combat;
 using CrimsonVeil.Veil;
 using NUnit.Framework;
 using UnityEngine;
@@ -71,6 +72,46 @@ namespace CrimsonVeil.Tests
             Assert.Greater(VeilRenderer.ShieldRingDepth(-0.8f, 1f, 1f), 0.2f, "the half behind him passes behind his body");
             Assert.AreEqual(VeilRenderer.ShieldRingDepth(0.8f, 1f, 1f), VeilRenderer.ShieldRingDepth(-0.8f, -1f, 1f), 1e-6f, "mirror-true");
             Assert.AreEqual(0f, VeilRenderer.ShieldRingDepth(0.8f, 1f, 0f), 1e-6f, "only once it has set");
+        }
+
+        [Test]
+        public void ACut_SweepsThroughDepth_BehindThenThroughThePictureThenInFront()
+        {
+            Assert.Greater(VeilWeaponPose.SweepTilt(VeilForm.Sword, 0.18f), 0.5f, "wound up: the point behind him");
+            Assert.Less(VeilWeaponPose.SweepTilt(VeilForm.Sword, 0.55f), -0.5f, "following through in front of him");
+            Assert.AreEqual(0f, VeilWeaponPose.SweepTilt(VeilForm.Sword, 1f), 1e-4f, "back in the picture at the end");
+            Assert.AreEqual(0f, VeilWeaponPose.SweepTilt(VeilForm.Sword, -1f), "not attacking: in the picture");
+            Assert.Greater(VeilWeaponPose.SweepTilt(VeilForm.Whip, 0.25f), 0.3f, "the lash as well");
+            Assert.Less(Mathf.Abs(VeilWeaponPose.SweepTilt(VeilForm.Spear, 0.2f)), 0.25f, "a thrust barely turns");
+            for (float t = 0f; t <= 1f; t += 0.1f)
+            {
+                Assert.AreEqual(0f, VeilWeaponPose.SweepTilt(VeilForm.Shield, t), "the shield's ring stays round the body");
+                Assert.AreEqual(0f, VeilWeaponPose.SweepTilt(VeilForm.Bow, t), "the bow is aimed in the picture");
+            }
+            Assert.Less(VeilWeaponPose.SweepDirection(VeilForm.Sword, 0.35f), -0.3f, "striking, the blade comes towards the camera");
+        }
+
+        [Test]
+        public void TheWeaponTurns_AboutTheHand_ItsFarEndFurthestThroughDepth()
+        {
+            Vector3 hand = new Vector3(1f, 1f, -0.3f);
+            Assert.AreEqual(0f, VeilSimulation.SweepDepth(hand, hand, 0.7f), 1e-6f, "the hand holds still");
+            float near = VeilSimulation.SweepDepth(hand + new Vector3(0.3f, 0f, 0f), hand, 0.7f);
+            float far = VeilSimulation.SweepDepth(hand + new Vector3(0f, 1f, 0f), hand, 0.7f);
+            Assert.Greater(near, 0f, "+ tilt: behind");
+            Assert.AreEqual(Mathf.Sin(0.7f), far, 1e-5f, "a metre out, sin of the tilt");
+            Assert.Greater(far, near);
+            Assert.Less(VeilSimulation.SweepDepth(hand + Vector3.right, hand, -0.7f), 0f, "- tilt: in front");
+        }
+
+        [Test]
+        public void AHitsSpray_FliesOnWithTheBlade_ThroughDepth()
+        {
+            Assert.AreEqual(0f, CombatFx.BurstDirection(Vector2.right, 0f).z, 1e-6f, "flat: in the picture");
+            var d = CombatFx.BurstDirection(new Vector2(1f, 0.4f), -1f);
+            Assert.Less(d.z, -0.6f, "towards the camera");
+            Assert.AreEqual(1f, d.magnitude, 1e-5f);
+            Assert.AreEqual(CombatFx.BurstDirection(Vector2.right, -5f), CombatFx.BurstDirection(Vector2.right, -1f), "at most 45 degrees");
         }
 
         [Test]

@@ -619,6 +619,29 @@ namespace CrimsonVeil.Tests
         }
 
         [UnityTest]
+        public IEnumerator TheSwordsCut_SweepsThroughDepth_WoundUpBehindHim_FollowingThroughInFront()
+        {
+            yield return StartAt(new Vector3(-12f, 0.05f, 0f));
+            float behind = -9f, inFront = 9f, firstFront = -1f, lastBehind = -1f;
+            input.cast = VeilForm.Sword;
+            yield return Until(() => veil.IsAttacking, 2f);
+            var sim = veil.Simulation;
+            while (veil.IsAttacking)
+            {
+                // the blade's tip against the hand's own depth, as the cut runs
+                float tip = sim.Positions[sim.Count - 1].z - sim.WeaponPivot.z;
+                float t = veil.AttackProgress;
+                if (tip > 0.3f) lastBehind = t;
+                if (tip < -0.3f && firstFront < 0f) firstFront = t;
+                behind = Mathf.Max(behind, tip); inFront = Mathf.Min(inFront, tip);
+                yield return null;
+            }
+            Assert.Greater(behind, 0.3f, "wound up with its point behind the hero");
+            Assert.Less(inFront, -0.3f, "following through in front of him");
+            Assert.Less(lastBehind, firstFront, "behind first, then through the picture, then in front");
+        }
+
+        [UnityTest]
         public IEnumerator Whip_TwoLashes_TheSecondLow()
         {
             yield return StartAt(new Vector3(-12f, 0.05f, 0f));

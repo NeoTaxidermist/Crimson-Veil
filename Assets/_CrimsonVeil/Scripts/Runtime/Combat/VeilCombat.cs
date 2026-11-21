@@ -84,7 +84,9 @@ namespace CrimsonVeil.Combat
                         float heavy = blow.finisher ? 1.6f : 1f;
                         CombatFx.HitStop((form == VeilForm.Spear || form == VeilForm.Shield ? 0.08f : 0.055f) * heavy);
                         CombatFx.Shake((form == VeilForm.Shield ? 0.45f : 0.3f) * heavy);
-                        CombatFx.Burst(point, new Vector2(veil.Facing, 0.4f), CombatFx.Crimson, blow.finisher ? 40 : 22);
+                        // (the spray flies on with the blade, through depth too)
+                        CombatFx.Burst(point, new Vector2(veil.Facing, 0.4f), CombatFx.Crimson, blow.finisher ? 40 : 22, 6f,
+                                       VeilWeaponPose.SweepDirection(form, veil.AttackProgress));
                     }
                 }
             }

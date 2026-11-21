@@ -452,6 +452,34 @@ namespace CrimsonVeil.Veil
             }
         }
 
+        /// <summary>
+        /// How far the weapon is turned through depth (radians) at attack progress <paramref name="t"/>, about its
+        /// hand: + its far end behind the hero, - in front of him. A slash is wound up behind the body, crosses the
+        /// picture as it strikes and follows through in front of it; a thrust barely turns; a shield and a bow none.
+        /// (The picture - the shape, the reach, what it hits - is the same: only depth changes.)
+        /// </summary>
+        public static float SweepTilt(VeilForm form, float t)
+        {
+            if (t < 0f) return 0f;
+            switch (form)
+            {
+                case VeilForm.Sword: return Curve(t, 0.18f, 0.75f, 0.55f, -0.65f);
+                case VeilForm.Whip: return Curve(t, 0.25f, 0.55f, 0.6f, -0.5f);
+                case VeilForm.Spear: return Curve(t, 0.2f, 0.18f, 0.45f, -0.12f);
+                default: return 0f;
+            }
+        }
+
+        /// <summary>Which way through depth (-1 towards the camera .. 1 away) the weapon is sweeping at
+        /// <paramref name="t"/>: the spray of a hit flies on with the blow.</summary>
+        public static float SweepDirection(VeilForm form, float t)
+        {
+            if (t < 0f) return 0f;
+            const float e = 0.03f;
+            float rate = (SweepTilt(form, Mathf.Min(1f, t + e)) - SweepTilt(form, Mathf.Max(0f, t - e))) / (2f * e);
+            return Mathf.Clamp(rate * 0.25f, -1f, 1f);
+        }
+
         /// <summary>Transforms a local shape point for attack progress <paramref name="t"/> (0..1).</summary>
         /// <param name="armDriven">When the weapon already follows the hero's forearm, the arm animation
         /// performs sword and whip swings, so they are not rotated here a second time.</param>

@@ -5,6 +5,25 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.50.0] – 2026-11-21
+### Přidáno
+- **3D šála, fáze 5 z 5: údery švihnou skrz hloubku scény.** Dosud se zbraň při úderu pohybovala jen v rovině obrazu. Teď se kolem dlaně natočí do hloubky (`VeilWeaponPose.SweepTilt`, `VeilSimulation.SweepDepth`):
+  - **meč:** při nápřahu je špička za hrdinou (až 0,75 rad), při seku projde rovinou obrazu a v doběhu skončí před tělem (−0,65 rad). Sek tak jde šikmo přes tělo jako skutečný švih. Při nápřahu ho hrdinovo tělo zakryje;
+  - **bič:** stejně, jen o něco méně (0,55 / −0,5 rad);
+  - **kopí:** bodnutí se natočí jen nepatrně (0,18 / −0,12 rad);
+  - **štít a luk** zůstávají beze změny.
+
+  Dlaň se nehne a čím dál od ruky, tím víc jde zbraň do hloubky. Obrys v obraze, dosah a zásahy se nemění, takže na hratelnost to nemá vliv.
+- **Zásah stříká ve směru švihu:** rudá tuš ze zásahu (`CombatFx.Burst`, nový parametr `depth`) se nakloní do hloubky (nejvýš o 45°) podle toho, kam se čepel v okamžiku zásahu pohybuje (`SweepDirection`). Sek mečem tak stříká směrem ke kameře.
+
+### Testy
+- `VeilWeaponLookTests` (EditMode):
+  - sek je při nápřahu za hrdinou, v doběhu před ním a na konci zpět v obraze; bič také, kopí jen nepatrně, štít a luk vůbec; při seku se čepel pohybuje ke kameře;
+  - zbraň se otáčí kolem dlaně: dlaň stojí, vzdálenější konec jde nejhlouběji (o sinus náklonu na metr);
+  - sprej zásahu se naklání do hloubky, nejvýš o 45°.
+- `HeroMoveSetPlayTests` (PlayMode, skutečný hrdina): sek mečem má špičku nejdřív za hrdinou, pak prochází obrazem a nakonec je před ním.
+- Prošlo všech 550 EditMode a 121 PlayMode testů.
+
 ## [0.49.0] – 2026-11-21
 ### Přidáno
 - **3D šála, fáze 4 z 5: zbraně jsou tělesa v prostoru.** Dosud to byly ploché pruhy natočené ke kameře. Teď:

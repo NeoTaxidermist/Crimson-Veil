@@ -39,6 +39,14 @@ namespace CrimsonVeil.Combat
         }
 
         /// <summary>Freeze the world for a few frames so hits land with weight.</summary>
+        /// <summary>The direction a burst flies: <paramref name="direction"/> in the picture, leaned by
+        /// <paramref name="depth"/> (up to 45°) through depth.</summary>
+        public static Vector3 BurstDirection(Vector2 direction, float depth)
+        {
+            Vector2 d = direction.sqrMagnitude > 1e-4f ? direction.normalized : Vector2.up;
+            return new Vector3(d.x, d.y, Mathf.Clamp(depth, -1f, 1f)).normalized;
+        }
+
         public static void HitStop(float seconds)
         {
             var fx = Instance;
@@ -50,7 +58,9 @@ namespace CrimsonVeil.Combat
 
         public static void Shake(float trauma) => CameraFollow25D.AddTrauma(trauma);
 
-        public static void Burst(Vector3 position, Vector2 direction, Color color, int count = 18, float speed = 6f)
+        /// <summary>A spray of ink. <paramref name="depth"/> (-1 towards the camera .. 1 away) leans it through depth,
+        /// as a blade sweeping through the scene throws it.</summary>
+        public static void Burst(Vector3 position, Vector2 direction, Color color, int count = 18, float speed = 6f, float depth = 0f)
         {
             var fx = Instance;
             if (fx == null) return;
@@ -80,8 +90,7 @@ namespace CrimsonVeil.Combat
             shape.shapeType = ParticleSystemShapeType.Cone;
             shape.angle = 35f;
             shape.radius = 0.05f;
-            Vector2 d = direction.sqrMagnitude > 1e-4f ? direction.normalized : Vector2.up;
-            go.transform.rotation = Quaternion.LookRotation(new Vector3(d.x, d.y, 0f), Vector3.back);
+            go.transform.rotation = Quaternion.LookRotation(BurstDirection(direction, depth), Vector3.back);
 
             var limit = ps.limitVelocityOverLifetime;
             limit.enabled = true;

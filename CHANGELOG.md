@@ -5,6 +5,29 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.47.0] – 2026-11-21
+### Přidáno
+- **3D šála, fáze 2 z 5: prameny jsou látka samy o sobě.** Jazyky, které se od pásu oddělují, byly dosud jen kresba: posun od středové čáry šály v rovině obrazu. Teď je každý z osmi skutečný simulovaný řetěz o 14 bodech (`VeilStrands`, krokuje ho `VeilController` po šále):
+  - pramen vyrůstá z pásu tam, kde se dřív odděloval, a odkud zbytek šály vlaje dál za ovinutím kolem krku;
+  - nesou ho stejné víry a stejný vánek jako šálu, takže vlaje dozadu s ní;
+  - jemně ho táhne jeho místo ve svazku. To místo se pomalu otáčí kolem pásu jako šroubovice (0,55 otáčky po délce), a prameny se proto ovíjejí kolem pásu i kolem sebe: dostávají se před pás i za něj, nad ostatní i pod ně;
+  - prameny se o sebe třou: jakmile se dva přiblíží na méně než 5 cm, odtlačí se a sklouznou kolem sebe, takže jeden druhým neprojde;
+  - narážejí do těla jako šála;
+  - když šála tuhne ve zbraň, prameny se položí na svá místa, takže kresba zbraní (cop z plamenů kolem čepele) se nemění.
+- Renderer kreslí jazyky podél simulovaných pramenů, šířku napříč jejich vlastním směrem: napříč směrem pásu se pramen, který se stočil jinam, lámal do zubů. Ztuhlé části (zbraně) kreslí jako dřív.
+- Pás sám se zatím kreslí plochý (3D kreslení je fáze 3).
+- Cena: simulace šály 0,65 ms za snímek (dřív 0,2–0,4 ms), kreslení 2,0 ms (dřív 1,2 ms). Kreslení zoptimalizuji ve fázi 3, kde se přepisuje. Odpad z paměti dál žádný.
+
+### Testy
+- `VeilStrandsTests` (EditMode):
+  - simulované jsou všechny jazyky kromě pásu a vyrůstají z pásu až za ovinutím krku;
+  - vlají s šálou a končí zhruba tam, kde pás ve stejném místě;
+  - ovíjejí se kolem pásu: pramen je chvíli před ním a chvíli za ním, a nikdy jeden druhým neprojde;
+  - narážejí do těla;
+  - při ztuhnutí leží na svých místech;
+  - místo ve svazku vyrůstá z pásu a otáčí se kolem něj ven z roviny.
+- Test na skutečném hrdinovi (`HeroMoveSetPlayTests`) kontroluje i prameny: v běhu, ve skoku ani v saltu nevniknou do těla. Test odpadu z paměti (0 B za snímek) prošel i s nimi.
+
 ## [0.46.0] – 2026-11-21
 ### Přidáno
 - **3D šála, fáze 1 z 5: simulace látky v prostoru.** Šála dosud žila v rovině obrazu: délky segmentů se počítaly bez hloubky a hloubku na konci každého kroku natvrdo nastavovalo kosmetické vlnění. Teď je to látka ve 3D (`VeilSimulation`):

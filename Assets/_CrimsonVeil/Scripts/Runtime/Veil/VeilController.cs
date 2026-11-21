@@ -105,6 +105,8 @@ namespace CrimsonVeil.Veil
         LineRenderer bowString;
 
         public VeilSimulation Simulation { get; private set; }
+        /// <summary>The scarf's strands as cloth of their own (the tongues that come off the band).</summary>
+        public VeilStrands Strands { get; private set; }
         /// <summary>Current swing of the weapon in degrees (+ = up) — the arm animation follows it.</summary>
         public float CurrentSwing { get; private set; }
         public Transform Hand { get => hand; set => hand = value; }
@@ -195,6 +197,7 @@ namespace CrimsonVeil.Veil
             if (player == null) player = GetComponent<PlayerController>();
             if (anchor == null) anchor = transform;
             Simulation = new VeilSimulation(settings, anchor.position) { UseNodeHardness = true };
+            Strands = new VeilStrands(VeilStrands.FromDrawing());
             shape = new Vector2[Simulation.Count];
             fromShape = new Vector2[Simulation.Count];
             current = new Vector2[Simulation.Count];
@@ -743,6 +746,7 @@ namespace CrimsonVeil.Veil
             // the loose scarf is as long as its strength: it shrinks quickly when spent or torn and grows back with it
             Simulation.LengthScale = Mathf.MoveTowards(Simulation.LengthScale, LooseLength(LooseReach), dt * 1.5f);
             Simulation.Step(dt, a);
+            Strands?.Step(dt, Simulation);
             UpdateBowString();
             UpdateWhipHandle();
         }

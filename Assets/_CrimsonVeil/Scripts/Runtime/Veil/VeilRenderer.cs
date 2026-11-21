@@ -36,6 +36,9 @@ namespace CrimsonVeil.Veil
             public Color tint;
         }
 
+        /// <summary>The band itself among <see cref="Strands"/> (the scarf's centre line); the rest are simulated (VeilStrands).</summary>
+        public const int MainStrand = 1;
+
         public static readonly Strand[] Strands =
         {
             // One flame-like mass, not an octopus: the layers overlap and only fan apart towards the tail. As in
@@ -232,6 +235,7 @@ namespace CrimsonVeil.Veil
 
             var p = sim.Positions;
             int n = sim.Count;
+            var strands = veil.Strands;
             float formHardness = Mathf.Max(0.01f, VeilFormLibrary.Hardness(veil.ShapeForm));
             float dt = Mathf.Max(Time.deltaTime, 1e-4f);
 
@@ -418,6 +422,30 @@ namespace CrimsonVeil.Veil
                     if (ov.y > 0f) ov.y *= branch ? Mathf.Lerp(0.55f, 0.5f, hard) : 0.5f;
                     else if (branch) ov.y *= Mathf.Lerp(0.55f, 1f, hard);
                     c += ov + new Vector3(0f, -w * HangBelowNeck * loose * Mathf.SmoothStep(0f, 1f, f * 4f), (s - 1) * 0.012f);
+                    // Loose, a strand is cloth of its own (VeilStrands): it runs where its simulation has it - round
+                    // the band, over and under the others - from where it comes off the band; set into a weapon it
+                    // is the braid drawn above.
+                    if (strands != null && !main)
+                    {
+                        int si = s < MainStrand ? s : s - 1;
+                        var def = strands.Defs[si];
+                        float simW = loose * Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(def.start, def.start + 0.04f, f));
+                        if (simW > 0f)
+                        {
+                            float us = Mathf.InverseLerp(def.start, def.end, f);
+                            c = Vector3.Lerp(c, strands.At(si, us), simW);
+                            // its width across its own course, not the band's (across the band's, a strand turning
+                            // away from it folded into spikes)
+                            Vector3 run = strands.At(si, Mathf.Min(1f, us + 0.02f)) - strands.At(si, Mathf.Max(0f, us - 0.02f));
+                            run.z = 0f;
+                            if (run.sqrMagnitude > 1e-8f)
+                            {
+                                var own = new Vector3(-run.y, run.x, 0f).normalized;
+                                if (Vector3.Dot(own, nrm) < 0f) own = -own;
+                                nrm = Vector3.Slerp(nrm, own, simW).normalized;
+                            }
+                        }
+                    }
 
                     // The shield's ring burns: tongues of flame lick outwards off it and its body flickers.
                     float lick = 0f, burn = 1f, set = 0f;

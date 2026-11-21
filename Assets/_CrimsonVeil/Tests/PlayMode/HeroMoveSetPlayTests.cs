@@ -307,6 +307,18 @@ namespace CrimsonVeil.Tests
                         if (into > worstIn) { worstIn = into; where = $"node {i} {into:F3} m into a body capsule (r {c.radius:F2}), {mocap.Current}"; }
                     }
                 }
+                // and its strands (VeilStrands): cloth of their own, off the body too
+                var strands = veil.Strands;
+                for (int s = 0; s < strands.Count; s++)
+                    for (int j = 1; j < VeilStrands.Nodes; j++)
+                    {
+                        var p = strands.Positions[s][j];
+                        foreach (var c in sim.Body)
+                        {
+                            float into = c.radius - Vector3.Distance(p, VeilSimulation.ClosestOnSegment(c.a, c.b, p));
+                            if (into > worstIn) { worstIn = into; where = $"strand {s} node {j} {into:F3} m into a body capsule (r {c.radius:F2}), {mocap.Current}"; }
+                        }
+                    }
             };
             input.moveX = 1f; yield return Wait(0.8f);
             input.jump = true; input.jumpHeld = true; yield return Wait(0.25f);

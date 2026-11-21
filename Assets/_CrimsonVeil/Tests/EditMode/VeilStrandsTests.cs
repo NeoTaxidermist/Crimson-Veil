@@ -86,6 +86,26 @@ namespace CrimsonVeil.Tests
         }
 
         [Test]
+        public void AStrand_Curves_NeverFoldingIntoASharpV()
+        {
+            var (sim, strands) = Make();
+            float worst = 0f;
+            Run(sim, strands, 900, () =>
+            {
+                for (int s = 0; s < strands.Count; s++)
+                {
+                    var p = strands.Positions[s];
+                    for (int j = 1; j < VeilStrands.Nodes - 1; j++)
+                    {
+                        Vector3 a = p[j] - p[j - 1], b = p[j + 1] - p[j];
+                        if (a.sqrMagnitude > 1e-8f && b.sqrMagnitude > 1e-8f) worst = Mathf.Max(worst, Vector3.Angle(a, b));
+                    }
+                }
+            });
+            Assert.Less(worst, 60f, "bends between its nodes stay gentle (a fold broke the drawn tongue into pieces)");
+        }
+
+        [Test]
         public void TheBundle_TwistsOnlyGently_SoItFansOutInsteadOfTangling()
         {
             Assert.Less(VeilStrands.BraidTurns, 0.25f, "under a quarter of a turn along a strand");

@@ -1,0 +1,55 @@
+using CrimsonVeil.EditorTools;
+using CrimsonVeil.Veil;
+using NUnit.Framework;
+using UnityEditor;
+using UnityEngine;
+
+namespace CrimsonVeil.Tests
+{
+    /// <summary>
+    /// The scarf after the new key art: deep crimson ink (measured from the picture), solid cloth whose crossing strands
+    /// hide each other cleanly, the under-layer well behind the band, fine threads and drops of ink round the tail.
+    /// </summary>
+    public class VeilKeyArtTests
+    {
+        [Test]
+        public void TheInk_IsTheKeyArtsDeepCrimson_NotAPureRed()
+        {
+            // the key art, sRGB red of the scarf: ~75 deep, ~120 its body, ~190 its light; a little green and blue in it
+            Assert.That(LevelKitMaterials.ClothDeep.r, Is.InRange(0.2f, 0.32f));
+            Assert.That(LevelKitMaterials.ClothMid.r, Is.InRange(0.45f, 0.6f));
+            Assert.That(LevelKitMaterials.ClothLight.r, Is.InRange(0.72f, 0.9f));
+            foreach (var c in new[] { LevelKitMaterials.ClothDeep, LevelKitMaterials.ClothMid, LevelKitMaterials.ClothLight })
+            {
+                Assert.Greater(c.g, 0.02f, "not a pure red");
+                Assert.Less(c.g, c.r * 0.2f, "still plainly red");
+            }
+            var mat = AssetDatabase.LoadAssetAtPath<Material>("Assets/_CrimsonVeil/Materials/Veil.mat");
+            Assert.AreEqual(LevelKitMaterials.ClothMid.r, mat.GetColor("_ClothMid").r, 1e-3f, "the scarf's material carries it");
+            Assert.AreEqual(1f, mat.GetFloat("_SolidDepth"), "its solid cloth writes depth");
+            Assert.AreEqual(1f, mat.GetFloat("_Volume"));
+        }
+
+        [Test]
+        public void TheCloth_IsSolid_ItsStrandsCrossingCleanly()
+        {
+            Assert.GreaterOrEqual(VeilRenderer.SolidCloth, 0.95f, "solid ink, not a wash seen through");
+            Assert.AreEqual(1f, VeilRenderer.OpaqueLoose, "every loose layer");
+            Assert.LessOrEqual(VeilRenderer.ChunkSegments, 4, "painted back to front in short pieces");
+            Assert.GreaterOrEqual(VeilRenderer.UnderLayerDepth, 0.08f, "the dark under-layer well behind the band: it never pokes through it");
+            var smoke = AssetDatabase.LoadAssetAtPath<Material>("Assets/_CrimsonVeil/Materials/VeilSmoke.mat");
+            Assert.AreEqual(0f, smoke.GetFloat("_SolidDepth"), "the smoke threads stay a wash");
+        }
+
+        [Test]
+        public void TheTail_ShedsThreadsOfSmoke_AndDropsOfInk()
+        {
+            Assert.That(VeilWisps.DropShare, Is.InRange(0.15f, 0.5f), "some drops among the threads");
+            Assert.LessOrEqual(VeilWisps.DropPoints, 4, "a drop is a short dab");
+            Assert.AreEqual(0f, VeilWisps.DropT(0, 3), 1e-6f, "pointed where it starts");
+            Assert.AreEqual(0.5f, VeilWisps.DropT(1, 3), 1e-6f, "full in the middle");
+            Assert.AreEqual(1f, VeilWisps.DropT(2, 3), 1e-6f, "pointed where it ends");
+            Assert.AreEqual(0.5f, VeilWisps.DropT(0, 1), 1e-6f, "a single sample: its full width");
+        }
+    }
+}

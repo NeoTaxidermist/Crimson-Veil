@@ -5,6 +5,38 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.53.0] – 2026-11-21
+### Změněno
+- **Šála podle key artu, třetí krok: barvy, krytí, čisté proplétání, krk a plynulé prameny.**
+  - **Paleta změřená z obrázku:** šála na obrázku je tmavý karmín, ne čistá červená (medián kolem 121/18/17, světla kolem 190, tmavé tahy kolem 75). Barvy látky jsou teď hlubší a mají trochu zelené a modré (`LevelKitMaterials.ClothDeep/Mid/Light`). Ve hře vychází medián 108 a světla 181, což odpovídá obrázku. Mění se jen šála a její dýmové nitky.
+  - **Méně průhledná:** všechny vrstvy volné šály kryjí z 97 % (`SolidCloth`). Látka je souvislá tuš, ne průsvitný lavír, ve kterém vrstvy vypadaly, jako by procházely jedna druhou.
+  - **Prameny se kříží čistě:**
+    - plné jádro látky si zapisuje hloubku (`_SolidDepth`, hloubkový průchod jen pro krytí nad 90 %), takže tam, kde se dva prameny kříží, bližší zakryje vzdálenější pixel po pixelu;
+    - šála se navíc kreslí odzadu dopředu po kratších kouscích (`ChunkSegments` 4 místo 12);
+    - tmavá spodní vrstva leží 10 cm za pásem místo 1,5 cm a už jím neprostupuje.
+
+    Svislé švy, kde se mezi kousky prohodilo pořadí, a tmavé pruhy prostupující světlejšími zmizely. Okraje hloubku nezapisují, takže v látce nevznikají světlé díry.
+  - **Prameny se nelámou:** simulované prameny dostaly tuhost v ohybu (`VeilStrands.Bend`). Každý uzel se táhne ke středu svých sousedů, takže se pramen ohýbá plynule a nepřekládá se do ostrého V. To dřív lámalo nakreslené jazyky na kusy, které na sebe nenavazovaly.
+  - **Krk:** ovinutí kolem krku se už nekreslí. Z boku se přeložilo samo přes sebe do chuchvalce přilepeného ke krku, kdežto límec má postava vlastní. Šála vyklouzne zpoza límce (`FromTheNeck`, začíná kousek pod ním, takže mezi límcem a šálou není mezera). U krku je stažená na 30 % šířky a během dalších 40 cm se rozšíří (`NeckGather`).
+  - **Elegance:**
+    - jazyky se rozevřou do 0,55 m a jsou plnější, ke špičce se zúží jen na 65 %;
+    - pás se ke konci zúží (0,32 m), jak ho jazyky přebírají;
+    - víry na koncích jsou větší (`curlScale` 1,9);
+    - vlna po šále je výraznější (13 cm, delší).
+  - **Kouř a kapky:** z konce šály se odvíjejí tenké kouřové nitky (`VeilWisps`, 2,2 za sekundu) a odletují kapky tuše (`DropShare` 30 %, krátké špičaté tečky). Dřív volná šála žádný kouř nepouštěla.
+
+### Testy
+- Nový `VeilKeyArtTests` (EditMode):
+  - paleta z key artu: hluboký karmín, ne čistá červená, a materiál šály ji nese;
+  - látka je plná a její jádro zapisuje hloubku, kreslí se po krátkých kouscích a spodní vrstva leží za pásem; dýmové nitky zůstávají lavírem;
+  - konec šály pouští nitky i kapky, kapka je špičatá na obou koncích.
+- `VeilStrandsTests`: pramen se nikdy nezlomí do ostrého V (ohyb mezi uzly pod 60°).
+- `VeilRendererTests`:
+  - ovinutí kolem krku se nekreslí, šála vyrůstá zpoza límce stažená a rozšiřuje se;
+  - pás se ke konci zužuje;
+  - barvy jsou karmínové, nikdy oranžové ani šedé.
+- Prošlo všech 557 EditMode a 121 PlayMode testů.
+
 ## [0.52.0] – 2026-11-21
 ### Změněno
 - **Šála blíž key artu, druhý krok.** Ve srovnání vedle sebe byly vidět čtyři rozdíly a všechny jsou upravené:

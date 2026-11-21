@@ -15,8 +15,11 @@ namespace CrimsonVeil.Veil
         [SerializeField] int maxWisps = 60;
         [SerializeField] int trailPoints = 24;
         [SerializeField] float sampleInterval = 0.025f;
-        [SerializeField] float baseRate = 0f; // the loose scarf sheds none (its sheet: one sheaf of strands); weapons do
-        [SerializeField] float speedRate = 0f;
+        [Tooltip("Threads (and drops) a second off the loose scarf's tail: the key art's fine curls of smoke round it.")]
+        [SerializeField] float baseRate = 2.2f;
+        [SerializeField] float speedRate = 0.4f;
+        [Tooltip("Share of the loose scarf's emissions that are drops of ink flung off it (the key art's spatter).")]
+        [SerializeField, Range(0f, 1f)] float dropShare = DropShare;
         [SerializeField] float weaponRate = 2f;
         [SerializeField] float swingRate = 2.5f;
         [SerializeField] float lifetime = 1.1f;
@@ -34,6 +37,8 @@ namespace CrimsonVeil.Veil
             public Vector3 velocity;
             public float age, life, width, seed, sampleTimer, spin;
             public int count;
+            /// <summary>A drop of ink: a short dab flung off, no curl.</summary>
+            public bool drop;
         }
 
         VeilController veil;
@@ -123,7 +128,8 @@ namespace CrimsonVeil.Veil
             {
                 emitAccumulator -= 1f;
                 if (weapon) Emit(sim, Mathf.Max(veil.HandFraction, 0.2f), 1f, 0.6f);
-                else Emit(sim, 0.85f, 1f, 0.25f); // only a faint thread now and then leaves the very tip
+                else if (Random.value < dropShare) EmitDrop(sim);
+                else Emit(sim, 0.75f, 1f, 0.25f); // fine threads of smoke curl off the tail
             }
             // A swing leaves a smoky arc behind the tip.
             if (veil.IsAttacking)
@@ -158,7 +164,7 @@ namespace CrimsonVeil.Veil
                 {
                     w.sampleTimer = sampleInterval;
                     for (int k = trailPoints - 1; k > 0; k--) trails[baseIdx + k] = trails[baseIdx + k - 1];
-                    w.count = Mathf.Min(trailPoints, w.count + 1);
+                    w.count = Mathf.Min(w.drop ? DropPoints : trailPoints, w.count + 1);
                 }
                 trails[baseIdx] = w.head;
             }
@@ -193,6 +199,25 @@ namespace CrimsonVeil.Veil
         // The cloth unfurls into (or dissolves out of) a weapon in a swirl of smoke.
         void OnFormChanged(VeilForm form) => Burst(form == VeilForm.Flow ? 10 : 8, 0.4f, 1f, 1.4f);
 
+        /// <summary>Of the loose scarf's emissions, the share that are drops; how many trail samples a drop spans.</summary>
+        public const float DropShare = 0.3f;
+        public const int DropPoints = 3;
+
+        /// <summary>Where (0..1) trail sample <paramref name="k"/> of a drop of <paramref name="count"/> samples lies along its
+        /// dab: pointed at both ends, full in the middle.</summary>
+        public static float DropT(int k, int count) => count > 1 ? (float)k / (count - 1) : 0.5f;
+
+        /// <summary>A drop of ink flung off the tail: small, fast, no curl, short-lived.</summary>
+        void EmitDrop(VeilSimulation sim)
+        {
+            Emit(sim, 0.7f, 1f, 1.3f);
+            ref var w = ref wisps[(cursor + wisps.Length - 1) % wisps.Length];
+            w.drop = true;
+            w.spin = 0f;
+            w.width = Random.Range(0.04f, 0.08f);
+            w.life = lifetime * Random.Range(0.4f, 0.7f);
+        }
+
         void Emit(VeilSimulation sim, float fromFraction, float toFraction, float speed)
         {
             int n = sim.Count;
@@ -212,11 +237,12 @@ namespace CrimsonVeil.Veil
             // fine filaments (thick loose curls read as flying petals, not as part of the veil).
             bool filament = Random.value < 0.85f;
             w.life = lifetime * Random.Range(0.6f, 1.2f) * (filament ? 1.35f : 1f);
-            w.width = filament ? Random.Range(0.015f, 0.04f) : Random.Range(widthRange.x, widthRange.y);
+            w.width = filament ? Random.Range(0.02f, 0.05f) : Random.Range(widthRange.x, widthRange.y);
             w.seed = Random.value;
             w.spin = (Random.value < 0.5f ? -1f : 1f) * Random.Range(0.6f, 1.4f) * (filament ? 1.5f : 1f);
             w.sampleTimer = sampleInterval;
             w.count = 1;
+            w.drop = false;
             for (int k = 0; k < trailPoints; k++) trails[baseIdx + k] = w.head;
         }
 
@@ -245,8 +271,9 @@ namespace CrimsonVeil.Veil
                     if (tan.sqrMagnitude < 1e-8f) tan = Vector3.right;
                     tan.Normalize();
                     var normal = new Vector3(-tan.y, tan.x, 0f);
-                    float t = (float)k / (trailPoints - 1);
-                    float width = w.width * Mathf.Sin(Mathf.Clamp01(t * 1.15f) * Mathf.PI) * (0.6f + 0.6f * lifeFade);
+                    // (a drop spans only its few samples: its dab is shaped over those, else it has no area at all)
+                    float t = w.drop ? DropT(kk, w.count) : (float)k / (trailPoints - 1);
+                    float width = w.width * Mathf.Sin(Mathf.Clamp01(t * (w.drop ? 1f : 1.15f)) * Mathf.PI) * (0.6f + 0.6f * lifeFade);
                     int v = baseV + k * 2;
                     vertices[v] = p + normal * (width * 0.5f);
                     vertices[v + 1] = p - normal * (width * 0.5f);

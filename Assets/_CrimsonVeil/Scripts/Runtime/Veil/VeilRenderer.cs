@@ -22,7 +22,7 @@ namespace CrimsonVeil.Veil
         [Tooltip("Points in each end curl.")]
         [SerializeField, Range(6, 40)] int curlPoints = 34;
         [Tooltip("Global multiplier of the curl size.")]
-        [SerializeField] float curlScale = 1.7f;
+        [SerializeField] float curlScale = 1.9f;
         [Tooltip("How far (m) the tendrils fan away from the main ribbon at their ends.")]
         [SerializeField] float tendrilSpread = 0.38f;
 
@@ -91,7 +91,7 @@ namespace CrimsonVeil.Veil
         Camera viewer;
 
         /// <summary>Segments of a strand in one piece of the painter's order.</summary>
-        public const int ChunkSegments = 12;
+        public const int ChunkSegments = 4;
         /// <summary>How much nearer (m) each later strand of the drawing counts in the order: layers lying together
         /// keep their painted order instead of flickering.</summary>
         public const float LayerBias = 0.004f;
@@ -110,7 +110,7 @@ namespace CrimsonVeil.Veil
             if (d < 0f) d = 0f;
             if (d < 1f) return Mathf.Lerp(0.16f, 0.32f, Mathf.SmoothStep(0f, 1f, d));
             if (d < 2f) return Mathf.Lerp(0.32f, 0.38f, Mathf.SmoothStep(0f, 1f, d - 1f));
-            return Mathf.Lerp(0.38f, 0.48f, Mathf.SmoothStep(0f, 1f, (d - 2f) / 1.2f));
+            return Mathf.Lerp(0.38f, 0.32f, Mathf.SmoothStep(0f, 1f, (d - 2f) / 1.2f));   // (the key art: the band narrows as its tongues take over)
         }
 
         /// <summary>
@@ -390,6 +390,7 @@ namespace CrimsonVeil.Veil
             // band is what joins the forming weapon to the neck. Releasing, the band comes back with the hardness.
             float bandShaped = veil.Form == VeilForm.Flow ? 1f : NeckBandShaped(veil.ShapeMorph);
 
+            float wrapEnd = (float)Mathf.Min(sim.Settings.wrapNodes, n - 2) / (n - 1);
             // Per-sample frame, width and alpha of the scarf body.
             for (int i = 0; i < samples; i++)
             {
@@ -419,10 +420,15 @@ namespace CrimsonVeil.Veil
                 // (mirror-true: the other way round when the hero faces the other way)
                 twistAt[i] = Twist(t, time) * (1f - hard) * facing;
                 widthAt[i] = Mathf.Lerp(flowW * flowProfile, formW * weaponProfile, hard * hard * hard) * Mathf.Lerp(0.45f, 1f, vit);
+                // slipping out from behind the collar it is gathered narrow, and opens out as it flies
+                widthAt[i] *= Mathf.Lerp(1f, NeckGather(t, wrapEnd), 1f - hard);
 
                 // (the loose scarf's length follows its strength in the cloth itself - VeilSimulation.LengthScale - so
                 // its end keeps its curls; fading the tail out instead looked like a scarf cut off)
                 alphaAt[i] = Mathf.Lerp(0.6f, 1f, vit) * Mathf.SmoothStep(0f, 1f, t * 12f + 0.3f);
+                // The wrap round the neck isn't drawn: seen from the side it doubled back on itself into a blob stuck to
+                // the neck (the hero's collar is his own); the loose scarf streams from the back of the neck.
+                alphaAt[i] *= Mathf.Lerp(1f, FromTheNeck(t, wrapEnd), 1f - hard);
                 // A weapon is the whole veil transformed: the band from the neck to the hand melts away as it
                 // sets (and comes back as the weapon softens), so the weapon isn't tied to the neck.
                 // It goes once the weapon has set *at the hand*: the hardening starts at the neck, and fading the band
@@ -585,7 +591,9 @@ namespace CrimsonVeil.Veil
                     if (branch) sw *= Mathf.Lerp(TongueWidth(u), Mathf.Lerp(0.25f, 0.51f, Mathf.SmoothStep(0f, 1f, u)), hard);
                     // a tongue grows out of the band from nothing (no square-cut start where it branches off)
                     if (branch) sw *= Mathf.Lerp(Mathf.SmoothStep(0f, 1f, u / 0.22f), 1f, hard);
-                    float alpha = a * Mathf.Lerp(st.alpha, main ? 1f : 0.7f, hard);
+                    // the key art's cloth is solid ink, not a translucent wash (layers seen through each other looked as
+                    // if they passed through each other)
+                    float alpha = a * Mathf.Lerp(Mathf.Lerp(st.alpha, SolidCloth, OpaqueLoose), main ? 1f : 0.7f, hard);
                     // Loose, it is one band of cloth near the neck (the concept); the tongues of smoke come out
                     // further back (the key art), and all of them as it hardens into a weapon.
                     alpha *= Mathf.Lerp(LooseLayerAlpha(s, f), 1f, hard);
@@ -975,7 +983,7 @@ namespace CrimsonVeil.Veil
         public static float FlameRipple(float t, float time)
             => RippleHeight * Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.08f, 0.85f, t)) * Mathf.Sin(2f * Mathf.PI * RippleWaves * t - RippleSpeed * time);
 
-        public const float RippleHeight = 0.07f, RippleWaves = 1.6f, RippleSpeed = 4.2f;
+        public const float RippleHeight = 0.13f, RippleWaves = 1.2f, RippleSpeed = 3.6f;
         /// <summary>How much more a tongue ripples than the band.</summary>
         public const float TongueRipple = 1.4f;
 
@@ -985,15 +993,35 @@ namespace CrimsonVeil.Veil
         /// not a brush stroke broadening into a whorl.
         /// </summary>
         public static float TongueWidth(float u)
-            => Mathf.Lerp(0.45f, 1f, Mathf.SmoothStep(0f, 1f, u / 0.35f)) * Mathf.Lerp(1f, 0.45f, Mathf.SmoothStep(0f, 1f, (u - 0.55f) / 0.45f));
+            => Mathf.Lerp(0.45f, 1f, Mathf.SmoothStep(0f, 1f, u / 0.35f)) * Mathf.Lerp(1f, 0.65f, Mathf.SmoothStep(0f, 1f, (u - 0.55f) / 0.45f));
 
         /// <summary>A loose end's tip: its width (of the stroke's) and opacity where it ends - a hairline fading out.</summary>
         public const float TipWidth = 0.04f, TipAlpha = 0.3f;
         /// <summary>How fast a loose end narrows into its line of smoke (the power of its taper: under 1, fast).</summary>
         public const float SmokeTaper = 0.4f;
 
+        /// <summary>How much of the loose scarf is drawn at fraction <paramref name="t"/>: none of the wrap round the neck
+        /// (up to <paramref name="wrapEnd"/>), then it grows out of the back of the neck.</summary>
+        public static float FromTheNeck(float t, float wrapEnd)
+            => Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(wrapEnd - NeckTuck, wrapEnd - NeckTuck + NeckEmerge, t));
+
+        /// <summary>Over what fraction of the scarf it grows out of the back of the neck, and how far before the wrap's
+        /// end it starts (tucked under the collar: no gap between the collar and the scarf).</summary>
+        public const float NeckEmerge = 0.05f, NeckTuck = 0.03f;
+
+        /// <summary>Width factor of the loose scarf at <paramref name="t"/> as it slips out from behind the collar: gathered
+        /// to NeckGatherWidth there (no thick slab stuck to the neck), opening out over the next ~0.4 m.</summary>
+        public static float NeckGather(float t, float wrapEnd)
+            => Mathf.Lerp(NeckGatherWidth, 1f, Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(wrapEnd - NeckTuck, wrapEnd + 0.12f, t)));
+
+        public const float NeckGatherWidth = 0.3f;
+
         /// <summary>How far (m) behind the band its dark under-layer lies.</summary>
-        public const float UnderLayerDepth = 0.015f;
+        public const float UnderLayerDepth = 0.1f;
+
+        /// <summary>How opaque every layer of the loose cloth is (the key art: solid ink), and how far its own opacity
+        /// gives way to that.</summary>
+        public const float SolidCloth = 0.97f, OpaqueLoose = 1f;
 
         void WriteVertex(int v, int f, Vector3 c, Vector3 nrm, float width, float alpha, Strand st, float hard, float vit, float glow, float twist, float cup)
         {

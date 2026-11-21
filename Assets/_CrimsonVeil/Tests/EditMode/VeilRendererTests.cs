@@ -50,7 +50,7 @@ namespace CrimsonVeil.Tests
             Assert.That(VeilRenderer.ScarfWidth(0f), Is.InRange(0.12f, 0.2f), "slim where it leaves the neck");
             Assert.That(VeilRenderer.ScarfWidth(1f), Is.InRange(0.28f, 0.36f));
             Assert.That(VeilRenderer.ScarfWidth(2f), Is.InRange(0.34f, 0.42f), "widest along the middle");
-            Assert.Greater(VeilRenderer.ScarfWidth(3.2f), VeilRenderer.ScarfWidth(2f), "opens out into the whorls");
+            Assert.Less(VeilRenderer.ScarfWidth(3.2f), VeilRenderer.ScarfWidth(2f), "narrowing as its tongues take over (the key art)");
             foreach (var st in VeilRenderer.Strands)
                 Assert.GreaterOrEqual(VeilRenderer.LooseEnd(st), 0.9f, "every loose layer runs on into the whorls at the end");
         }
@@ -170,7 +170,7 @@ namespace CrimsonVeil.Tests
             Assert.Less(VeilRenderer.TipAlpha, 0.5f, "fading into smoke");
             // a tongue swells out of the band and narrows towards its tip
             Assert.Greater(VeilRenderer.TongueWidth(0.4f), VeilRenderer.TongueWidth(0f) * 1.8f);
-            Assert.Less(VeilRenderer.TongueWidth(1f), VeilRenderer.TongueWidth(0.4f) * 0.6f);
+            Assert.Less(VeilRenderer.TongueWidth(1f), VeilRenderer.TongueWidth(0.4f) * 0.75f);
         }
 
         [Test]
@@ -181,7 +181,7 @@ namespace CrimsonVeil.Tests
             for (float t = 0f; t <= 1f; t += 0.01f) max = Mathf.Max(max, Mathf.Abs(VeilRenderer.FlameRipple(t, 0.4f)));
             Assert.That(max, Is.InRange(0.04f, VeilRenderer.RippleHeight + 1e-4f), "a ripple, not a flail");
             // a crest moves back along it (towards the tail) as time goes on
-            float crestAt(float time) { float best = -1f, at = 0f; for (float t = 0.5f; t <= 0.9f; t += 0.002f) { float h = VeilRenderer.FlameRipple(t, time); if (h > best) { best = h; at = t; } } return at; }
+            float crestAt(float time) { float best = -1f, at = 0f; for (float t = 0.1f; t <= 0.75f; t += 0.002f) { float h = VeilRenderer.FlameRipple(t, time); if (h > best) { best = h; at = t; } } return at; }
             Assert.Greater(crestAt(0.15f), crestAt(0f), "travelling from the neck to the tail");
         }
 
@@ -204,18 +204,32 @@ namespace CrimsonVeil.Tests
         }
 
         [Test]
-        public void ScarfColours_AreTheSheetsPureCrimson_NeverOrangeOrGrey()
+        public void ScarfColours_AreTheKeyArtsCrimson_NeverOrangeOrGrey()
         {
             var m = UnityEditor.AssetDatabase.LoadAssetAtPath<Material>("Assets/_CrimsonVeil/Materials/Veil.mat");
             Assert.AreEqual(1f, m.GetFloat("_Cloth"), "the scarf is painted cloth");
             foreach (var name in new[] { "_ClothDeep", "_ClothMid", "_ClothLight" })
             {
                 var c = m.GetColor(name);
-                Assert.Less(Mathf.Max(c.g, c.b), 0.06f, name + ": pure red ink (the sheet), no orange or pink cast");
-                Assert.Greater(c.r, 0.3f, name);
+                Assert.Less(Mathf.Max(c.g, c.b), c.r * 0.16f, name + ": crimson ink, no orange or pink cast");
+                Assert.Greater(c.r, 0.2f, name + ": a deep red, never black");
             }
             Assert.Greater(m.GetColor("_ClothLight").r, m.GetColor("_ClothMid").r - 1e-3f);
             Assert.Less(m.GetColor("_ClothDeep").r, m.GetColor("_ClothMid").r);
+        }
+
+        [Test]
+        public void TheWrapRoundTheNeck_IsNotDrawn_TheScarfGrowsFromTheBackOfTheNeck()
+        {
+            const float wrapEnd = 3f / 34f;
+            Assert.AreEqual(0f, VeilRenderer.FromTheNeck(0f, wrapEnd), 1e-6f, "at the throat: nothing (it doubled back into a blob)");
+            Assert.AreEqual(0f, VeilRenderer.FromTheNeck(wrapEnd - VeilRenderer.NeckTuck, wrapEnd), 1e-6f, "starts tucked under the collar");
+            Assert.AreEqual(1f, VeilRenderer.FromTheNeck(wrapEnd + VeilRenderer.NeckEmerge, wrapEnd), 1e-6f, "full just past the wrap");
+            Assert.Less(VeilRenderer.NeckEmerge, 0.08f, "grows out quickly");
+            // gathered narrow where it slips out, opening out as it flies (no thick slab stuck to the neck)
+            Assert.AreEqual(VeilRenderer.NeckGatherWidth, VeilRenderer.NeckGather(wrapEnd - VeilRenderer.NeckTuck, wrapEnd), 1e-6f);
+            Assert.Less(VeilRenderer.NeckGatherWidth, 0.5f);
+            Assert.AreEqual(1f, VeilRenderer.NeckGather(0.4f, wrapEnd), 1e-6f, "its full width further back");
         }
 
         [Test]

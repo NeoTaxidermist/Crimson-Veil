@@ -143,6 +143,10 @@ namespace CrimsonVeil.EditorTools
             return m;
         }
 
+        /// <summary>The scarf's ink, from the key art.</summary>
+        public static readonly Color ClothDeep = new Color(0.26f, 0.035f, 0.035f), ClothMid = new Color(0.55f, 0.065f, 0.06f),
+                                     ClothLight = new Color(0.82f, 0.11f, 0.09f);
+
         static Material VeilMat(string name, float edgeSoftness, float erosion, float flowSpeed, bool cloth = false, bool volume = false)
         {
             var m = Mat(name, Shader.Find("CrimsonVeil/Veil"), Color.white);
@@ -156,11 +160,14 @@ namespace CrimsonVeil.EditorTools
             // dark 0.36/0/0.01) - lighter only where it is translucent, never orange;
             // the smoke threads keep the fire look.
             m.SetFloat("_Cloth", cloth ? 1f : 0f);
-            m.SetColor("_ClothDeep", new Color(0.36f, 0.0f, 0.01f));
-            m.SetColor("_ClothMid", new Color(0.8f, 0.02f, 0.03f));
-            m.SetColor("_ClothLight", new Color(1.0f, 0.04f, 0.04f));
+            // (the key art's palette, measured: deep crimson ~75, the body ~120, its light ~190 in sRGB red - a deep,
+            // not a pure red)
+            m.SetColor("_ClothDeep", ClothDeep);
+            m.SetColor("_ClothMid", ClothMid);
+            m.SetColor("_ClothLight", ClothLight);
             // The scarf is cloth in three dimensions: two-sided, lit across its folds (the smoke threads stay flat washes).
             m.SetFloat("_Volume", volume ? 1f : 0f);
+            m.SetFloat("_SolidDepth", volume ? 1f : 0f);
             m.renderQueue = (int)RenderQueue.Transparent;
             return m;
         }

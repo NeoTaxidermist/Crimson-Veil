@@ -273,7 +273,7 @@ MonoBehaviour:
   smoothing: 3
   flutterTwist: 0.35
   curlPoints: 34
-  curlScale: 1.7
+  curlScale: 1.9
   tendrilSpread: 0.38
 --- !u!114 &5389534785771705521
 MonoBehaviour:
@@ -291,8 +291,9 @@ MonoBehaviour:
   maxWisps: 60
   trailPoints: 24
   sampleInterval: 0.025
-  baseRate: 0
-  speedRate: 0
+  baseRate: 2.2
+  speedRate: 0.4
+  dropShare: 0.3
   weaponRate: 2
   swingRate: 2.5
   lifetime: 1.1

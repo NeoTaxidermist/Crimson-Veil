@@ -21,6 +21,7 @@ Shader "CrimsonVeil/Veil"
         _ClothMid ("Cloth Crimson", Color) = (0.8, 0.02, 0.03, 1)
         _ClothLight ("Cloth Light", Color) = (1.0, 0.04, 0.04, 1)
         _Volume ("Volume (two-sided cloth, light across its folds)", Range(0, 1)) = 0
+        [Toggle] _SolidDepth ("Solid Cloth Writes Depth (strands crossing hide each other per pixel)", Float) = 0
         _BackShade ("Reverse Shade", Range(0, 1)) = 0.6
         _KeyLight ("Key Light Direction (towards the light)", Vector) = (-0.45, 0.8, -0.4, 0)
         _LightAmount ("Light Across the Folds", Range(0, 1)) = 0.45
@@ -48,6 +49,7 @@ Shader "CrimsonVeil/Veil"
                 half4 _ClothMid;
                 half4 _ClothLight;
                 float _Volume;
+                float _SolidDepth;
                 float _BackShade;
                 float4 _KeyLight;
                 float _LightAmount;
@@ -173,7 +175,7 @@ Shader "CrimsonVeil/Veil"
                     // the sheet: opaque crimson at the neck, ~70 % through the middle, a translucent pink-red wash in
                     // the whorls
                     // (the key art: a solid flame body, thinning only into its smoke curls)
-                    float wash = lerp(lerp(1.0, 0.8, smoothstep(0.5, 0.92, along)), 1.0, hard);  // a weapon is solid ink
+                    float wash = lerp(lerp(1.0, 0.92, smoothstep(0.55, 0.92, along)), 1.0, hard);  // a weapon is solid ink
                     clothAlpha *= wash * lerp(0.82, 1.0, smoothstep(0.3, 0.6, streak));
                     clothAlpha *= 1.0 - smoothstep(0.86, 0.9, along + (rag - 0.5) * 0.1);   // stroke ends in a point
                     // dry brush: the bristles leave streaks along the stroke - at its edges and all over the thin,
@@ -219,6 +221,29 @@ Shader "CrimsonVeil/Veil"
                 return half4(col, outA);
             }
         ENDHLSL
+
+        // The scarf's cloth is solid ink: the solid body of every strand writes its depth first, so where two strands
+        // cross the nearer hides the other pixel by pixel - no seam where the painted order (VeilRenderer.PaintOrder)
+        // of two pieces flips. Only the solid body: a soft edge writing depth hid what lay behind it and the background
+        // showed through it in pale holes. (The smoke threads stay a wash: no depth.)
+        Pass
+        {
+            Name "VeilDepth"
+            Tags { "LightMode" = "SRPDefaultUnlit" }
+            ZWrite On
+            ColorMask 0
+
+            HLSLPROGRAM
+            #pragma vertex vert
+            #pragma fragment fragDepth
+            half4 fragDepth(Varyings i) : SV_Target
+            {
+                half4 c = Shade(i);
+                clip(c.a * _SolidDepth - 0.9);
+                return 0;
+            }
+            ENDHLSL
+        }
 
         Pass
         {

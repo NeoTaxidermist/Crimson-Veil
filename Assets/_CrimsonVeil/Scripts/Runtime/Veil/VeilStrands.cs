@@ -22,7 +22,7 @@ namespace CrimsonVeil.Veil
         /// <summary>Nodes in each strand.</summary>
         public const int Nodes = 14;
         /// <summary>How far (m) a strand reaches out from the band at most (times its side).</summary>
-        public const float Reach = 0.6f;
+        public const float Reach = 0.55f;
         /// <summary>Turns a strand's place makes round the band over its length (a gentle twist: the tongues fan out like a flame
         /// rather than winding into a tangle), how fast (rad/s) the fan sways round the band and how far (rad).</summary>
         public const float BraidTurns = 0.15f, BraidSpeed = 0.35f, BraidSway = 0.45f;
@@ -32,6 +32,8 @@ namespace CrimsonVeil.Veil
         public const float Drag = 5f, GravityScale = 0.06f;
         /// <summary>How close (m) two strands come before they push apart (they rub, slide round each other).</summary>
         public const float Rub = 0.05f;
+        /// <summary>How strongly (per iteration) a strand is straightened at each node: its stiffness against bending.</summary>
+        public const float Bend = 0.3f;
         /// <summary>How far (m) the band's strands hang below its centre line (as drawn).</summary>
         public const float HangBelow = 0.08f;
         /// <summary>The scarf fraction a strand starts at, at least: off the wrap round the neck.</summary>
@@ -217,6 +219,10 @@ namespace CrimsonVeil.Veil
                         if (j == 0) pos[1] -= corr;
                         else { pos[j] += corr * 0.5f; pos[j + 1] -= corr * 0.5f; }
                     }
+                    // cloth resists bending: each node is drawn towards the middle of its neighbours, so a strand
+                    // curves instead of folding into a sharp V (it broke into pieces that didn't join up)
+                    for (int j = 1; j < Nodes - 1; j++)
+                        pos[j] += ((pos[j - 1] + pos[j + 1]) * 0.5f - pos[j]) * Bend;
                 }
                 RubTogether();
             }

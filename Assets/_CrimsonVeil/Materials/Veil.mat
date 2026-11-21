@@ -27,6 +27,7 @@ Material:
   m_ValidKeywords: []
   m_InvalidKeywords:
   - _FLIPBOOKBLENDING_OFF
+  - _SOLIDDEPTH_ON
   - _SURFACE_TYPE_TRANSPARENT
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
@@ -84,6 +85,7 @@ Material:
     - _SoftParticlesEnabled: 0
     - _SoftParticlesFarFadeDistance: 1
     - _SoftParticlesNearFadeDistance: 0
+    - _SolidDepth: 1
     - _SrcBlend: 5
     - _SrcBlendAlpha: 1
     - _Surface: 1
@@ -94,9 +96,9 @@ Material:
     - _BaseColor: {r: 1.25, g: 0.06, b: 0.07, a: 1}
     - _BaseColorAddSubDiff: {r: 0, g: 0, b: 0, a: 0}
     - _CameraFadeParams: {r: 0, g: Infinity, b: 0, a: 0}
-    - _ClothDeep: {r: 0.36, g: 0, b: 0.01, a: 1}
-    - _ClothLight: {r: 1, g: 0.04, b: 0.04, a: 1}
-    - _ClothMid: {r: 0.8, g: 0.02, b: 0.03, a: 1}
+    - _ClothDeep: {r: 0.26, g: 0.035, b: 0.035, a: 1}
+    - _ClothLight: {r: 0.82, g: 0.11, b: 0.09, a: 1}
+    - _ClothMid: {r: 0.55, g: 0.065, b: 0.06, a: 1}
     - _Color: {r: 1.25, g: 0.059999965, b: 0.06999998, a: 1}
     - _Deep: {r: 0.34, g: 0, b: 0.025, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}

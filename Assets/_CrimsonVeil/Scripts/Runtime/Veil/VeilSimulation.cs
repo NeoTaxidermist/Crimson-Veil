@@ -302,6 +302,21 @@ namespace CrimsonVeil.Veil
         /// <summary>How much of his fall the sheet's shape drags the cloth down with, tilted by <paramref name="tilt"/> into the fall.</summary>
         public static float FallDrag(float tilt) => 1f - Mathf.SmoothStep(0f, 1f, tilt / 0.6f);
 
+        /// <summary>1/s: how hard cloth swinging out ahead of him is braked in a fall.</summary>
+        public const float ForwardBrake = 30f;
+
+        /// <summary><paramref name="p"/> moved out of any obstacle it is in sideways, onto the face towards <paramref name="sideX"/> (his side).</summary>
+        public Vector3 OutSideways(Vector3 p, float sideX)
+        {
+            for (int o = 0; o < Obstacles.Count; o++)
+            {
+                Rect r = Obstacles[o];
+                if (!r.Contains(new Vector2(p.x, p.y))) continue;
+                p.x = sideX < r.center.x ? r.xMin - WallSkin : r.xMax + WallSkin;
+            }
+            return p;
+        }
+
         /// <summary>Metres within which the sheet's shape lets go as its place sinks into a wall.</summary>
         public const float ShapeWallFade = 0.25f;
 
@@ -556,6 +571,12 @@ namespace CrimsonVeil.Veil
                     // Where the sheet's place is inside a wall or a ledge (he dropped off it, the S still lay over it) the
                     // shape lets go: held to it, the cloth was pressed against the top and crumpled up there. Let go,
                     // it drapes over the edge and follows him down.
+                    // Falling past a wall or a ledge, its place is moved out of it sideways, to his side: the scarf
+                    // streams up along the face of the block as one band (let go there, it tumbled into a tangle).
+                    // (leaping up past one too: its place, trailing below him, lay inside the block)
+                    float falling = 1f - FallDrag(TrailTilt);
+                    float passing = 1f - FallDrag(Mathf.Abs(TrailTilt));
+                    if (passing > 0.001f) target = Vector3.Lerp(target, OutSideways(target, a.x), passing);
                     shaped *= ShapeOutsideWalls(DepthInObstacles(target));
                     Vector3 pull = (target - p) * (s.restShapeStiffness * (1f + 3f * unwind));
                     Vector3 still = new Vector3(anchorVel.x - vel.x, anchorVel.y - vel.y, 0f) * (s.restShapeDamping * (1f + 1.5f * unwind));
@@ -563,6 +584,15 @@ namespace CrimsonVeil.Veil
                     // off and crumpled there): it lags above him and is drawn after him by the neck.
                     still.y *= FallDrag(TrailTilt);
                     acc += new Vector3(pull.x + still.x, pull.y + still.y, 0f) * shaped;
+
+                    // Falling, cloth swinging out ahead of him is braked: slung round the corner of the ledge he
+                    // stepped off, the tail flew a metre out in front before the shape brought it back.
+                    if (falling > 0.001f && DriftDirection != 0f)
+                    {
+                        float back = Mathf.Sign(DriftDirection);
+                        float forward = -(vel.x - anchorVel.x) * back;
+                        if (forward > 0f) acc.x += forward * back * (ForwardBrake * falling * loose);
+                    }
                 }
 
                 if (loose > 0.001f)

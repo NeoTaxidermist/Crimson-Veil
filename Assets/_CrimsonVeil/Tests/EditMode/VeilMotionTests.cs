@@ -258,6 +258,36 @@ namespace CrimsonVeil.Tests
         }
 
         [Test]
+        public void PastABlock_TheShapeMovesOutSideways_AndTheTailIsBraked()
+        {
+            var sim = new VeilSimulation(new VeilSettings(), Vector3.zero);
+            sim.Obstacles.Add(Rect.MinMaxRect(-3f, -5f, -1f, 5f));
+            Vector3 inside = new Vector3(-2.5f, 1f, 0f);
+            Vector3 mine = sim.OutSideways(inside, 0f);
+            Assert.Greater(mine.x, -1f, "out onto the face on his side");
+            Assert.AreEqual(1f, mine.y, 1e-5f, "at the same height: the band runs up along the face");
+            Assert.Less(sim.OutSideways(inside, -10f).x, -3f, "from the other side, out the other way");
+            Assert.AreEqual(5f, sim.OutSideways(new Vector3(5f, 1f, 0f), 0f).x, 1e-5f, "outside, left alone");
+            Assert.Greater(VeilSimulation.ForwardBrake, 5f);
+
+            // he steps slowly off a ledge, the scarf streaming back over it: falling, none of it flies out in front of him
+            var fall = new VeilSimulation(new VeilSettings(), new Vector3(-0.2f, 1.4f, 0f)) { DriftDirection = 1f, AmbientFlow = new Vector2(0.75f, 0f), RestShapeWeight = 1f };
+            fall.Obstacles.Add(Rect.MinMaxRect(0f, -10f, 8f, 0f));
+            Vector3 neck = new Vector3(-0.2f, 1.4f, 0f);
+            for (int f = 0; f < 120; f++) fall.Step(Dt, neck);
+            float vy = 0f, ahead = 0f;
+            for (int f = 0; f < 60; f++)
+            {
+                vy = Mathf.Max(vy - 60f * Dt, -18f);
+                neck += new Vector3(-1f, vy, 0f) * Dt;
+                fall.Step(Dt, neck);
+                fall.TrailTilt = Mathf.MoveTowards(fall.TrailTilt, VeilController.TrailTiltFor(fall.AnchorVelocity), Dt * VeilController.TrailTiltRate);
+                for (int i = 0; i < fall.Count; i++) ahead = Mathf.Max(ahead, neck.x - fall.Positions[i].x);
+            }
+            Assert.Less(ahead, 0.5f, "the tail is not slung out in front of him off the corner (it flew a metre and more)");
+        }
+
+        [Test]
         public void TheLooseScarf_ShedsNoPieces()
         {
             var prefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_CrimsonVeil/LevelKit/Prefabs/Player.prefab");

@@ -5,6 +5,19 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.61.0] – 2026-11-21
+### Opraveno
+- **Pomalé sejití z hrany:** když šála sklouzla přes roh plošiny, konec švihl asi o metr dopředu před hrdinu. V pádu se teď pohyb látky dopředu tlumí (`ForwardBrake`), takže ji tvar stihne vrátit za hrdinu. Šála plynule vlaje nahoru a ve hře nejde před hrdinu dál než pár centimetrů. V simulovaném testu se švihnutí zmenšilo z 0,83 m na 0,40 m.
+  - Minule jsem šálu před hrdinou zkusil omezit přímým posouváním zpět a stlačila se do chuchvalce. Tlumení rychlosti to nedělá.
+- **Pád nebo výskok podél vysokého bloku:** cílový tvar šály ležel uvnitř bloku, tvar látku pustil a ta se asi na 10 snímků zamotala. Teď se cílový tvar posune ze stěny ven do strany, směrem k hrdinovi (`OutSideways`), takže šála vlaje podél stěny jako souvislý pás.
+
+### Zbývá
+- Když hrdina seběhne z horní hrany vysokého bloku, šála je asi na 6 snímků trochu rozcuchaná. Zůstává ale za ním a nesmotá se u hlavy.
+
+### Testy
+- `VeilMotionTests`: cílový tvar se posune ze stěny na hrdinovu stranu; při pomalém sejití z hrany šála nešvihne před hrdinu dál než 0,5 m.
+- Prošlo všech 572 EditMode a 121 PlayMode testů.
+
 ## [0.60.0] – 2026-11-21
 ### Opraveno
 - **Švihnutí dopředu při seskoku.** Měření ukázalo dvě příčiny:

@@ -5,6 +5,23 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.55.0] – 2026-11-21
+### Změněno
+- **Plameny drží pohromadě v esíčku.** Jazyky šály se rozpadaly: každý se rozevřel daleko od pásu a letěl po svém, takže esíčko netvořilo jedno tělo. Teď:
+  - jazyky se od pásu vzdálí nejvýš na 0,3 m (`VeilStrands.Reach`, dřív 0,55);
+  - svazek se kolébá méně (`BraidSway` 0,3);
+  - až ke konci se drží svých míst pevněji (`HoldTail` 28 místo 16);
+  - jazyk se vlní stejně jako pás, ne proti němu (`TongueRipple` 1).
+
+  Celá šála tak drží jeden tvar S a rozvětví se až do vírů na konci.
+- **Nákrčník v designu šály.** Límec a páska na paži byly jedna plochá červená. Shader `Silhouette` má teď volitelné malované tahy (`_InkStreaks`): široké tmavé a jasné karmínové pruhy vedou kolem krku, stejně jako v látce šály. Jsou v prostoru těla, takže drží na látce. Hrdinův materiál `HeroCrimson` je má zapnuté, v paletě šály (`HeroStreakDeep/Light`) a skoro bez mlhy scény, která ho vedle šály šedila. Ve hře vychází límec 66 a šála u krku 70, takže jas sedí a tahy navazují.
+
+### Testy
+- `VeilKeyArtTests` (EditMode):
+  - límec je malovaný tahy jako šála: tmavší i jasnější než základ a bez mlhy;
+  - jazyky drží v esíčku: dosah nejvýš 0,35 m, pevně drží až ke konci a vlní se s pásem.
+- Prošlo všech 559 EditMode a 121 PlayMode testů.
+
 ## [0.54.0] – 2026-11-21
 ### Změněno
 - **Šála podle key artu, čtvrtý krok: výrazné esíčko, malovaná tuš místo gumy, nákrčník v barvě šály.**

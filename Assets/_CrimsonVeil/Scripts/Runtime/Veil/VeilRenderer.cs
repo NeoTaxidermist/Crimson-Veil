@@ -985,7 +985,7 @@ namespace CrimsonVeil.Veil
 
         public const float RippleHeight = 0.2f, RippleWaves = 0.9f, RippleSpeed = 2.6f;
         /// <summary>How much more a tongue ripples than the band.</summary>
-        public const float TongueRipple = 1.4f;
+        public const float TongueRipple = 1f;
 
         /// <summary>
         /// Width of a loose tongue along its length (0 where it leaves the band .. 1 at its tip), in its strand's width:

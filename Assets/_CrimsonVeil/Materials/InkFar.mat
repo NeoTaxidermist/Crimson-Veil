@@ -41,6 +41,7 @@ Material:
     - _FormShade: 0
     - _GrainScale: 0.6
     - _GrainStrength: 0.4
+    - _InkStreaks: 0
     - _MistStrength: 1.1
     - _PinTop: 0
     - _Relief: 0.25
@@ -52,5 +53,7 @@ Material:
     m_Colors:
     - _BaseColor: {r: 0.6, g: 0.6, b: 0.624, a: 1}
     - _RimColor: {r: 0.62, g: 0.62, b: 0.65999997, a: 1}
+    - _StreakDeep: {r: 0.16999996, g: 0.02, b: 0.02, a: 1}
+    - _StreakLight: {r: 0.54999995, g: 0.06999998, b: 0.059999965, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

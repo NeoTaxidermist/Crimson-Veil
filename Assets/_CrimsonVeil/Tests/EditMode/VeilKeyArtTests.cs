@@ -56,6 +56,11 @@ namespace CrimsonVeil.Tests
             var hero = AssetDatabase.LoadAssetAtPath<Material>("Assets/_CrimsonVeil/Materials/HeroCrimson.mat");
             Assert.AreEqual(LevelKitMaterials.HeroCrimson.r, hero.GetColor("_BaseColor").r, 1e-3f);
             Assert.Less(LevelKitMaterials.HeroCrimson.r, 0.5f, "a deep crimson like the scarf where it leaves the collar");
+            // not one flat red: the scarf's painted strokes, deep and bright, run round it
+            Assert.AreEqual(1f, hero.GetFloat("_InkStreaks"), "painted like the scarf");
+            Assert.Less(hero.GetColor("_StreakDeep").r, LevelKitMaterials.HeroCrimson.r);
+            Assert.Greater(hero.GetColor("_StreakLight").r, LevelKitMaterials.HeroCrimson.r);
+            Assert.Less(hero.GetFloat("_MistStrength"), 0.1f, "no mist greying it beside the scarf");
         }
 
         [Test]
@@ -67,6 +72,10 @@ namespace CrimsonVeil.Tests
             Assert.GreaterOrEqual(VeilRestShape.SDepth, 1.4f, "the key art's S, deeper than the sheet's");
             Assert.GreaterOrEqual(VeilRenderer.RippleHeight, 0.15f, "a flame's swell running along it");
             Assert.Less(VeilRenderer.RippleWaves, 1.2f, "a long wave: one bold S, not a wobble");
+            // the tongues hold together in the S (spread wide, each flew its own way and the flame fell apart)
+            Assert.LessOrEqual(VeilStrands.Reach, 0.35f);
+            Assert.GreaterOrEqual(VeilStrands.HoldTail, 25f, "held to their places down to the tail");
+            Assert.LessOrEqual(VeilRenderer.TongueRipple, 1f, "rippling with the band, not against it");
         }
 
         [Test]

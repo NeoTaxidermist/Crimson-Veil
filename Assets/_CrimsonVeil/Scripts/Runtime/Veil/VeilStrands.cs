@@ -22,12 +22,12 @@ namespace CrimsonVeil.Veil
         /// <summary>Nodes in each strand.</summary>
         public const int Nodes = 14;
         /// <summary>How far (m) a strand reaches out from the band at most (times its side).</summary>
-        public const float Reach = 0.55f;
+        public const float Reach = 0.3f;
         /// <summary>Turns a strand's place makes round the band over its length (a gentle twist: the tongues fan out like a flame
         /// rather than winding into a tangle), how fast (rad/s) the fan sways round the band and how far (rad).</summary>
-        public const float BraidTurns = 0.15f, BraidSpeed = 0.35f, BraidSway = 0.45f;
+        public const float BraidTurns = 0.15f, BraidSpeed = 0.35f, BraidSway = 0.3f;
         /// <summary>Pull (1/s²) towards its place in the bundle, at the root and at the tail (the tail swirls freely).</summary>
-        public const float HoldRoot = 60f, HoldTail = 16f;
+        public const float HoldRoot = 60f, HoldTail = 28f;
         /// <summary>Air drag (1/s) and gravity's share on a strand.</summary>
         public const float Drag = 5f, GravityScale = 0.06f;
         /// <summary>How close (m) two strands come before they push apart (they rub, slide round each other).</summary>

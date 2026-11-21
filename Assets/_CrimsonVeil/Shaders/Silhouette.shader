@@ -26,6 +26,9 @@ Shader "CrimsonVeil/Silhouette"
         [Toggle] _Wind ("Wind Sway", Float) = 0
         _WindWeight ("Wind Weight", Float) = 1
         [Toggle] _PinTop ("Pin Top (banners)", Float) = 0
+        _InkStreaks ("Ink Streaks (the scarf's painted crimson: the hero's collar)", Range(0, 1)) = 0
+        _StreakDeep ("Streak Deep", Color) = (0.17, 0.02, 0.02, 1)
+        _StreakLight ("Streak Light", Color) = (0.55, 0.07, 0.06, 1)
         [Enum(UnityEngine.Rendering.CullMode)] _Cull ("Cull", Float) = 2
     }
     SubShader
@@ -63,6 +66,9 @@ Shader "CrimsonVeil/Silhouette"
             float _WindWeight;
             float _PinTop;
             float _Cull;
+            float _InkStreaks;
+            half4 _StreakDeep;
+            half4 _StreakLight;
         CBUFFER_END
 
         struct Attributes
@@ -110,6 +116,7 @@ Shader "CrimsonVeil/Silhouette"
                 float fogFactor : TEXCOORD2;
                 float2 uv : TEXCOORD3;
                 float4 tint : TEXCOORD4;
+                float3 positionOS : TEXCOORD5;
             };
 
             Varyings vert(Attributes v)
@@ -121,6 +128,7 @@ Shader "CrimsonVeil/Silhouette"
                 o.fogFactor = ComputeFogFactor(o.positionCS.z);
                 o.uv = v.uv;
                 o.tint = v.color;
+                o.positionOS = v.positionOS.xyz;
                 return o;
             }
 
@@ -133,6 +141,19 @@ Shader "CrimsonVeil/Silhouette"
                 // Per-vertex tone (masonry): each dressed stone its own shade, the mortar behind them darker.
                 // Meshes without vertex colours read as white here, i.e. unchanged.
                 col *= lerp(1.0, i.tint.rgb, _VertexTint);
+
+                // The hero's collar painted like his scarf: broad strokes of deep and bright crimson running round the
+                // neck (in the body's own space, so they stay on the cloth), not one flat red.
+                if (_InkStreaks > 0.001)
+                {
+                    float3 q = i.positionOS;
+                    float around = atan2(q.z, q.x);
+                    float warp = (CV_Fbm(float2(around * 1.3, q.y * 6.0)) - 0.5) * 1.2;
+                    float s = CV_Fbm(float2(around * 1.6 + warp, q.y * 26.0 + warp * 2.0));
+                    half3 ink = lerp(_StreakDeep.rgb, _BaseColor.rgb, smoothstep(0.3, 0.55, s));
+                    ink = lerp(ink, _StreakLight.rgb, smoothstep(0.6, 0.85, s) * 0.85);
+                    col = lerp(col, ink * (1.0 + (grain - 0.65) * _GrainStrength), _InkStreaks);
+                }
 
                 if (_Cracks > 0.001)
                 {

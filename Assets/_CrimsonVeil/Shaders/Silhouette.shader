@@ -208,7 +208,9 @@ Shader "CrimsonVeil/Silhouette"
                     float rim = pow(saturate(1.0 - abs(dot(n, view))), _RimWidth);
                     col = lerp(col, _RimColor.rgb, rim * _RimLight);
                 }
-                col = MixFog(col, i.fogFactor);
+                // (the collar painted like the scarf takes no fog either: the scarf has none, and beside it the fog's
+                // grey made the collar read as another cloth)
+                col = lerp(MixFog(col, i.fogFactor), col, step(0.5, _InkStreaks));
                 float mist = CV_GroundMist(i.positionWS, _MistStrength);
                 col = lerp(col, _CV_MistColor.rgb, mist);
                 return half4(col, 1);

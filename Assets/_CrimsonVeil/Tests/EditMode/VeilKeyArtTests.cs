@@ -79,6 +79,15 @@ namespace CrimsonVeil.Tests
         }
 
         [Test]
+        public void AtARun_ItKeepsItsS_AsOneCloth_WithOpenWhorls()
+        {
+            Assert.GreaterOrEqual(VeilController.RunShapeWeight, 0.8f, "at a run it keeps its S (eased off, the wind drew it out straight)");
+            Assert.LessOrEqual(VeilRenderer.LooseTintContrast, 0.5f, "its layers only hint at their tints: one cloth, not bands");
+            Assert.That(VeilRenderer.LooseCurlTurns, Is.InRange(0.7f, 1f), "open whorls, under a turn");
+            Assert.Less(LevelKitMaterials.HeroCrimson.g, 0.02f, "the collar a clean crimson, no grey in it");
+        }
+
+        [Test]
         public void TheTail_ShedsThreadsOfSmoke_AndDropsOfInk()
         {
             Assert.That(VeilWisps.DropShare, Is.InRange(0.15f, 0.5f), "some drops among the threads");

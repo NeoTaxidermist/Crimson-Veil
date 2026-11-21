@@ -105,6 +105,8 @@ namespace CrimsonVeil.Veil
         LineRenderer bowString;
 
         public VeilSimulation Simulation { get; private set; }
+        /// <summary>How much of the scarf's S (VeilRestShape) it keeps at a full run.</summary>
+        public const float RunShapeWeight = 0.85f;
         /// <summary>The scarf's strands as cloth of their own (the tongues that come off the band).</summary>
         public VeilStrands Strands { get; private set; }
         /// <summary>Current swing of the weapon in degrees (+ = up) — the arm animation follows it.</summary>
@@ -735,7 +737,8 @@ namespace CrimsonVeil.Veil
             // The animation sheet's S-shape (VeilRestShape): held firmly at rest, eased off at a run, while turning
             // round, in a somersault, when it senses a secret or bristles at danger.
             float bodySpeed = Mathf.Abs(Simulation.AnchorVelocity.x);
-            Simulation.RestShapeWeight = (1f - wrap) * Mathf.Lerp(1f, 0.45f, Mathf.Clamp01(bodySpeed / 7f)) * Mathf.Abs(facingScale)
+            // (at a run it keeps most of its S: eased off further, the wind drew it out into a straight streamer)
+            Simulation.RestShapeWeight = (1f - wrap) * Mathf.Lerp(1f, RunShapeWeight, Mathf.Clamp01(bodySpeed / 7f)) * Mathf.Abs(facingScale)
                                          * (1f - Mathf.SmoothStep(0f, 1f, HintPull)) * (1f - 0.5f * Danger);
             // The shield's ring circles round the body on its own: once it has formed it is not tied to the hand.
             // (Only once the ring has been thrown round: cut loose earlier, the scarf hung torn off the neck.)

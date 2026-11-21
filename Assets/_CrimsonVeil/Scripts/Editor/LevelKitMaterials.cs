@@ -148,11 +148,11 @@ namespace CrimsonVeil.EditorTools
         }
 
         /// <summary>The hero's collar and trim, matched to the scarf where it leaves the collar (measured in the game).</summary>
-        public static readonly Color HeroCrimson = new Color(0.36f, 0.03f, 0.028f);
+        public static readonly Color HeroCrimson = new Color(0.48f, 0.008f, 0.008f);
 
         /// <summary>The scarf's painted strokes on the hero's collar (Silhouette _InkStreaks), in the scarf's own deep and
         /// light crimson as they come out in the game.</summary>
-        public static readonly Color HeroStreakDeep = new Color(0.2f, 0.015f, 0.015f), HeroStreakLight = new Color(0.64f, 0.06f, 0.05f);
+        public static readonly Color HeroStreakDeep = new Color(0.27f, 0.003f, 0.003f), HeroStreakLight = new Color(0.8f, 0.025f, 0.02f);
 
         static Material InkStreaks(Material m)
         {

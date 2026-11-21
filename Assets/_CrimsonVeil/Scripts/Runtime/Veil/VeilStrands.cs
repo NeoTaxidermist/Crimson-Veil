@@ -226,8 +226,9 @@ namespace CrimsonVeil.Veil
                 }
                 RubTogether();
             }
-            CollideWithBody(sim);
+            // (the body last: clamped in depth after it, a strand held close by its place was pushed back into the body)
             ClampDepth(zRest, settings.maxDepth);
+            CollideWithBody(sim);
             // hardening into a weapon, the strands are laid on their places after all the rest
             for (int s = 0; s < Count; s++)
                 for (int j = 1; j < Nodes; j++)
@@ -270,6 +271,8 @@ namespace CrimsonVeil.Veil
             var body = sim.Body;
             if (body.Count == 0) return;
             float skin = sim.Settings.bodySkin;
+            // twice: pushed out of one capsule a node can end in its neighbour (the thigh against the trunk)
+            for (int pass = 0; pass < 2; pass++)
             for (int s = 0; s < Count; s++)
             {
                 var pos = Positions[s];

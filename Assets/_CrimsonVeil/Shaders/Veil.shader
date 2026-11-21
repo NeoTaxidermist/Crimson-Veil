@@ -170,7 +170,8 @@ Shader "CrimsonVeil/Veil"
                 {
                     float brush = CV_ValueNoise(float2(across * 14.0 + seed * 3.0, along * 2.0 - t * 0.15));
                     float rag = CV_Fbm(float2(along * 7.0 - t * 0.3, seed + across * 0.3));
-                    float clothAlpha = smoothstep(0.0, 0.12, edge - (rag - 0.5) * 0.3 - (brush - 0.5) * 0.25 * (1.0 - core));
+                    // loose: a clean, soft edge (its ragged bristles read as zigzags); a weapon keeps its rough brush edge
+                    float clothAlpha = smoothstep(0.0, lerp(0.2, 0.12, hard), edge - (rag - 0.5) * lerp(0.1, 0.3, hard) - (brush - 0.5) * lerp(0.04, 0.25, hard) * (1.0 - core));
                     // the wash: opaque body, translucent overlapping layers towards the curls
                     // the sheet: opaque crimson at the neck, ~70 % through the middle, a translucent pink-red wash in
                     // the whorls

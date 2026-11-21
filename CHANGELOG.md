@@ -5,6 +5,21 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.56.0] – 2026-11-21
+### Změněno
+- **Šála v běhu drží esíčko.** V běhu se tvar S z animačního listu oslaboval na 45 % a vítr šálu natáhl skoro do přímky (konce od sebe 3,12 m z 3,5 m délky). Teď zůstává 85 % tvaru (`VeilController.RunShapeWeight`). V běhu je vzdálenost konců 2,87–3,01 m a šála si drží oblouk. Šála se přitom nikdy neprodlužovala, délka zůstává 3,5 m.
+- **Bez vodorovných pásů:** vrstvy volné šály mají každá svůj odstín (tmavá spodní vrstva, světlé pruhy). Přes sebe tvořily zblízka ostré vodorovné pruhy. Teď z vlastního odstínu ukazují jen 35 % (`LooseTintContrast`) a látka působí jako jedna. Zbraně si nechávají plný kontrast.
+- **Hladké okraje:** roztřepené okraje štětce působily na volné látce jako zuby. Volná šála má teď čistý měkký okraj, zbraně si nechávají drsný.
+- **Nákrčník bez šedi:** šedý nádech mu přidávala mlha scény, kterou šála nemá. Malovaný nákrčník (`_InkStreaks`) mlhu nebere a jeho barvy nemají žádnou šedou příměs. Je o něco světlejší, aby jasem navazoval na šálu.
+- **Větší a otevřenější víry:** konce se stáčejí do větších vírů (`curlScale` 2,4 místo 1,9) s méně otáčkami (0,9 místo 1,05), takže jsou otevřené jako na key artu.
+
+### Opraveno
+- Pramen šály mohl při saltu vniknout do těla: o 3,4 cm, kde jsou dovolené 2 cm. Na to přišel test na skutečném hrdinovi, protože šálu teď tvar S drží pevněji i v pohybu. Náraz pramenů do těla se teď vyhodnocuje až po omezení hloubky, které ho dřív posouvalo zpět do těla, a ve dvou průchodech, protože vytlačením ze stehna mohl pramen skončit v trupu.
+
+### Testy
+- `VeilKeyArtTests` (EditMode): v běhu šála drží svůj tvar S, vrstvy jen naznačují svůj odstín, víry jsou otevřené (pod jednu otáčku) a nákrčník je čistě karmínový.
+- Prošlo všech 560 EditMode a 121 PlayMode testů.
+
 ## [0.55.0] – 2026-11-21
 ### Změněno
 - **Plameny drží pohromadě v esíčku.** Jazyky šály se rozpadaly: každý se rozevřel daleko od pásu a letěl po svém, takže esíčko netvořilo jedno tělo. Teď:

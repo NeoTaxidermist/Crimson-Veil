@@ -22,7 +22,7 @@ namespace CrimsonVeil.Veil
         [Tooltip("Points in each end curl.")]
         [SerializeField, Range(6, 40)] int curlPoints = 34;
         [Tooltip("Global multiplier of the curl size.")]
-        [SerializeField] float curlScale = 1.9f;
+        [SerializeField] float curlScale = 2.4f;
         [Tooltip("How far (m) the tendrils fan away from the main ribbon at their ends.")]
         [SerializeField] float tendrilSpread = 0.38f;
 
@@ -171,7 +171,7 @@ namespace CrimsonVeil.Veil
         /// </summary>
         public static float LooseCurl(Strand st) => (st.side > 0.05f ? 1f : -1f) * st.curlTurns * LooseCurlTurns;
 
-        public const float LooseCurlTurns = 1.05f;
+        public const float LooseCurlTurns = 0.9f;
 
         /// <summary>
         /// Opacity of strand <paramref name="s"/> of the loose scarf at veil fraction <paramref name="f"/>: near the
@@ -1016,6 +1016,9 @@ namespace CrimsonVeil.Veil
 
         public const float NeckGatherWidth = 0.3f;
 
+        /// <summary>How much of its layer's own tint the loose cloth shows (a weapon all of it).</summary>
+        public const float LooseTintContrast = 0.35f;
+
         /// <summary>How far (m) behind the band its dark under-layer lies.</summary>
         public const float UnderLayerDepth = 0.1f;
 
@@ -1031,7 +1034,8 @@ namespace CrimsonVeil.Veil
             vertices[v + 1] = c - side;
             faceAt[f] = new Vector3(nrm.x * sn, nrm.y * sn, -cs);                 // RibbonFace
             cupAt[f] = cup;
-            var col = st.tint * (1f + 0.9f * glow);
+            // loose, the layers are one cloth: their tints only hint (stacked at full contrast they read as bands)
+            var col = Color.Lerp(Color.white, st.tint, Mathf.Lerp(LooseTintContrast, 1f, hard)) * (1f + 0.9f * glow);
             col.a = alpha;
             col.r *= Mathf.Lerp(0.6f, 1f, vit);
             colors[v] = colors[v + 1] = col;

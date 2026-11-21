@@ -205,8 +205,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: CrimsonVeil.Runtime::CrimsonVeil.Veil.VeilController
   settings:
-    nodeCount: 32
-    length: 3.2
+    nodeCount: 35
+    length: 3.5
     constraintIterations: 14
     damping: 0.985
     airDrag: 4.5

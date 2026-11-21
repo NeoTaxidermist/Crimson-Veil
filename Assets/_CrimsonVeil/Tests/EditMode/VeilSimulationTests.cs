@@ -32,9 +32,10 @@ namespace CrimsonVeil.Tests
             Run(sim, 2f, Vector3.zero, new Vector3(8f, 0f, 0f));
             for (int i = 0; i < sim.Count - 1; i++)
             {
+                // (in three dimensions: the cloth moves in depth too; round the neck a segment is the ring's chord)
                 var d = sim.Positions[i + 1] - sim.Positions[i];
-                d.z = 0f; // depth flutter is cosmetic
-                Assert.AreEqual(sim.FlowRestLength, d.magnitude, sim.FlowRestLength * 0.2f, $"segment {i}");
+                float rest = i == 0 ? sim.Settings.neckRadius : sim.FlowRestLength;
+                Assert.AreEqual(rest, d.magnitude, sim.FlowRestLength * 0.2f, $"segment {i}");
             }
         }
 
@@ -85,7 +86,8 @@ namespace CrimsonVeil.Tests
                 // a node ~1.2 m and one ~2 m along the scarf: the sheet's first dip and the crest after it
                 foreach (float d in new[] { 1.2f, 2f })
                 {
-                    int k = Mathf.RoundToInt(d / sim.Settings.length * (sim.Count - 1));
+                    // (the sheet streams off the wrap round the neck: d is measured from its end)
+                    int k = Mathf.RoundToInt((d + sim.WrapLength) / sim.Settings.length * (sim.Count - 1));
                     err += Mathf.Abs(sim.Positions[k].y - VeilRestShape.Height(d, 0f));
                     frames++;
                 }

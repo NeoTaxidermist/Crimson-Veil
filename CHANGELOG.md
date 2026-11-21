@@ -5,6 +5,24 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.46.0] – 2026-11-21
+### Přidáno
+- **3D šála, fáze 1 z 5: simulace látky v prostoru.** Šála dosud žila v rovině obrazu: délky segmentů se počítaly bez hloubky a hloubku na konci každého kroku natvrdo nastavovalo kosmetické vlnění. Teď je to látka ve 3D (`VeilSimulation`):
+  - **Hloubka:** vazby mezi body počítají i hloubku. Volnou látku táhne k jejímu místu kousek za hrdinou pružina (`depthStiffness`, `depthDamping`) a v hloubce se sama pomalu toulá (`depthFlutter`). Od svého místa se vzdálí nejvýš na `maxDepth` (0,7 m). Z boku si šála drží svůj tvar, ze tří čtvrtin a shora je vidět, že žije v prostoru. V běhu a při saltu se pohybuje zhruba od 0,4 m před hrdinou do 0,7 m za ním.
+  - **Ovinutí kolem krku:** první tři segmenty leží na prstenci kolem krku (poloměr 8,5 cm) od hrdla přes stranu ke kameře dozadu. Teprve z něj vlaje volný konec. Šála je proto o tyto tři segmenty delší (35 bodů, 3,5 m), aby volná část zůstala stejně dlouhá. Tvar „S“ v klidu se měří od konce ovinutí. Když se šála mění ve zbraň nebo se zbraň rozpouští zpět, ovinutí ustoupí.
+  - **Kolize s tělem:** `VeilController` každý snímek předá simulaci tělo hrdiny jako kapsle kolem kostí: trup, ramena, hlava, paže, předloktí, stehna, holeně. Volná látka do nich nevnikne. Dopadne na tělo a sklouzne po něm. V testu běhu, skoků a salta nevnikla do těla ani jednou.
+  - **Zbraně** zůstávají, jak byly: hloubku jim dál drží krok 7 (před tělem) a délky se měří v rovině. Na řadě jsou ve fázi 4.
+- Kreslení šály je zatím původní ploché. Skutečně 3D pás s tloušťkou a přetáčením přijde ve fázi 3, prameny, které se proplétají, ve fázi 2.
+
+### Testy
+- `Veil3DTests` (EditMode):
+  - ovinutí leží na prstenci kolem krku od hrdla přes stranu ke kameře dozadu, krok po délce segmentu a i otočený doleva;
+  - volná látka se pohybuje v hloubce, ale v mezích;
+  - padá na trup, ne skrz něj. Bez těla by trupem prošla;
+  - zbraň zůstává před tělem a není ovinutá kolem krku.
+- Na skutečném hrdinovi (`HeroMoveSetPlayTests`): v běhu, ve skoku a v saltu je volná látka mimo všechny kapsle těla, ovinutí sedí na prstenci kolem krku a látka se pohybuje v hloubce.
+- Upravené testy, protože měřily ve 2D: délky segmentů se měří ve 3D (u krku jako tětiva prstence) a tvar „S“ od konce ovinutí.
+
 ## [0.45.2] – 2026-11-21
 ### Opraveno
 - **Postava každý snímek alokovala paměť a sběrač odpadu (GC) pak dělal pauzy.** Úklid paměti trval v editoru až 10 ms a snímek se natáhl na 27–30 ms, což je viditelné škubnutí. Nejvíc odpadu vznikalo v boji. Odstraněno, chování se nemění:

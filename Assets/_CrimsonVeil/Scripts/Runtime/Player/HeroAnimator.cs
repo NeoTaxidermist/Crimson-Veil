@@ -17,6 +17,8 @@ namespace CrimsonVeil.Player
         [SerializeField] VeilController veil;
         [Tooltip("Root of the imported hero model (child of the player's visual root).")]
         [SerializeField] Transform model;
+        /// <summary>The hero's model (its forward is the way the body faces).</summary>
+        public Transform Model => model;
         [Tooltip("Optional: moved to the neck every frame so the veil follows the body.")]
         [SerializeField] Transform veilAnchor;
         [SerializeField] Vector3 veilAnchorOffset = new Vector3(0f, -0.04f, 0f);

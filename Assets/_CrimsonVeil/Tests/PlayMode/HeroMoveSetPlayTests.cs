@@ -277,6 +277,52 @@ namespace CrimsonVeil.Tests
         }
 
         [UnityTest]
+        public IEnumerator TheScarf_IsWoundRoundTheNeck_AndFallsAgainstTheBody_RunningJumpingAndInTheSomersault()
+        {
+            // the scarf as 3D cloth on the real hero: its body as capsules round his bones (VeilController), the wrap
+            // round his neck, the loose cloth free in depth but never inside the body
+            yield return StartAt(new Vector3(-12f, 0.05f, 0f));
+            var sim = veil.Simulation;
+            var neck = RigJoint.FindDeep(player.transform, "Neck");
+            float worstIn = 0f, worstWrap = 0f, zMin = 9f, zMax = -9f;
+            string where = "";
+            int frames = 0;
+            var probe = player.AddComponent<EndOfFrameProbe>();
+            probe.each = () =>
+            {
+                if (sim.Body.Count == 0) return;
+                frames++;
+                for (int i = 1; i < sim.Count; i++)
+                {
+                    var p = sim.Positions[i];
+                    if (sim.IsWrapped(i))
+                    {
+                        worstWrap = Mathf.Max(worstWrap, Mathf.Abs(Vector3.Distance(p, sim.Positions[0]) - sim.Settings.neckRadius));
+                        continue;
+                    }
+                    zMin = Mathf.Min(zMin, p.z - Pos.z); zMax = Mathf.Max(zMax, p.z - Pos.z);
+                    foreach (var c in sim.Body)
+                    {
+                        float into = c.radius - Vector3.Distance(p, VeilSimulation.ClosestOnSegment(c.a, c.b, p));
+                        if (into > worstIn) { worstIn = into; where = $"node {i} {into:F3} m into a body capsule (r {c.radius:F2}), {mocap.Current}"; }
+                    }
+                }
+            };
+            input.moveX = 1f; yield return Wait(0.8f);
+            input.jump = true; input.jumpHeld = true; yield return Wait(0.25f);
+            input.jump = true; yield return Wait(0.9f);   // the double jump's somersault: the scarf winds round him
+            input.jumpHeld = false; input.moveX = -1f; yield return Wait(0.8f);
+            input.moveX = 0f; yield return Wait(0.8f);
+            probe.each = null;
+            Debug.Log($"[3D scarf] {frames} frames: worst {where}; the wrap off the neck ring by {worstWrap:F3} m; the cloth's depth {zMin:F2}..{zMax:F2} m");
+            Assert.Greater(frames, 50);
+            Assert.IsNotNull(neck);
+            Assert.Less(worstIn, 0.02f, "the loose cloth stays out of the body (within 2 cm)");
+            Assert.Less(worstWrap, 0.01f, "the wound part lies round the neck");
+            Assert.Greater(zMax - zMin, 0.1f, "the cloth moves in depth");
+        }
+
+        [UnityTest]
         public IEnumerator DoubleJump_Somersaults_AndLandsOnHisFeet()
         {
             yield return StartAt(new Vector3(-12f, 0.05f, 0f));

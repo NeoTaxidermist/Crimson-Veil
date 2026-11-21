@@ -318,6 +318,76 @@ namespace CrimsonVeil.Veil
         void Start()
         {
             input = player != null && player.InputSource != null ? player.InputSource : GetComponent<IPlayerInput>();
+            FindBody();
+        }
+
+        // --- the body the cloth falls against (3D) -----------------------------------------------------------------
+
+        /// <summary>A capsule of the body between two bones (or round one, b == a), its radius, and how far past each bone it runs.</summary>
+        struct BodyPart { public Transform a, b; public float radius, overA, overB; }
+
+        BodyPart[] bodyParts;
+        Transform bodyModel, neckBone, headBone;
+
+        /// <summary>
+        /// The hero's body for the cloth, as capsules round his bones: the trunk (hips to chest), the shoulders (across
+        /// them), the head, the arms, the legs. Found once (a search by name reads every bone's name).
+        /// </summary>
+        void FindBody()
+        {
+            var animator = GetComponentInChildren<CrimsonVeil.Player.HeroAnimator>();
+            bodyModel = animator != null && animator.Model != null ? animator.Model : null;
+            if (bodyModel == null) { bodyParts = new BodyPart[0]; return; }
+            Transform F(string n) => RigJoint.FindDeep(bodyModel, n);
+            neckBone = F("Neck"); headBone = F("Head");
+            var list = new List<BodyPart>();
+            void Add(string a, string b, float radius, float overA = 0f, float overB = 0f)
+            {
+                var ta = F(a); var tb = b == null ? ta : F(b);
+                if (ta != null && tb != null) list.Add(new BodyPart { a = ta, b = tb, radius = radius, overA = overA, overB = overB });
+            }
+            Add("Hips", "Chest", BodyTrunk);
+            Add("UpperArm.L", "UpperArm.R", BodyShoulders);
+            Add("Head", null, BodyHead);
+            Add("UpperArm.L", "LowerArm.L", BodyArm); Add("UpperArm.R", "LowerArm.R", BodyArm);
+            Add("LowerArm.L", "Hand.L", BodyForearm); Add("LowerArm.R", "Hand.R", BodyForearm);
+            Add("UpperLeg.L", "LowerLeg.L", BodyThigh); Add("UpperLeg.R", "LowerLeg.R", BodyThigh);
+            Add("LowerLeg.L", "Foot.L", BodyShin); Add("LowerLeg.R", "Foot.R", BodyShin);
+            bodyParts = list.ToArray();
+        }
+
+        /// <summary>Radii (m) of the body's capsules for the cloth.</summary>
+        public const float BodyTrunk = 0.14f, BodyShoulders = 0.07f, BodyHead = 0.12f, BodyArm = 0.055f, BodyForearm = 0.045f,
+                           BodyThigh = 0.075f, BodyShin = 0.055f;
+
+        /// <summary>How far (m) the head's sphere sits up from the head bone.</summary>
+        public const float HeadUp = 0.1f;
+
+        /// <summary>Hands the simulation the body as it stands this frame, and the neck the scarf is wound round.</summary>
+        void UpdateBody()
+        {
+            var body = Simulation.Body;
+            body.Clear();
+            if (bodyParts == null) FindBody();
+            foreach (var p in bodyParts)
+            {
+                if (p.a == null || p.b == null) continue;
+                Vector3 a = p.a.position, b = p.b.position;
+                if (p.a == p.b)
+                {
+                    // the head: a sphere a little up from the bone
+                    Vector3 up = headBone != null && neckBone != null ? (headBone.position - neckBone.position).normalized : Vector3.up;
+                    a = b = a + up * HeadUp;
+                }
+                body.Add(new VeilSimulation.BodyCapsule(a, b, p.radius));
+            }
+            if (neckBone != null && headBone != null)
+            {
+                Vector3 up = headBone.position - neckBone.position;
+                if (up.sqrMagnitude > 1e-6f) Simulation.NeckUp = up.normalized;
+            }
+            Simulation.NeckForward = bodyModel != null ? bodyModel.forward : new Vector3(Facing, 0f, 0f);
+            Simulation.TowardsCamera = Vector3.back;
         }
 
         public void SetForm(VeilForm form)
@@ -669,6 +739,7 @@ namespace CrimsonVeil.Veil
             Simulation.DetachedAfter = ShapeForm == VeilForm.Shield && TransformProgress > 0.3f && morph > 0.6f
                 ? Mathf.Clamp(Mathf.CeilToInt(HandFraction * (Simulation.Count - 1)) - 1, 0, Simulation.Count - 2) : -1;
             GatherObstacles(a);
+            UpdateBody();
             // the loose scarf is as long as its strength: it shrinks quickly when spent or torn and grows back with it
             Simulation.LengthScale = Mathf.MoveTowards(Simulation.LengthScale, LooseLength(LooseReach), dt * 1.5f);
             Simulation.Step(dt, a);

@@ -8,9 +8,9 @@ namespace CrimsonVeil.Veil
     public class VeilSettings
     {
         [Header("Cloth")]
-        [Min(3)] public int nodeCount = 32;
-        [Tooltip("The loose scarf's length (m): 3.2 m back from the neck in its animation sheet, plus the curls.")]
-        public float length = 3.2f;
+        [Min(3)] public int nodeCount = 35;
+        [Tooltip("The scarf's length (m): round the neck (WrapNodes segments), then 3.2 m back from it in its animation sheet, plus the curls.")]
+        public float length = 3.5f;
         [Range(1, 20)] public int constraintIterations = 14;
         [Range(0.9f, 1f)] public float damping = 0.985f;
         public float airDrag = 4.5f;
@@ -19,6 +19,22 @@ namespace CrimsonVeil.Veil
         public float depthWobble = 0.08f;
         [Tooltip("How far (m) in front of the hero a hardened weapon is held.")]
         public float weaponDepth = 0.3f;
+
+        [Header("Depth (3D cloth)")]
+        [Tooltip("Pull (1/s²) of the loose cloth back towards its depth just behind the hero: it may swing round the body and out of the picture plane, but its side view stays the scarf's.")]
+        public float depthStiffness = 30f;
+        [Tooltip("Damping (1/s) of the loose cloth's motion in depth.")]
+        public float depthDamping = 3f;
+        [Tooltip("A wandering push (m/s²) in depth, growing towards the tail: the cloth lives in three dimensions.")]
+        public float depthFlutter = 3f;
+        [Tooltip("Furthest (m) the loose cloth may stray in depth from its place behind the hero.")]
+        public float maxDepth = 0.7f;
+        [Tooltip("Radius (m) of the scarf's wrap round the neck.")]
+        public float neckRadius = 0.085f;
+        [Tooltip("How many segments of the scarf are wound round the neck (from the throat, round the side towards the camera, to the back).")]
+        [Min(0)] public int wrapNodes = 3;
+        [Tooltip("How far (m) the cloth stays off the body it falls against.")]
+        public float bodySkin = 0.03f;
 
         [Header("Vortex shedding (Karman street)")]
         public float strouhal = 0.21f;
@@ -86,7 +102,9 @@ namespace CrimsonVeil.Veil
 
     /// <summary>
     /// The magic scarf: a Verlet ribbon pushed around by a 2D Kármán vortex street that the
-    /// hero's body sheds as it moves through the air. Weapon forms "harden" the ribbon by
+    /// hero's body sheds as it moves through the air. It is cloth in three dimensions: wound round the neck, it swings
+    /// round the body and out of the picture plane and falls against the body (capsules round its bones), pulled back
+    /// towards its place just behind the hero. Weapon forms "harden" the ribbon by
     /// pulling nodes towards a target shape while the vortices still make it ripple.
     /// Pure C#, no MonoBehaviour, fully deterministic and testable.
     /// </summary>
@@ -199,6 +217,51 @@ namespace CrimsonVeil.Veil
         public IReadOnlyList<Vortex> Vortices => vortices;
         public int ShedCount { get; private set; }
 
+        /// <summary>A part of the hero's body the cloth falls against: a capsule from <see cref="a"/> to <see cref="b"/>.</summary>
+        public struct BodyCapsule
+        {
+            public Vector3 a, b;
+            public float radius;
+            public BodyCapsule(Vector3 a, Vector3 b, float radius) { this.a = a; this.b = b; this.radius = radius; }
+        }
+
+        /// <summary>The hero's body as capsules (filled each frame by the owner): the loose cloth stays outside them.</summary>
+        public readonly List<BodyCapsule> Body = new List<BodyCapsule>();
+
+        /// <summary>Up along the neck (the wrap winds round it).</summary>
+        public Vector3 NeckUp { get; set; } = Vector3.up;
+        /// <summary>Where the throat faces (the hero's facing): the wrap starts there.</summary>
+        public Vector3 NeckForward { get; set; } = Vector3.right;
+        /// <summary>Which way is towards the camera (the wrap goes round that side of the neck).</summary>
+        public Vector3 TowardsCamera { get; set; } = Vector3.back;
+
+        /// <summary>
+        /// Where node <paramref name="i"/> (1..WrapNodes) of the scarf lies wound round the neck: on a ring of
+        /// <paramref name="radius"/> about the neck at <paramref name="centre"/>, from the throat (node 1) round the side
+        /// towards the camera, a segment's length on from the one before.
+        /// </summary>
+        public static Vector3 WrapRingPoint(Vector3 centre, Vector3 up, Vector3 forward, Vector3 towardsCamera, float radius, float segment, int i)
+        {
+            Vector3 f = Vector3.ProjectOnPlane(forward, up);
+            if (f.sqrMagnitude < 1e-6f) f = Vector3.ProjectOnPlane(Vector3.right, up);
+            f.Normalize();
+            Vector3 side = Vector3.ProjectOnPlane(towardsCamera, up);
+            side = Vector3.ProjectOnPlane(side, f);
+            if (side.sqrMagnitude < 1e-6f) side = Vector3.Cross(up, f);
+            side.Normalize();
+            float angle = (i - 1) * segment / Mathf.Max(0.01f, radius);
+            return centre + (f * Mathf.Cos(angle) + side * Mathf.Sin(angle)) * radius;
+        }
+
+        /// <summary>0..1 how firmly node <paramref name="i"/> is held on the neck's wrap (the loose cloth's part of it).</summary>
+        float WrapHold(int i) => i >= 1 && i <= Settings.wrapNodes ? (1f - H(i)) * (1f - GuideWeight[i]) : 0f;   // (a weapon melting back is led off it)
+
+        /// <summary>The node lies wound round the neck (1..WrapNodes, while cloth).</summary>
+        public bool IsWrapped(int i) => WrapHold(i) > 0.5f;
+
+        /// <summary>How free node <paramref name="i"/> is to be moved by the constraints (0: held on the neck or the anchor).</summary>
+        float Free(int i) => i == 0 ? 0f : 1f - WrapHold(i);
+
         readonly Vector3[] previous;
         readonly List<Vortex> vortices = new List<Vortex>();
         float shedPhase;
@@ -237,6 +300,9 @@ namespace CrimsonVeil.Veil
             lastAnchor = anchor;
             AnchorVelocity = Vector3.zero;
         }
+
+        /// <summary>The scarf's length (m) wound round the neck.</summary>
+        public float WrapLength => Mathf.Min(Settings.wrapNodes, Count - 2) * FlowRestLength;
 
         /// <summary>Recompute <see cref="TargetRest"/> from the current <see cref="Targets"/>.</summary>
         public void RecomputeTargetRest()
@@ -343,8 +409,9 @@ namespace CrimsonVeil.Veil
                 if (shaped > 0.001f)
                 {
                     // The sheet's shape: its centre line d metres back from the neck. Its S takes up length: it reaches
-                    // back ~RestReach of d (a straighter target would pull the S flat).
-                    float dAlong = f * s.length * LengthScale;
+                    // back ~RestReach of d (a straighter target would pull the S flat). (Measured from the end of the
+                    // wrap round the neck: the sheet is the part that streams off it.)
+                    float dAlong = Mathf.Max(0f, f * s.length - WrapLength) * LengthScale;
                     var target = new Vector3(a.x + Mathf.Sign(DriftDirection) * dAlong * RestReach, a.y + VeilRestShape.Height(dAlong, time), p.z);
                     Vector3 pull = (target - p) * (s.restShapeStiffness * (1f + 3f * unwind));
                     Vector3 still = new Vector3(anchorVel.x - vel.x, anchorVel.y - vel.y, 0f) * (s.restShapeDamping * (1f + 1.5f * unwind));
@@ -368,6 +435,14 @@ namespace CrimsonVeil.Veil
                     }
                     acc.y += s.buoyancy * f * f * loose * own;
                     acc += new Vector3(Breath.x, Breath.y, 0f) * (f * loose);
+                }
+                // Depth: the loose cloth is pulled back towards its place just behind the hero (with a little wander
+                // of its own), so it can swing round the body and out of the picture plane yet keeps the scarf's side view.
+                if (loose > 0.001f)
+                {
+                    float zRest = a.z + s.depthOffset + Mathf.Sin(time * 2.3f + i * 0.55f) * s.depthWobble * f;
+                    acc.z += ((zRest - p.z) * s.depthStiffness - vel.z * s.depthDamping
+                              + Mathf.Sin(time * 1.7f + i * 0.9f) * Mathf.Cos(time * 0.6f - i * 0.3f) * s.depthFlutter * f) * loose;
                 }
                 Vector3 next = p + (p - previous[i]) * s.damping + acc * (h * h);
                 // The veil is weightless: it rides along with the hero's jumps and falls instead of carrying
@@ -402,6 +477,10 @@ namespace CrimsonVeil.Veil
                 previous[i] = Vector3.Lerp(previous[i], Positions[i], f * 0.5f);
             }
 
+            // 5a) Round the neck: the first segments of the cloth are wound round it (from the throat round the side
+            // towards the camera, to the back), held there; the rest streams off the wrap.
+            LayWrap(a);
+
             // 5b) The somersault: the loose cloth is laid round the body as a spiral from the neck, trailing the
             // turn, so it wraps the hero as the body turns (rather than tangling in the whirl beside him).
             if (SwirlWeight > 0.001f)
@@ -412,9 +491,9 @@ namespace CrimsonVeil.Veil
                     float rate = 1f - Mathf.Exp(-WrapRate * SwirlWeight * h);
                     for (int i = 1; i < Count; i++)
                     {
-                        float loose = 1f - H(i);
+                        float loose = (1f - H(i)) * Free(i);
                         if (loose <= 0.001f) continue;
-                        Vector2 w = WrapPoint(SwirlCenter, a, (float)i / (Count - 1) * s.length * LengthScale, s.length * LengthScale, trail);
+                        Vector2 w = WrapPoint(SwirlCenter, a, Mathf.Max(0f, (float)i / (Count - 1) * s.length - WrapLength) * LengthScale, s.length * LengthScale, trail);
                         var target = new Vector3(w.x, w.y, Positions[i].z);
                         Positions[i] = Vector3.Lerp(Positions[i], target, rate * loose);
                     }
@@ -428,17 +507,20 @@ namespace CrimsonVeil.Veil
                 {
                     if (i == DetachedAfter) continue; // a weapon that floats free of the hand (the shield's ring)
                     float rest = Mathf.Lerp(FlowRestLength * LengthScale, TargetRest[i], 0.5f * (H(i) + H(i + 1)));
+                    // (in three dimensions: the cloth swings round the body and out of the picture plane; set weapons
+                    // keep their depth in step 7, so their shapes still measure in the plane)
                     Vector3 d = Positions[i + 1] - Positions[i];
-                    d.z = 0f; // 2.5D: lengths live in the picture plane; depth is only a cosmetic wobble
+                    float hard = 0.5f * (WeaponDepthBlend(H(i)) + WeaponDepthBlend(H(i + 1)));
+                    d.z *= 1f - hard;
                     float len = d.magnitude;
                     if (len < 1e-6f) continue;
+                    // the anchor and the wrap round the neck are held: the free end of a segment takes it all
+                    float wa = Free(i), wb = Free(i + 1);
+                    float sum = wa + wb;
+                    if (sum < 1e-4f) continue;
                     Vector3 corr = d * ((len - rest) / len);
-                    if (i == 0) Positions[1] -= corr;
-                    else
-                    {
-                        Positions[i] += corr * 0.5f;
-                        Positions[i + 1] -= corr * 0.5f;
-                    }
+                    Positions[i] += corr * (wa / sum);
+                    Positions[i + 1] -= corr * (wb / sum);
                 }
             }
 
@@ -471,21 +553,29 @@ namespace CrimsonVeil.Veil
                 previous[i] += shift;
             }
 
-            // 6d) The loose cloth can't pass through walls: it drapes against them (see CollideWithObstacles).
+            // 6d) The loose cloth can't pass through walls: it drapes against them (see CollideWithObstacles), nor
+            // through the hero: it falls against the body and slides round it (see CollideWithBody).
+            CollideWithBody();
             CollideWithObstacles();
+            LayWrap(a);   // (the wrap held where it is after all the rest)
 
-            // 7) 2.5D: keep the ribbon just behind the hero with a little depth flutter; a weapon in the hand is
-            // held in front of the body, so the torso never hides it.
+            // 7) Depth: the loose cloth moves in it freely (its spring above keeps it behind the hero, within
+            // maxDepth); a weapon in the hand is held in front of the body, so the torso never hides it.
             for (int i = 1; i < Count; i++)
             {
+                if (IsWrapped(i)) continue;
                 float t = (float)i / (Count - 1);
-                float behind = s.depthOffset + Mathf.Sin(time * 2.3f + i * 0.55f) * s.depthWobble * t;
-                float z = a.z + Mathf.Lerp(behind, -s.weaponDepth, WeaponDepthBlend(H(i)));
+                float weapon = WeaponDepthBlend(H(i));
+                float z = Positions[i].z;
+                float zRest = a.z + s.depthOffset;
+                z = Mathf.Clamp(z, zRest - s.maxDepth, zRest + s.maxDepth);
+                z = Mathf.Lerp(z, a.z - s.weaponDepth, weapon);
                 if (HeldWeight > 0f && t >= HeldFrom && t <= HeldTo) z = Mathf.Lerp(z, a.z - s.weaponDepth + HeldTuck, HeldWeight);
                 // A weapon melting back passes over the body: drawn in front, so the torso doesn't swallow it.
                 z = Mathf.Lerp(z, a.z - s.weaponDepth, GuideWeight[i]);
+                float held = Mathf.Max(weapon, Mathf.Max(GuideWeight[i], HeldWeight > 0f && t >= HeldFrom && t <= HeldTo ? HeldWeight : 0f));
+                previous[i].z = Mathf.Lerp(previous[i].z + (z - Positions[i].z), z, held);   // (held: no speed in depth)
                 Positions[i].z = z;
-                previous[i].z = z;
             }
         }
 
@@ -517,6 +607,64 @@ namespace CrimsonVeil.Veil
             }
             return best;
         }
+        /// <summary>Lays the loose cloth's first segments round the neck (held there, no speed of their own).</summary>
+        void LayWrap(Vector3 a)
+        {
+            var s = Settings;
+            int n = Mathf.Min(s.wrapNodes, Count - 2);
+            for (int i = 1; i <= n; i++)
+            {
+                float hold = WrapHold(i);
+                if (hold <= 0f) continue;
+                Vector3 ring = WrapRingPoint(a, NeckUp, NeckForward, TowardsCamera, s.neckRadius, FlowRestLength, i);
+                Vector3 shift = (ring - Positions[i]) * hold;
+                Positions[i] += shift;
+                previous[i] += shift;
+            }
+        }
+
+        /// <summary>
+        /// Keeps the loose cloth out of the hero's body (<see cref="Body"/>): a node inside a capsule is put on its
+        /// surface (plus <see cref="VeilSettings.bodySkin"/>) straight out from its axis; it loses its speed into the
+        /// body and keeps most of its slide round it. The wrap round the neck and set weapons are left alone.
+        /// </summary>
+        void CollideWithBody()
+        {
+            if (Body.Count == 0) return;
+            float skin = Settings.bodySkin;
+            for (int i = 1; i < Count; i++)
+            {
+                float loose = (1f - Mathf.Max(RigidHold(H(i)), GuideWeight[i])) * Free(i);
+                if (loose <= 0.01f) continue;
+                for (int c = 0; c < Body.Count; c++)
+                {
+                    var cap = Body[c];
+                    Vector3 p = Positions[i];
+                    Vector3 axis = ClosestOnSegment(cap.a, cap.b, p);
+                    Vector3 off = p - axis;
+                    float dist = off.magnitude;
+                    float reach = cap.radius + skin;
+                    if (dist >= reach) continue;
+                    Vector3 n = dist > 1e-5f ? off / dist : TowardsCamera.normalized;
+                    Vector3 push = n * (reach - dist) * loose;
+                    Positions[i] += push;
+                    Vector3 v = Positions[i] - previous[i];
+                    float vn = Vector3.Dot(v, n);
+                    Vector3 slide = (v - n * vn) * 0.9f + n * Mathf.Max(0f, vn);
+                    previous[i] = Positions[i] - Vector3.Lerp(v, slide, loose);
+                }
+            }
+        }
+
+        /// <summary>The point of the segment a-b nearest to p.</summary>
+        public static Vector3 ClosestOnSegment(Vector3 a, Vector3 b, Vector3 p)
+        {
+            Vector3 ab = b - a;
+            float l2 = ab.sqrMagnitude;
+            if (l2 < 1e-10f) return a;
+            return a + ab * Mathf.Clamp01(Vector3.Dot(p - a, ab) / l2);
+        }
+
         float[] wallContact;
         /// <summary>0..1 how recently node <paramref name="i"/> was stopped by a wall.</summary>
         public float WallContact(int i) => wallContact[i];

@@ -5,6 +5,46 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.74.0] – 2026-11-22
+### Změněno
+- **Šála je teď jedna plynulá křivka.** Na volném prostranství se nezalamuje vůbec, u překážek zbývá jen krátké otření špičky o roh (čísla níže). Místo dalšího záplatování jsem přestavěl to, podle čeho se látka řídí. Zásada: tvar, ke kterému se látka vede, je hladký a přesně tak dlouhý jako šála už tím, jak vzniká.
+  - **Jeden tvar pro všechno.** Místo šály (`VeilSimulation.LayShape`) se skládá od krku po kouscích stejné délky (`SheetPiece`): pruh vlající za hrdinou, prstenec kolem těla při saltu i vedení podél zdí jsou tatáž čára. Látka je k ní vedena polohou, ne tažena pružinami.
+  - **Směr běží po šále jako vlna od krku** (`StepFlow`, `FlowAt`), stejně jako na gymnastické stuze: každé místo šály převezme to, co krk udělal před chvílí (ke konci za 0,42 s). Otočka, pád i skok jsou tak stopou jediného pohybu. Dřív se otočka počítala bod po bodu a náklon při pádu se přičetl celé šále naráz. Při obratu ve vzduchu se obojí složilo do kroužku nad hlavou.
+  - **Otočka jde kratší cestou** (`TurnRoute`): přes vrch, když šála leží vodorovně, jinak tudy, kudy je to blíž. Dřív se cesta zvolila podle pohybu na začátku a držela se, i když už neplatila.
+  - **Salto.** Šála se do prstence kolem těla stáčí a zase rozvíjí jako list kapradiny (`WoundStep`): každý kousek se pootočí o svůj díl úhlu. Dřív se každý bod táhl kus cesty mezi dvěma tvary, čára mezi nimi se zkracovala a dělala smyčky a uzly.
+  - **Zdi, římsy a stropy.** Kousek, který by vedl do překážky, se otočí o nejmenší potřebný úhel a běží podél ní (`LayPiece`); další kousky drží stejnou stranu, raději stoupají než klesají a k překážce se čára stočí obloukem, ne rohem. Šála si navíc sama hledá volný směr (`FreeTilt`): pod převislý blok se mírně sklopí, po zdi za zády stoupá jako plamen. Směru, který má, se drží, dokud je volný.
+  - **Otočka v nízkém prostoru.** Ohyb otočky se pod nízkým stropem zmenší (`FoldTight`) a místo nad šálou se měří po celé její délce (`RoomOver`), ne jen nad hlavou.
+  - **Seskok z římsy.** Vedená látka smí vůči hrdinovi stoupat volně. Dřív byla omezená na 2,5 m/s, za svým místem nestíhala, sedla si na římsu a přes hranu se shrnula.
+  - **Kreslení.** Klidový tvar šály je hladká křivka (kubický B-spline, `VeilRestShape.At`); tabulka po úsečkách měla rohy až 60°. Vlnění pásu se ukládá jako pootočení směru (`Rippled`), ne jako posun do strany, který pás v ohybu přeložil. Jazyky už nepřeskakují na druhou stranu pásu (`BelowBand`), pás vybíhá zpod límce jednou křivkou a koncový závitek drží směr konce šály.
+  - Část šály, která se při otočce teprve přetáčí, má klidnější vlnu (`FoldCalm`), aby nevisela přes už otočenou část.
+- Odstraněno, protože to nový tvar nahradil: `SwingHeading`, `TurnGoal`, `SheetStep`, `SwingShape`, `OutSideways` a `UnfoldCentre`.
+
+### Změřeno
+Měřeno ve hře na vrcholech kresleného pásu: počet míst, kde se osa hlavního pásu mezi dvěma vzorky zlomí o víc než 30° (součet za celý klip, krk + tělo šály), před přestavbou → po ní.
+
+| Situace | Před | Po |
+| --- | --- | --- |
+| Rozchod z klidu na druhou stranu, u zdi | 9 | 0 |
+| Rozchod z klidu na druhou stranu, na volnu | 38 | 0 |
+| Otočka v plném běhu | 50 | 0 |
+| Rychlé přešlapy tam a zpět | 76 | 0 |
+| Skok, obrat ve vzduchu a salto | 58 | 0 |
+| Skok rovně; skok s otočkou při odrazu | neměřeno | 0; 1 |
+| Zeď těsně za zády | 0 | 0 |
+| Stání a otočka u převislého bloku | 30 | 0 |
+| Dřep a otočka v nízkém tunelu | 137 | 2 |
+| Seskok z římsy a dopad vedle bloku | 130 | 1 |
+
+- Na samém konci šály (posledních 15 % délky, v tabulce nezapočteno) zůstalo: seskok z římsy 13 (před přestavbou také 13), tunel 4 (před 5), rozchod z klidu u zdi 1 (před 0). Je to špička, která se při pádu na 1 až 2 snímky otře o roh bloku, a koncový závitek.
+- Čísla „po“ jsou z jednoho průchodu každou situací. Mezi průchody kolísají o jednotky.
+- Samotná simulace hlavního pásu stojí v editoru 0,61 ms na snímek na volném prostranství a 0,68 ms v tunelu se stěnami.
+
+### Testy
+- `VeilMotionTests`, nové: otočka jde kratší cestou a po obratu ve vzduchu s pádem nezůstane v šále kroužek; šála se pod převis sklopí a po zdi stoupá, nic z ní není ve zdi a směr drží; šála se do salta navine a zase rozvine jako jedna čára plné délky; ohyb otočky potřebuje místo nad celou šálou a pod nízkým stropem se nepřeloží.
+- `VeilMotionTests`, přepsané na skutečnou simulaci: otočka běží po šále od krku přes vrch; kolem bloku se čára položí podél jeho stěny.
+- `VeilRendererTests`: závitek na samém konci zůstává úzký až do špičky.
+- Puštěno: všech 586 EditMode testů a celá sada 122 PlayMode testů, všechny prošly.
+
 ## [0.73.0] – 2026-11-22
 ### Opraveno
 - **Šála se už netrhá na zuby, švy a střepy.** Viditelné poškození mělo tři zdroje. Každý jsem změřil přímo na vrcholech pásu a opravil postupem, který se pro lana, vlasy a stuhy běžně používá.

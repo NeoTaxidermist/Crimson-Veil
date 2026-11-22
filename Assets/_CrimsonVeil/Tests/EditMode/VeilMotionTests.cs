@@ -79,13 +79,14 @@ namespace CrimsonVeil.Tests
             Vector3 p0 = Vector3.zero, p1 = new Vector3(seg, 0f, 0f), p2 = p1 + new Vector3(Mathf.Cos(a), Mathf.Sin(a), 0f) * seg;
             Assert.AreEqual(VeilSimulation.SkipLength(seg), Vector3.Distance(p0, p2), 1e-4f);
             Assert.That(VeilSimulation.MaxBend, Is.InRange(20f, VeilSimulation.MaxKink), "an S still has room; no fold");
-            // swinging over in a turn, the sheet's shape lets go of it and takes it up again gently
-            Assert.AreEqual(1f, VeilSimulation.SwingShape(99f, 0.5f), 1e-5f, "no turn: all of it");
-            Assert.AreEqual(1f, VeilSimulation.SwingShape(0f, 0.5f), 1e-5f, "not started there yet");
-            float mid = VeilSimulation.SwingShape(0.5f * VeilSimulation.TurnTravel + 0.5f * VeilSimulation.TurnBlend, 0.5f);
-            Assert.Less(mid, 0.5f, "mid-swing mostly let go");
-            float after = VeilSimulation.SwingShape(0.5f * VeilSimulation.TurnTravel + VeilSimulation.TurnBlend + 0.5f * VeilSimulation.SwingSettle, 0.5f);
-            Assert.That(after, Is.InRange(mid, 1f), "taken up again over a moment, not at once");
+            // turning round, the cloth is led along the fold: at once, all through the turn, and let go gently after
+            float end = VeilSimulation.TurnTravel + VeilSimulation.TurnBlend;
+            Assert.AreEqual(0f, VeilSimulation.TurnGuide(99f), 1e-5f, "no turn: left to itself");
+            Assert.AreEqual(0f, VeilSimulation.TurnGuide(0f), 1e-5f, "it comes in from nothing");
+            Assert.AreEqual(1f, VeilSimulation.TurnGuide(0.1f), 1e-5f, "led within a twentieth of a second");
+            Assert.AreEqual(1f, VeilSimulation.TurnGuide(end), 1e-5f, "until the fold has run off the tip");
+            Assert.That(VeilSimulation.TurnGuide(end + 0.5f * VeilSimulation.GuideSettle), Is.InRange(0.3f, 0.7f), "let go over a moment, not at once");
+            Assert.AreEqual(0f, VeilSimulation.TurnGuide(end + VeilSimulation.GuideSettle), 1e-5f);
         }
 
         [Test]
@@ -135,32 +136,62 @@ namespace CrimsonVeil.Tests
         [Test]
         public void TheTurn_RunsDownTheScarf_FromTheNeck_OverTheTop()
         {
-            // as the swing reaches the tip, the neck is halfway round - straight up - and the tip not yet moving
-            float t = VeilSimulation.TurnTravel;
-            float neck = VeilSimulation.SwingHeading(Mathf.PI, 0f, t, 0f), tip = VeilSimulation.SwingHeading(Mathf.PI, 0f, t, 1f);
-            Assert.AreEqual(Mathf.PI * 0.5f, neck, 1e-3f, "the cloth by the neck swings first, up over the top");
-            Assert.AreEqual(Mathf.PI, tip, 1e-4f, "the tail still streams the old way");
-            Assert.AreEqual(-1f, VeilSimulation.DriftAt(-1f, 1f, t, 1f), 1e-4f);
+            const float step = 1f / 240f;
+            var neck = new Vector3(0f, 5f, 0f);
+            var sim = new VeilSimulation(new VeilSettings(), neck) { DriftDirection = -1f, RestShapeWeight = 1f };
+            for (int i = 0; i < 120; i++) sim.Step(step, neck);
+            Assert.AreEqual(Mathf.PI, sim.HeadingAt(0f), 1e-3f, "streaming to the left");
+            Assert.AreEqual(-1f, sim.DriftAt(1f), 1e-3f);
+
+            sim.DriftDirection = 1f;
+            float t = 0f, highest = 0f;
+            for (; t < VeilSimulation.TurnBlend - 1e-4f; t += step)
+            {
+                sim.Step(step, neck);
+                highest = Mathf.Max(highest, Mathf.Sin(sim.HeadingAt(0f)));
+            }
+            Assert.Greater(highest, 0.99f, "the cloth by the neck goes up over the top");
+            for (; t < 0.3f - 1e-4f; t += step) sim.Step(step, neck);
             float last = -1f;
             for (int i = 10; i >= 0; i--)
             {
-                float d = VeilSimulation.DriftAt(-1f, 1f, 0.4f, i / 10f);
-                Assert.GreaterOrEqual(d, last - 1e-5f, "one wave from the neck to the tip");
+                float d = sim.DriftAt(i / 10f);
+                Assert.GreaterOrEqual(d, last - 1e-4f, "one wave from the neck to the tip");
                 last = d;
             }
-            Assert.AreEqual(1f, VeilSimulation.DriftAt(-1f, 1f, VeilSimulation.TurnTravel + VeilSimulation.TurnBlend, 1f), 1e-4f, "and it is over in well under a second");
+            // as the fold reaches the tip, the cloth by the neck has turned and the tip is not yet moving
+            for (; t < VeilSimulation.TurnTravel - 1e-4f; t += step) sim.Step(step, neck);
+            Assert.AreEqual(0f, sim.HeadingAt(0f), 1e-3f, "the cloth by the neck swings first");
+            Assert.AreEqual(Mathf.PI, sim.HeadingAt(1f), 0.03f, "the tail still streams the old way");
+            Assert.AreEqual(-1f, sim.DriftAt(1f), 0.03f);
+            for (; t < VeilSimulation.TurnTravel + VeilSimulation.TurnBlend + 0.02f; t += step) sim.Step(step, neck);
+            Assert.AreEqual(1f, sim.DriftAt(1f), 1e-3f, "and it is over in well under a second");
+            Assert.AreEqual(0f, sim.HeadingAt(1f), 1e-3f);
+            // (a fold running down it, a part of the scarf in it at a time: all of it swung over at once like the hand
+            // of a clock, its tip flew at over 30 m/s and the cloth broke up)
+            Assert.Less(VeilSimulation.TurnBlend, 0.6f * VeilSimulation.TurnTravel);
             // (at 0.9 s the scarf answered his turning round unnaturally late)
             Assert.LessOrEqual(VeilSimulation.TurnTravel + VeilSimulation.TurnBlend, 0.65f);
 
-            // the sheet keeps its length all the way round: up mid-turn, its waves laid down
-            Vector2 up = VeilSimulation.SheetOffset(2f, 0.3f, Mathf.PI * 0.5f, 0f);
+            // the sheet is laid out piece by piece; a piece keeps its length all the way round, its waves laid down mid-turn
+            float len = Mathf.Sqrt(0.2f * 0.2f + 0.1f * 0.1f);
+            Vector2 up = VeilSimulation.SheetPiece(0.2f, 0.1f, Mathf.PI * 0.5f, 0f);
             Assert.AreEqual(0f, up.x, 1e-4f);
-            Assert.AreEqual(2f, up.y, 1e-4f, "straight up over his head at full length");
-            Vector2 right = VeilSimulation.SheetOffset(2f, 0.3f, 0f, 0f), left = VeilSimulation.SheetOffset(2f, 0.3f, Mathf.PI, 0f);
+            Assert.AreEqual(len, up.y, 1e-4f, "straight up over his head at full length");
+            Vector2 right = VeilSimulation.SheetPiece(0.2f, 0.1f, 0f, 1f), left = VeilSimulation.SheetPiece(0.2f, 0.1f, Mathf.PI, -1f);
+            Assert.AreEqual(0.2f, right.x, 1e-4f, "at rest: its run back");
+            Assert.AreEqual(0.1f, right.y, 1e-4f, "and its rise");
             Assert.AreEqual(right.y, left.y, 1e-4f, "its S rises the same on either side (mirrored, not upside down)");
             Assert.AreEqual(-right.x, left.x, 1e-4f);
-            Assert.Greater(VeilSimulation.SheetOffset(2f, 0f, 0f, 0.8f).y, 1f, "tilted up into a fall");
-            Assert.Greater(VeilSimulation.SheetOffset(2f, 0f, Mathf.PI, 0.8f).y, 1f, "on either side");
+            for (int k = 0; k <= 8; k++)
+                Assert.AreEqual(len, VeilSimulation.SheetPiece(0.2f, 0.1f, Mathf.PI * k / 8f, 1f - k / 4f).magnitude, 1e-4f, "never stretched or squeezed");
+            Assert.Greater(VeilSimulation.SheetPiece(2f, 0f, VeilSimulation.FlowGoal(1f, 0.8f), 1f).y, 1f, "tilted up into a fall");
+            Assert.Greater(VeilSimulation.SheetPiece(2f, 0f, VeilSimulation.FlowGoal(-1f, 0.8f), -1f).y, 1f, "on either side");
+            // the part still to come over lies above the fold: its waves are calmed (they hung across the part
+            // already turned and the scarf read as a figure of eight)
+            Assert.AreEqual(1f, VeilSimulation.FoldCalm(1f), 1e-5f, "on the neck's side: all of its S");
+            Assert.AreEqual(VeilSimulation.CalmS, VeilSimulation.FoldCalm(-1f), 1e-5f, "on the other: calmed");
+            Assert.That(VeilSimulation.FoldCalm(0f), Is.InRange(VeilSimulation.CalmS + 0.1f, 0.9f), "eased from one to the other");
         }
 
         [Test]
@@ -277,17 +308,56 @@ namespace CrimsonVeil.Tests
         }
 
         [Test]
-        public void LeapingUp_TheTurnSwingsUnderneath_FallingOrStanding_OverTheTop()
+        public void TurningRound_TheScarfTakesTheNearerWay_OverTheTopWhenItLiesLevel()
         {
             float pi = Mathf.PI;
-            Assert.AreEqual(0f, VeilSimulation.TurnGoal(pi, 0f, false), 1e-4f, "from the left round to the right over the top");
-            Assert.Greater(Mathf.Sin(Mathf.Lerp(pi, VeilSimulation.TurnGoal(pi, 0f, false), 0.5f)), 0.99f, "halfway: straight up");
-            Assert.Less(Mathf.Sin(Mathf.Lerp(pi, VeilSimulation.TurnGoal(pi, 0f, true), 0.5f)), -0.99f, "leaping up: halfway straight down, under him");
-            Assert.Greater(Mathf.Sin(Mathf.Lerp(0f, VeilSimulation.TurnGoal(0f, pi, false), 0.5f)), 0.99f, "the other way round too");
-            Assert.Less(Mathf.Sin(Mathf.Lerp(0f, VeilSimulation.TurnGoal(0f, pi, true), 0.5f)), -0.99f);
+            // level: straight across - over the top (underneath only where it is sent that way)
+            Assert.AreEqual(0f, VeilSimulation.TurnRoute(pi, 0f, 1), 1e-4f, "from the left round to the right over the top");
+            Assert.Greater(Mathf.Sin(Mathf.Lerp(pi, VeilSimulation.TurnRoute(pi, 0f, 1), 0.5f)), 0.99f, "halfway: straight up");
+            Assert.Less(Mathf.Sin(Mathf.Lerp(pi, VeilSimulation.TurnRoute(pi, 0f, -1), 0.5f)), -0.99f, "sent underneath: halfway straight down");
+            Assert.Greater(Mathf.Sin(Mathf.Lerp(0f, VeilSimulation.TurnRoute(0f, pi, 1), 0.5f)), 0.99f, "the other way round too");
+            Assert.Less(Mathf.Sin(Mathf.Lerp(0f, VeilSimulation.TurnRoute(0f, pi, -1), 0.5f)), -0.99f);
+            // falling, the sheet is tilted up on both sides: over the top is a short turn, underneath nearly a full
+            // circle (taken that way, the scarf closed into a ring over his head)
+            float tilt = 1f;
+            float from = VeilSimulation.FlowGoal(-1f, tilt), to = VeilSimulation.TurnRoute(from, VeilSimulation.FlowGoal(1f, tilt), -1);
+            Assert.AreEqual(pi - 2f * tilt, Mathf.Abs(to - from), 1e-4f, "the nearer way, whatever way was asked for");
+            Assert.Greater(Mathf.Sin(0.5f * (from + to)), 0.99f, "over the top");
+            // ...unless it has to go underneath (a ceiling right over him)
+            float forced = VeilSimulation.TurnRoute(from, VeilSimulation.FlowGoal(1f, tilt), -1, true);
+            Assert.AreEqual(pi + 2f * tilt, Mathf.Abs(forced - from), 1e-4f);
             // turning back mid-swing: the short way from where it is
-            Assert.AreEqual(2f * pi, VeilSimulation.TurnGoal(1.5f * pi, 0f, false), 1e-4f);
-            Assert.AreEqual(pi, VeilSimulation.TurnGoal(0.5f * pi, pi, true), 1e-4f);
+            Assert.AreEqual(2f * pi, VeilSimulation.TurnRoute(1.5f * pi, 0f, 1), 1e-4f);
+            Assert.AreEqual(pi, VeilSimulation.TurnRoute(0.5f * pi, pi, -1), 1e-4f);
+            Assert.AreEqual(0.3f, VeilSimulation.TurnRoute(0.3f, 0.3f, 1), 1e-6f, "nowhere to turn to");
+        }
+
+        [Test]
+        public void ATurnInMidAir_ThenAFall_LeavesNoRingInTheScarf()
+        {
+            // He turns round as he leaps and is falling a moment later: the scarf's direction runs down it from the
+            // neck as one motion, so from the neck to the tip it never turns by more than the neck itself did.
+            var sim = new VeilSimulation(new VeilSettings(), new Vector3(0f, 5f, 0f)) { DriftDirection = -1f, RestShapeWeight = 1f };
+            var neck = new Vector3(0f, 5f, 0f);
+            for (int i = 0; i < 120; i++) sim.Step(Dt, neck);
+            sim.DriftDirection = 1f;
+            float worst = 0f;
+            for (int i = 0; i < 90; i++)
+            {
+                sim.TrailTilt = Mathf.MoveTowards(sim.TrailTilt, i > 6 ? 1.1f : 0f, Dt * 10f);
+                sim.Step(Dt, neck);
+                float lowest = float.MaxValue, highest = float.MinValue;
+                for (int k = 0; k <= 20; k++)
+                {
+                    float h = sim.HeadingAt(k / 20f);
+                    lowest = Mathf.Min(lowest, h);
+                    highest = Mathf.Max(highest, h);
+                }
+                worst = Mathf.Max(worst, highest - lowest);
+            }
+            Assert.Less(worst, Mathf.PI + 0.05f, "the scarf turns by half a circle at most from neck to tip");
+            Assert.AreEqual(1.1f, sim.HeadingAt(1f), 0.02f, "and ends streaming up behind him on the new side");
+            Assert.AreEqual(1f, sim.DriftAt(1f), 1e-3f);
         }
 
         [Test]
@@ -302,19 +372,25 @@ namespace CrimsonVeil.Tests
         }
 
         [Test]
-        public void PastABlock_TheShapeMovesOutSideways_AndTheTailIsBraked()
+        public void PastABlock_TheLineIsLaidAlongItsFace_AndTheTailIsBraked()
         {
+            // a wall to his right: a piece of the scarf's line heading into it is turned along its face - at its own
+            // length, and upwards (the cloth streams up a wall like a flame)
             var sim = new VeilSimulation(new VeilSettings(), Vector3.zero);
-            sim.Obstacles.Add(Rect.MinMaxRect(-3f, -5f, -1f, 5f));
-            Vector3 inside = new Vector3(-2.5f, 1f, 0f);
-            Vector3 mine = sim.OutSideways(inside, 0f);
-            Assert.Greater(mine.x, -1f, "out onto the face on his side");
-            Assert.AreEqual(1f, mine.y, 1e-5f, "at the same height: the band runs up along the face");
-            Assert.Less(sim.OutSideways(inside, -10f).x, -3f, "from the other side, out the other way");
-            Assert.AreEqual(5f, sim.OutSideways(new Vector3(5f, 1f, 0f), 0f).x, 1e-5f, "outside, left alone");
-            Vector3 underTop = sim.OutSideways(new Vector3(-2.5f, 4.9f, 0f), 0f);
-            Assert.AreEqual(-2.5f, underTop.x, 1e-5f, "just under the top of a block he ran off: out over the top");
-            Assert.Greater(underTop.y, 5f, "(drawn into a line down its edge, the cloth on the top folded over the corner)");
+            sim.Obstacles.Add(Rect.MinMaxRect(1f, -5f, 3f, 5f));
+            Vector2 from = new Vector2(0.9f, 0f), into = new Vector2(0.1f, 0.02f);
+            Vector2 open = sim.LayPiece(Vector3.zero, new Vector2(0.4f, 0f), into);
+            Assert.AreEqual(0.5f, open.x, 1e-5f, "nothing in its way: laid straight on");
+            Assert.AreEqual(0.02f, open.y, 1e-5f);
+            Vector2 laid = sim.LayPiece(Vector3.zero, from, into);
+            Assert.AreEqual(into.magnitude, (laid - from).magnitude, 1e-4f, "the piece keeps its length");
+            Assert.LessOrEqual(laid.x, 1f - VeilSimulation.WallSkin + 1e-3f, "it stays out of the wall");
+            Assert.Greater(laid.y - from.y, 0.05f, "and runs up its face");
+            Vector2 next = sim.LayPiece(Vector3.zero, laid, new Vector2(0.1f, -0.05f));
+            Assert.Greater(next.y, laid.y, "the next piece keeps to that side (turned each to its own nearest side, the line zigzagged)");
+            var down = new VeilSimulation(new VeilSettings(), Vector3.zero);
+            down.Obstacles.Add(Rect.MinMaxRect(1f, -5f, 3f, 5f));
+            Assert.Greater(down.LayPiece(Vector3.zero, from, new Vector2(0.1f, -0.02f)).y, from.y, "rather up a wall than down it");
             Assert.Greater(VeilSimulation.ForwardBrake, 5f);
 
             // he steps slowly off a ledge, the scarf streaming back over it: falling, none of it flies out in front of him
@@ -439,6 +515,153 @@ namespace CrimsonVeil.Tests
             Assert.AreEqual(0f, so.FindProperty("speedRate").floatValue);
             Assert.Greater(so.FindProperty("weaponRate").floatValue, 0f, "a weapon still smokes (the user likes its flecks)");
             Assert.Greater(so.FindProperty("swingRate").floatValue, 0f, "and a swing leaves its flecks of smoke behind");
+        }
+            /// <summary>The sharpest bend (degrees) at a node of the loose cloth, in the picture plane.</summary>
+        static float SharpestBend(VeilSimulation sim)
+        {
+            float worst = 0f;
+            for (int i = 6; i < sim.Count - 1; i++)
+                worst = Mathf.Max(worst, Vector2.Angle(sim.Positions[i] - sim.Positions[i - 1], sim.Positions[i + 1] - sim.Positions[i]));
+            return worst;
+        }
+
+        static VeilSimulation StreamingRight(Vector3 neck)
+        {
+            var sim = new VeilSimulation(new VeilSettings(), neck) { DriftDirection = 1f, RestShapeWeight = 1f, AmbientFlow = new Vector2(0.75f, 0f) };
+            sim.Obstacles.Add(Rect.MinMaxRect(-10f, -1f, 10f, 0f));   // the floor
+            return sim;
+        }
+
+        [Test]
+        public void TheScarf_StreamsWhereThereIsRoom_UnderABlock_UpAWall()
+        {
+            var neck = new Vector3(0f, 1.5f, 0f);
+            var open = StreamingRight(neck);
+            for (int f = 0; f < 120; f++) open.Step(Dt, neck);
+            Assert.AreEqual(0f, open.WallTilt, 1e-4f, "nothing in its way: level");
+
+            // a block hangs over its path, its underside just over the height of his neck: the sheet dips under it
+            // (laid straight on it was only turned aside at the block itself, and its S was pressed into a Z there)
+            var block = Rect.MinMaxRect(1.8f, 1.75f, 6f, 4f);
+            var under = StreamingRight(neck);
+            under.Obstacles.Add(block);
+            float worst = 0f, lowest = 9f, highest = -9f;
+            for (int f = 0; f < 240; f++)
+            {
+                under.Step(Dt, neck);
+                if (f < 120) continue;
+                worst = Mathf.Max(worst, SharpestBend(under));
+                lowest = Mathf.Min(lowest, under.WallTilt);
+                highest = Mathf.Max(highest, under.WallTilt);
+                for (int i = 0; i < under.Count; i++)
+                    Assert.IsFalse(block.Contains((Vector2)under.Positions[i]), "none of it in the block");
+            }
+            Assert.Less(highest, -0.05f, "it dips");
+            Assert.GreaterOrEqual(lowest, -VeilSimulation.MaxDip - 1e-4f, "never far below level");
+            Assert.Less(highest - lowest, 0.3f, "and holds its tilt (picked afresh each moment, it leapt up the wall and back with every wave of its S)");
+            Assert.LessOrEqual(worst, VeilSimulation.MaxBend + 5f, "one smooth line");
+            Assert.AreEqual(under.Settings.length * VeilSimulation.RestReach, under.Positions[under.Count - 1].x, 0.6f, "streaming on under it at its full reach");
+
+            // a wall behind him closer than the scarf is long: it rises up it like a flame
+            var wall = Rect.MinMaxRect(1f, 0f, 4f, 9f);
+            var risen = StreamingRight(neck);
+            risen.Obstacles.Add(wall);
+            worst = 0f;
+            for (int f = 0; f < 240; f++)
+            {
+                risen.Step(Dt, neck);
+                if (f < 120) continue;
+                worst = Mathf.Max(worst, SharpestBend(risen));
+                for (int i = 0; i < risen.Count; i++)
+                    Assert.IsFalse(wall.Contains((Vector2)risen.Positions[i]), "none of it in the wall");
+            }
+            Assert.Greater(risen.WallTilt, 0.9f);
+            Assert.LessOrEqual(risen.WallTilt, VeilSimulation.MaxFreeTilt + 1e-4f, "never over his head");
+            Assert.LessOrEqual(worst, VeilSimulation.MaxBend + 5f);
+            Assert.Greater(risen.Positions[risen.Count - 1].y, neck.y + 2f, "its tail high up the wall");
+
+            // the tilt it has is kept while it is clear, and it comes back level a step at a time when the way is free
+            Assert.AreEqual(0f, open.FreeTilt(neck, 1f, 0f, 0f, 0f), 1e-6f);
+            Assert.AreEqual(0.5f - VeilSimulation.TiltSearch, open.FreeTilt(neck, 1f, 0f, 0f, 0.5f), 1e-5f, "a step back towards level");
+            float held = under.WallTilt;
+            Assert.AreEqual(held, under.FreeTilt(neck, 1f, 0f, 0f, held), VeilSimulation.TiltSearch + 1e-4f, "no leap from where it is");
+            Assert.AreEqual(1.25f, VeilSimulation.SheetTotal(1.25f, 0f), 1e-6f, "falling: its own tilt");
+            Assert.AreEqual(VeilSimulation.MaxFreeTilt, VeilSimulation.SheetTotal(1.25f, 1f), 1e-6f, "never past upright");
+            Assert.AreEqual(-VeilSimulation.MaxDip, VeilSimulation.SheetTotal(0f, -2f), 1e-6f);
+        }
+
+        [Test]
+        public void TheScarf_WindsIntoTheSomersaultsRing_AndOutOfIt_AsOneLine()
+        {
+            // one piece: turned towards the ring's by the share it is wound, its length likewise
+            float turn = 0f;
+            Vector2 sheet = new Vector2(-0.1f, 0f), ring = new Vector2(0f, 0.08f);
+            Assert.AreEqual(0f, Vector2.Distance(sheet, VeilSimulation.WoundStep(sheet, ring, 0f, ref turn)), 1e-5f, "not wound: the sheet's piece");
+            turn = 0f;
+            Assert.AreEqual(0f, Vector2.Distance(ring, VeilSimulation.WoundStep(sheet, ring, 1f, ref turn)), 1e-5f, "wound: the ring's");
+            turn = 0f;
+            Vector2 half = VeilSimulation.WoundStep(sheet, ring, 0.5f, ref turn);
+            Assert.AreEqual(0.09f, half.magnitude, 1e-5f, "halfway: a piece of a length between the two");
+            Assert.AreEqual(135f, Mathf.Atan2(half.y, half.x) * Mathf.Rad2Deg, 0.01f, "turned halfway, the nearer way");
+            // the next piece goes on from it: the line winds one way round (no piece takes the other way)
+            Vector2 on = VeilSimulation.WoundStep(sheet, new Vector2(0.08f, 0.01f), 0.5f, ref turn);
+            Assert.Less(Mathf.DeltaAngle(135f, Mathf.Atan2(on.y, on.x) * Mathf.Rad2Deg), 0f, "on round the same way");
+            Assert.Greater(Mathf.DeltaAngle(135f, Mathf.Atan2(on.y, on.x) * Mathf.Rad2Deg), -60f);
+
+            // the whole scarf: wound round him and let go again, it stays one line of its own length
+            // (drawn point by point part of the way to the ring, it shrank, looped and knotted in between)
+            var neck = new Vector3(0f, 5f, 0f);
+            var sim = new VeilSimulation(new VeilSettings(), neck) { DriftDirection = -1f, RestShapeWeight = 1f, AmbientFlow = new Vector2(-0.75f, 0f) };
+            for (int f = 0; f < 120; f++) sim.Step(Dt, neck);
+            float worst = 0f, shortest = 99f;
+            for (int f = 0; f < 60; f++)
+            {
+                float wound = f < 8 ? Mathf.SmoothStep(0f, 1f, f / 8f) : f < 30 ? 1f : 1f - Mathf.SmoothStep(0f, 1f, (f - 30) / 7f);
+                sim.SwirlWeight = wound;
+                sim.SwirlCenter = new Vector2(0f, 4.45f);
+                sim.WrapTrail = 1f;
+                sim.SwirlSpeed = -12f;
+                sim.RestShapeWeight = 1f - wound;
+                sim.Step(Dt, neck);
+                worst = Mathf.Max(worst, SharpestBend(sim));
+                float length = 0f;
+                for (int i = 1; i < sim.Count; i++) length += Vector3.Distance(sim.Positions[i], sim.Positions[i - 1]);
+                shortest = Mathf.Min(shortest, length);
+            }
+            Assert.LessOrEqual(worst, 45f, "no sharp bend on the way in or out");
+            Assert.Greater(shortest, 0.97f * sim.Settings.length, "at its full length throughout");
+        }
+
+        [Test]
+        public void TheFoldOfATurn_NeedsRoomOverTheWholeScarf()
+        {
+            var neck = new Vector3(0f, 1.5f, 0f);
+            var sim = StreamingRight(neck);
+            sim.Obstacles.Add(Rect.MinMaxRect(2f, 2.1f, 3f, 4f));   // a block hanging over the tail, not over his head
+            Assert.AreEqual(10f, sim.RoomOver(neck, 1f), 1e-4f, "over his head: free");
+            Assert.AreEqual(0.6f, sim.RoomOver(neck, 1f, 3f), 1e-4f, "over the scarf's reach: the block's underside");
+            Assert.AreEqual(1.5f, sim.RoomOver(neck, -1f, 3f), 1e-4f, "under him: the floor");
+            Assert.Less(VeilSimulation.FoldRoomLeast, VeilSimulation.FoldRoom);
+            Assert.That(VeilSimulation.FoldTight, Is.InRange(0.4f, 0.9f), "squeezed, the fold is still a curve the cloth can make");
+
+            // turning round in a low passage: the fold goes over tighter, and nothing is pressed into the ceiling
+            var ceiling = Rect.MinMaxRect(-6f, 2.05f, 6f, 5f);
+            var low = StreamingRight(neck);
+            low.Obstacles.Add(ceiling);
+            for (int f = 0; f < 120; f++) low.Step(Dt, neck);
+            low.DriftDirection = -1f;
+            low.AmbientFlow = new Vector2(-0.75f, 0f);
+            float worst = 0f;
+            for (int f = 0; f < 90; f++)
+            {
+                low.Step(Dt, neck);
+                worst = Mathf.Max(worst, SharpestBend(low));
+                for (int i = 0; i < low.Count; i++)
+                    Assert.IsFalse(ceiling.Contains((Vector2)low.Positions[i]), "none of it in the ceiling");
+            }
+            // (a fold of the usual size does not fit: pressed against the ceiling it doubled over, bent by 120 degrees)
+            Assert.LessOrEqual(worst, 70f, "it comes round under the ceiling without doubling over");
+            Assert.Less(low.Positions[low.Count - 1].x, -1.5f, "and streams the new way");
         }
     }
 }

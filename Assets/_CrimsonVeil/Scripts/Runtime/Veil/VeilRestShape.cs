@@ -59,12 +59,30 @@ namespace CrimsonVeil.Veil
         /// <summary>How much deeper the key art's S is than the sheet's.</summary>
         public const float SDepth = 1.6f;
 
+        /// <summary>
+        /// The sheet's height in <paramref name="frame"/> at <paramref name="d"/> m: a smooth curve through the measured
+        /// samples (a uniform cubic B-spline: no corners, and the measuring's jitter evened out). Joined by straight
+        /// pieces, the shape the cloth is held to had a corner every 0.2 m - up to 60 degrees by the neck - and the
+        /// cloth was bent to them.
+        /// </summary>
         static float At(int frame, float d)
         {
             float s = Mathf.Clamp(d / Step, 0f, Samples - 1);
             int j = Mathf.Min(Mathf.FloorToInt(s), Samples - 2);
             float v = s - j;
-            return Mathf.Lerp(Heights[frame, j], Heights[frame, j + 1], v);
+            float p0 = Sample(frame, j - 1), p1 = Sample(frame, j), p2 = Sample(frame, j + 1), p3 = Sample(frame, j + 2);
+            float v2 = v * v, v3 = v2 * v;
+            return ((1f - 3f * v + 3f * v2 - v3) * p0 + (4f - 6f * v2 + 3f * v3) * p1 + (1f + 3f * v + 3f * v2 - 3f * v3) * p2 + v3 * p3) / 6f;
+        }
+
+        /// <summary>Sample <paramref name="j"/> of a frame; past either end the table runs on straight (so the curve
+        /// starts at the neck and ends at its last height exactly).</summary>
+        static float Sample(int frame, int j)
+        {
+            int last = Samples - 1;
+            if (j < 0) return 2f * Heights[frame, 0] - Heights[frame, Mathf.Min(-j, last)];
+            if (j > last) return 2f * Heights[frame, last] - Heights[frame, Mathf.Max(2 * last - j, 0)];
+            return Heights[frame, j];
         }
     }
 }

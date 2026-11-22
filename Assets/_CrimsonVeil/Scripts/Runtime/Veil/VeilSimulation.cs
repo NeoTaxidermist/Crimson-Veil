@@ -260,6 +260,200 @@ namespace CrimsonVeil.Veil
         /// all while it is cloth, fully once set.</summary>
         public static float RigidHold(float hardness) => Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.77f, 0.9f, hardness)); // (the whip, set at 0.75, stays supple)
 
+        /// <summary>
+        /// One piece of the scarf's line as it winds into the somersault's ring: the sheet's piece <paramref name="sheet"/>
+        /// turned towards the ring's piece <paramref name="ring"/> by <paramref name="wound"/> (0..1) of the angle
+        /// between them, its length likewise. <paramref name="turn"/> carries that angle on from the piece before, so
+        /// the whole line winds the same way round. The scarf curls up into the ring and out of it like a fern: one
+        /// line of its own length all the way. (Each point drawn part of the way from its place in the sheet to its
+        /// place on the ring, the line between the two shapes was neither: it shrank, looped and knotted.)
+        /// </summary>
+        public static Vector2 WoundStep(Vector2 sheet, Vector2 ring, float wound, ref float turn)
+        {
+            float ls = sheet.magnitude, lr = ring.magnitude;
+            if (ls < 1e-9f || lr < 1e-9f) return Vector2.Lerp(sheet, ring, wound);
+            float from = Mathf.Atan2(sheet.y, sheet.x);
+            float raw = Mathf.Atan2(ring.y, ring.x) - from;
+            turn += Mathf.DeltaAngle(turn * Mathf.Rad2Deg, raw * Mathf.Rad2Deg) * Mathf.Deg2Rad;
+            float angle = from + turn * wound;
+            return new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * Mathf.Lerp(ls, lr, wound);
+        }
+
+        float windTurn;     // radians from the sheet's first piece to the ring's, followed from step to step
+        bool winding;
+
+        /// <summary>
+        /// Lays out the scarf's place for this step, piece by piece from the neck <paramref name="a"/>: the sheet
+        /// streaming on the breeze (<see cref="SheetPiece"/>), wound into the somersault's ring (<see cref="WoundStep"/>),
+        /// turned aside along walls (<see cref="LayPiece"/>). One line of the scarf's own length whatever he does:
+        /// the cloth is held and led to it (<c>shapeAt</c>).
+        /// </summary>
+        void LayShape(Vector3 a)
+        {
+            var s = Settings;
+            float length = s.length * LengthScale;
+            float trail = WrapTrail != 0f ? WrapTrail : -Mathf.Sign(SwirlSpeed);
+            float wound = trail != 0f ? SwirlWeight : 0f;
+            Vector2 ringBefore = wound > 0.001f ? WrapPoint(SwirlCenter, a, 0f, length, trail) : Vector2.zero;
+            float spineAlong = 0f, spineHeight = VeilRestShape.Height(0f, time);
+            float turn = 0f;
+            bool first = true;
+            int kept = flowNewest;
+            FlowAt(0f, ref kept, out nodeAngle[0], out nodeSide[0]);
+            // 1) Each piece's own direction and length.
+            for (int i = 1; i < Count; i++)
+            {
+                float f = (float)i / (Count - 1);
+                // what the neck did a moment ago: its direction runs down the scarf (TurnTravel to the tip)
+                FlowAt(FoldReach(f) * TurnTravel, ref kept, out nodeAngle[i], out nodeSide[i]);
+                // (measured from the end of the wrap round the neck: the sheet is the part that streams off it; its S
+                // takes up length, so it reaches back RestReach of its length)
+                float dAlong = Mathf.Max(0f, f * s.length - WrapLength) * LengthScale;
+                float sheetHeight = VeilRestShape.Height(dAlong, time);
+                float run = dAlong * RestReach - spineAlong, rise = sheetHeight - spineHeight;
+                // (the part still streaming the old way as he turns round lies over the fold: its S is calmed, or
+                // its waves hung down across the part already turned and the scarf read as a figure of eight)
+                Vector2 step = SheetPiece(run, rise, nodeAngle[i], nodeSide[i] * FoldCalm(nodeSide[i] * nodeSide[0]));
+                sheetLen[i] = step.magnitude;
+                sheetLift[i] = sheetLen[i] > 1e-9f ? Mathf.Atan2(rise, run) : 0f;
+                spineAlong = dAlong * RestReach;
+                spineHeight = sheetHeight;
+                if (wound > 0.001f)
+                {
+                    Vector2 ring = WrapPoint(SwirlCenter, a, dAlong, length, trail);
+                    Vector2 piece = ring - ringBefore;
+                    ringBefore = ring;
+                    if (first && step.sqrMagnitude > 1e-12f && piece.sqrMagnitude > 1e-12f)
+                    {
+                        // Which way round the first piece turns: the nearest as the winding starts and while it is
+                        // fully wound (there it makes no difference); in between it is followed from step to step,
+                        // so the line never changes its mind halfway and flips over.
+                        float raw = Mathf.Atan2(piece.y, piece.x) - Mathf.Atan2(step.y, step.x);
+                        if (!winding || wound >= 0.999f) windTurn = Mathf.DeltaAngle(0f, raw * Mathf.Rad2Deg) * Mathf.Deg2Rad;
+                        else windTurn += Mathf.DeltaAngle(windTurn * Mathf.Rad2Deg, raw * Mathf.Rad2Deg) * Mathf.Deg2Rad;
+                        winding = true;
+                        turn = windTurn;
+                        first = false;
+                    }
+                    step = WoundStep(step, piece, wound, ref turn);
+                }
+                pieceLen[i] = step.magnitude;
+                pieceAngle[i] = pieceLen[i] > 1e-9f ? Mathf.Atan2(step.y, step.x) : nodeAngle[i];
+            }
+            if (wound <= 0.001f) winding = false;
+
+            // 2) Laid on from the neck, turned aside where a wall is in the way.
+            shapeAt[0] = a;
+            Vector2 spine = Vector2.zero;
+            laidTurn = 0f;
+            laidAny = false;
+            laidFirstNow = 0f;
+            pieceTurn[0] = 0f;
+            for (int i = 1; i < Count; i++)
+            {
+                spine = LayPiece(a, spine, new Vector2(Mathf.Cos(pieceAngle[i]), Mathf.Sin(pieceAngle[i])) * pieceLen[i], i);
+                pieceTurn[i] = pieceLen[i] > 1e-9f ? laidTurn : pieceTurn[i - 1];
+                shapeAt[i] = new Vector3(a.x + spine.x, a.y + spine.y, a.z);
+            }
+
+            // 3) Rounded: where the line was turned aside all at once - a corner - the pieces before it take up the
+            // turn a little each, so it comes to the wall in a curve and runs along it. (A corner in its place is a
+            // fold in the band: its edges crossed there and the tongues beside it splayed.)
+            if (laidRound)
+            {
+                for (int i = Count - 2; i >= 1; i--)
+                    pieceTurn[i] = Mathf.Clamp(pieceTurn[i], pieceTurn[i + 1] - LaidEase, pieceTurn[i + 1] + LaidEase);
+                spine = Vector2.zero;
+                laidTurn = 0f;
+                for (int i = 1; i < Count; i++)
+                {
+                    float angle = pieceAngle[i] + pieceTurn[i];
+                    spine = LayPiece(a, spine, new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * pieceLen[i]);
+                    shapeAt[i] = new Vector3(a.x + spine.x, a.y + spine.y, a.z);
+                }
+            }
+            laidFirst = laidFirstNow;
+            shapeFree[0] = 1f;
+            for (int i = 1; i < Count; i++) shapeFree[i] = ShapeOutsideWalls(DepthInObstacles(shapeAt[i]));
+        }
+
+        float[] sheetLen, sheetLift;               // per piece: the sheet's own length and its rise (radians) in the S
+        float[] pieceLen, pieceAngle, pieceTurn;   // per piece: its length, its own direction, how far it was turned aside
+
+        /// <summary>
+        /// The change of tilt (radians) at which the sheet, streaming towards <paramref name="side"/> tilted by
+        /// <paramref name="tilt"/>, lies clear of every wall, ledge and ceiling from the neck <paramref name="a"/> to its
+        /// tip. It starts from the change it has (<paramref name="now"/>): clear there, it comes back a step towards
+        /// <paramref name="hint"/> (its own tilt, or the rise a wall behind him calls for) if that is clear too; in the
+        /// way there, it takes the nearest tilt that is clear, within <see cref="TiltSteps"/> steps - or stays.
+        ///
+        /// The scarf streams where there is room: up a wall behind him, dipping under a block that hangs over its
+        /// path, lifting over a step. (Laid straight on, it was only turned aside at the obstacle itself: under the
+        /// corner of a block its S was pressed into a Z. And it keeps to the tilt it has while that is clear: picked
+        /// afresh each moment, the tilt leapt between up the wall and under it with every wave of its S.)
+        /// </summary>
+        public float FreeTilt(Vector3 a, float side, float tilt, float hint, float now)
+        {
+            if (Obstacles.Count == 0) return hint;
+            int all = Count - 1;
+            int clearNow = ClearPieces(a, side, SheetTotal(tilt, now));
+            if (clearNow >= all)
+            {
+                float back = Mathf.MoveTowards(now, hint, TiltSearch);
+                return back != now && ClearPieces(a, side, SheetTotal(tilt, back)) >= all ? back : now;
+            }
+            // In the way where it is. A wall right behind him: the rise that calls for, if that is clear.
+            if (hint != now && ClearPieces(a, side, SheetTotal(tilt, hint)) >= all) return hint;
+            for (int k = 1; k <= 2 * TiltSteps; k++)
+            {
+                // a step up from where it is, a step down, two up... (only so far: it does not leap from under a
+                // ceiling to up the wall beside it)
+                float c = now + ((k & 1) == 1 ? 1f : -1f) * ((k + 1) / 2) * TiltSearch;
+                if (tilt + c > MaxFreeTilt || tilt + c < -MaxDip) continue;
+                if (ClearPieces(a, side, tilt + c) >= all) return c;
+            }
+            // No tilt near clears it all: it stays (the line is turned aside along what is in its way, LayPiece) -
+            // or rises a step towards what a wall behind him calls for.
+            return hint > now ? Mathf.Min(hint, now + TiltSearch) : now;
+        }
+
+        /// <summary>The sheet's tilt (radians): <paramref name="fall"/>, its tilt into a fall, changed by
+        /// <paramref name="free"/> to clear the walls - never past the steepest it rises or the farthest it dips.</summary>
+        public static float SheetTotal(float fall, float free)
+            => Mathf.Clamp(fall + free, Mathf.Min(fall, -MaxDip), Mathf.Max(fall, MaxFreeTilt));
+
+        /// <summary>How many pieces of the sheet, streaming towards <paramref name="side"/> at <paramref name="tilt"/>,
+        /// lie clear of the obstacles (with <see cref="TiltClear"/> to spare) before the first that does not.</summary>
+        int ClearPieces(Vector3 a, float side, float tilt)
+        {
+            float direction = FlowGoal(side, tilt), turn = side < 0f ? -1f : 1f;
+            float x = a.x, y = a.y;
+            for (int i = 1; i < Count; i++)
+            {
+                if (sheetLen[i] <= 1e-9f) continue;
+                float angle = direction + sheetLift[i] * turn;
+                x += Mathf.Cos(angle) * sheetLen[i];
+                y += Mathf.Sin(angle) * sheetLen[i];
+                if (InObstacle(x, y, WallSkin + TiltClear)) return i - 1;
+            }
+            return Count - 1;
+        }
+
+        /// <summary>The step (radians) and the number of steps either way of the search for a free tilt, the room (m) the
+        /// sheet is given past a wall, and the farthest (radians) it dips below level.</summary>
+        public const float TiltSearch = 0.06f, TiltClear = 0.08f, MaxDip = 0.5f;
+        /// <summary>The steepest (radians) the sheet stands to clear a wall: all but upright, as he falls close past a
+        /// face (<see cref="MaxWallTilt"/> is where it starts looking with his back to a wall).</summary>
+        public const float MaxFreeTilt = 1.5f;
+        const int TiltSteps = 10;
+
+        /// <summary>The sheet's tilt (radians, + = the tail up) towards <paramref name="side"/>: into a fall, and changed
+        /// by what clears the walls there (<see cref="FreeTilt"/>).</summary>
+        float SheetTilt(float side)
+        {
+            return SheetTotal(Mathf.Max(TrailTilt, 0f), side < 0f ? wallTiltMinus : wallTiltPlus);
+        }
+
         public static Vector2 WrapPoint(Vector2 centre, Vector2 neck, float along, float length, float trail)
         {
             Vector2 n0 = neck - centre;
@@ -280,108 +474,317 @@ namespace CrimsonVeil.Veil
 
         /// <summary>
         /// Turning round, the breeze does not flip the whole scarf at once (it crumpled round the head): the turn runs
-        /// down it from the neck, the tail last, like a flag swung round. Seconds for the turn to reach the tip.
+        /// down it from the neck, the tail last, as a fold runs down a gymnast's ribbon. Seconds for it to reach the tip.
+        /// It goes over the top, at the scarf's full length (squeezed across through the neck instead, it bunched into a
+        /// ball round his head - worst crouched, with the floor right under it).
+        /// (At 0.2 s with each point taking 0.4 s the whole scarf swung over at once like the hand of a clock, its tip at
+        /// over 30 m/s: the cloth could not follow and broke up. Now a third of it is in the fold at a time - a round
+        /// U of about 0.35 m radius - and the tail beyond it only slides along itself, at under 15 m/s.)
         /// </summary>
-        public const float TurnTravel = 0.2f;
+        public const float TurnTravel = 0.42f;
         /// <summary>Seconds one point of the scarf takes to swing over.</summary>
-        public const float TurnBlend = 0.4f;
+        public const float TurnBlend = 0.18f;
 
         /// <summary>The breeze's heading (radians from +x, pi = towards -x) for a breeze towards <paramref name="dir"/>.</summary>
         public static float HeadingOf(float dir) => dir < 0f ? Mathf.PI : 0f;
 
         /// <summary>
-        /// The breeze's heading at <paramref name="f"/> (0 neck, 1 tip), <paramref name="clock"/> s into a turn from heading
-        /// <paramref name="from"/> to <paramref name="to"/>. It swings round through straight up: turning round, the
-        /// scarf goes over the top like the hand of a clock, at its full length (squeezed across through the neck
-        /// instead, it bunched into a ball round his head - worst crouched, with the floor right under it).
+        /// How far through its run (0..1) the fold is as it reaches the point <paramref name="f"/> of the scarf: a little
+        /// quicker by the neck, slower towards the tip. (The tail's pieces hang down steeply in the sheet's S and have
+        /// the farthest to turn; at an even pace the tip cracked like a whip, at 30 m/s.)
         /// </summary>
-        public static float SwingHeading(float from, float to, float clock, float f)
-            => Mathf.Lerp(from, to, Mathf.SmoothStep(0f, 1f, (clock - f * TurnTravel) / TurnBlend));
+        public static float FoldReach(float f) => Mathf.Pow(Mathf.Clamp01(f), FoldEase);
 
-        /// <summary>Rising faster than this (m/s) as he turns round, the scarf swings round underneath instead of over the top.</summary>
-        public const float RiseUnder = 1.5f;
+        public const float FoldEase = 1.4f;
 
         /// <summary>
-        /// The heading a turn from <paramref name="from"/> ends at, for a breeze towards heading <paramref name="goal"/>
-        /// (0 or pi): the nearest way round; from straight across, over the top - or, as he leaps up
-        /// (<paramref name="under"/>), underneath: swung over the top as his body rose into it, it balled up round his head.
+        /// The direction (radians, followed round without wrapping) a turn from <paramref name="from"/> ends at, for a
+        /// sheet that is to stream towards <paramref name="goal"/>: the nearer way round. Where the two ways are
+        /// within <see cref="RouteTie"/> of each other (the sheet lies level: straight across) it goes over the top
+        /// (<paramref name="way"/> +1: passing straight up) or underneath (-1); <paramref name="forced"/> takes that
+        /// way however far it is.
+        ///
+        /// (The way used to be picked by how he moved - underneath as he leapt up - and kept whatever came after:
+        /// falling a moment later with the sheet tilted up on both sides, the fold still hung below him and the scarf
+        /// closed into a ring over his head. The nearer way never turns it by more than half a circle.)
         /// </summary>
-        public static float TurnGoal(float from, float goal, bool under)
+        public static float TurnRoute(float from, float goal, int way, bool forced = false)
         {
-            goal += 2f * Mathf.PI * Mathf.Round((from - goal) / (2f * Mathf.PI));
-            if (Mathf.Abs(Mathf.Abs(from - goal) - Mathf.PI) > 0.01f) return goal;
-            // straight across: over the top means passing straight up (sin > 0 halfway)
-            float over = Mathf.Cos(from) >= 0f ? 1f : -1f;
-            return from + (under ? -over : over) * Mathf.PI;
+            float near = from + Mathf.DeltaAngle(from * Mathf.Rad2Deg, goal * Mathf.Rad2Deg) * Mathf.Deg2Rad;
+            if (Mathf.Abs(near - from) < 1e-4f) return near;
+            float far = near + (near > from ? -2f : 2f) * Mathf.PI;
+            if (!forced && Mathf.Abs(near - from) < Mathf.PI - RouteTie) return near;
+            bool nearOver = Mathf.Sin(0.5f * (from + near)) > 0f;
+            return nearOver == (way > 0) ? near : far;
         }
 
-        /// <summary>The breeze's direction in x (-1..1) at <paramref name="f"/>, <paramref name="clock"/> s after it turned from <paramref name="from"/> to <paramref name="to"/> (-1/+1).</summary>
-        public static float DriftAt(float from, float to, float clock, float f)
-            => Mathf.Cos(SwingHeading(HeadingOf(from), HeadingOf(to), clock, f));
+        /// <summary>Radians: two ways round a turn closer to each other than this count as equal (see <see cref="TurnRoute"/>).</summary>
+        public const float RouteTie = 0.35f;
+
+        /// <summary>The direction (radians) the sheet streams off the neck towards <paramref name="side"/> (-1/+1 in x),
+        /// tilted by <paramref name="tilt"/> (+ = the tail up, on either side).</summary>
+        public static float FlowGoal(float side, float tilt) => side < 0f ? Mathf.PI - tilt : tilt;
 
         /// <summary>
-        /// How much of the sheet's shape holds the point <paramref name="f"/> (0 neck .. 1 tip) <paramref name="clock"/> s
-        /// into a turn: all of it before and after, least while it swings over (<see cref="SwingRelease"/>). Pulled hard
-        /// to its place on the swinging shape, the cloth was snatched after it node by node and folded up sharply
-        /// (a kink of 140 degrees at the tail); carried over by the breeze and the air instead, it goes over in one curve.
+        /// How firmly (0..1) the cloth is led along the sheet's shape <paramref name="clock"/> s into a turn: at once as
+        /// it starts, all through it, and let go over a moment after (<see cref="GuideSettle"/>). The fold running down
+        /// the scarf is a shape laid out point by point (see <see cref="SheetPiece"/>): led along it, the cloth goes over
+        /// as one smooth curve. Left to springs and the air it lagged behind its place, each point by a different
+        /// amount, and folded up sharply.
         /// </summary>
-        public static float SwingShape(float clock, float f)
+        public static float TurnGuide(float clock)
         {
-            // let go as the point starts to swing over; taken up again only gently once it has (the cloth still flies on
-            // behind its place: snapped back to it there, the tail was folded sharply)
-            float t = clock - f * TurnTravel;
-            if (t <= 0f || t >= TurnBlend + SwingSettle) return 1f;
-            float release = Mathf.SmoothStep(0f, 1f, t / (0.3f * TurnBlend))
-                            * (1f - Mathf.SmoothStep(0f, 1f, (t - 0.6f * TurnBlend) / (0.4f * TurnBlend + SwingSettle)));
-            return 1f - SwingRelease * release;
+            float end = TurnTravel + TurnBlend;
+            if (clock < 0f || clock >= end + GuideSettle) return 0f;
+            return Mathf.SmoothStep(0f, 1f, clock / GuideIn) * (1f - Mathf.SmoothStep(0f, 1f, (clock - end) / GuideSettle));
         }
 
-        /// <summary>Seconds past its swing over a point of the scarf takes to be held fully in the sheet's shape again.</summary>
-        public const float SwingSettle = 0.4f;
+        /// <summary>Seconds the lead comes in over as a turn starts and is let go over after it; how closely (1/s) the
+        /// cloth is drawn to its place while led.</summary>
+        public const float GuideIn = 0.05f, GuideSettle = 0.35f, GuideRate = 90f;
 
-        /// <summary>The share of the sheet's shape let go mid-swing as it turns round.</summary>
-        public const float SwingRelease = 0.8f;
-
-        /// <summary>The breeze's heading (radians) at <paramref name="f"/> along the scarf right now (see <see cref="TurnTravel"/>).</summary>
-        public float HeadingAt(float f) => SwingHeading(headingFrom, headingTo, turnClock, f);
-
-        /// <summary>The breeze's direction in x (-1..1) at <paramref name="f"/> along the scarf right now (see <see cref="TurnTravel"/>).</summary>
-        public float DriftAt(float f) => DriftDirection == 0f ? 0f : Mathf.Cos(HeadingAt(f));
+        /// <summary>How firmly (0..1) the cloth is being led through a turn right now (see <see cref="TurnGuide"/>).</summary>
+        public float TurnLead => DriftDirection != 0f ? TurnGuide(flowClock) * (1f - SwirlWeight) : 0f;
 
         /// <summary>
-        /// The sheet's place (from the neck) <paramref name="along"/> m back along a breeze of heading <paramref name="heading"/>,
-        /// its S <paramref name="height"/> up, tilted by <paramref name="tilt"/> into a fall: mid-turn it points up and its
-        /// waves are laid down (their height would flip sides as it passed the top).
+        /// Lays one piece of the sheet's line on from <paramref name="from"/> (from the neck <paramref name="a"/>): along
+        /// <paramref name="step"/>, or - where that leads into a wall, a ledge or a ceiling - turned aside by the least
+        /// angle that clears it, at the same length: along its face. The pieces after it keep to that side (turning
+        /// each to its own nearest side, the line zigzagged up and down a wall with every wave of its S) and come back
+        /// to their own direction in a curve. So the sheet's shape runs up a wall and over the edge of a ledge as one
+        /// line. (Laid
+        /// straight through, each point in the block was moved out of it on its own: as he fell past a ledge the
+        /// line broke at its edge - one part down the face, the next half a metre in over the top - and the cloth
+        /// folded into a hairpin there.)
         /// </summary>
-        public static Vector2 SheetOffset(float along, float height, float heading, float tilt)
-            => SheetShape(SpineStep(along, heading, tilt), height, heading, tilt);
-
-        /// <summary>
-        /// One piece <paramref name="length"/> m long of the sheet's centre line, laid on from the last along the
-        /// breeze's <paramref name="heading"/> there. Laid out piece by piece the line keeps the scarf's length through a
-        /// turn: each point's place on a straight ray from the neck at its own heading (the tail's lagging behind the
-        /// neck's) was a spiral up to three times as long as the cloth, and pulled towards it the cloth broke into a
-        /// zigzag of sharp folds as it swung over his head. The piece is tilted by <paramref name="tilt"/> (see
-        /// <see cref="SheetOffset"/>) the same way: turning round before a wall, the sheet rising against it while it
-        /// swung over, each point turned by its own tilt about the neck tore the line apart (folds of up to 170 degrees).
-        /// </summary>
-        public static Vector2 SpineStep(float length, float heading, float tilt)
+        public Vector2 LayPiece(Vector3 a, Vector2 from, Vector2 step, int node = -1)
         {
-            float angle = heading + tilt * Mathf.Cos(heading);
+            float len = step.magnitude;
+            if (len < 1e-9f) return from + step;
+            if (Obstacles.Count == 0) { laidTurn = 0f; return from + step; }
+            float angle = Mathf.Atan2(step.y, step.x);
+            // the piece before was turned aside: this one comes back to its own direction a little at a time
+            float ease = Mathf.MoveTowards(laidTurn, 0f, LaidEase);
+            if (PieceClear(a, from, angle + ease, len))
+            {
+                laidTurn = ease;
+                if (node >= 0) laidSide[node] = 0f;
+                return from + new Vector2(Mathf.Cos(angle + ease), Mathf.Sin(angle + ease)) * len;
+            }
+            laidRound = true;
+            // Which side it keeps to: the side the line is turned to already, else the side this piece took last step.
+            // (or, for the first piece in the way, the side the line was turned to last step: crawling out of a tunnel
+            // the scarf stays under its ceiling - it does not leap up the face over the mouth)
+            float keep = Mathf.Abs(laidTurn) > 1e-4f ? Mathf.Sign(laidTurn) : node >= 0 ? laidSide[node] : 0f;
+            if (keep == 0f && node >= 0 && !laidAny) keep = laidFirst;
+            if (node >= 0 && !laidAny) laidFirstNow = 0f;
+            float best = 0f, bestCost = float.MaxValue;
+            for (int side = -1; side <= 1; side += 2)
+                for (int k = 1; k <= LaidSteps; k++)
+                {
+                    float t = ease + side * k * LaidSearch;
+                    if (!PieceClear(a, from, angle + t, len)) continue;
+                    float blocked = t - side * LaidSearch;
+                    for (int b = 0; b < 5; b++)
+                    {
+                        float mid = 0.5f * (blocked + t);
+                        if (PieceClear(a, from, angle + mid, len)) t = mid; else blocked = mid;
+                    }
+                    // (the least turn; rather to the side the line is on; rather up a wall than down it - the cloth
+                    // streams up like a flame: turned down a face, its tail hooked back under itself)
+                    float cost = Mathf.Abs(t - ease) - (side == keep ? LaidKeep : 0f) - LaidUp * Mathf.Sin(angle + t);
+                    if (cost < bestCost) { bestCost = cost; best = t; }
+                    break;
+                }
+            if (bestCost == float.MaxValue) return from + step;   // (walled in all round)
+            laidTurn = best;
+            if (node >= 0)
+            {
+                laidSide[node] = Mathf.Sign(best);
+                if (!laidAny) { laidAny = true; laidFirstNow = Mathf.Sign(best); }
+            }
+            return from + new Vector2(Mathf.Cos(angle + best), Mathf.Sin(angle + best)) * len;
+        }
+
+        /// <summary>Whether a piece <paramref name="len"/> m long laid on from <paramref name="from"/> (from the neck
+        /// <paramref name="a"/>) at <paramref name="angle"/> ends clear of every obstacle.</summary>
+        bool PieceClear(Vector3 a, Vector2 from, float angle, float len)
+            => !InObstacle(a.x + from.x + Mathf.Cos(angle) * len, a.y + from.y + Mathf.Sin(angle) * len);
+
+        /// <summary>Radians a piece comes back towards its own direction after the piece before was turned aside (so
+        /// the line leaves a wall in a curve); the step (radians) and the number of steps of the search for a clear
+        /// direction; how much farther (radians) a piece turns to stay on the side the line is on already; and how
+        /// much farther to go up a wall rather than down it.</summary>
+        public const float LaidEase = 0.3f, LaidSearch = 0.1309f, LaidKeep = 1.2f, LaidUp = 0.6f;
+        const int LaidSteps = 24;
+
+        float laidTurn;     // radians the last piece of the line being laid was turned aside
+        bool laidAny;       // the line being laid has been turned aside already
+        float laidFirst, laidFirstNow;   // the side (-1/+1) the line was first turned to last step / this step (0: not turned)
+        float[] laidSide;   // per node: the side (-1/+1) its piece was turned to last step (0: not turned)
+
+        bool laidRound;     // this step the sheet's line had to be laid round an obstacle
+        float wallLead;     // 0..1, eased: the cloth is led along the sheet's shape past a wall, a ledge or a ceiling
+
+        /// <summary>How closely (1/s) the cloth is drawn to its place in the sheet's shape where that is laid along a
+        /// wall, up a ledge or under a ceiling, and how fast (1/s) that comes in and goes. Left to itself there the
+        /// cloth was blown into the wall, went limp beyond the touch and piled up against it in a crumpled heap.</summary>
+        public const float WallLeadRate = 20f, WallLeadEase = 4f;
+
+        /// <summary>Whether the point lies in an obstacle or within <see cref="WallSkin"/> of one.</summary>
+        bool InObstacle(float x, float y, float skin = WallSkin)
+        {
+            for (int o = 0; o < Obstacles.Count; o++)
+            {
+                Rect r = Obstacles[o];
+                if (x > r.xMin - skin && x < r.xMax + skin && y > r.yMin - skin && y < r.yMax + skin) return true;
+            }
+            return false;
+        }
+
+        /// <summary>How closely (1/s) the cloth is drawn to its place in the sheet's shape as he falls or leaps (see
+        /// <see cref="FallDrag"/>): led, it streams up behind him as one line and slides off a ledge after him. Left
+        /// to the pull of his neck it dropped onto the ledge, was dragged over its edge and slung out in front of him.</summary>
+        public const float FallLeadRate = 25f;
+
+        /// <summary>The direction (radians) the sheet streams at <paramref name="f"/> along the scarf right now: what the
+        /// neck's was a moment ago (see <see cref="TurnTravel"/>).</summary>
+        public float HeadingAt(float f)
+        {
+            float x = Mathf.Clamp01(f) * (Count - 1);
+            int i0 = Mathf.Min((int)x, Count - 2);
+            return Mathf.Lerp(nodeAngle[i0], nodeAngle[i0 + 1], x - i0);
+        }
+
+        /// <summary>The side (-1..1 in x) the sheet streams to at <paramref name="f"/> along the scarf right now (see <see cref="TurnTravel"/>).</summary>
+        public float DriftAt(float f)
+        {
+            if (DriftDirection == 0f) return 0f;
+            float x = Mathf.Clamp01(f) * (Count - 1);
+            int i0 = Mathf.Min((int)x, Count - 2);
+            return Mathf.Lerp(nodeSide[i0], nodeSide[i0 + 1], x - i0);
+        }
+
+        // The direction the sheet streams off the neck (radians from +x, followed round without wrapping) and the side
+        // it streams to (-1..1), as they were over the last moments. They run down the scarf from the neck as on a
+        // ribbon: each point takes up what the neck did a moment before (FlowAt). So whatever the neck does - a turn,
+        // a fall, a leap, a turn in mid-air and a fall right after - the scarf is the trace of one motion: a curve.
+        // (A turn used to be worked out point by point, each from where it stood to where it was to end, and the
+        // tilt into a fall was laid on the whole scarf at once on top: one upon the other they wound it into a ring.)
+        const int FlowKept = 192;
+        const float FlowGrain = 0.003f;
+        float[] flowTime, flowAngleAt, flowSideAt;
+        int flowNewest;
+        float flowAngle, flowSide, flowGoal, flowFrom, sideFrom, flowClock = 99f, flowBlend = TurnBlend;
+        float flowStir;             // 0..1, eased: the direction differs along the scarf (a wave is running down it)
+        float[] nodeAngle, nodeSide;   // per node: the sheet's direction and side there this step
+
+        /// <summary>How much of its S a piece keeps as the scarf turns round: all of it on the side the neck streams to
+        /// (<paramref name="sides"/> = its side times the neck's, 1), <see cref="CalmS"/> of it on the other side - the
+        /// part that has yet to come over.</summary>
+        public static float FoldCalm(float sides) => Mathf.Lerp(CalmS, 1f, Mathf.SmoothStep(0f, 1f, 0.5f + sides));
+        public const float CalmS = 0.35f;
+
+        /// <summary>The sheet's direction and side at the neck <paramref name="ago"/> s ago. <paramref name="kept"/>
+        /// walks back through what is kept: start it at <c>flowNewest</c> and ask for ever earlier moments.</summary>
+        void FlowAt(float ago, ref int kept, out float angle, out float side)
+        {
+            float t = time - ago;
+            for (int n = 1; n < FlowKept && flowTime[kept] > t; n++)
+            {
+                int before = (kept + FlowKept - 1) % FlowKept;
+                if (flowTime[before] > flowTime[kept]) break;   // (the oldest kept)
+                kept = before;
+            }
+            int after = kept == flowNewest ? kept : (kept + 1) % FlowKept;
+            float span = flowTime[after] - flowTime[kept];
+            float w = span > 1e-6f ? Mathf.Clamp01((t - flowTime[kept]) / span) : 0f;
+            angle = Mathf.Lerp(flowAngleAt[kept], flowAngleAt[after], w);
+            side = Mathf.Lerp(flowSideAt[kept], flowSideAt[after], w);
+        }
+
+        /// <summary>The whole scarf streams the way the neck does now (no wave running down it).</summary>
+        void FillFlow()
+        {
+            for (int k = 0; k < FlowKept; k++)
+            {
+                flowTime[k] = time;
+                flowAngleAt[k] = flowAngle;
+                flowSideAt[k] = flowSide;
+            }
+            for (int i = 0; i < Count; i++)
+            {
+                nodeAngle[i] = flowAngle;
+                nodeSide[i] = flowSide;
+            }
+            flowStir = 0f;
+        }
+
+        /// <summary>
+        /// Moves the sheet's direction at the neck on by <paramref name="h"/> s and keeps it. Turning round, it swings
+        /// over to the other side in <see cref="TurnBlend"/> s by the nearer way round (<see cref="TurnRoute"/>);
+        /// otherwise it follows the tilt into a fall or up a wall.
+        /// </summary>
+        void StepFlow(float h, Vector3 a)
+        {
+            float side = DriftDirection;
+            if (side != 0f)
+            {
+                float goal = FlowGoal(side, SheetTilt(side));
+                if (side != driftTo)
+                {
+                    if (driftTo == 0f)
+                    {
+                        flowAngle = flowGoal = flowFrom = goal;
+                        flowSide = sideFrom = side;
+                        flowClock = 99f;
+                        FillFlow();
+                    }
+                    else
+                    {
+                        // Over the top - or underneath where a ceiling is too low over him for the fold to pass and
+                        // there is more room below. Under a low ceiling the fold is made tighter as well.
+                        float reach = Settings.length * LengthScale * RestReach;
+                        float over = RoomOver(a, 1f, reach), below = RoomOver(a, -1f, reach);
+                        bool under = over < FoldRoomLeast && below > over;
+                        flowFrom = flowAngle;
+                        sideFrom = flowSide;
+                        flowGoal = TurnRoute(flowFrom, goal, under ? -1 : 1, under);
+                        flowBlend = TurnBlend * Mathf.Lerp(FoldTight, 1f, Mathf.InverseLerp(FoldRoomLeast, FoldRoom, under ? below : over));
+                        flowClock = 0f;
+                    }
+                }
+                else flowGoal += Mathf.DeltaAngle(flowGoal * Mathf.Rad2Deg, goal * Mathf.Rad2Deg) * Mathf.Deg2Rad;
+            }
+            driftTo = side;
+            flowClock += h;
+            float u = Mathf.SmoothStep(0f, 1f, flowClock / Mathf.Max(0.01f, flowBlend));
+            flowAngle = Mathf.Lerp(flowFrom, flowGoal, u);
+            flowSide = Mathf.Lerp(sideFrom, side, u);
+            if (u >= 1f) { flowFrom = flowGoal; sideFrom = side; }
+            if (time - flowTime[flowNewest] >= FlowGrain) flowNewest = (flowNewest + 1) % FlowKept;
+            flowTime[flowNewest] = time;
+            flowAngleAt[flowNewest] = flowAngle;
+            flowSideAt[flowNewest] = flowSide;
+        }
+
+        /// <summary>
+        /// One piece of the sheet's centre line, laid on from the last: at rest it runs <paramref name="run"/> m back and
+        /// <paramref name="rise"/> m up (its S and its lift off the neck); here it is laid along
+        /// <paramref name="direction"/> (radians), its rise turned to <paramref name="side"/> (-1..1: mirrored on
+        /// the other side, flat as it stands up mid-turn). The piece keeps its length.
+        ///
+        /// The whole shape is laid out piece by piece like this, so it is always one line of the scarf's own length
+        /// whose direction changes only gently. (Each point placed on a straight ray from the neck at its own heading,
+        /// it was a spiral three times the scarf's length in a turn; its S added as a height on top of a centre line,
+        /// the fold running down it was sheared and folded over on itself. Held or led to either, the cloth broke up.)
+        /// </summary>
+        public static Vector2 SheetPiece(float run, float rise, float direction, float side)
+        {
+            float length = Mathf.Sqrt(run * run + rise * rise);
+            if (length < 1e-9f) return Vector2.zero;
+            float angle = direction + Mathf.Atan2(rise, run) * side;
             return new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * length;
-        }
-
-        /// <summary>
-        /// The sheet's place for the point <paramref name="spine"/> on its centre line (from the neck, see
-        /// <see cref="SpineStep"/>), its S <paramref name="height"/> up where the breeze there has
-        /// <paramref name="heading"/>, all of it tilted by <paramref name="tilt"/> (see <see cref="SheetOffset"/>).
-        /// </summary>
-        public static Vector2 SheetShape(Vector2 spine, float height, float heading, float tilt)
-        {
-            float c = Mathf.Cos(heading);
-            float t = tilt * c;
-            float lift = height * Mathf.Abs(c);
-            return spine + new Vector2(-Mathf.Sin(t), Mathf.Cos(t)) * lift;
         }
 
         /// <summary>
@@ -391,10 +794,18 @@ namespace CrimsonVeil.Veil
         public float TrailTilt { get; set; }
 
         /// <summary>
-        /// Radians the sheet's S rises when a wall stands behind him closer than the scarf is long: it streams up the
-        /// wall like a flame instead of being blown into it and crumpling into a heap behind his head. Eased in and out.
+        /// Radians the sheet's S is tilted to clear what stands in its way (see <see cref="FreeTilt"/>): it rises when
+        /// a wall stands behind him closer than the scarf is long - it streams up the wall like a flame instead of
+        /// being blown into it and crumpling into a heap behind his head - and dips under a block hanging over its
+        /// path. Eased in and out.
         /// </summary>
-        public float WallTilt { get; private set; }
+        public float WallTilt => DriftDirection < 0f ? wallTiltMinus : wallTiltPlus;
+
+        // The tilt on either side (towards +x and -x), each eased on its own: only the part of the sheet heading for a
+        // wall rises up it. (One tilt for the whole sheet: turning round with a wall now behind him, the tail still
+        // streaming the free way was stood up as well, and the scarf swung over as an upright column.)
+        float wallTiltPlus, wallTiltMinus;
+        float freeTiltPlus, freeTiltMinus;   // (what each is eased towards: see FreeTilt)
 
         /// <summary>The steepest the scarf rises against a wall, and how fast (rad/s) it rises and settles.</summary>
         public const float MaxWallTilt = 1.3f, WallTiltRate = 3f;
@@ -407,6 +818,28 @@ namespace CrimsonVeil.Veil
         {
             if (reach <= 1e-4f || room >= reach) return 0f;
             return Mathf.Min(MaxWallTilt, Mathf.Acos(Mathf.Clamp01(Mathf.Max(0f, room) / reach)));
+        }
+
+        /// <summary>Metres of free height over the neck in which the fold of a turn passes over the top at its full
+        /// size; the least it can be squeezed into (<see cref="FoldTight"/> of its size: any lower and it goes
+        /// underneath, if there is more room there).</summary>
+        public const float FoldRoom = 1.0f, FoldRoomLeast = 0.45f, FoldTight = 0.55f;
+
+        /// <summary>Free height (m) over the neck <paramref name="a"/> (<paramref name="dir"/> +1) or under it (-1), within
+        /// <paramref name="span"/> m to either side. (For the fold of a turn: the scarf's own reach - the fold lifts
+        /// the tail on its way over, and a block hanging over the tail is in its way as much as one over his head.)</summary>
+        public float RoomOver(Vector3 a, float dir, float span = 0.5f)
+        {
+            float room = 10f;
+            for (int o = 0; o < Obstacles.Count; o++)
+            {
+                Rect r = Obstacles[o];
+                if (r.xMax < a.x - span || r.xMin > a.x + span) continue;
+                float d = dir > 0f ? r.yMin - a.y : a.y - r.yMax;
+                if (d < -0.05f) continue;   // on the other side of him, or he stands in it
+                room = Mathf.Min(room, d);
+            }
+            return room;
         }
 
         /// <summary>Free space (m) from <paramref name="a"/> towards <paramref name="dir"/> (-1/+1 in x) before a wall at his height.</summary>
@@ -425,34 +858,15 @@ namespace CrimsonVeil.Veil
             return room;
         }
 
-        float headingFrom, headingTo, driftTo, turnClock = 99f;
+        float driftTo;
+        Vector3[] shapeAt;          // per node: its place in the sheet's shape this step
+        float[] shapeFree;          // per node: how far that place is clear of walls (0 inside one)
 
         /// <summary>How much of his fall the sheet's shape drags the cloth down with, tilted by <paramref name="tilt"/> into the fall.</summary>
         public static float FallDrag(float tilt) => 1f - Mathf.SmoothStep(0f, 1f, tilt / 0.6f);
 
         /// <summary>1/s: how hard cloth swinging out ahead of him is braked in a fall.</summary>
         public const float ForwardBrake = 30f;
-
-        /// <summary>
-        /// <paramref name="p"/> moved out of any obstacle it is in onto the face towards <paramref name="sideX"/> (his side) or
-        /// onto its top, whichever is nearer: up a wall it streams along the face; just under the top of a block he ran
-        /// off, over the top (moved sideways there, the sheet's place was drawn into a line down the block's edge and the
-        /// cloth lying on the top folded over the corner).
-        /// </summary>
-        public Vector3 OutSideways(Vector3 p, float sideX)
-        {
-            for (int o = 0; o < Obstacles.Count; o++)
-            {
-                Rect r = Obstacles[o];
-                if (!r.Contains(new Vector2(p.x, p.y))) continue;
-                bool left = sideX < r.center.x;
-                float toSide = left ? p.x - r.xMin : r.xMax - p.x;
-                float toTop = r.yMax - p.y;
-                if (toTop < toSide) p.y = r.yMax + WallSkin;
-                else p.x = left ? r.xMin - WallSkin : r.xMax + WallSkin;
-            }
-            return p;
-        }
 
         /// <summary>Metres within which the sheet's shape lets go as its place sinks into a wall.</summary>
         public const float ShapeWallFade = 0.25f;
@@ -556,6 +970,19 @@ namespace CrimsonVeil.Veil
             GuideTargets = new Vector3[Count];
             GuideWeight = new float[Count];
             wallContact = new float[Count];
+            flowTime = new float[FlowKept];
+            flowAngleAt = new float[FlowKept];
+            flowSideAt = new float[FlowKept];
+            nodeAngle = new float[Count];
+            nodeSide = new float[Count];
+            shapeAt = new Vector3[Count];
+            shapeFree = new float[Count];
+            laidSide = new float[Count];
+            sheetLen = new float[Count];
+            sheetLift = new float[Count];
+            pieceLen = new float[Count];
+            pieceAngle = new float[Count];
+            pieceTurn = new float[Count];
             FlowRestLength = Settings.length / (Count - 1);
             Reset(anchor);
         }
@@ -570,12 +997,18 @@ namespace CrimsonVeil.Veil
             }
             vortices.Clear();
             if (wallContact != null) Array.Clear(wallContact, 0, wallContact.Length);
+            wallTiltPlus = wallTiltMinus = freeTiltPlus = freeTiltMinus = 0f;
             shedPhase = 0f;
             lastAnchor = anchor;
             AnchorVelocity = Vector3.zero;
             driftTo = DriftDirection;
-            headingFrom = headingTo = HeadingOf(DriftDirection);
-            turnClock = 99f;
+            if (flowTime != null)
+            {
+                flowAngle = flowGoal = flowFrom = HeadingOf(DriftDirection);
+                flowSide = sideFrom = DriftDirection;
+                flowClock = 99f;
+                FillFlow();
+            }
         }
 
         /// <summary>The scarf's length (m) wound round the neck.</summary>
@@ -615,21 +1048,17 @@ namespace CrimsonVeil.Veil
         {
             var s = Settings;
             time += h;
-            if (DriftDirection != driftTo)
-            {
-                // a turn while the last one is still running starts from where the middle of the scarf is
-                float goal = HeadingOf(DriftDirection);
-                headingFrom = driftTo == 0f || DriftDirection == 0f ? goal : HeadingAt(0.5f);
-                headingTo = TurnGoal(headingFrom, goal, AnchorVelocity.y > RiseUnder);
-                driftTo = DriftDirection;
-                turnClock = Mathf.Abs(headingFrom - headingTo) < 1e-4f ? 99f : 0f;
-            }
-            turnClock += h;
             {
                 float reach = Settings.length * LengthScale * RestReach;
-                float want = DriftDirection != 0f ? WallTiltFor(RoomBehind(a, Mathf.Sign(DriftDirection), reach), reach) : 0f;
-                WallTilt = Mathf.MoveTowards(WallTilt, want, h * WallTiltRate);
+                bool walls = DriftDirection != 0f;
+                // (a wall right behind him gives the first guess; the search finds what really clears it)
+                float fall = Mathf.Max(TrailTilt, 0f);
+                freeTiltPlus = walls ? FreeTilt(a, 1f, fall, Mathf.Max(0f, WallTiltFor(RoomBehind(a, 1f, reach), reach) - fall), freeTiltPlus) : 0f;
+                freeTiltMinus = walls ? FreeTilt(a, -1f, fall, Mathf.Max(0f, WallTiltFor(RoomBehind(a, -1f, reach), reach) - fall), freeTiltMinus) : 0f;
+                wallTiltPlus = Mathf.MoveTowards(wallTiltPlus, freeTiltPlus, h * WallTiltRate);
+                wallTiltMinus = Mathf.MoveTowards(wallTiltMinus, freeTiltMinus, h * WallTiltRate);
             }
+            StepFlow(h, a);
             Vector2 air = Wind + AmbientFlow;
 
             // 1) Advect and age vortices (they live in the air, not on the body).
@@ -672,21 +1101,38 @@ namespace CrimsonVeil.Veil
             var bodyVel = new Vector2(anchorVel.x, anchorVel.y);
             float bodySpeed = bodyVel.magnitude;
             float wavePhase = s.undulationSpeed * time;
-            // Cloth beyond a point that touches a wall no longer streams into it: it hangs and drapes down the wall.
-            float blocked = 0f;
-            // the sheet's centre line, laid out from the neck piece by piece (see SpineStep)
-            Vector2 spine = Vector2.zero;
-            float spineAlong = 0f;
+            float turnLead = TurnLead;
+            // The scarf's place this step: one line laid from the neck (the sheet, the somersault's ring, round walls).
+            laidRound = false;
+            LayShape(a);
+            // How closely the cloth is led along it: through a turn, a fall or a leap, the somersault and the moment
+            // after it, and along walls.
+            bool streams = DriftDirection != 0f;
+            float fallLead = streams ? 1f - FallDrag(Mathf.Abs(TrailTilt)) : 0f;
+            wallLead = Mathf.MoveTowards(wallLead, streams && (laidRound || Mathf.Abs(WallTilt) > 0.05f) ? 1f : 0f, h * WallLeadEase);
+            // (and while a wave runs down it: the neck's direction changed and the tail has yet to take it up)
+            float lowest = nodeAngle[0], highest = nodeAngle[0];
+            for (int i = 1; i < Count; i++)
+            {
+                lowest = Mathf.Min(lowest, nodeAngle[i]);
+                highest = Mathf.Max(highest, nodeAngle[i]);
+            }
+            float stir = streams ? Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.1f, 0.5f, highest - lowest)) : 0f;
+            flowStir = Mathf.MoveTowards(flowStir, stir, h / (stir > flowStir ? GuideIn : GuideSettle));
+            float leadRate = Mathf.Max(streams ? GuideRate * TurnGuide(flowClock) : 0f, FallLeadRate * Mathf.Max(fallLead, flowStir));
+            leadRate = Mathf.Max(leadRate, WallLeadRate * wallLead);
+            leadRate = Mathf.Max(leadRate, WrapRate * Mathf.Max(SwirlWeight, streams ? unwind : 0f));
             for (int i = 1; i < Count; i++)
             {
                 wallContact[i] = Mathf.Max(0f, wallContact[i] - h * 2.5f);
-                blocked = Mathf.Max(blocked, wallContact[i]);
                 Vector3 p = Positions[i];
                 Vector3 vel = (p - previous[i]) / h;
                 float f = (float)i / (Count - 1);
                 // (not while it streams up behind him in a fall: a touch of the ledge he dropped off let the tail go
                 // limp and it whipped round in front of him)
-                float loose = (1f - H(i)) * (1f - 0.85f * blocked * FallDrag(TrailTilt));
+                // (it used to go limp beyond a point touching a wall, to drape down it: it piled up there in a heap.
+                // Now the sheet's shape itself is laid along the wall - LayPiece - and the cloth is led along it.)
+                float loose = 1f - H(i);
 
                 // Feel the run wind only up to a point: the scarf trails, it doesn't become a taut sheet.
                 Vector2 airV = SampleAirVelocity(p);
@@ -694,7 +1140,7 @@ namespace CrimsonVeil.Veil
                 if (relAir.sqrMagnitude > s.maxRelativeWind * s.maxRelativeWind) relAir = relAir.normalized * s.maxRelativeWind;
                 airV = Vector2.Lerp(airV, bodyVel + relAir, loose);
                 // The veil floats on its own breeze: it streams behind the hero even standing still.
-                float headingHere = HeadingAt(f);
+                float headingHere = nodeAngle[i];
                 Vector2 breeze = new Vector2(Mathf.Cos(headingHere), Mathf.Sin(headingHere));
                 if (DriftDirection != 0f)
                     airV += new Vector2(breeze.x * s.drift, s.driftLift + breeze.y * s.drift) * (loose * Mathf.SmoothStep(0f, 1f, f * 4f));
@@ -704,28 +1150,13 @@ namespace CrimsonVeil.Veil
                 float drag = s.airDrag * (1f + 5f * SwirlWeight * loose);
                 Vector3 acc = new Vector3((airV.x - vel.x) * drag, (airV.y - vel.y) * drag, 0f) + g;
 
-                float dAlong = Mathf.Max(0f, f * s.length - WrapLength) * LengthScale;
-                float sheetTilt = Mathf.Max(TrailTilt, WallTilt);
-                spine += SpineStep(dAlong * RestReach - spineAlong, headingHere, sheetTilt);
-                spineAlong = dAlong * RestReach;
-                float shaped = RestShapeWeight * loose * (DriftDirection != 0f ? 1f : 0f) * SwingShape(turnClock, f);
+                float shaped = RestShapeWeight * loose * (DriftDirection != 0f ? 1f : 0f);
                 if (shaped > 0.001f)
                 {
-                    // The sheet's shape: its centre line d metres back from the neck. Its S takes up length: it reaches
-                    // back ~RestReach of d (a straighter target would pull the S flat). (Measured from the end of the
-                    // wrap round the neck: the sheet is the part that streams off it.)
-                    Vector2 off = SheetShape(spine, VeilRestShape.Height(dAlong, time), headingHere, sheetTilt);
-                    var target = new Vector3(a.x + off.x, a.y + off.y, p.z);
-                    // Where the sheet's place is inside a wall or a ledge (he dropped off it, the S still lay over it) the
-                    // shape lets go: held to it, the cloth was pressed against the top and crumpled up there. Let go,
-                    // it drapes over the edge and follows him down.
-                    // Falling past a wall or a ledge, its place is moved out of it sideways, to his side: the scarf
-                    // streams up along the face of the block as one band (let go there, it tumbled into a tangle).
-                    // (leaping up past one too: its place, trailing below him, lay inside the block)
+                    // Held to its place in the line (LayShape). Where that is inside a wall the hold lets go.
+                    var target = new Vector3(shapeAt[i].x, shapeAt[i].y, p.z);
                     float falling = 1f - FallDrag(TrailTilt);
-                    float passing = 1f - FallDrag(Mathf.Abs(TrailTilt));
-                    if (passing > 0.001f) target = Vector3.Lerp(target, OutSideways(target, a.x), passing);
-                    shaped *= ShapeOutsideWalls(DepthInObstacles(target));
+                    shaped *= shapeFree[i];
                     Vector3 pull = (target - p) * (s.restShapeStiffness * (1f + 3f * unwind));
                     Vector3 still = new Vector3(anchorVel.x - vel.x, anchorVel.y - vel.y, 0f) * (s.restShapeDamping * (1f + 1.5f * unwind));
                     // Falling, the cloth is not dragged down at his speed (it was pressed onto the ledge he dropped
@@ -778,6 +1209,9 @@ namespace CrimsonVeil.Veil
                     // A breath (weapon melting back) may lift it faster than the normal limit.
                     float limit = relV.y > 0f ? s.maxRelativeFall + Mathf.Max(0f, Breath.y) * 0.25f : s.maxRelativeFall;
                     limit += (SwirlWeight + unwind) * 40f; // winding round the body (and off it) moves up and down freely
+                    // (and so does cloth that is led: held to 2.5 m/s it could not keep up with its place as he
+                    // dropped off a ledge - it sank onto the ledge's top and was dragged over the edge in a heap)
+                    limit += Mathf.Clamp01(leadRate / FallLeadRate) * 40f;
                     if (Mathf.Abs(relV.y) > limit)
                     {
                         relV.y = Mathf.Lerp(relV.y, Mathf.Sign(relV.y) * limit, loose);
@@ -806,24 +1240,18 @@ namespace CrimsonVeil.Veil
             // towards the camera, to the back), held there; the rest streams off the wrap.
             LayWrap(a);
 
-            // 5b) The somersault: the loose cloth is laid round the body as a spiral from the neck, trailing the
-            // turn, so it wraps the hero as the body turns (rather than tangling in the whirl beside him).
-            if (SwirlWeight > 0.001f)
-            {
-                float trail = WrapTrail != 0f ? WrapTrail : -Mathf.Sign(SwirlSpeed);
-                if (trail != 0f)
+            // 5b) The cloth is led along its line: each loose node is drawn to its place in it, which carries it at
+            // that place's own speed - through the fold of a turn (TurnGuide), a fall or a leap (FallLeadRate), along
+            // walls, and into the somersault's ring and out of it (the line winds round the body as the body turns).
+            if (leadRate > 0.001f)
+                for (int i = Mathf.Max(1, s.wrapNodes); i < Count; i++)
                 {
-                    float rate = 1f - Mathf.Exp(-WrapRate * SwirlWeight * h);
-                    for (int i = 1; i < Count; i++)
-                    {
-                        float loose = (1f - H(i)) * Free(i);
-                        if (loose <= 0.001f) continue;
-                        Vector2 w = WrapPoint(SwirlCenter, a, Mathf.Max(0f, (float)i / (Count - 1) * s.length - WrapLength) * LengthScale, s.length * LengthScale, trail);
-                        var target = new Vector3(w.x, w.y, Positions[i].z);
-                        Positions[i] = Vector3.Lerp(Positions[i], target, rate * loose);
-                    }
+                    float lead = leadRate * (1f - H(i)) * Free(i) * shapeFree[i];
+                    if (lead <= 0.001f) continue;
+                    Vector3 to = shapeAt[i];
+                    to.z = Positions[i].z;
+                    Positions[i] = Vector3.Lerp(Positions[i], to, 1f - Mathf.Exp(-lead * h));
                 }
-            }
 
             // 6) Distance constraints (rest length morphs from cloth to weapon shape, node by node).
             for (int it = 0; it < s.constraintIterations; it++)
@@ -850,14 +1278,16 @@ namespace CrimsonVeil.Veil
                 // The chest line (FrontHold): kept by the cloth itself, which drapes back from it in one piece. (Pressed
                 // back in the drawing instead, point by point, a band reaching out in front was squashed into a sliver
                 // whose edges crossed - a Z-shaped notch.)
-                if (FrontHold > 0f)
+                // (not while it is led through a turn: the tail still to come passes over his head from in front)
+                float front = FrontHold * (1f - turnLead);
+                if (front > 0f)
                     for (int i = Mathf.Max(1, s.wrapNodes); i < Count; i++)
                     {
                         float loose = (1f - H(i)) * Free(i);
                         if (loose <= 0f) continue;
                         float ahead = (Positions[i].x - a.x) * FrontFacing - FrontReach;
                         if (ahead <= 0f) continue;
-                        Positions[i].x -= FrontFacing * ahead * FrontHold * loose;
+                        Positions[i].x -= FrontFacing * ahead * front * loose;
                         // (and it stops there rather than bouncing off: its speed outwards is spent)
                         if ((Positions[i].x - previous[i].x) * FrontFacing > 0f) previous[i].x = Positions[i].x;
                     }
@@ -900,6 +1330,10 @@ namespace CrimsonVeil.Veil
                     Positions[i] += shift;
                     previous[i] += shift;
                 }
+                // (and the bend limit once more: set to length along its own direction, a curling tail wound tighter)
+                float least = SkipLength(rest);
+                int first = Mathf.Max(1, s.wrapNodes);
+                for (int i = first; i < Count - 2; i++) HoldBend(i, least);
             }
 
             // 6b) A set weapon is a solid thing in the hand: once a node has hardened it sits exactly on the weapon's

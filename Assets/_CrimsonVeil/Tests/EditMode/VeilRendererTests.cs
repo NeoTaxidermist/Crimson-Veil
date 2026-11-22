@@ -331,13 +331,16 @@ namespace CrimsonVeil.Tests
                 float around = Mathf.Min((verts[k * 2 - 2] - verts[k * 2 - 1]).magnitude, (verts[k * 2 + 2] - verts[k * 2 + 3]).magnitude);
                 Assert.Greater(w, 0.7f * around, $"sample {k}: no notch cut into the band");
             }
-            // and the band's centre line is eased round a bend too tight for it
-            var centre = new Vector3[] { new Vector3(0f, 0f, 0f), new Vector3(0.05f, 0f, 0f), new Vector3(0.1f, 0f, 0f), new Vector3(0.1f, 0.05f, 0f), new Vector3(0.1f, 0.1f, 0f) };
-            var width = new[] { 0.3f, 0.3f, 0.3f, 0.3f, 0.3f };
-            var hard = new float[5];
-            Assert.IsTrue(VeilRenderer.UnfoldCentre(centre, width, hard, 5));
-            for (int i = 1; i < 4; i++)
-                Assert.Less(Mathf.Abs(VeilRenderer.Curvature(centre[i - 1], centre[i], centre[i + 1])) * 0.15f, 1.6f, "much rounder than the corner was");
+            // a curl at the very end: the band stays narrow to its tip (it opened out to full width in its last sample)
+            for (int k = 0; k < n; k++)
+            {
+                float ang = k < 14 ? 0f : (k - 14) * 1.2f;
+                var c = new Vector3(0.42f + 0.02f * Mathf.Sin(ang), 0.02f * (1f - Mathf.Cos(ang)), 0f) + (k < 14 ? new Vector3((k - 14) * 0.03f, 0f, 0f) : Vector3.zero);
+                verts[k * 2] = c + Vector3.up * 0.15f;
+                verts[k * 2 + 1] = c - Vector3.up * 0.15f;
+            }
+            VeilRenderer.ClampFolds(verts, null, 0, n);
+            Assert.Less((verts[(n - 1) * 2] - verts[(n - 1) * 2 + 1]).magnitude, 0.1f, "narrow to the tip");
         }
 
         [Test]

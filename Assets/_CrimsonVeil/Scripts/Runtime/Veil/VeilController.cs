@@ -743,7 +743,10 @@ namespace CrimsonVeil.Veil
                                          * (1f - Mathf.SmoothStep(0f, 1f, HintPull)) * (1f - 0.5f * Danger);
             // Falling or leaping, the S streams against the motion (up behind him in a fall), eased in and out.
             float tiltWanted = TrailTiltFor(Simulation.AnchorVelocity) * (1f - wrap);
-            Simulation.TrailTilt = Mathf.MoveTowards(Simulation.TrailTilt, tiltWanted, dt * TrailTiltRate);
+            // (it settles back level more slowly than it tilts: landing, the scarf sinks down behind him - swung down
+            // within an eighth of a second it slapped onto the floor and crumpled)
+            bool settling = Mathf.Abs(tiltWanted) < Mathf.Abs(Simulation.TrailTilt);
+            Simulation.TrailTilt = Mathf.MoveTowards(Simulation.TrailTilt, tiltWanted, dt * (settling ? TrailTiltSettle : TrailTiltRate));
             // The shield's ring circles round the body on its own: once it has formed it is not tied to the hand.
             // (Only once the ring has been thrown round: cut loose earlier, the scarf hung torn off the neck.)
             Simulation.DetachedAfter = ShapeForm == VeilForm.Shield && TransformProgress > 0.3f && morph > 0.6f
@@ -760,6 +763,8 @@ namespace CrimsonVeil.Veil
 
         /// <summary>Radians per second the scarf's tilt into a fall or leap follows the motion.</summary>
         public const float TrailTiltRate = 10f;
+        /// <summary>Radians per second the tilt settles back level at (landing, coming out of a leap).</summary>
+        public const float TrailTiltSettle = 4f;
         /// <summary>The steepest the S tilts: up behind a falling hero, down behind a rising one.</summary>
         public const float MaxTiltUp = 1.25f, MaxTiltDown = 0.5f;
 

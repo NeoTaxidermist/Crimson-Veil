@@ -34,6 +34,8 @@ namespace CrimsonVeil.Veil
         public const float Rub = 0.05f;
         /// <summary>How strongly (per iteration) a strand is straightened at each node: its stiffness against bending.</summary>
         public const float Bend = 0.3f;
+        /// <summary>How closely (1/s) a strand keeps its place by the band while the scarf is led through a turn.</summary>
+        public const float LeadRate = 60f;
         /// <summary>How far (m) a strand's node may stray from its place in the bundle.</summary>
         public const float MaxStray = 0.35f;
         /// <summary>How far (m) the band's strands hang below its centre line (as drawn).</summary>
@@ -132,13 +134,20 @@ namespace CrimsonVeil.Veil
             var normal = new Vector3(-tangent.y, tangent.x, 0f);
             if (normal.sqrMagnitude < 1e-6f) normal = Vector3.up;
             normal.Normalize();
-            // mirror-true: a positive side is below the band whichever way it streams
-            if (normal.y > 0f) normal = -normal;
+            // mirror-true: a positive side is below the band whichever way it streams. Where the band stands upright
+            // the strand closes up on it and comes out on the other side beyond. (Flipped over at once there, its place
+            // leapt from one side of the band to the other - up to 0.6 m - every time the band passed upright: all down
+            // the scarf as it swung over in a turn, and the tongues were torn across it.)
+            float below = BelowBand(normal);
             Vector3 bi = Vector3.Cross(tangent, normal).normalized;
-            float r = side * Reach * Mathf.SmoothStep(0f, 1f, u);
+            float r = side * Reach * Mathf.SmoothStep(0f, 1f, u) * below;
             Vector3 off = (normal * Mathf.Cos(angle) + bi * Mathf.Sin(angle)) * r;
             return centre + off + Vector3.down * (HangBelow * Mathf.SmoothStep(0f, 1f, u * 3f)) + new Vector3(0f, 0f, depth * Mathf.SmoothStep(0f, 1f, u * 3f));
         }
+
+        /// <summary>Which way a strand's side lies along the band's in-picture <paramref name="normal"/> (the left of
+        /// its course): -1 where that points up, +1 where it points down, through 0 where the band stands upright.</summary>
+        public static float BelowBand(Vector3 normal) => Mathf.Clamp(-normal.y * 4f, -1f, 1f);
 
         /// <summary>The helix turn of strand node <paramref name="u"/> (0 root .. 1 tail) at <paramref name="t"/>.</summary>
         public static float BraidAngle(float u, float t, float phase) => BraidTurns * Mathf.PI * 2f * u + BraidSway * Mathf.Sin(BraidSpeed * t + phase) + phase * 0.05f;
@@ -191,6 +200,9 @@ namespace CrimsonVeil.Veil
             Vector3 g = new Vector3(0f, -9.81f * GravityScale, 0f);
             Vector3 anchorVel = sim.AnchorVelocity;
             float zRest = sim.Positions[0].z + settings.depthOffset;
+            // Turning round, the band is led along its fold (VeilSimulation.TurnGuide) and the tongues go with it, each
+            // in its place by the band: left to trail it on their own they were flung about and folded up.
+            float lead = 1f - Mathf.Exp(-LeadRate * sim.TurnLead * h);
 
             for (int s = 0; s < Count; s++)
             {
@@ -219,6 +231,7 @@ namespace CrimsonVeil.Veil
                     // strayed from it)
                     acc.z += (home[j].z - p.z) * settings.depthStiffness * 0.3f;
                     Vector3 next = p + (p - prev[j]) * 0.985f + acc * (h * h);
+                    if (lead > 0f) next = Vector3.Lerp(next, home[j], lead * loose);
                     // hardening into a weapon, the strand is laid back on its place
                     next = Vector3.Lerp(home[j], next, loose);
                     prev[j] = Vector3.Lerp(home[j] - anchorVel * h, p, loose);

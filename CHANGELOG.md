@@ -5,6 +5,20 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.71.0] – 2026-11-22
+### Přidáno
+- **Styl hrdiny jako vrstva nad animací** (`HeroMocap.styleLayer`, ve výchozím stavu zapnuto). Dřív se tam, kde hrála nahraná animace, procedurální póza s klipem prolínala celá, takže se vlastní držení hrdiny i držení z klipu zprůměrovaly. Teď trup, krk a hlava vezmou rotaci z klipu a přičte se k ní část hrdinova vlastního natočení oproti klidové póze (`StyleShare`: trup 0,45, krk a hlava 0,4).
+- Vlastní natočení přidá na jednu kost nejvýš 4° (`MaxStyleAngle`, `StyleOf`). Přenese se tedy jen malý náklon a držení hlavy. Velké ohyby, jako podřep nebo úklon, dělá klip. Bez stropu se ohyb z podřepu přičetl k úderu nahranému v podřepu podruhé a meč i kruh štítu zajely do podlahy.
+- Nohy, boky, paže a ruce se dál prolínají jako dřív. Když je klip převzal celé, nehodily se k prolnuté výšce boků: v podřepu šla zbraň do podlahy a při brzdění se zvedla noha. U paží přidané natočení posunulo ruku se zbraní o dlaň níž.
+
+### Zbývá
+- Efekt je záměrně malý (pár stupňů), takže na pohled je to jemná změna, žádný nový styl pohybu.
+- Došlapy nohou (pevné došlapy z plánu) jsem nedělal. Nohy drží dál `HeroAnimator.KeepOnGround`.
+
+### Testy
+- `HeroMocapTests`: styl se přidává trupu a hlavě, končetinám ne; malý náklon se přenese, velký ohyb se omezí na 4°.
+- Puštěno: všech 578 EditMode testů a celá sada 122 PlayMode testů. Všechny prošly.
+
 ## [0.70.0] – 2026-11-22
 ### Změněno
 - **Pás šály je trochu natočený z roviny obrazu** (`VeilRenderer.BandRoll` 0,3 rad, asi 17°). Pás mířil plochou přesně do boku, takže zepředu byla vidět jen jeho hrana. Zboku má teď 96 % šířky, zepředu je o kousek širší. Pomohlo to ale jen málo: tenký plamínek esíčka nad hlavou je zepředu vidět dál.

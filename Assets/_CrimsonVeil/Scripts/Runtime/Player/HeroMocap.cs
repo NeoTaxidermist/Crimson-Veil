@@ -46,6 +46,8 @@ namespace CrimsonVeil.Player
         [SerializeField] Transform model;
         [Tooltip("Overall strength of the captured motion over the procedural (0 = off).")]
         [Range(0f, 1f)] public float strength = 1f;
+        [Tooltip("The hero's own carriage is added on top of the captured motion (a style layer) instead of the two whole poses being cross-faded - to the trunk, neck and head, a few degrees at most; the limbs are cross-faded as before.")]
+        public bool styleLayer = true;
 
         /// <summary>Which bones a clip moves.</summary>
         public enum Mask
@@ -403,6 +405,9 @@ namespace CrimsonVeil.Player
         float[][] masks;            // per Mask, per bone: how much the clip moves it
         bool[] hipsPosition;        // per Mask: whether the clip places the hips
         Quaternion[] proc, sampled, sampled2, blended;
+        Quaternion[] rest, clipPose;   // the bind pose; the clips alone, blended (style layer)
+        float[] cover;                 // how much of each bone the clips cover this frame (0..1)
+        float[] styleOf, legOf;        // per bone: share of the hero's own carriage added; 1 for the legs
         Transform hips;
         float gaitPhase;            // 0..1 through the gait's cycle (left foot ahead at 0)
         Pick script;                // a cutscene's request (wins over the game's)
@@ -434,6 +439,17 @@ namespace CrimsonVeil.Player
             sampled = new Quaternion[bones.Length];
             sampled2 = new Quaternion[bones.Length];
             blended = new Quaternion[bones.Length];
+            rest = new Quaternion[bones.Length];
+            clipPose = new Quaternion[bones.Length];
+            cover = new float[bones.Length];
+            styleOf = new float[bones.Length];
+            legOf = new float[bones.Length];
+            for (int i = 0; i < bones.Length; i++)
+            {
+                rest[i] = bones[i].localRotation;   // (bound before the first pose: the model's bind pose)
+                styleOf[i] = StyleShare(bones[i].name);
+                legOf[i] = IsLegOrHips(bones[i].name) ? 1f : 0f;
+            }
             hips = CrimsonVeil.Core.RigJoint.FindDeep(model, "Hips");
             int maskCount = System.Enum.GetValues(typeof(Mask)).Length;
             masks = new float[maskCount][];
@@ -475,6 +491,58 @@ namespace CrimsonVeil.Player
                 default:
                     return 1f;
             }
+        }
+
+        /// <summary>
+        /// The style layer: where clips play, a bone takes the clip's rotation with the hero's own carriage added on top -
+        /// his procedural pose's turn from the bind pose, a share of it per body part (<see cref="StyleShare"/>), instead of
+        /// two whole poses being cross-faded (the clip's own bearing and his were averaged away). The result fades
+        /// in over the procedural pose with the clips' weight, as before. The legs and hips are left cross-faded.
+        /// </summary>
+        void StyleOver()
+        {
+            for (int i = 0; i < bones.Length; i++)
+            {
+                float c = cover[i];
+                if (c <= 0f) continue;
+                Quaternion own = StyleOf(Quaternion.Inverse(rest[i]) * proc[i], styleOf[i]);
+                Quaternion styled = clipPose[i] * own;
+                // (the legs and hips stay cross-faded as before: taken whole from the clip, they did not fit the
+                // hips' blended height - crouched the weapon went into the floor, braking a foot lifted off it;
+                // HeroAnimator.KeepOnGround keeps their contacts)
+                if (legOf[i] > 0f) continue;
+                blended[i] = Quaternion.Slerp(proc[i], styled, c);
+            }
+        }
+
+        /// <summary>Degrees at most a bone's own carriage turns it on top of a clip: his bearing, not his pose.</summary>
+        public const float MaxStyleAngle = 4f;
+
+        /// <summary>
+        /// The share of a bone's own turn from the bind pose that is added on top of a clip, held to
+        /// <see cref="MaxStyleAngle"/>: a small lean of the trunk or tilt of the head carries over, a big bend (the
+        /// crouch's, his bow) is the clip's to make - added on top of a blow captured crouched, it doubled the bend and
+        /// the blade and the shield's ring went into the floor.
+        /// </summary>
+        public static Quaternion StyleOf(Quaternion own, float share)
+        {
+            Quaternion part = Quaternion.Slerp(Quaternion.identity, own, share);
+            return Quaternion.RotateTowards(Quaternion.identity, part, MaxStyleAngle);
+        }
+
+        /// <summary>
+        /// How much of the hero's own carriage (his procedural pose's turn from the bind pose) is added on top of a clip,
+        /// per bone: the trunk, neck and head carry his lean and bearing; the arms, legs, hips, hands and fingers none -
+        /// they keep the clip's contacts, reach and grips (the weapon is held where the clip's hand is).
+        /// </summary>
+        public static float StyleShare(string bone)
+        {
+            if (IsLegOrHips(bone)) return 0f;
+            if (bone == "Spine" || bone == "Chest" || bone == "UpperChest") return 0.45f;
+            if (bone == "Neck" || bone == "Head") return 0.4f;
+            // (no arms: added on top of a clip's arm, their set pushed the hand with the weapon a hand's breadth
+            // lower - crouched, the blade and the shield's ring went into the floor)
+            return 0f;
         }
 
         static bool IsLegOrHips(string b) => b == "Hips" || b.StartsWith("UpperLeg") || b.StartsWith("LowerLeg") || b.StartsWith("Foot") || b.StartsWith("Toe");
@@ -527,8 +595,10 @@ namespace CrimsonVeil.Player
             Vector3 hipsProc = hips != null ? hips.localPosition : Vector3.zero;
             System.Array.Copy(proc, blended, proc.Length);   // (a buffer of its own: a fresh copy each frame was garbage)
             Vector3 hipsBlend = hipsProc;
+            System.Array.Clear(cover, 0, cover.Length);
             Blend(body, blended, ref hipsBlend);
             Blend(upper, blended, ref hipsBlend);
+            if (styleLayer) StyleOver();
             for (int i = 0; i < bones.Length; i++) bones[i].localRotation = blended[i];
             if (hips != null) hips.localPosition = hipsBlend;
         }
@@ -643,7 +713,15 @@ namespace CrimsonVeil.Player
                 float w = Mathf.Clamp01(l.weight * strength);
                 var m = masks[(int)l.mask];
                 for (int i = 0; i < bones.Length; i++)
-                    if (m[i] > 0f) blended[i] = Quaternion.Slerp(blended[i], sampled[i], w * m[i]);
+                {
+                    if (m[i] <= 0f) continue;
+                    float a = w * m[i];
+                    blended[i] = Quaternion.Slerp(blended[i], sampled[i], a);
+                    // the clips alone (for the style layer): each layer its share of what the clips cover
+                    float covered = 1f - (1f - cover[i]) * (1f - a);
+                    clipPose[i] = cover[i] <= 0f ? sampled[i] : Quaternion.Slerp(clipPose[i], sampled[i], a / Mathf.Max(1e-4f, covered));
+                    cover[i] = covered;
+                }
                 if (hips != null && hipsPosition[(int)l.mask]) hipsBlend = Vector3.Lerp(hipsBlend, hipsSampled, w);
             }
         }

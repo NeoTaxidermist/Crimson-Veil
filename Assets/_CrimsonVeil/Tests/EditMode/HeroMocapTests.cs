@@ -338,6 +338,28 @@ namespace CrimsonVeil.Tests
         }
 
         [Test]
+        public void TheStyleLayer_AddsHisBearingToTheTrunkAndHead_NotTheLimbs()
+        {
+            Assert.Greater(HeroMocap.StyleShare("Spine"), 0f, "the trunk carries his lean");
+            Assert.Greater(HeroMocap.StyleShare("Chest"), 0f);
+            Assert.Greater(HeroMocap.StyleShare("Head"), 0f, "and the head his bearing");
+            foreach (var limb in new[] { "Hips", "UpperLeg.L", "Foot.R", "UpperArm.R", "LowerArm.L", "Hand.R", "Shoulder.L" })
+                Assert.AreEqual(0f, HeroMocap.StyleShare(limb), $"{limb}: the clip's contacts, reach and grips hold");
+        }
+
+        [Test]
+        public void TheStyleLayer_AddsASmallLean_ButNotABigBend()
+        {
+            // a small lean: its share carries over
+            var lean = Quaternion.AngleAxis(6f, Vector3.right);
+            Assert.AreEqual(3f, Quaternion.Angle(Quaternion.identity, HeroMocap.StyleOf(lean, 0.5f)), 0.05f);
+            // the crouch's bend: held to a few degrees (added whole on top of a crouched clip it doubled the bend)
+            var bend = Quaternion.AngleAxis(60f, Vector3.right);
+            Assert.AreEqual(HeroMocap.MaxStyleAngle, Quaternion.Angle(Quaternion.identity, HeroMocap.StyleOf(bend, 0.45f)), 0.05f);
+            Assert.AreEqual(0f, Quaternion.Angle(Quaternion.identity, HeroMocap.StyleOf(bend, 0f)), 0.05f, "no share, nothing added");
+        }
+
+        [Test]
         public void TheWhip_TheSwingFollowsThePendulum()
         {
             var s = new HeroState { swinging = true };

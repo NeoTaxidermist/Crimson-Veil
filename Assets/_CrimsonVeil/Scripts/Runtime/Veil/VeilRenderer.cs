@@ -102,6 +102,10 @@ namespace CrimsonVeil.Veil
         /// <summary>How much the tongues follow the band instead of their own cloth while wound round the body.</summary>
         public const float SwirlFollowBand = 0.75f;
 
+        /// <summary>Radians the band is turned out of the picture plane: from the side it keeps cos of it of its width
+        /// (96 %), from the front it shows sin of it (about a third) instead of an edge.</summary>
+        public const float BandRoll = 0.3f;
+
         /// <summary>Radians the tongue fanned out farthest in depth is turned face up (see VeilStrands.DepthFan).</summary>
         public const float DepthRoll = 0.55f;
 
@@ -557,7 +561,9 @@ namespace CrimsonVeil.Veil
                 }
                 // (the tongues fanned out in depth turn their faces a little up and out: seen from above or behind
                 // they show cloth, not a row of edges)
-                float strandTwist = branch ? (st.phase * 0.25f + DepthRoll * VeilStrands.DepthShare(s, Strands.Length) * VeilStrands.DepthSide(s)) * turnFacing : 0f;
+                // (the band itself is turned a little too, BandRoll: facing the side camera square on, seen from the
+                // front its S rising over the head was only an edge - a thin fin)
+                float strandTwist = branch ? (st.phase * 0.25f + DepthRoll * VeilStrands.DepthShare(s, Strands.Length) * VeilStrands.DepthSide(s)) * turnFacing : BandRoll * turnFacing;
                 int baseF = s * perStrand;
                 float lastTwist = 0f, lastCup = 0f;
 

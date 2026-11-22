@@ -5,6 +5,23 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.70.0] – 2026-11-22
+### Změněno
+- **Pás šály je trochu natočený z roviny obrazu** (`VeilRenderer.BandRoll` 0,3 rad, asi 17°). Pás mířil plochou přesně do boku, takže zepředu byla vidět jen jeho hrana. Zboku má teď 96 % šířky, zepředu je o kousek širší. Pomohlo to ale jen málo: tenký plamínek esíčka nad hlavou je zepředu vidět dál.
+
+### Prověřeno
+- **Houpání na biči:** lano vede z kruhu do ruky z boku i šikmo a po puštění se šála vrátí.
+- **Zásah nepřítelem:** šála se zkrátí, protože část síly pohltí ránu, a zase doroste. Nic se při tom neláme.
+- **Luk zblízka:** drží se v přední ruce a tětiva vede k ruce, která natahuje.
+- **Výkon vykreslování:** ze 1,9 ms za snímek (v editoru) připadá 1,57 ms na skládání asi 1 200 bodů pramenů. Body ve vírech, vyhlazení, řazení ani odeslání sítě skoro nic nestojí, překážky taky ne (v okolí jsou 2). Zrychlit by to šlo jen větším přepsáním skládání pramenů. V hotové hře to bude několikrát rychlejší, proto jsem to nechal.
+
+### Zbývá
+- Přeložení látky na vršku plošiny, když hrdina sejde z hrany (2 až 6 snímků). Čtvrtý pokus, postrčit ležící látku k hraně, měřitelně nepomohl, takže jsem ho vrátil.
+
+### Testy
+- `VeilMotionTests`: pás je natočený jen málo.
+- Puštěno: všech 576 EditMode testů, z PlayMode test alokací a `CastingPlayTests` (21 testů). Prošly.
+
 ## [0.69.0] – 2026-11-22
 ### Změněno
 - **Plamenné jazyky na zbraních ve stylu key artu.** Jazyky, které odlétají z meče, kopí a dalších zbraní, byly krátké rovné ostny. Teď se odkloní dozadu podél čepele, jako by je strhával vzduch, a jejich konce se zvednou a stočí do malého háčku nahoru (`VeilRenderer.WeaponTongueTurns` 0,3 otáčky, délka 0,4 m místo 0,34 m). Je to jen grafický detail: jazyky jsou tenké a poloprůhledné. Samotná čepel, záštita, hrot a jejich obrys zůstaly beze změny a hlavní pramen zbraně má dál svůj krátký rovný jazyk.

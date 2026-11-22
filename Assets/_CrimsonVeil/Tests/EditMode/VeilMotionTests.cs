@@ -343,6 +343,7 @@ namespace CrimsonVeil.Tests
             }
             Assert.Greater(towards, 1, "to both sides of the band: from the front it opens out (all behind it, it was a thin fin)");
             Assert.Greater(away, 1);
+            Assert.That(VeilRenderer.BandRoll, Is.InRange(0.15f, 0.45f), "the band turned a little out of the picture: from the front more than an edge, from the side nearly all its width");
             Assert.Greater(VeilRenderer.DepthRoll, 0.2f, "the fanned tongues turn their faces up and out");
             Assert.Less(VeilRenderer.DepthRoll, 0.8f, "but from the side they keep most of their width");
             Assert.Less(VeilRenderer.WeaponTintContrast, 0.75f, "a weapon is the scarf's cloth set solid, not a scribble of bright and dark lines");

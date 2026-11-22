@@ -87,7 +87,8 @@ namespace CrimsonVeil.Tests
                     for (int j = 1; j < VeilStrands.Nodes; j++)
                         worst = Mathf.Max(worst, Vector3.Distance(strands.Positions[s][j], strands.Homes[s][j]));
             }
-            Assert.LessOrEqual(worst, VeilStrands.MaxStray + 0.12f, "never far from its place by the band (they hung under it like a comb)");
+            // (+0.15: in the quick 0.6 s turn the band swings faster and the tongues trail it a few cm more)
+            Assert.LessOrEqual(worst, VeilStrands.MaxStray + 0.15f, "never far from its place by the band (they hung under it like a comb)");
         }
 
         [Test]
@@ -106,8 +107,9 @@ namespace CrimsonVeil.Tests
                 Assert.GreaterOrEqual(d, last - 1e-5f, "one wave from the neck to the tip");
                 last = d;
             }
-            Assert.AreEqual(1f, VeilSimulation.DriftAt(-1f, 1f, VeilSimulation.TurnTravel + VeilSimulation.TurnBlend, 1f), 1e-4f, "and it is over within a second");
-            Assert.LessOrEqual(VeilSimulation.TurnTravel + VeilSimulation.TurnBlend, 1f);
+            Assert.AreEqual(1f, VeilSimulation.DriftAt(-1f, 1f, VeilSimulation.TurnTravel + VeilSimulation.TurnBlend, 1f), 1e-4f, "and it is over in well under a second");
+            // (at 0.9 s the scarf answered his turning round unnaturally late)
+            Assert.LessOrEqual(VeilSimulation.TurnTravel + VeilSimulation.TurnBlend, 0.65f);
 
             // the sheet keeps its length all the way round: up mid-turn, its waves laid down
             Vector2 up = VeilSimulation.SheetOffset(2f, 0.3f, Mathf.PI * 0.5f, 0f);
@@ -154,7 +156,8 @@ namespace CrimsonVeil.Tests
                 }
                 // (flipped all at once, ~30 points of cloth piled up within half a metre of his head, and points leapt 0.4-0.5 m a frame)
                 Assert.LessOrEqual(mostAtTheHead, 10, $"at {speed} m/s it swings over without crumpling into a ball round his head");
-                Assert.Less(biggestJump, 0.35f, $"at {speed} m/s no part of it leaps across in a frame");
+                // (the 0.6 s turn sweeps the tail round at ~0.39 m a frame: fast but continuous; flipped, it leapt 0.4-0.5 m)
+                Assert.Less(biggestJump, 0.42f, $"at {speed} m/s no part of it leaps across in a frame");
             }
         }
 

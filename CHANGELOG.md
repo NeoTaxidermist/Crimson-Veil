@@ -5,6 +5,18 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.63.0] – 2026-11-22
+### Změněno
+- **Šála reaguje na otočku rychleji.** Reakce byla nepřirozeně dlouhá, protože otočka od krku po konec šály trvala 0,9 s. Teď trvá 0,6 s (`VeilSimulation.TurnTravel` 0,2 s, `TurnBlend` 0,4 s). Celá šála je na nové straně za půl vteřiny místo 0,7 s.
+  - Měřeno v simulaci: nejostřejší ohyb je 69–80° a šála se neláme. Při ještě kratší otočce (0,45 s) se už lámala přes pravý úhel, proto jsem nešel níž.
+
+### Testy
+- Test hlídá, že otočka nebude delší než 0,65 s.
+- Dva limity jsem posunul o tolik, kolik dělá rychlejší otočka, na snímcích je pohyb plynulý:
+  - nejrychlejší bod šály urazí při otočce na místě až 0,39 m za snímek (limit 0,42 m, dřív 0,35 m);
+  - jazyky se při otočce vzdálí od pásu o 2 cm víc (rezerva 15 cm místo 12 cm).
+- Prošlo všech 573 EditMode a 121 PlayMode testů.
+
 ## [0.62.0] – 2026-11-21
 ### Opraveno
 - **Přetržené prameny (nejvíc vidět v přikrčení):** tenké prameny vypadaly jako přetržené, protože se kreslily jako přerušovaná, tečkovaná čára. Pramen se ke konci zúží, a když se navíc natočí hranou ke kameře, jeho šířka na obrazovce klesne pod jeden pixel. Obraz pak z čáry nechá jen tečky.

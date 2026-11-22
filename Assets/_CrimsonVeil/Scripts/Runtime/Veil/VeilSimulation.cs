@@ -234,9 +234,9 @@ namespace CrimsonVeil.Veil
         /// Turning round, the breeze does not flip the whole scarf at once (it crumpled round the head): the turn runs
         /// down it from the neck, the tail last, like a flag swung round. Seconds for the turn to reach the tip.
         /// </summary>
-        public const float TurnTravel = 0.3f;
+        public const float TurnTravel = 0.2f;
         /// <summary>Seconds one point of the scarf takes to swing over.</summary>
-        public const float TurnBlend = 0.6f;
+        public const float TurnBlend = 0.4f;
 
         /// <summary>The breeze's heading (radians from +x, pi = towards -x) for a breeze towards <paramref name="dir"/>.</summary>
         public static float HeadingOf(float dir) => dir < 0f ? Mathf.PI : 0f;

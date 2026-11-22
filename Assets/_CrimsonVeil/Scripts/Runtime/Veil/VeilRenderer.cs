@@ -690,7 +690,11 @@ namespace CrimsonVeil.Veil
                 // Signed turns, blended so the change is smooth: loose, the ends roll down and under into the key
                 // art's spirals (LooseCurl: against the weapon tongues' sense, and tighter); as a weapon a short
                 // tongue flicks off.
-                float turns = Mathf.Lerp(st.curlSign * 0.2f * flicker, LooseCurl(st) * breathe * unroll, looseEnd);
+                // (a weapon's tongues curl into small whorls of the key art too - only the strands peeling off the
+                // blade: its core, edge and point keep their crisp shape, WeaponTongueTurns)
+                // (the tongues trail back along the blade and their ends hook upwards - always up: curling down they
+                // closed into little hoops on the blade)
+                float turns = Mathf.Lerp((main ? st.curlSign * 0.2f : -WeaponTongueTurns) * flicker, LooseCurl(st) * breathe * unroll, looseEnd);
                 // A pointed weapon ends in its point: the core gets no flame tongue curling off the tip.
                 float tongue = main && Pointed(veil.ShapeForm) ? 0f : FlameTongueLength(main) * (1f - coiled);
                 // (unrolled in a fall the whorl is a straight stroke: at its full length it stood out as a broad flat
@@ -699,7 +703,7 @@ namespace CrimsonVeil.Veil
                 lastTan.z = 0f;
                 Vector3 dir = lastTan.sqrMagnitude > 1e-10f ? lastTan.normalized : Vector3.down;
                 // Flames rise: a weapon's tongues bend up and back, away from the direction of the blow.
-                Vector3 flameDir = (dir * 0.35f + up * 0.9f + back * 0.35f).normalized;
+                Vector3 flameDir = main ? (dir * 0.35f + up * 0.9f + back * 0.35f).normalized : (dir * 0.3f + up * 0.6f + back * 0.75f).normalized;
                 dir = Vector3.Slerp(dir, flameDir, lastHard).normalized;
                 float heading = Mathf.Atan2(dir.y, dir.x);
                 if (!curlsStarted) { curlHeading[s] = heading; curlTurnsNow[s] = turns; }
@@ -994,7 +998,13 @@ namespace CrimsonVeil.Veil
         public const float LooseLayersEnd = 0.93f;
 
         /// <summary>Length (m) of the flame tongue at a weapon strand's end.</summary>
-        public static float FlameTongueLength(bool main) => main ? 0.22f : 0.34f;
+        public static float FlameTongueLength(bool main) => main ? 0.22f : 0.4f;
+
+        /// <summary>
+        /// Turns a weapon's flame tongue winds through: a small whorl, as the loose scarf's ends in the key art (at 0.2
+        /// they stood off the blade as straight little spikes). The blade's core is left alone: the weapon keeps its shape.
+        /// </summary>
+        public const float WeaponTongueTurns = 0.3f;
 
         /// <summary>
         /// A broad stroke must not fold over itself where its centre line bends tighter than its half width (a sharp

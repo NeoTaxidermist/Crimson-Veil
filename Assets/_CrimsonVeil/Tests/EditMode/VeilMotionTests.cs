@@ -347,6 +347,11 @@ namespace CrimsonVeil.Tests
             Assert.Less(VeilRenderer.DepthRoll, 0.8f, "but from the side they keep most of their width");
             Assert.Less(VeilRenderer.WeaponTintContrast, 0.75f, "a weapon is the scarf's cloth set solid, not a scribble of bright and dark lines");
             Assert.LessOrEqual(VeilRenderer.ShieldLickReach, 0.2f, "the shield burns as a band, not a ring of spikes");
+            // the weapon's flame tongues curl a little at their ends, as the scarf's whorls in the key art - a detail:
+            // the blade's core keeps its short straight tongue and the weapon its shape
+            Assert.That(VeilRenderer.WeaponTongueTurns, Is.InRange(0.2f, 0.45f), "a hook at the end, not a hoop back onto the blade");
+            Assert.AreEqual(0.22f, VeilRenderer.FlameTongueLength(true), 1e-6f, "the core's tongue unchanged");
+            Assert.LessOrEqual(VeilRenderer.FlameTongueLength(false), 0.45f, "tongues stay short next to the blade");
         }
 
         [Test]

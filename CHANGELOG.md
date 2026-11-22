@@ -5,6 +5,15 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.69.0] – 2026-11-22
+### Změněno
+- **Plamenné jazyky na zbraních ve stylu key artu.** Jazyky, které odlétají z meče, kopí a dalších zbraní, byly krátké rovné ostny. Teď se odkloní dozadu podél čepele, jako by je strhával vzduch, a jejich konce se zvednou a stočí do malého háčku nahoru (`VeilRenderer.WeaponTongueTurns` 0,3 otáčky, délka 0,4 m místo 0,34 m). Je to jen grafický detail: jazyky jsou tenké a poloprůhledné. Samotná čepel, záštita, hrot a jejich obrys zůstaly beze změny a hlavní pramen zbraně má dál svůj krátký rovný jazyk.
+  - Při silnějším stočení se jazyky vracely obloukem zpátky na čepel jako malé branky. Proto se teď stáčejí vždy nahoru a jen málo.
+
+### Testy
+- `VeilMotionTests`: jazyky zbraní se stáčejí jen málo a zůstávají krátké, jádro zbraně se nemění.
+- Puštěno: všech 576 EditMode testů, z PlayMode test alokací a `CastingPlayTests` (21 testů). Prošly.
+
 ## [0.68.0] – 2026-11-22
 ### Opraveno
 - **Zbraně sedí v ruce i do hloubky.** Zbraň se dosud do hloubky stavěla natvrdo 0,3 m před krk, nezávisle na tom, kde ruka opravdu je. Dlaň je ale podle pohybové animace 0,2 až 0,54 m před tělem a během útoku se hýbe. Zbraň tak byla od dlaně v hloubce až 0,36 m.

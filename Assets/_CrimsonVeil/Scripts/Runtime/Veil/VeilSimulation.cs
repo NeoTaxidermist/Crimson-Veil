@@ -164,6 +164,21 @@ namespace CrimsonVeil.Veil
         /// <summary>Where the weapon is held (the palm), the point it turns about through depth.</summary>
         public Vector3 WeaponPivot { get; set; }
 
+        /// <summary>
+        /// Depth (z) of the palm the weapon is held in, or NaN for none: the weapon stands in the hand's depth. Set at a
+        /// fixed 0.3 m before the neck, it was up to 0.36 m off the real palm - seen from the side it looked held, from
+        /// three-quarters the sword started at the waist and the spear ran through the body.
+        /// </summary>
+        public float WeaponPlane { get; set; } = float.NaN;
+
+        /// <summary>The depth the weapon is held at for a palm at <paramref name="palmZ"/> by a neck at <paramref name="neckZ"/>:
+        /// just behind the fingers, but never more than <see cref="WeaponBehindNeck"/> behind the body's plane (the torso
+        /// would hide it from the game's side view).</summary>
+        public static float WeaponPlaneFor(float palmZ, float neckZ) => Mathf.Min(palmZ + 0.015f, neckZ + WeaponBehindNeck);
+
+        /// <summary>How far (m) behind the neck's plane a weapon may follow a hand drawn back behind the body.</summary>
+        public const float WeaponBehindNeck = 0.05f;
+
         /// <summary>Depth (m) off the weapon's plane of a point <paramref name="p"/> of it turned by
         /// <paramref name="tilt"/> about <paramref name="pivot"/>: its distance from the hand in the picture, into depth.</summary>
         public static float SweepDepth(Vector3 p, Vector3 pivot, float tilt)
@@ -806,8 +821,9 @@ namespace CrimsonVeil.Veil
                 float z = Positions[i].z;
                 float zRest = a.z + s.depthOffset;
                 z = Mathf.Clamp(z, zRest - s.maxDepth, zRest + s.maxDepth);
-                z = Mathf.Lerp(z, a.z - s.weaponDepth + SweepDepth(Positions[i], WeaponPivot, WeaponTilt), weapon);
-                if (HeldWeight > 0f && t >= HeldFrom && t <= HeldTo) z = Mathf.Lerp(z, a.z - s.weaponDepth + HeldTuck, HeldWeight);
+                float plane = float.IsNaN(WeaponPlane) ? a.z - s.weaponDepth : WeaponPlane;
+                z = Mathf.Lerp(z, plane + SweepDepth(Positions[i], WeaponPivot, WeaponTilt), weapon);
+                if (HeldWeight > 0f && t >= HeldFrom && t <= HeldTo) z = Mathf.Lerp(z, plane + (float.IsNaN(WeaponPlane) ? HeldTuck : 0f), HeldWeight);
                 // A weapon melting back passes over the body: drawn in front, so the torso doesn't swallow it.
                 z = Mathf.Lerp(z, a.z - s.weaponDepth, GuideWeight[i]);
                 float held = Mathf.Max(weapon, Mathf.Max(GuideWeight[i], HeldWeight > 0f && t >= HeldFrom && t <= HeldTo ? HeldWeight : 0f));

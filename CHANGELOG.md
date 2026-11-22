@@ -5,6 +5,17 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.68.0] – 2026-11-22
+### Opraveno
+- **Zbraně sedí v ruce i do hloubky.** Zbraň se dosud do hloubky stavěla natvrdo 0,3 m před krk, nezávisle na tom, kde ruka opravdu je. Dlaň je ale podle pohybové animace 0,2 až 0,54 m před tělem a během útoku se hýbe. Zbraň tak byla od dlaně v hloubce až 0,36 m.
+  - Zboku to vypadalo, že zbraň drží v ruce. Šikmo začínal meč u pasu a kopí procházelo tělem.
+  - Teď zbraň stojí přesně v hloubce dlaně, těsně za prsty, a sleduje ji (`VeilSimulation.WeaponPlane`, `WeaponPlaneFor`). Když se ruka stáhne za tělo, zbraň za něj nezajede o víc než 5 cm, aby ji zboku nezakrylo tělo.
+  - Na záběrech šikmo zepředu i zezadu je meč v dlani, kopí jde přes ruku a bič vychází z ruky.
+
+### Testy
+- Nový `HeroMoveSetPlayTests.TheWeapon_IsHeldInThePalm_InDepthToo` na skutečném hrdinovi: u meče, kopí i biče je část zbraně u dlaně v hloubce dlaně (do 8 cm).
+- Puštěno: všech 576 EditMode testů, z PlayMode celé `HeroMoveSetPlayTests` a `CastingPlayTests` (47 testů). Prošly.
+
 ## [0.67.0] – 2026-11-22
 ### Opraveno
 - **Seběhnutí z horní hrany vysokého bloku:** šála se na rohu bloku asi 5 snímků zamotávala. Podle měření nešlo o kotoul, ten se v tom záběru vůbec neudělal. Hrdina seběhl z vršku bloku a šála se na rohu přeložila o 155°.

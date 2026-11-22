@@ -1187,6 +1187,8 @@ namespace CrimsonVeil.Veil
             // the blow sweeps through depth about the hand
             Simulation.WeaponTilt = VeilWeaponPose.SweepTilt(ShapeForm, t);
             Simulation.WeaponPivot = hand != null ? PalmPoint(hand) : a;
+            // ... and stands in the palm's depth, not a fixed way in front of the body
+            Simulation.WeaponPlane = hand != null ? VeilSimulation.WeaponPlaneFor(PalmPoint(hand).z, a.z) : float.NaN;
             Vector2 grip = VeilFormLibrary.Hand + handDelta;
             RecordTurn(time, forearmTurn);
 

@@ -645,6 +645,50 @@ namespace CrimsonVeil.Tests
         }
 
         [UnityTest]
+        public IEnumerator TheWeapon_IsHeldInThePalm_InDepthToo()
+        {
+            // (it stood a fixed 0.3 m before the neck: up to 0.36 m off the real palm - from the side it looked held,
+            // from three-quarters the sword started at his waist and the spear ran through his body)
+            foreach (var form in new[] { VeilForm.Sword, VeilForm.Spear, VeilForm.Whip })
+            {
+                yield return StartAt(new Vector3(-12f, 0.05f, 0f));
+                yield return Wait(0.6f);   // the last blow's recovery
+                veil.Charge.Restore();
+                input.cast = form;
+                yield return Until(() => veil.IsAttacking, 2f);
+                var sim = veil.Simulation;
+                float worst = 0f;
+                int measured = 0;
+                while (veil.IsAttacking)
+                {
+                    if (veil.TransformProgress > 0.95f)
+                    {
+                        Vector3 palm = VeilController.PalmPoint(veil.Hand);
+                        // the bit of the weapon nearest the palm in the picture
+                        int near = -1; float best = 9f;
+                        for (int i = Mathf.CeilToInt(veil.HandFraction * (sim.Count - 1)) - 2; i < sim.Count; i++)
+                        {
+                            if (i < 0) continue;
+                            float d = Vector2.Distance(sim.Positions[i], palm);
+                            if (d < best) { best = d; near = i; }
+                        }
+                        if (near >= 0 && best < 0.25f)
+                        {
+                            float want = VeilSimulation.WeaponPlaneFor(palm.z, veil.Anchor.position.z);
+                            worst = Mathf.Max(worst, Mathf.Abs(sim.Positions[near].z - want));
+                            measured++;
+                        }
+                    }
+                    yield return null;
+                }
+                Assert.Greater(measured, 5, $"{form}: the weapon passes through the fist");
+                Assert.Less(worst, 0.08f, $"{form}: held in the palm's depth, not a fixed way in front of the body");
+            }
+            Assert.AreEqual(-0.285f, VeilSimulation.WeaponPlaneFor(-0.3f, 0f), 1e-5f, "just behind the fingers");
+            Assert.AreEqual(VeilSimulation.WeaponBehindNeck, VeilSimulation.WeaponPlaneFor(0.4f, 0f), 1e-5f, "a hand drawn back behind him: the weapon stays clear of the torso");
+        }
+
+        [UnityTest]
         public IEnumerator Whip_TwoLashes_TheSecondLow()
         {
             yield return StartAt(new Vector3(-12f, 0.05f, 0f));

@@ -340,14 +340,23 @@ namespace CrimsonVeil.Veil
         /// <summary>1/s: how hard cloth swinging out ahead of him is braked in a fall.</summary>
         public const float ForwardBrake = 30f;
 
-        /// <summary><paramref name="p"/> moved out of any obstacle it is in sideways, onto the face towards <paramref name="sideX"/> (his side).</summary>
+        /// <summary>
+        /// <paramref name="p"/> moved out of any obstacle it is in onto the face towards <paramref name="sideX"/> (his side) or
+        /// onto its top, whichever is nearer: up a wall it streams along the face; just under the top of a block he ran
+        /// off, over the top (moved sideways there, the sheet's place was drawn into a line down the block's edge and the
+        /// cloth lying on the top folded over the corner).
+        /// </summary>
         public Vector3 OutSideways(Vector3 p, float sideX)
         {
             for (int o = 0; o < Obstacles.Count; o++)
             {
                 Rect r = Obstacles[o];
                 if (!r.Contains(new Vector2(p.x, p.y))) continue;
-                p.x = sideX < r.center.x ? r.xMin - WallSkin : r.xMax + WallSkin;
+                bool left = sideX < r.center.x;
+                float toSide = left ? p.x - r.xMin : r.xMax - p.x;
+                float toTop = r.yMax - p.y;
+                if (toTop < toSide) p.y = r.yMax + WallSkin;
+                else p.x = left ? r.xMin - WallSkin : r.xMax + WallSkin;
             }
             return p;
         }

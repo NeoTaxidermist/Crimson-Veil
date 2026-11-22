@@ -5,6 +5,19 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.67.0] – 2026-11-22
+### Opraveno
+- **Seběhnutí z horní hrany vysokého bloku:** šála se na rohu bloku asi 5 snímků zamotávala. Podle měření nešlo o kotoul, ten se v tom záběru vůbec neudělal. Hrdina seběhl z vršku bloku a šála se na rohu přeložila o 155°.
+  - Příčinou byla pojistka z verze 0.61: když cílový tvar šály ležel uvnitř bloku, posunula ho vždy do strany k hrdinovi. Tvar ležící kousek pod vrškem bloku se tak stáhl do svislé čáry podél hrany a látka na vršku se přes roh přeložila.
+  - Teď se tvar z bloku posune kratší cestou: nahoru nad vršek, nebo do strany (`VeilSimulation.OutSideways`). U vysoké zdi je to dál do strany. Na záznamu šála podél bloku plynule vlaje nahoru a přes roh se nepřeloží.
+
+### Zbývá
+- Když hrdina sejde z hrany plošiny, látka ležící ještě na vršku se tam na 2 až 6 snímků ostře přeloží vlásenkou. Konec šály ji táhne od hrany, část u krku dolů přes hranu. Bylo to tak i před touto verzí. Zkusil jsem větší zaoblení rohů i povolení látky při dotyku; ani jedno nepomohlo a druhé vrátilo švihnutí dopředu, takže jsem obojí vrátil.
+
+### Testy
+- `VeilMotionTests`: tvar těsně pod vrškem bloku se posune nahoru, hluboko ve zdi do strany.
+- Puštěno: všech 576 EditMode testů, z PlayMode test alokací a `CastingPlayTests` (21 testů). Prošly.
+
 ## [0.66.0] – 2026-11-22
 ### Změněno
 - **Úlomky po útocích jsou zpátky.** Kouř zbraně a kouř za švihem (`weaponRate` 2, `swingRate` 2,5) jsem ve verzi 0.64.0 vypnul omylem: zaměnil jsem je s úlomky volné šály, které vadily. Tyhle se ti líbily. Volná šála dál úlomky nepouští.

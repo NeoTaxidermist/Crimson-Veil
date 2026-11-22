@@ -271,6 +271,9 @@ namespace CrimsonVeil.Tests
             Assert.AreEqual(1f, mine.y, 1e-5f, "at the same height: the band runs up along the face");
             Assert.Less(sim.OutSideways(inside, -10f).x, -3f, "from the other side, out the other way");
             Assert.AreEqual(5f, sim.OutSideways(new Vector3(5f, 1f, 0f), 0f).x, 1e-5f, "outside, left alone");
+            Vector3 underTop = sim.OutSideways(new Vector3(-2.5f, 4.9f, 0f), 0f);
+            Assert.AreEqual(-2.5f, underTop.x, 1e-5f, "just under the top of a block he ran off: out over the top");
+            Assert.Greater(underTop.y, 5f, "(drawn into a line down its edge, the cloth on the top folded over the corner)");
             Assert.Greater(VeilSimulation.ForwardBrake, 5f);
 
             // he steps slowly off a ledge, the scarf streaming back over it: falling, none of it flies out in front of him

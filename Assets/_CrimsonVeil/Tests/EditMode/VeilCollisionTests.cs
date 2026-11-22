@@ -29,7 +29,9 @@ namespace CrimsonVeil.Tests
                 Assert.IsFalse(pillar.Contains(p), $"node {i} inside the pillar at {p}");
                 Assert.Greater(p.x, pillar.xMax - 1e-3f, $"node {i} came out on the far side of the pillar");
             }
-            Assert.Greater(sim.WallContact(sim.Count - 1) + sim.WallContact(sim.Count / 2), 0f, "it rests against the wall");
+            // (since v0.65 a wall closer than the scarf is long makes it rise up the wall like a flame instead of being
+            // blown into it - VeilSimulation.WallTilt - so it may not touch the face at all)
+            Assert.IsTrue(sim.WallContact(sim.Count - 1) + sim.WallContact(sim.Count / 2) > 0f || sim.WallTilt > 0.5f, "it rests against the wall or rises up it");
         }
 
         [Test]

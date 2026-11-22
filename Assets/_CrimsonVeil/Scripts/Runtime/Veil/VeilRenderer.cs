@@ -99,6 +99,9 @@ namespace CrimsonVeil.Veil
         /// strands read as a scribble of lines, not the scarf's cloth set solid.</summary>
         public const float WeaponTintContrast = 0.5f;
 
+        /// <summary>How much the tongues follow the band instead of their own cloth while wound round the body.</summary>
+        public const float SwirlFollowBand = 0.75f;
+
         /// <summary>Radians the tongue fanned out farthest in depth is turned face up (see VeilStrands.DepthFan).</summary>
         public const float DepthRoll = 0.55f;
 
@@ -612,7 +615,9 @@ namespace CrimsonVeil.Veil
                     // is the braid drawn above.
                     if (simulated)
                     {
-                        float simW = loose * Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(defStart, defStart + 0.04f, f));
+                        // (wound round the body in a somersault the tongues follow the band's smooth ring: their own
+                        // cloth could not keep up with the spin and broke into sharp zigzags round him)
+                        float simW = loose * Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(defStart, defStart + 0.04f, f)) * (1f - SwirlFollowBand * sim.SwirlWeight);
                         if (simW > 0f)
                         {
                             c = Vector3.Lerp(c, simPt[i], simW);

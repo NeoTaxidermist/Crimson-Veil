@@ -35,6 +35,7 @@ Material:
     - _SolidDepth: 0
     - _Volume: 0
     - _WeaponInk: 0.85
+    - _WeaponStroke: 0.3
     m_Colors:
     - _ClothDeep: {r: 0.26, g: 0.035, b: 0.035, a: 1}
     - _ClothLight: {r: 0.82, g: 0.11, b: 0.09, a: 1}

@@ -5,6 +5,20 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.65.0] – 2026-11-22
+### Opraveno
+- **Šála u zdi stoupá jako plamen.** Když hrdina stál zády ke zdi, vítr šálu foukal do zdi a ta se zmuchlala do hromádky za hlavou. Teď simulace měří volné místo za hrdinou ve směru vlání. Když je zeď blíž, než je šála dlouhá, esíčko se zvedne podél zdi nahoru (`VeilSimulation.WallTilt`, `RoomBehind`, nejvýš 1,3 rad). Čím blíž zeď, tím strměji, a náklon náběhne i odezní plynule. Podlaha pod hrdinou ani římsa nad ním se za zeď nepočítají.
+- **Kotoul:** při obtočení kolem těla se tenké jazyky lámaly do ostrých cik-caků, protože jejich vlastní simulace nestíhala rychlé točení. Během obtočení teď ze tří čtvrtin sledují hladký prstenec pásu (`VeilRenderer.SwirlFollowBand`).
+- Materiály šály (`Veil.mat`, `VeilSmoke.mat`) mají uloženou výchozí hodnotu `_WeaponStroke` z verze 0.64.0.
+
+### Prověřeno
+- **Šála po otočce v běhu:** je zpátky vodorovně do 0,7 s od začátku otočky, tedy hned po jejím konci. Dlouhé zvednutí bylo vidět ještě při 0,9 s otočce. Rychlejší otočka z verze 0.63.0 ho vyřešila.
+
+### Testy
+- `VeilMotionTests`: šála u zdi stoupá podél ní a nehromadí se za hlavou; podlaha a římsa nejsou zeď; jazyky v kotoulu sledují pás.
+- `VeilCollisionTests.Scarf_StreamingIntoAPillar_StopsAtItsFace`: šála zdí dál neprojde. Místo opření o zeď teď smí podél zdi stoupat.
+- Prošlo všech 576 EditMode a 121 PlayMode testů.
+
 ## [0.64.0] – 2026-11-22
 ### Změněno
 - **Šála má objem i shora a zezadu.** Na záběrech z jiných stran (kvůli budoucím cutscénám) byla šála skoro placatá: všechny jazyky ležely do hloubky v pásu jen asi 20 cm a mířily plochou ke kameře v boku. Shora z ní byla tenká čára, zezadu úzká deska.

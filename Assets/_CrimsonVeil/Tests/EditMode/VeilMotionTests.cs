@@ -342,6 +342,39 @@ namespace CrimsonVeil.Tests
         }
 
         [Test]
+        public void WithAWallBehindHim_TheScarfRisesUpIt()
+        {
+            Assert.AreEqual(0f, VeilSimulation.WallTiltFor(3f, 2.5f), 1e-6f, "room to spare: it streams level");
+            Assert.Greater(VeilSimulation.WallTiltFor(1.25f, 2.5f), 0.9f, "half the room: it rises steeply");
+            Assert.AreEqual(VeilSimulation.MaxWallTilt, VeilSimulation.WallTiltFor(0f, 2.5f), 1e-6f, "his back to the wall: up it like a flame, never over his head");
+            Assert.Less(VeilSimulation.MaxWallTilt, Mathf.PI * 0.5f);
+
+            var sim = new VeilSimulation(new VeilSettings(), new Vector3(0f, 1.4f, 0f)) { DriftDirection = 1f };
+            sim.Obstacles.Add(Rect.MinMaxRect(0.6f, -1f, 2f, 5f));   // a wall behind him
+            sim.Obstacles.Add(Rect.MinMaxRect(-10f, -1f, 10f, 0f));  // the floor
+            sim.Obstacles.Add(Rect.MinMaxRect(-3f, 3f, -1f, 4f));    // a ledge over the way ahead: no wall
+            Assert.AreEqual(0.6f, sim.RoomBehind(new Vector3(0f, 1.4f, 0f), 1f, 3f), 1e-5f, "the wall behind him");
+            Assert.AreEqual(3f, sim.RoomBehind(new Vector3(0f, 1.4f, 0f), -1f, 3f), 1e-5f, "the floor and a ledge overhead are no wall");
+
+            // standing with his back to it, the scarf rises instead of piling up against it
+            Vector3 neck = new Vector3(0f, 1.4f, 0f);
+            sim.AmbientFlow = new Vector2(0.75f, 0f);
+            sim.RestShapeWeight = 1f;
+            for (int f = 0; f < 180; f++) sim.Step(Dt, neck);
+            Assert.Greater(sim.WallTilt, 1f);
+            float top = 0f;
+            for (int i = sim.Count / 2; i < sim.Count; i++) top = Mathf.Max(top, sim.Positions[i].y - neck.y);
+            Assert.Greater(top, 1f, "its tail is high up the wall, not in a heap behind his head");
+        }
+
+        [Test]
+        public void InASomersault_TheTonguesFollowTheBandsRing()
+        {
+            Assert.GreaterOrEqual(VeilRenderer.SwirlFollowBand, 0.5f, "wound round him their own cloth broke into zigzags");
+            Assert.LessOrEqual(VeilRenderer.SwirlFollowBand, 1f);
+        }
+
+        [Test]
         public void TheLooseScarf_ShedsNoPieces()
         {
             var prefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_CrimsonVeil/LevelKit/Prefabs/Player.prefab");

@@ -297,6 +297,41 @@ namespace CrimsonVeil.Veil
         /// </summary>
         public float TrailTilt { get; set; }
 
+        /// <summary>
+        /// Radians the sheet's S rises when a wall stands behind him closer than the scarf is long: it streams up the
+        /// wall like a flame instead of being blown into it and crumpling into a heap behind his head. Eased in and out.
+        /// </summary>
+        public float WallTilt { get; private set; }
+
+        /// <summary>The steepest the scarf rises against a wall, and how fast (rad/s) it rises and settles.</summary>
+        public const float MaxWallTilt = 1.3f, WallTiltRate = 3f;
+
+        /// <summary>
+        /// The tilt that fits a sheet <paramref name="reach"/> m long into <paramref name="room"/> m of free space before a
+        /// wall: none with room to spare, steeper the closer the wall.
+        /// </summary>
+        public static float WallTiltFor(float room, float reach)
+        {
+            if (reach <= 1e-4f || room >= reach) return 0f;
+            return Mathf.Min(MaxWallTilt, Mathf.Acos(Mathf.Clamp01(Mathf.Max(0f, room) / reach)));
+        }
+
+        /// <summary>Free space (m) from <paramref name="a"/> towards <paramref name="dir"/> (-1/+1 in x) before a wall at his height.</summary>
+        public float RoomBehind(Vector3 a, float dir, float maxRoom)
+        {
+            float room = maxRoom;
+            for (int o = 0; o < Obstacles.Count; o++)
+            {
+                Rect r = Obstacles[o];
+                // a wall: it stands across his neck's height (a floor under him or a ceiling over him is no wall)
+                if (a.y < r.yMin + 0.2f || a.y > r.yMax - 0.2f) continue;
+                float d = dir > 0f ? r.xMin - a.x : a.x - r.xMax;
+                if (d < -0.05f) continue;   // behind his back the other way, or he stands in it
+                room = Mathf.Min(room, d);
+            }
+            return room;
+        }
+
         float headingFrom, headingTo, driftTo, turnClock = 99f;
 
         /// <summary>How much of his fall the sheet's shape drags the cloth down with, tilted by <paramref name="tilt"/> into the fall.</summary>
@@ -488,6 +523,11 @@ namespace CrimsonVeil.Veil
                 turnClock = Mathf.Abs(headingFrom - headingTo) < 1e-4f ? 99f : 0f;
             }
             turnClock += h;
+            {
+                float reach = Settings.length * LengthScale * RestReach;
+                float want = DriftDirection != 0f ? WallTiltFor(RoomBehind(a, Mathf.Sign(DriftDirection), reach), reach) : 0f;
+                WallTilt = Mathf.MoveTowards(WallTilt, want, h * WallTiltRate);
+            }
             Vector2 air = Wind + AmbientFlow;
 
             // 1) Advect and age vortices (they live in the air, not on the body).
@@ -566,7 +606,7 @@ namespace CrimsonVeil.Veil
                     // back ~RestReach of d (a straighter target would pull the S flat). (Measured from the end of the
                     // wrap round the neck: the sheet is the part that streams off it.)
                     float dAlong = Mathf.Max(0f, f * s.length - WrapLength) * LengthScale;
-                    Vector2 off = SheetOffset(dAlong * RestReach, VeilRestShape.Height(dAlong, time), headingHere, TrailTilt);
+                    Vector2 off = SheetOffset(dAlong * RestReach, VeilRestShape.Height(dAlong, time), headingHere, Mathf.Max(TrailTilt, WallTilt));
                     var target = new Vector3(a.x + off.x, a.y + off.y, p.z);
                     // Where the sheet's place is inside a wall or a ledge (he dropped off it, the S still lay over it) the
                     // shape lets go: held to it, the cloth was pressed against the top and crumpled up there. Let go,

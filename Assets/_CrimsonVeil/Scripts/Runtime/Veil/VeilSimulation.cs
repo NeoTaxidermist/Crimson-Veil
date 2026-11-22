@@ -152,6 +152,15 @@ namespace CrimsonVeil.Veil
         public float SwirlSpeed { get; set; }
         public float SwirlRadius { get; set; } = 0.75f;
         public float SwirlWeight { get; set; }
+
+        /// <summary>
+        /// How firmly (0..1) the loose cloth is kept behind his chest line, <see cref="FrontReach"/> m in front of the
+        /// neck the way <see cref="FrontFacing"/> (+1/-1) he faces: once he faces one way the cloth swinging out in front
+        /// of him is stopped there and drapes back, as cloth meeting his chest would.
+        /// </summary>
+        public float FrontHold { get; set; }
+        public float FrontFacing { get; set; } = 1f;
+        public const float FrontReach = 0.15f;
         /// <summary>The span of the veil (fractions) held in the fist, and how firmly (0..1): it sits exactly on the
         /// weapon's shape from the moment of the cast, and a little behind the palm so the fist is drawn over it.</summary>
         public float HeldFrom { get; set; }
@@ -192,6 +201,30 @@ namespace CrimsonVeil.Veil
 
         /// <summary>The sharpest bend (degrees) the loose cloth makes at a node before it is straightened.</summary>
         public const float MaxKink = 60f;
+
+        /// <summary>The sharpest bend (degrees) the loose cloth makes at a node, held by the bending constraint.</summary>
+        public const float MaxBend = 35f;
+
+        /// <summary>Holds node <paramref name="i"/> at least <paramref name="least"/> m from the one after next, in the
+        /// picture plane (the bending constraint): the free ends of the pair take it, as they are free.</summary>
+        void HoldBend(int i, float least)
+        {
+            float wa = Free(i) * (1f - H(i)), wb = Free(i + 2) * (1f - H(i + 2));
+            float sum = wa + wb;
+            if (sum < 1e-4f) return;
+            float dx = Positions[i + 2].x - Positions[i].x, dy = Positions[i + 2].y - Positions[i].y;
+            float len = Mathf.Sqrt(dx * dx + dy * dy);
+            if (len >= least || len < 1e-6f) return;
+            float push = (least - len) / len;
+            Positions[i].x -= dx * push * (wa / sum);
+            Positions[i].y -= dy * push * (wa / sum);
+            Positions[i + 2].x += dx * push * (wb / sum);
+            Positions[i + 2].y += dy * push * (wb / sum);
+        }
+
+        /// <summary>The least distance (m) between a node and the one after next, for segments <paramref name="segment"/>
+        /// m long: two segments bent by MaxBend at the node between them span that much.</summary>
+        public static float SkipLength(float segment) => 2f * segment * Mathf.Cos(0.5f * MaxBend * Mathf.Deg2Rad);
 
         /// <summary>How far (0..1) the bend at <paramref name="b"/> between <paramref name="a"/> and <paramref name="c"/> goes
         /// past MaxKink (0 within it, 1 folded right back on itself).</summary>
@@ -286,6 +319,29 @@ namespace CrimsonVeil.Veil
         public static float DriftAt(float from, float to, float clock, float f)
             => Mathf.Cos(SwingHeading(HeadingOf(from), HeadingOf(to), clock, f));
 
+        /// <summary>
+        /// How much of the sheet's shape holds the point <paramref name="f"/> (0 neck .. 1 tip) <paramref name="clock"/> s
+        /// into a turn: all of it before and after, least while it swings over (<see cref="SwingRelease"/>). Pulled hard
+        /// to its place on the swinging shape, the cloth was snatched after it node by node and folded up sharply
+        /// (a kink of 140 degrees at the tail); carried over by the breeze and the air instead, it goes over in one curve.
+        /// </summary>
+        public static float SwingShape(float clock, float f)
+        {
+            // let go as the point starts to swing over; taken up again only gently once it has (the cloth still flies on
+            // behind its place: snapped back to it there, the tail was folded sharply)
+            float t = clock - f * TurnTravel;
+            if (t <= 0f || t >= TurnBlend + SwingSettle) return 1f;
+            float release = Mathf.SmoothStep(0f, 1f, t / (0.3f * TurnBlend))
+                            * (1f - Mathf.SmoothStep(0f, 1f, (t - 0.6f * TurnBlend) / (0.4f * TurnBlend + SwingSettle)));
+            return 1f - SwingRelease * release;
+        }
+
+        /// <summary>Seconds past its swing over a point of the scarf takes to be held fully in the sheet's shape again.</summary>
+        public const float SwingSettle = 0.4f;
+
+        /// <summary>The share of the sheet's shape let go mid-swing as it turns round.</summary>
+        public const float SwingRelease = 0.8f;
+
         /// <summary>The breeze's heading (radians) at <paramref name="f"/> along the scarf right now (see <see cref="TurnTravel"/>).</summary>
         public float HeadingAt(float f) => SwingHeading(headingFrom, headingTo, turnClock, f);
 
@@ -298,12 +354,34 @@ namespace CrimsonVeil.Veil
         /// waves are laid down (their height would flip sides as it passed the top).
         /// </summary>
         public static Vector2 SheetOffset(float along, float height, float heading, float tilt)
+            => SheetShape(SpineStep(along, heading, tilt), height, heading, tilt);
+
+        /// <summary>
+        /// One piece <paramref name="length"/> m long of the sheet's centre line, laid on from the last along the
+        /// breeze's <paramref name="heading"/> there. Laid out piece by piece the line keeps the scarf's length through a
+        /// turn: each point's place on a straight ray from the neck at its own heading (the tail's lagging behind the
+        /// neck's) was a spiral up to three times as long as the cloth, and pulled towards it the cloth broke into a
+        /// zigzag of sharp folds as it swung over his head. The piece is tilted by <paramref name="tilt"/> (see
+        /// <see cref="SheetOffset"/>) the same way: turning round before a wall, the sheet rising against it while it
+        /// swung over, each point turned by its own tilt about the neck tore the line apart (folds of up to 170 degrees).
+        /// </summary>
+        public static Vector2 SpineStep(float length, float heading, float tilt)
         {
-            float c = Mathf.Cos(heading), sn = Mathf.Sin(heading);
-            Vector2 off = new Vector2(c * along, sn * along + height * Mathf.Abs(c));
+            float angle = heading + tilt * Mathf.Cos(heading);
+            return new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * length;
+        }
+
+        /// <summary>
+        /// The sheet's place for the point <paramref name="spine"/> on its centre line (from the neck, see
+        /// <see cref="SpineStep"/>), its S <paramref name="height"/> up where the breeze there has
+        /// <paramref name="heading"/>, all of it tilted by <paramref name="tilt"/> (see <see cref="SheetOffset"/>).
+        /// </summary>
+        public static Vector2 SheetShape(Vector2 spine, float height, float heading, float tilt)
+        {
+            float c = Mathf.Cos(heading);
             float t = tilt * c;
-            float ct = Mathf.Cos(t), st = Mathf.Sin(t);
-            return new Vector2(off.x * ct - off.y * st, off.x * st + off.y * ct);
+            float lift = height * Mathf.Abs(c);
+            return spine + new Vector2(-Mathf.Sin(t), Mathf.Cos(t)) * lift;
         }
 
         /// <summary>
@@ -596,6 +674,9 @@ namespace CrimsonVeil.Veil
             float wavePhase = s.undulationSpeed * time;
             // Cloth beyond a point that touches a wall no longer streams into it: it hangs and drapes down the wall.
             float blocked = 0f;
+            // the sheet's centre line, laid out from the neck piece by piece (see SpineStep)
+            Vector2 spine = Vector2.zero;
+            float spineAlong = 0f;
             for (int i = 1; i < Count; i++)
             {
                 wallContact[i] = Mathf.Max(0f, wallContact[i] - h * 2.5f);
@@ -623,14 +704,17 @@ namespace CrimsonVeil.Veil
                 float drag = s.airDrag * (1f + 5f * SwirlWeight * loose);
                 Vector3 acc = new Vector3((airV.x - vel.x) * drag, (airV.y - vel.y) * drag, 0f) + g;
 
-                float shaped = RestShapeWeight * loose * (DriftDirection != 0f ? 1f : 0f);
+                float dAlong = Mathf.Max(0f, f * s.length - WrapLength) * LengthScale;
+                float sheetTilt = Mathf.Max(TrailTilt, WallTilt);
+                spine += SpineStep(dAlong * RestReach - spineAlong, headingHere, sheetTilt);
+                spineAlong = dAlong * RestReach;
+                float shaped = RestShapeWeight * loose * (DriftDirection != 0f ? 1f : 0f) * SwingShape(turnClock, f);
                 if (shaped > 0.001f)
                 {
                     // The sheet's shape: its centre line d metres back from the neck. Its S takes up length: it reaches
                     // back ~RestReach of d (a straighter target would pull the S flat). (Measured from the end of the
                     // wrap round the neck: the sheet is the part that streams off it.)
-                    float dAlong = Mathf.Max(0f, f * s.length - WrapLength) * LengthScale;
-                    Vector2 off = SheetOffset(dAlong * RestReach, VeilRestShape.Height(dAlong, time), headingHere, Mathf.Max(TrailTilt, WallTilt));
+                    Vector2 off = SheetShape(spine, VeilRestShape.Height(dAlong, time), headingHere, sheetTilt);
                     var target = new Vector3(a.x + off.x, a.y + off.y, p.z);
                     // Where the sheet's place is inside a wall or a ledge (he dropped off it, the S still lay over it) the
                     // shape lets go: held to it, the cloth was pressed against the top and crumpled up there. Let go,
@@ -763,6 +847,28 @@ namespace CrimsonVeil.Veil
                     Positions[i] += corr * (wa / sum);
                     Positions[i + 1] -= corr * (wb / sum);
                 }
+                // The chest line (FrontHold): kept by the cloth itself, which drapes back from it in one piece. (Pressed
+                // back in the drawing instead, point by point, a band reaching out in front was squashed into a sliver
+                // whose edges crossed - a Z-shaped notch.)
+                if (FrontHold > 0f)
+                    for (int i = Mathf.Max(1, s.wrapNodes); i < Count; i++)
+                    {
+                        float loose = (1f - H(i)) * Free(i);
+                        if (loose <= 0f) continue;
+                        float ahead = (Positions[i].x - a.x) * FrontFacing - FrontReach;
+                        if (ahead <= 0f) continue;
+                        Positions[i].x -= FrontFacing * ahead * FrontHold * loose;
+                        // (and it stops there rather than bouncing off: its speed outwards is spent)
+                        if ((Positions[i].x - previous[i].x) * FrontFacing > 0f) previous[i].x = Positions[i].x;
+                    }
+                // Bending: as in rope and hair simulation, each node is held at least SkipLength from the one after next
+                // (in the picture, as it is drawn), which keeps the bend at the node between them within MaxBend. Bent
+                // further, the drawn curve looped between the nodes and the band showed steps and shards.
+                // (swept down the scarf and back up it: one way only, a node at the far end was left bent)
+                float least = SkipLength(FlowRestLength * LengthScale);
+                int first = Mathf.Max(1, s.wrapNodes);   // (past the wrap round the neck: wound tight)
+                for (int i = first; i < Count - 2; i++) HoldBend(i, least);
+                for (int i = Count - 3; i >= first; i--) HoldBend(i, least);
                 // Cloth doesn't fold sharply: where the loose cloth bends at a node by more than MaxKink, the node is
                 // drawn towards the middle of its neighbours (gentle curves - its S - are left alone). Without it,
                 // turning round crumpled it node by node into a zigzag, drawn as broken pieces with gaps between them.
@@ -773,6 +879,26 @@ namespace CrimsonVeil.Veil
                     float kink = KinkExcess(Positions[i - 1], Positions[i], Positions[i + 1]);
                     if (kink <= 0f) continue;
                     Positions[i] += ((Positions[i - 1] + Positions[i + 1]) * 0.5f - Positions[i]) * (0.8f * kink * loose);
+                }
+            }
+
+            // 6a) Follow the leader (as in hair simulation, Mueller et al. 2012): each loose segment is set to its exact
+            // length along its own direction, from the neck outwards. A few passes of the constraints above could not hold
+            // it in a fast turn: the cloth was squeezed to half its length, bunched up and folded sharply between nodes.
+            // (Its speed is kept: the node is carried along, not flung.)
+            {
+                float rest = FlowRestLength * LengthScale;
+                for (int i = Mathf.Max(1, s.wrapNodes) + 1; i < Count; i++)
+                {
+                    if (i - 1 == DetachedAfter) break;
+                    float loose = (1f - H(i)) * (1f - H(i - 1)) * Free(i);
+                    if (loose < 0.999f) continue;
+                    Vector3 d = Positions[i] - Positions[i - 1];
+                    float len = d.magnitude;
+                    if (len < 1e-6f) continue;
+                    Vector3 shift = Positions[i - 1] + d * (rest / len) - Positions[i];
+                    Positions[i] += shift;
+                    previous[i] += shift;
                 }
             }
 

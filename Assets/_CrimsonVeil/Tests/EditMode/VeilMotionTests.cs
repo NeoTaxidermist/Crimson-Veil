@@ -71,6 +71,24 @@ namespace CrimsonVeil.Tests
         }
 
         [Test]
+        public void TheCloth_BendsInCurves_HeldByItsBendingConstraint()
+        {
+            // two segments bent by MaxBend at their middle node span SkipLength
+            float seg = 0.1f;
+            float a = VeilSimulation.MaxBend * Mathf.Deg2Rad;
+            Vector3 p0 = Vector3.zero, p1 = new Vector3(seg, 0f, 0f), p2 = p1 + new Vector3(Mathf.Cos(a), Mathf.Sin(a), 0f) * seg;
+            Assert.AreEqual(VeilSimulation.SkipLength(seg), Vector3.Distance(p0, p2), 1e-4f);
+            Assert.That(VeilSimulation.MaxBend, Is.InRange(20f, VeilSimulation.MaxKink), "an S still has room; no fold");
+            // swinging over in a turn, the sheet's shape lets go of it and takes it up again gently
+            Assert.AreEqual(1f, VeilSimulation.SwingShape(99f, 0.5f), 1e-5f, "no turn: all of it");
+            Assert.AreEqual(1f, VeilSimulation.SwingShape(0f, 0.5f), 1e-5f, "not started there yet");
+            float mid = VeilSimulation.SwingShape(0.5f * VeilSimulation.TurnTravel + 0.5f * VeilSimulation.TurnBlend, 0.5f);
+            Assert.Less(mid, 0.5f, "mid-swing mostly let go");
+            float after = VeilSimulation.SwingShape(0.5f * VeilSimulation.TurnTravel + VeilSimulation.TurnBlend + 0.5f * VeilSimulation.SwingSettle, 0.5f);
+            Assert.That(after, Is.InRange(mid, 1f), "taken up again over a moment, not at once");
+        }
+
+        [Test]
         public void TurningRound_TheScarfGoesOverSlim_AndOpensOutAfter()
         {
             // how far the tip has swung round: not yet, halfway over the top, trailing behind him again

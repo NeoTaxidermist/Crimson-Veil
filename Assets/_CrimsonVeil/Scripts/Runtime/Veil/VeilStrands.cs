@@ -356,7 +356,7 @@ namespace CrimsonVeil.Veil
             float fi = Mathf.Clamp01(u) * (Nodes - 1);
             int i1 = Mathf.Min(Mathf.FloorToInt(fi), Nodes - 2);
             float t = fi - i1;
-            return VeilRenderer.CatmullRom(pos[Mathf.Max(i1 - 1, 0)], pos[i1], pos[i1 + 1], pos[Mathf.Min(i1 + 2, Nodes - 1)], t);
+            return VeilRenderer.CentripetalCatmullRom(pos[Mathf.Max(i1 - 1, 0)], pos[i1], pos[i1 + 1], pos[Mathf.Min(i1 + 2, Nodes - 1)], t);
         }
     }
 }

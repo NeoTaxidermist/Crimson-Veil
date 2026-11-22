@@ -103,6 +103,51 @@ namespace CrimsonVeil.Veil
         public const float SwirlFollowBand = 0.75f;
 
         /// <summary>
+        /// Signed curvature (1/m, in the picture) of the line through <paramref name="a"/>, <paramref name="b"/>,
+        /// <paramref name="c"/>: positive turning towards its left normal (-tan.y, tan.x), the way the band's normal points.
+        /// </summary>
+        public static float Curvature(Vector3 a, Vector3 b, Vector3 c)
+        {
+            float ux = b.x - a.x, uy = b.y - a.y, vx = c.x - b.x, vy = c.y - b.y;
+            float lu = Mathf.Sqrt(ux * ux + uy * uy), lv = Mathf.Sqrt(vx * vx + vy * vy);
+            if (lu < 1e-6f || lv < 1e-6f) return 0f;
+            float angle = Mathf.Atan2(ux * vy - uy * vx, ux * vx + uy * vy);
+            return angle / (0.5f * (lu + lv));
+        }
+
+        /// <summary>The most of a bend's radius the band's half width may take before its centre line is eased round
+        /// it, and the passes that easing gets.</summary>
+        public const float FoldFit = 0.85f;
+        public const int FoldPasses = 8;
+
+        /// <summary>
+        /// Eases the loose band's centre line round every bend too tight for its width (<paramref name="width"/> full
+        /// widths, <paramref name="hard"/> 0 loose .. 1 set): each such point is drawn towards the middle of its
+        /// neighbours until the bend's radius is at least the half width over <see cref="FoldFit"/>. A set weapon keeps
+        /// its exact shape. Returns whether it moved any point.
+        /// </summary>
+        public static bool UnfoldCentre(Vector3[] centre, float[] width, float[] hard, int count)
+        {
+            bool moved = false;
+            for (int pass = 0; pass < FoldPasses; pass++)
+            {
+                bool any = false;
+                for (int i = 1; i < count - 1; i++)
+                {
+                    float loose = 1f - hard[i];
+                    if (loose <= 0.01f) continue;
+                    float k = Mathf.Abs(Curvature(centre[i - 1], centre[i], centre[i + 1]));
+                    if (k * 0.5f * width[i] <= FoldFit) continue;
+                    centre[i] += ((centre[i - 1] + centre[i + 1]) * 0.5f - centre[i]) * (0.5f * loose);
+                    any = true;
+                }
+                if (!any) break;
+                moved = true;
+            }
+            return moved;
+        }
+
+        /// <summary>
         /// How far (0..1) the scarf's tip has swung round to stream the way <paramref name="dir"/> it is blown
         /// (<paramref name="tipDrift"/> = VeilSimulation.DriftAt(1)): 0 while it still streams the old way or passes
         /// over the top, 1 once it trails behind him again.
@@ -360,6 +405,28 @@ namespace CrimsonVeil.Veil
         }
 
         /// <summary>
+        /// The centripetal Catmull-Rom spline from <paramref name="p1"/> to <paramref name="p2"/> at
+        /// <paramref name="u"/> (0..1): knots spaced by the square root of the distance between the points (Barry-Goldman
+        /// form). Unlike the uniform one it never forms a cusp or a loop within a segment, however unequal the segments
+        /// (Yuksel, Schaefer and Keyser 2011).
+        /// </summary>
+        public static Vector3 CentripetalCatmullRom(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, float u)
+        {
+            const float least = 1e-3f;
+            float t0 = 0f;
+            float t1 = t0 + Mathf.Max(least, Mathf.Sqrt(Vector3.Distance(p0, p1)));
+            float t2 = t1 + Mathf.Max(least, Mathf.Sqrt(Vector3.Distance(p1, p2)));
+            float t3 = t2 + Mathf.Max(least, Mathf.Sqrt(Vector3.Distance(p2, p3)));
+            float t = Mathf.Lerp(t1, t2, u);
+            Vector3 a1 = ((t1 - t) * p0 + (t - t0) * p1) / (t1 - t0);
+            Vector3 a2 = ((t2 - t) * p1 + (t - t1) * p2) / (t2 - t1);
+            Vector3 a3 = ((t3 - t) * p2 + (t - t2) * p3) / (t3 - t2);
+            Vector3 b1 = ((t2 - t) * a1 + (t - t0) * a2) / (t2 - t0);
+            Vector3 b2 = ((t3 - t) * a2 + (t - t1) * a3) / (t3 - t1);
+            return ((t2 - t) * b1 + (t - t1) * b2) / (t2 - t1);
+        }
+
+        /// <summary>
         /// Smooth end curl (Euler spiral): starts at <paramref name="start"/> heading along <paramref name="heading"/>
         /// (radians, XY plane) and turns by <paramref name="turns"/> full revolutions, the curvature growing
         /// with the distance, so the stroke winds tighter towards its tip. Writes count + 1 points.
@@ -426,7 +493,9 @@ namespace CrimsonVeil.Veil
                 {
                     float u = (float)k / smoothing;
                     int idx = seg * smoothing + k;
-                    centre[idx] = CatmullRom(p0, p1, p2, p3, u);
+                    // (centripetal: the uniform spline overshot where the cloth's segments were of unequal length and
+                    // looped round into a cusp - one point of the band flung out, drawn as a shard)
+                    centre[idx] = CentripetalCatmullRom(p0, p1, p2, p3, u);
                     hardAt[idx] = Mathf.Clamp01(Mathf.Lerp(h1, h2, u) / formHardness);
                 }
             }
@@ -534,6 +603,19 @@ namespace CrimsonVeil.Veil
                 // The whip's handle is a solid stock in the fist (VeilController.UpdateWhipHandle): no ink over it.
                 if (whipForm && t >= whipButt - 0.01f && t <= whipStockEnd + 0.004f) alphaAt[i] *= 1f - whipHandleShown;
             }
+
+            // Round a bend tighter than the band is wide, its inner edge would fold back over itself (drawn as saw
+            // teeth and shards, worst swung over his head as he turns round). As in stroking a path, the loose band's
+            // centre line is eased round such a bend until the band fits it (the bend's radius at least its half width).
+            if (UnfoldCentre(centre, widthAt, hardAt, samples))
+                for (int i = 0; i < samples; i++)
+                {
+                    Vector3 tan = centre[Mathf.Min(i + 1, samples - 1)] - centre[Mathf.Max(i - 1, 0)];
+                    tan.z = 0f;
+                    if (tan.sqrMagnitude < 1e-8f) continue;
+                    tan.Normalize();
+                    normalAt[i] = new Vector3(-tan.y, tan.x, 0f);
+                }
 
             // A flame's ripple runs back along the loose cloth (from the neck, growing towards the tail).
             for (int i = 0; i < samples; i++)
@@ -785,25 +867,22 @@ namespace CrimsonVeil.Veil
             // Only once the hero faces one way — while turning round the scarf swings freely across.
             // (Not while it is wound round the body in a somersault: there it must go round the front too.)
             // (nor while it streams up over him in a fall, VeilSimulation.TrailTilt: cut at the chest line it stood as a flat board)
+            // (and only once the scarf has swung over too: starting off from standing his body turned round first, and
+            // the fold, pressing every point of the cloth still sweeping over his head and out in front back onto the
+            // chest line, flattened the band into a sliver whose edges crossed - a Z-shaped notch)
             float settleWanted = Mathf.InverseLerp(0.85f, 1f, Mathf.Abs(veil.FacingBlend)) * (1f - sim.SwirlWeight)
-                                 * SettleAfterSwirl(sinceSwirl) * SettleInTilt(sim.TrailTilt);
+                                 * SettleAfterSwirl(sinceSwirl) * SettleInTilt(sim.TrailTilt)
+                                 * SwungOver(sim.DriftAt(1f), sim.DriftDirection);
             // eased in (out at once): it came in within a frame as he finished turning round, and the cloth still
             // swinging round in front of him jumped behind him
             settleNow = settleWanted < settleNow ? settleWanted : Mathf.MoveTowards(settleNow, settleWanted, dt * SettleRate);
-            float settle = settleNow;
-            if (settle > 0f)
-            {
-                float ax = p[0].x;
-                for (int v = 0; v < vertices.Length; v++)
-                {
-                    float looseV = 1f - Mathf.Clamp01(uv2[v].x / 0.6f);
-                    if (looseV <= 0f) continue;
-                    float ahead = (vertices[v].x - ax) * facing;
-                    if (ahead <= FrontLimit) continue;
-                    float folded = FrontLimit + FoldBack(ahead - FrontLimit);
-                    vertices[v].x = ax + facing * Mathf.Lerp(ahead, folded, looseV * settle);
-                }
-            }
+            // The cloth itself stops at the chest line (VeilSimulation.FrontHold) and drapes back from it. (It used to be
+            // folded back here in the drawing, vertex by vertex: where the band reached up or out in front with its width
+            // lying level, both edges were pressed onto one line - a seam pinched across it, a Z-shaped notch.)
+            // (only the loose scarf: a weapon forming reaches out in front on purpose, and it strikes with the cloth's own
+            // places - held back, a low lash of the whip passed over what it should have hit)
+            sim.FrontHold = veil.Form == VeilForm.Flow && veil.Hardness <= 0.001f ? settleNow : 0f;
+            sim.FrontFacing = facing;
 
             if (viewer == null || !viewer.isActiveAndEnabled) viewer = Camera.main;
             if (viewer != null)
@@ -844,11 +923,6 @@ namespace CrimsonVeil.Veil
         /// whirl let go: not at first (it swings back by itself instead of being crumpled), fully after ~0.9 s.</summary>
         public static float SettleAfterSwirl(float since) => Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.2f, 0.9f, since));
 
-        /// <summary>How far (m) in front of the neck the loose scarf may reach (about the chest line).</summary>
-        public const float FrontLimit = 0.15f;
-
-        /// <summary>Soft fold for cloth past the front limit: grows at first, then saturates at 0.1 m.</summary>
-        public static float FoldBack(float over) => over <= 0f ? over : 0.1f * (1f - Mathf.Exp(-over / 0.1f));
 
         /// <summary>Sideways offset of a strand braided around a weapon: a travelling helix, zero for loose cloth.</summary>
         /// <summary>The braid's depth (m) off the weapon: the other half of the helix of <see cref="WeaponBraid"/> - behind
@@ -1044,31 +1118,52 @@ namespace CrimsonVeil.Veil
 
         /// <summary>
         /// A broad stroke must not fold over itself where its centre line bends tighter than its half width (a sharp
-        /// turn into a curl drew a stray triangle): at every point the half width is limited to 0.9 of the local
-        /// radius of the bend - on the loose cloth (hardness in <paramref name="data"/>.x below 0.5). Works on the strand's
-        /// vertex pairs in place (left = v, right = v + 1).
+        /// turn into a curl drew a stray triangle): the half width is limited to 0.9 of the radius of the bend - on the
+        /// loose cloth (hardness in <paramref name="data"/>.x below 0.5). The bend is measured over two samples either
+        /// side, and the narrowing eases in over <see cref="FoldSpread"/> samples (measured point by point and narrowed
+        /// there alone, a little kink in the line pinched the band into a V-shaped notch, a seam across it). Works on
+        /// the strand's vertex pairs in place (left = v, right = v + 1).
         /// </summary>
         public static void ClampFolds(Vector3[] verts, Vector2[] data, int baseV, int count)
         {
+            if (foldLimit.Length < count) foldLimit = new float[count];
+            for (int k = 0; k < count; k++) foldLimit[k] = float.MaxValue;
             for (int k = 1; k < count - 1; k++)
             {
                 int v = baseV + k * 2;
                 if (data != null && data[v].x > 0.5f) continue; // a weapon keeps its own shape
-                Vector3 c0 = (verts[v - 2] + verts[v - 1]) * 0.5f, c1 = (verts[v] + verts[v + 1]) * 0.5f, c2 = (verts[v + 2] + verts[v + 3]) * 0.5f;
+                int reach = k >= 2 && k + 2 < count ? 2 : 1;
+                int va = baseV + (k - reach) * 2, vb = baseV + (k + reach) * 2;
+                Vector3 c0 = (verts[va] + verts[va + 1]) * 0.5f, c1 = (verts[v] + verts[v + 1]) * 0.5f, c2 = (verts[vb] + verts[vb + 1]) * 0.5f;
                 float ax = c1.x - c0.x, ay = c1.y - c0.y, bx = c2.x - c1.x, by = c2.y - c1.y;
                 float la = Mathf.Sqrt(ax * ax + ay * ay), lb = Mathf.Sqrt(bx * bx + by * by);
                 if (la < 1e-5f || lb < 1e-5f) continue;
                 float turn = Mathf.Atan2(Mathf.Abs(ax * by - ay * bx), ax * bx + ay * by);
                 if (turn < 1e-3f) continue;
-                float radius = 0.5f * (la + lb) / turn;
+                foldLimit[k] = 0.9f * 0.5f * (la + lb) / turn;
+            }
+            for (int k = 1; k < count - 1; k++)
+            {
+                int v = baseV + k * 2;
+                if (data != null && data[v].x > 0.5f) continue;
+                float limit = float.MaxValue;
+                for (int j = Mathf.Max(1, k - FoldSpread); j <= Mathf.Min(count - 2, k + FoldSpread); j++)
+                    limit = Mathf.Min(limit, foldLimit[j] * (1f + FoldEase * Mathf.Abs(k - j)));
                 Vector3 half = (verts[v] - verts[v + 1]) * 0.5f;
-                float hl = half.magnitude, limit = 0.9f * radius;
+                float hl = half.magnitude;
                 if (hl <= limit) continue;
+                Vector3 c1 = (verts[v] + verts[v + 1]) * 0.5f;
                 half *= limit / hl;
                 verts[v] = c1 + half;
                 verts[v + 1] = c1 - half;
             }
         }
+
+        static float[] foldLimit = new float[0];
+
+        /// <summary>Samples either side a narrowing at a tight bend eases over, and how much wider it may be per sample away.</summary>
+        public const int FoldSpread = 4;
+        public const float FoldEase = 0.3f;
 
         /// <summary>
         /// The painter's order of the cloth's pieces: each piece (<paramref name="firstV"/>, <paramref name="countV"/> of

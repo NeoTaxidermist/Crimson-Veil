@@ -5,6 +5,28 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.73.0] – 2026-11-22
+### Opraveno
+- **Šála se už netrhá na zuby, švy a střepy.** Viditelné poškození mělo tři zdroje. Každý jsem změřil přímo na vrcholech pásu a opravil postupem, který se pro lana, vlasy a stuhy běžně používá.
+  - **Sklopení za hruď v kreslení.** Látka před hrudí se stlačovala vrchol po vrcholu ve vodorovném směru. Kde pás mířil nahoru nebo dopředu a jeho šířka ležela vodorovně, splynuly oba okraje do jedné čáry: šev nebo zářez ve tvaru Z, ve vzorku se šířka propadla z 0,18 na 0,03 m. Teď se látka zastaví přímo v simulaci na rovině hrudi (`VeilSimulation.FrontHold`, `FrontReach` 0,15 m) a přirozeně se od ní ohne. Kreslení už nic nestlačuje. Rovina platí jen pro volnou šálu: zbraň míří dopředu záměrně a zasahuje svou vlastní polohou.
+  - **Pojistka `ClampFolds` zužovala pás v jediném bodě.** Kde měla středová čára drobný hrot, vznikl do pásu zářez ve tvaru V. Teď se ohyb měří přes širší úsek a zúžení se rozloží plynule do 4 sousedních vzorků (`FoldSpread`, `FoldEase`).
+  - **Smyčky při proložení křivkou.** Obyčejný Catmull-Rom mezi články různé délky přestřelil a udělal smyčku (středová čára se mezi dvěma vzorky otočila až o 170°). Teď se používá centripetální Catmull-Rom (`CentripetalCatmullRom`, Yuksel a kol. 2011), u kterého smyčky ani hroty nevznikají. Platí to i pro jazyky.
+- **Simulace látky (postupy z PBD a simulace vlasů):**
+  - Vazba ohybu přes ob-článek (`HoldBend`, `MaxBend` 35°). Volný článek se nezalomí víc než o 35°. Vazba se prochází tam i zpět a působí jen za omotáním kolem krku.
+  - „Follow The Leader“ (Müller a kol. 2012): každý volný článek se srovná přesně na svou délku. Při rychlé otočce se šála stlačovala na polovinu, hrnula se a lámala.
+  - Při přetočení přes hlavu se tah k cílovému tvaru uprostřed povolí a pak pozvolna (0,4 s) naskočí (`SwingShape`). Plný tah k pohybujícímu se cíli látku škubal a lámal na konci až o 140°.
+  - Cílový tvar se skládá po článcích (`SpineStep`, `SheetShape`), takže má vždy délku šály. Dřív to byla spirála až třikrát delší. Náklon u stěny se přičítá ke směru každého kousku.
+- Středová čára pásu se v ohybu ostřejším, než kolik pás snese, plynule zaoblí (`UnfoldCentre`, podle pravidel pro tahy štětcem: nejdřív uprav dráhu, pak ji obtáhni).
+
+### Změřeno
+- Rozchod z klidu, 4 pokusy: zářezy V a švy na hlavním pásu klesly na 0 (dřív 36 až 55 za přetočení). Viditelné přehyby (pás aspoň 4 cm široký) klesly na 38 až 82 za přetočení, dřív 27 až 156.
+- Otočka v plném běhu, salto, štít, kombo a dopad jsem prošel v nově nahraných klipech. V podřepu pod nízkým stropem tunelu se pás teď stočí do smyčky (dřív se zmačkal).
+
+### Testy
+- `VeilRendererTests`: šála se zastaví na hrudi, nekreslí se přes ni; proložená čára se mezi články nevrací zpět; v ostrém ohybu se pás zúží plynule a jeho středová čára se zaoblí.
+- `VeilMotionTests`: vazba ohybu a povolení tvaru při přetočení.
+- Puštěno: všech 582 EditMode testů. Celá sada 122 PlayMode testů (121 prošlo, bič z podřepu netrefil cíl kvůli rovině hrudi; opraveno a `HeroMoveSetPlayTests` + `CastingPlayTests`, 47 testů, pak prošly všechny).
+
 ## [0.72.0] – 2026-11-22
 ### Opraveno
 - **Šála se při otočce z klidu netrhá na střepy.** Když se hrdina rozešel z klidu na druhou stranu, přehodila se celá šála se všemi širokými vrstvami během 0,6 s přes hlavu. Nahoře se pak okraje vrstev přeložily přes sebe a šála vypadala roztrhaná: zuby, hranaté pláty a střepy.

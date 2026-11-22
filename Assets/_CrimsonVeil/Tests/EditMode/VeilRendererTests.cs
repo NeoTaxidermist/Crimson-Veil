@@ -273,12 +273,71 @@ namespace CrimsonVeil.Tests
         }
 
         [Test]
-        public void StoppingHero_ScarfIsFoldedBackNotSweptInFront()
+        public void StoppingHero_ScarfStopsAtHisChest_NotSweptInFront()
         {
-            Assert.AreEqual(0f, VeilRenderer.FoldBack(0f), 1e-5f, "continuous at the chest line");
-            Assert.Less(VeilRenderer.FoldBack(2f), 0.11f, "however far it swings, it stays within a hand's breadth");
-            Assert.Greater(VeilRenderer.FoldBack(0.2f), VeilRenderer.FoldBack(0.05f), "folds smoothly, no hard cut");
-            Assert.Less(VeilRenderer.FrontLimit, 0.25f);
+            // he faces +x; the breeze still streams the loose scarf forward past him (as just after he turned)
+            float Run(float hold)
+            {
+                var sim = new VeilSimulation(new VeilSettings(), Vector3.zero) { DriftDirection = 1f, RestShapeWeight = 1f, FrontFacing = 1f, FrontHold = hold };
+                sim.AmbientFlow = new Vector2(0.75f, 0f);
+                float most = float.MinValue;
+                for (int f = 0; f < 180; f++)
+                {
+                    sim.Step(1f / 60f, Vector3.zero);
+                    for (int i = sim.Settings.wrapNodes + 1; i < sim.Count; i++) most = Mathf.Max(most, sim.Positions[i].x);
+                }
+                return most;
+            }
+            Assert.Greater(Run(0f), 1f, "free, it streams out in front");
+            Assert.Less(Run(1f), VeilSimulation.FrontReach + 0.05f, "held, the cloth itself stops at his chest line");
+            Assert.Less(VeilSimulation.FrontReach, 0.25f);
+        }
+
+        [Test]
+        public void TheDrawnLine_NeverLoopsBetweenTheClothsNodes()
+        {
+            // segments of very unequal length: the uniform spline overshoots and turns back; the centripetal one does not
+            Vector3 p0 = new Vector3(-1f, 0f, 0f), p1 = Vector3.zero, p2 = new Vector3(0.05f, 0f, 0f), p3 = new Vector3(0.1f, 1f, 0f);
+            Vector3 along = p2 - p1;
+            float last = -1f;
+            bool forward = true;
+            for (int k = 0; k <= 20; k++)
+            {
+                float d = Vector3.Dot(VeilRenderer.CentripetalCatmullRom(p0, p1, p2, p3, k / 20f) - p1, along);
+                if (d < last - 1e-6f) forward = false;
+                last = d;
+            }
+            Assert.IsTrue(forward, "it runs on from one node to the next, never back");
+            Assert.AreEqual(p1, VeilRenderer.CentripetalCatmullRom(p0, p1, p2, p3, 0f));
+            Assert.That(Vector3.Distance(p2, VeilRenderer.CentripetalCatmullRom(p0, p1, p2, p3, 1f)), Is.LessThan(1e-4f));
+        }
+
+        [Test]
+        public void ATightBend_IsNarrowedSmoothly_NotPinchedAtOnePoint()
+        {
+            // a broad band along x with one sharp little kink in the middle
+            const int n = 21;
+            var verts = new Vector3[n * 2];
+            for (int k = 0; k < n; k++)
+            {
+                var c = new Vector3(k * 0.03f, k == 10 ? 0.03f : 0f, 0f);
+                verts[k * 2] = c + Vector3.up * 0.15f;
+                verts[k * 2 + 1] = c - Vector3.up * 0.15f;
+            }
+            VeilRenderer.ClampFolds(verts, null, 0, n);
+            for (int k = 1; k < n - 1; k++)
+            {
+                float w = (verts[k * 2] - verts[k * 2 + 1]).magnitude;
+                float around = Mathf.Min((verts[k * 2 - 2] - verts[k * 2 - 1]).magnitude, (verts[k * 2 + 2] - verts[k * 2 + 3]).magnitude);
+                Assert.Greater(w, 0.7f * around, $"sample {k}: no notch cut into the band");
+            }
+            // and the band's centre line is eased round a bend too tight for it
+            var centre = new Vector3[] { new Vector3(0f, 0f, 0f), new Vector3(0.05f, 0f, 0f), new Vector3(0.1f, 0f, 0f), new Vector3(0.1f, 0.05f, 0f), new Vector3(0.1f, 0.1f, 0f) };
+            var width = new[] { 0.3f, 0.3f, 0.3f, 0.3f, 0.3f };
+            var hard = new float[5];
+            Assert.IsTrue(VeilRenderer.UnfoldCentre(centre, width, hard, 5));
+            for (int i = 1; i < 4; i++)
+                Assert.Less(Mathf.Abs(VeilRenderer.Curvature(centre[i - 1], centre[i], centre[i + 1])) * 0.15f, 1.6f, "much rounder than the corner was");
         }
 
         [Test]

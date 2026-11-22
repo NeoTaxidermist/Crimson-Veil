@@ -323,6 +323,25 @@ namespace CrimsonVeil.Tests
         }
 
         [Test]
+        public void SeenFromAboveOrBehind_TheScarfHasVolume_AndWeaponsAreItsCloth()
+        {
+            int n = VeilRenderer.Strands.Length;
+            Assert.AreEqual(0f, VeilStrands.DepthOf(VeilRenderer.MainStrand, n), 1e-6f, "the band itself stays where it was");
+            Assert.AreEqual(VeilStrands.DepthFan, VeilStrands.DepthOf(n - 1, n), 1e-5f, "the last tongue fans out farthest");
+            Assert.GreaterOrEqual(VeilStrands.DepthFan, 0.3f, "a flame's volume, not a sheet 0.2 m thick (from above it was a thin line)");
+            float last = -1f;
+            for (int s = VeilRenderer.MainStrand + 1; s < n; s++)
+            {
+                Assert.Greater(VeilStrands.DepthOf(s, n), last, "fanned out in order");
+                last = VeilStrands.DepthOf(s, n);
+            }
+            Assert.Greater(VeilRenderer.DepthRoll, 0.2f, "the fanned tongues turn their faces up and out");
+            Assert.Less(VeilRenderer.DepthRoll, 0.8f, "but from the side they keep most of their width");
+            Assert.Less(VeilRenderer.WeaponTintContrast, 0.75f, "a weapon is the scarf's cloth set solid, not a scribble of bright and dark lines");
+            Assert.LessOrEqual(VeilRenderer.ShieldLickReach, 0.2f, "the shield burns as a band, not a ring of spikes");
+        }
+
+        [Test]
         public void TheLooseScarf_ShedsNoPieces()
         {
             var prefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_CrimsonVeil/LevelKit/Prefabs/Player.prefab");
@@ -330,7 +349,8 @@ namespace CrimsonVeil.Tests
             var so = new SerializedObject(wisps);
             Assert.AreEqual(0f, so.FindProperty("baseRate").floatValue, "no drops or threads off the loose scarf: in motion they read as broken pieces of it");
             Assert.AreEqual(0f, so.FindProperty("speedRate").floatValue);
-            Assert.Greater(so.FindProperty("weaponRate").floatValue, 0f, "a weapon still smokes");
+            Assert.AreEqual(0f, so.FindProperty("weaponRate").floatValue, "nor round a weapon: the flecks read as broken pieces of it");
+            Assert.AreEqual(0f, so.FindProperty("swingRate").floatValue, "nor behind a swing");
         }
     }
 }

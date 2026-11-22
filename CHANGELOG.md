@@ -5,6 +5,29 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.64.0] – 2026-11-22
+### Změněno
+- **Šála má objem i shora a zezadu.** Na záběrech z jiných stran (kvůli budoucím cutscénám) byla šála skoro placatá: všechny jazyky ležely do hloubky v pásu jen asi 20 cm a mířily plochou ke kameře v boku. Shora z ní byla tenká čára, zezadu úzká deska.
+  - Jazyky se teď ke konci rozevřou do hloubky jako vějíř plamene, až 40 cm za pás (`VeilStrands.DepthFan`).
+  - Vnější jazyky se pootočí plochou nahoru a ven (`VeilRenderer.DepthRoll`), takže i shora a zezadu je vidět látka.
+  - Zboku vypadá šála skoro stejně.
+- **Zbraně jsou ze stejné látky jako šála.**
+  - Zbraně byly jasně červené a vypadaly jako tenké šrafované čáry. Shader na nich kreslil výrazný „suchý štětec“. Ten je teď ztlumený (`_WeaponStroke` 0,3) a odstíny jednotlivých pramenů se tolik neliší (`WeaponTintContrast` 0,5). Meč, kopí, bič i luk jsou sytý karmínový pás.
+  - Plameny štítu nevyčnívají 30 cm, ale 15 cm (`ShieldLickReach`). Štít hoří jako pás a už nemá věnec ostrých hrotů.
+- **Žádné úlomky kolem zbraní.** Kouř zbraně a kouř za švihem pouštěly kolem zbraně červené kousky, které vypadaly jako ulámané kusy, stejně jako dřív u volné šály. Oba jsou vypnuté (`weaponRate`, `swingRate`).
+- Rekordér klipů umí kameru i naklonit (`ClipRecorder.OrbitPitch`) kvůli pohledu shora.
+
+### Opraveno
+- Jazyky v hloubkovém vějíři: simulace je táhla zpátky do roviny pásu a pojistka hloubky je nepouštěla tam, kam patří. Teď je hloubková pružina táhne k jejich vlastnímu místu ve vějíři a pojistka počítá s hloubkou vějíře.
+
+### Prověřeno
+- **Zkrácení šály:** šála se zkracuje podle své síly, ne podle životů (ty ukazuje HUD). S poloviční silou má 76 % délky, s vyčerpanou 53 %, a tvar drží.
+- **Výkon při 60 fps v editoru:** simulace šály 1,7 ms, vykreslení 1,9 ms za snímek, nejvýš 2,6 ms a 3,2 ms. Ve hotové hře bývá kód několikrát rychlejší.
+
+### Testy
+- `VeilMotionTests`: šála má objem do hloubky, zbraně jsou ze stejné látky, štít nemá hroty a kolem zbraní nelétají úlomky.
+- Puštěno: všech 574 EditMode testů, z PlayMode test alokací a `CastingPlayTests` (21 testů). Prošly.
+
 ## [0.63.0] – 2026-11-22
 ### Změněno
 - **Šála reaguje na otočku rychleji.** Reakce byla nepřirozeně dlouhá, protože otočka od krku po konec šály trvala 0,9 s. Teď trvá 0,6 s (`VeilSimulation.TurnTravel` 0,2 s, `TurnBlend` 0,4 s). Celá šála je na nové straně za půl vteřiny místo 0,7 s.

@@ -20,8 +20,8 @@ namespace CrimsonVeil.Veil
         [SerializeField] float speedRate = 0f;
         [Tooltip("Share of the loose scarf's emissions that are drops of ink flung off it (the key art's spatter).")]
         [SerializeField, Range(0f, 1f)] float dropShare = DropShare;
-        [SerializeField] float weaponRate = 2f;
-        [SerializeField] float swingRate = 2.5f;
+        [SerializeField] float weaponRate = 0f;   // (off: the flecks of smoke round a weapon read as broken pieces of it, as round the loose scarf)
+        [SerializeField] float swingRate = 0f;    // (off as well: the arc of smoke behind a swing scattered the same broken-looking flecks)
         [SerializeField] float lifetime = 1.1f;
         [SerializeField] Vector2 widthRange = new Vector2(0.015f, 0.045f);
         [SerializeField] float followSharpness = 1.6f;

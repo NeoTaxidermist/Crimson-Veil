@@ -95,6 +95,13 @@ namespace CrimsonVeil.Veil
         Camera viewer;
         float minHalfWidth;
 
+        /// <summary>How much of its layer's own tint a weapon's strand shows: at full, the braid of bright and dark
+        /// strands read as a scribble of lines, not the scarf's cloth set solid.</summary>
+        public const float WeaponTintContrast = 0.5f;
+
+        /// <summary>Radians the tongue fanned out farthest in depth is turned face up (see VeilStrands.DepthFan).</summary>
+        public const float DepthRoll = 0.55f;
+
         /// <summary>The least half width (in pixels) a strand is drawn with on screen.</summary>
         public const float MinVisibleHalf = 0.6f;
 
@@ -545,7 +552,9 @@ namespace CrimsonVeil.Veil
                         simRun[i] = run;
                     }
                 }
-                float strandTwist = branch ? st.phase * 0.25f * turnFacing : 0f;
+                // (the tongues fanned out in depth turn their faces a little up and out: seen from above or behind
+                // they show cloth, not a row of edges)
+                float strandTwist = branch ? (st.phase * 0.25f + DepthRoll * VeilStrands.DepthShare(s, Strands.Length)) * turnFacing : 0f;
                 int baseF = s * perStrand;
                 float lastTwist = 0f, lastCup = 0f;
 
@@ -631,7 +640,7 @@ namespace CrimsonVeil.Veil
                         Vector3 outward = c - shieldCentre;
                         outward.z = 0f;
                         if (outward.sqrMagnitude > 1e-6f)
-                            c += outward.normalized * (lick * (main ? 0.05f : 0.3f) + (main ? 0f : 0.04f * set));
+                            c += outward.normalized * (lick * (main ? 0.05f : ShieldLickReach) + (main ? 0f : 0.04f * set));
                         // ... and it circles the body in three dimensions: tilted, its forward half comes round in
                         // front of the hero and its rear half passes behind him (its outline in the picture unchanged).
                         c.z += ShieldRingDepth(c.x - shieldCentre.x, facing, set);
@@ -863,6 +872,12 @@ namespace CrimsonVeil.Veil
             float gust = 0.55f + 0.45f * Mathf.Sin(f * 31f - time * 6.5f + seed * 17f);
             return Mathf.Clamp01(spike * gust * 1.2f);
         }
+
+        /// <summary>
+        /// How far (m) the shield's tongues of flame lick out from its ring: at 0.3 m the strands' tongues stood out in a
+        /// ring of angular spikes, not a burning band of the scarf's cloth.
+        /// </summary>
+        public const float ShieldLickReach = 0.15f;
 
         /// <summary>Flickering thickness of the burning ring (about 0.65..1.3).</summary>
         public static float ShieldFlicker(float f, float time, float phase)
@@ -1139,7 +1154,7 @@ namespace CrimsonVeil.Veil
             faceAt[f] = new Vector3(nrm.x * sn, nrm.y * sn, -cs);                 // RibbonFace
             cupAt[f] = cup;
             // loose, the layers are one cloth: their tints only hint (stacked at full contrast they read as bands)
-            var col = Color.Lerp(Color.white, st.tint, Mathf.Lerp(LooseTintContrast, 1f, hard)) * (1f + 0.9f * glow);
+            var col = Color.Lerp(Color.white, st.tint, Mathf.Lerp(LooseTintContrast, WeaponTintContrast, hard)) * (1f + 0.9f * glow);
             col.a = alpha;
             col.r *= Mathf.Lerp(0.6f, 1f, vit);
             colors[v] = colors[v + 1] = col;

@@ -69,6 +69,19 @@ namespace CrimsonVeil.Veil
         }
 
         /// <summary>The strands of the drawing (all but the band itself, which is the scarf).</summary>
+        /// <summary>How far (m) the tongues fan out in depth behind the band towards their tails.</summary>
+        public const float DepthFan = 0.4f;
+
+        /// <summary>
+        /// 0..1: how far back in depth strand <paramref name="s"/> of <paramref name="count"/> fans out. They used to lie within
+        /// 0.2 m of one another: from above or behind the scarf was a thin flat sheet; now it has a flame's volume.
+        /// (The under-layer, strand 0, stays just in front of the band.)
+        /// </summary>
+        public static float DepthShare(int s, int count) => s <= VeilRenderer.MainStrand ? 0f : (float)(s - VeilRenderer.MainStrand) / Mathf.Max(1, count - 1 - VeilRenderer.MainStrand);
+
+        /// <summary>Depth (m, + away from the camera) of strand <paramref name="s"/>'s tail behind the band.</summary>
+        public static float DepthOf(int s, int count) => s == 0 ? -0.03f : DepthShare(s, count) * DepthFan;
+
         public static Def[] FromDrawing()
         {
             var all = VeilRenderer.Strands;
@@ -80,7 +93,7 @@ namespace CrimsonVeil.Veil
                 list.Add(new Def
                 {
                     start = Mathf.Max(MinStart, st.start), end = st.end, side = st.side, spread = st.spread, phase = st.phase,
-                    depth = (s - VeilRenderer.MainStrand) * 0.03f,
+                    depth = DepthOf(s, all.Length),
                 });
             }
             return list.ToArray();
@@ -196,7 +209,9 @@ namespace CrimsonVeil.Veil
                     if (sim.DriftDirection != 0f) airV += new Vector3(sim.DriftAt(f) * settings.drift, settings.driftLift, 0f) * Mathf.SmoothStep(0f, 1f, f * 4f);
                     float hold = Mathf.Lerp(HoldRoot, HoldTail, u);
                     Vector3 acc = (airV - vel) * Drag + (home[j] - p) * hold + g;
-                    acc.z += (zRest - p.z) * settings.depthStiffness * 0.3f;
+                    // (towards its own depth in the fan, DepthFan - pulled to the band's plane it fought its place and
+                    // strayed from it)
+                    acc.z += (home[j].z - p.z) * settings.depthStiffness * 0.3f;
                     Vector3 next = p + (p - prev[j]) * 0.985f + acc * (h * h);
                     // hardening into a weapon, the strand is laid back on its place
                     next = Vector3.Lerp(home[j], next, loose);
@@ -232,7 +247,7 @@ namespace CrimsonVeil.Veil
                 RubTogether();
             }
             // (the body last: clamped in depth after it, a strand held close by its place was pushed back into the body)
-            ClampDepth(zRest, settings.maxDepth);
+            ClampDepth(zRest, settings.maxDepth + DepthFan);   // (+ the fan: its farthest tongue lies that much deeper than the band)
             CollideWithBody(sim);
             // nor into walls and low ceilings: there they were hidden in the stone and the drawn tongue fell to pieces
             if (sim.Obstacles.Count > 0)

@@ -507,17 +507,24 @@ namespace CrimsonVeil.Tests
         }
 
         [Test]
-        public void TheGait_StepsAtTheClipsOwnTempo_NotAPatter()
+        public void TheGait_StepsALittleQuickerThanTheCapture_NotAPatter()
         {
-            // at the pace it was captured at, a loop of steps takes the clip's own length
-            Assert.AreEqual(HeroMocap.RunSpeed * 0.7f, HeroMocap.GaitStride(HeroMocap.Run, 0.7f, 2f), 1e-4f);
-            Assert.AreEqual(HeroMocap.SprintSpeed * 0.7f, HeroMocap.GaitStride(HeroMocap.Sprint, 0.7f, 1.8f), 1e-4f);
-            Assert.AreEqual(HeroMocap.WalkSpeed * 1.37f, HeroMocap.GaitStride(HeroMocap.Walk, 1.37f, 1.5f), 1e-4f);
+            // at the pace it was captured at, a loop of steps takes the clip's own length - made a little quicker, so
+            // the foot on the ground is not down longer than the leg can hold it there
+            Assert.AreEqual(HeroMocap.RunSpeed * 0.7f / HeroMocap.RunTempo, HeroMocap.GaitStride(HeroMocap.Run, 0.7f, 2f), 1e-4f);
+            Assert.AreEqual(HeroMocap.SprintSpeed * 0.7f / HeroMocap.RunTempo, HeroMocap.GaitStride(HeroMocap.Sprint, 0.7f, 1.8f), 1e-4f);
+            Assert.AreEqual(HeroMocap.WalkSpeed * 1.37f / HeroMocap.WalkTempo, HeroMocap.GaitStride(HeroMocap.Walk, 1.37f, 1.5f), 1e-4f);
+            Assert.That(HeroMocap.WalkTempo, Is.InRange(1.05f, 1.35f));
+            Assert.That(HeroMocap.RunTempo, Is.InRange(1.05f, 1.35f), "quicker, not hurried");
             // full speed (8 m/s), mostly the sprint: under two loops (four steps) a second, as a sprinter runs
             HeroMocap.GaitMix(8f, out var a, out var b, out float mix);
             float stride = Mathf.Lerp(HeroMocap.GaitStride(a, 0.7f, 2f), HeroMocap.GaitStride(b, 0.7f, 1.8f), mix);
-            Assert.Less(8f / stride, 2f, "no pattering legs");
-            Assert.Greater(8f / stride, 1.2f);
+            Assert.Less(8f / stride, 1.9f, "no pattering legs");
+            Assert.Greater(8f / stride, 1.5f, "nor a slow lope (at 1.4 loops a second a footfall covered 1.2 m of ground)");
+            // a brisk walk (2.4 m/s): about two and a half steps a second
+            HeroMocap.GaitMix(2.4f, out a, out b, out mix);
+            stride = Mathf.Lerp(HeroMocap.GaitStride(a, 1.37f, 1.5f), HeroMocap.GaitStride(b, 0.7f, 2f), mix);
+            Assert.That(2f * 2.4f / stride, Is.InRange(2.1f, 2.8f));
             Assert.AreEqual(2.5f, HeroMocap.GaitStride("Other", 1f, 2.5f), 1e-4f, "anything else: its measured stride");
         }
 
@@ -587,6 +594,28 @@ namespace CrimsonVeil.Tests
                 Assert.That(g.stride, Is.InRange(1f, 3.5f), key + " knows how far a loop of its steps carries him");
                 Assert.That(g.sync, Is.InRange(0f, 1f), key);
             }
+        }
+            [Test]
+        public void AFootCarriesHim_FromWhereItIsSetDown_UntilItIsLiftedOrSwingsForward()
+        {
+            // set down: its sole near the floor and going back under him as he goes forward
+            Assert.IsTrue(HeroAnimator.Carries(false, 0.02f, 2.4f, 2.4f), "the standing foot of a walk");
+            Assert.IsFalse(HeroAnimator.Carries(false, 0.02f, -3f, 2.4f), "low over the floor but swinging forward: not a footfall");
+            Assert.IsFalse(HeroAnimator.Carries(false, 0.02f, 0.2f, 8f), "hardly going back at all at a run: still landing");
+            Assert.IsFalse(HeroAnimator.Carries(false, 0.3f, 6f, 8f), "up in the air");
+            // once down it stays down until it is lifted clear or starts forward again
+            Assert.IsTrue(HeroAnimator.Carries(true, HeroAnimator.FootDownAt + 0.02f, 0.1f, 8f), "the heel coming up off it: still down");
+            Assert.IsFalse(HeroAnimator.Carries(true, HeroAnimator.FootUpAt + 0.02f, 3f, 8f), "lifted");
+            Assert.IsFalse(HeroAnimator.Carries(true, 0.01f, -0.5f, 2.4f), "swinging forward again");
+
+            // it stays where it was set down while the leg reaches it...
+            Assert.AreEqual(0.3f, HeroAnimator.PlantedAt(0.3f, 0f, 0.8f, 0.9f), 1e-5f);
+            Assert.AreEqual(-0.2f, HeroAnimator.PlantedAt(-0.2f, 0.05f, 0.8f, 0.9f), 1e-5f);
+            // ...and no further than the leg stretches: the hip 0.8 m over it, a leg of 0.9 m reaches 0.39 m behind him
+            float span = Mathf.Sqrt(0.9f * HeroAnimator.LegStretch * 0.9f * HeroAnimator.LegStretch - 0.8f * 0.8f);
+            Assert.AreEqual(1f - span, HeroAnimator.PlantedAt(0f, 1f, 0.8f, 0.9f), 1e-4f, "left behind: it slips after him");
+            Assert.AreEqual(1f, HeroAnimator.PlantedAt(0f, 1f, 0.95f, 0.9f), 1e-4f, "the hip too high over it for the leg at all: under the hip");
+            Assert.Less(HeroAnimator.FootSlip, 0.06f, "a foot the leg can hold no longer leaves the ground: it is not dragged");
         }
     }
 }

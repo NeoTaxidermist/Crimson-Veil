@@ -692,9 +692,18 @@ namespace CrimsonVeil.Player
         public static float GaitStride(string key, float clipLength, float measured)
         {
             float pace = key == Walk ? WalkSpeed : key == Run ? RunSpeed : key == Sprint ? SprintSpeed : 0f;
-            if (pace > 0f && clipLength > 0.05f) return pace * clipLength;
+            if (pace > 0f && clipLength > 0.05f) return pace * clipLength / (key == Walk ? WalkTempo : RunTempo);
             return measured > 0.1f ? measured : 2f;
         }
+
+        /// <summary>
+        /// How much quicker than the capture the steps go at the gait's own pace. At the capture's tempo the foot on the
+        /// ground went back under him too slowly for the ground he covers - it slid a quarter of the way at a walk,
+        /// four tenths at a run - and stayed down longer than a leg can reach (1.2 m of ground in one footfall at
+        /// 8 m/s). A little quicker - 1.7 loops of steps a second at full speed, a sprinter's, instead of 1.4 - the
+        /// footfall is short enough for the leg to hold it (HeroAnimator.PlantFeet).
+        /// </summary>
+        public const float WalkTempo = 1.2f, RunTempo = 1.25f;
 
         float GaitTime(in HeroMocapLibrary.Entry e) => Mathf.Repeat(gaitPhase + e.sync, 1f) * Mathf.Max(0.01f, e.clip.length);
 

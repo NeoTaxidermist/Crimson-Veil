@@ -129,6 +129,7 @@ namespace CrimsonVeil.Player
             toeL = Tip("Toe.L", 0.05f, up);
             toeR = Tip("Toe.R", 0.05f, up);
             SetupContacts();
+            SetupFootfalls();
             SetupBodyPoints();
             return spine != null && thighL != null && thighR != null && armL != null && armR != null;
         }
@@ -306,7 +307,12 @@ namespace CrimsonVeil.Player
                 mocap.Apply(HeroMocap.Choose(s, ctx), Time.deltaTime);
             }
             // on the ground the body lies on it: the sole, a heel, a knee, a hand on the floor - not through it, not over it
-            using (CrimsonVeil.Core.Perf.Begin(CrimsonVeil.Core.Perf.Id.Ground)) KeepOnGround(s, Time.deltaTime);
+            using (CrimsonVeil.Core.Perf.Begin(CrimsonVeil.Core.Perf.Id.Ground))
+            {
+                KeepOnGround(s, Time.deltaTime);
+                // ...and the foot that carries him stays where it was set down
+                PlantFeet(s, Time.deltaTime);
+            }
             // and out of the walls: the capsule stops at a wall, the body bent out of it (a lean, a slide, a somersault) not
             // sliding down a wall the braced hand and foot are set on the stone (then the rest is kept out of it)
             if (s.wallSliding) BraceOnWall();
@@ -433,11 +439,14 @@ namespace CrimsonVeil.Player
             float low = SkinLowest();
             bool contact = s.grounded && !s.hanging && !s.climbing && !s.swinging && !float.IsNaN(low);
             float want = 0f;
+            onFloor = false;
             if (contact)
             {
                 var origin = player.transform.position + Vector3.up * 0.5f;
                 if (Physics.Raycast(origin, Vector3.down, out var hit, 1.5f, ~0, QueryTriggerInteraction.Ignore))
                 {
+                    onFloor = true;
+                    floorY = hit.point.y;
                     float gap = hit.point.y - low;   // (the pose is set afresh each frame: no offset in it yet)
                     bool running = s.speed > GroundRunSpeed && !s.crouching && !s.sliding && !s.rolling;
                     want = Mathf.Clamp(gap, running ? 0f : -GroundMaxDrop, GroundMaxLift);
@@ -450,6 +459,171 @@ namespace CrimsonVeil.Player
             if (contact && Physics.Raycast(player.transform.position + Vector3.up * 0.5f, Vector3.down, out var h2, 1.5f, ~0, QueryTriggerInteraction.Ignore))
                 SkinOverFloor = SkinLowest() - h2.point.y;
             else SkinOverFloor = float.NaN;
+        }
+
+        // --- firm footfalls ---------------------------------------------------------------------------------------
+
+        sealed class Footfall
+        {
+            public Transform upper, lower, foot, ball;
+            public int footPoints, toePoints;   // (their skin: indices into contactBones)
+            public bool down;
+            public float heldX;     // where the ball of the foot was set down (world x)
+            public float lag;       // lifted: how far (world x) it still is behind where the pose has it - it catches up
+            public float lastRel;   // where the pose had it last frame, from the body (x)
+            public float slipped;   // metres it has slipped since it was set down (the leg stretched out)
+            public bool early;      // lifted because the leg could hold it no longer (until it has caught up with the pose)
+        }
+
+        readonly Footfall[] footfalls = new Footfall[2];
+        float floorY;
+        bool onFloor;
+
+        /// <summary>A foot counts as set down with its sole within this (m) of the floor, as lifted again over this.
+        /// (Generous: the captured left foot steps a few centimetres higher than the right, and at 3 cm it was hardly
+        /// ever planted. A foot low over the floor in its swing is not taken for a footfall: it is going forward.)</summary>
+        public const float FootDownAt = 0.07f, FootUpAt = 0.11f;
+        /// <summary>Seconds in which a lifted foot catches up with where the pose has it.</summary>
+        public const float FootCatchUp = 0.06f;
+        /// <summary>The share of the leg's length a planted foot may stretch it to: past it the foot slips after him.</summary>
+        public const float LegStretch = 0.99f;
+        /// <summary>The feet are planted from this speed (m/s); a foot is carrying him while it goes back under him at
+        /// this share of his speed at least.</summary>
+        public const float FootfallFrom = 0.4f, FootfallBack = 0.25f;
+        /// <summary>A planted foot that has slipped this far (m) - the leg at full stretch - is lifted; lifted so, it is
+        /// flicked up to this height (m) over where the pose has it while it catches up.</summary>
+        public const float FootSlip = 0.03f, FootFlick = 0.05f;
+
+        /// <summary>Firm footfalls on (off: the feet as the pose has them - to compare).</summary>
+        public bool FirmFootfalls { get; set; } = true;
+
+        /// <summary>Whether the foot (0 left, 1 right) is planted on the floor right now.</summary>
+        public bool FootDown(int side) => footfalls[side] != null && footfalls[side].down;
+        /// <summary>How far (m) the planted foot has slipped since it was set down (the leg at full stretch).</summary>
+        public float FootSlipped(int side) => footfalls[side] != null ? footfalls[side].slipped : 0f;
+
+        void SetupFootfalls()
+        {
+            for (int k = 0; k < 2; k++)
+            {
+                string side = k == 0 ? "L" : "R";
+                var f = new Footfall
+                {
+                    upper = RigJoint.FindDeep(model, "UpperLeg." + side), lower = RigJoint.FindDeep(model, "LowerLeg." + side),
+                    foot = RigJoint.FindDeep(model, "Foot." + side), ball = RigJoint.FindDeep(model, "Toe." + side),
+                    footPoints = System.Array.IndexOf(ContactBones, "Foot." + side), toePoints = System.Array.IndexOf(ContactBones, "Toe." + side),
+                };
+                if (f.ball == null) f.ball = f.foot;
+                footfalls[k] = f.upper != null && f.lower != null && f.foot != null && contactBones != null ? f : null;
+            }
+        }
+
+        /// <summary>The lowest point (world y) of the skin one contact bone carries.</summary>
+        float LowestOf(int c)
+        {
+            var b = contactBones[c];
+            if (b == null) return float.PositiveInfinity;
+            var m = b.localToWorldMatrix;
+            float y = float.PositiveInfinity;
+            foreach (var p in contactPoints[c]) y = Mathf.Min(y, m.MultiplyPoint3x4(p).y);
+            return y;
+        }
+
+        /// <summary>
+        /// Whether a foot carries him: its sole <paramref name="sole"/> m over the floor, going back under him at
+        /// <paramref name="backward"/> m/s in the pose, he moving at <paramref name="speed"/> m/s. Set down
+        /// (<paramref name="down"/>) it stays so until it is lifted clear or swings forward again.
+        /// </summary>
+        public static bool Carries(bool down, float sole, float backward, float speed)
+        {
+            if (down) return sole <= FootUpAt && backward >= 0f;
+            return sole < FootDownAt && backward > FootfallBack * speed;
+        }
+
+        /// <summary>
+        /// Where (x) a foot planted at <paramref name="held"/> can stay, the hip at <paramref name="hipX"/> and
+        /// <paramref name="drop"/> m off it in the other directions, the leg <paramref name="leg"/> m long: where it
+        /// was set down while the leg reaches it, else as near as the leg stretches (it slips after him).
+        /// </summary>
+        public static float PlantedAt(float held, float hipX, float drop, float leg)
+        {
+            float reach = leg * LegStretch;
+            float span = Mathf.Sqrt(Mathf.Max(0f, reach * reach - drop * drop));
+            return Mathf.Clamp(held, hipX - span, hipX + span);
+        }
+
+        /// <summary>
+        /// Firm footfalls: the foot that carries him stays where it was set down, and the leg is turned to reach it.
+        /// The captured gait is played at its own tempo whatever his speed (legs pattering at a run looked wrong), so
+        /// its steps are shorter than the ground he covers: the standing foot slid back under him by a quarter of the
+        /// way - 0.25 m a step at a walk, 0.5 m at a jog. Planted, the step is as long as it needs to be, as far as
+        /// the leg reaches; lifted, the foot catches up with the pose in a moment.
+        /// </summary>
+        void PlantFeet(in HeroState s, float dt)
+        {
+            if (footfalls[0] == null || footfalls[1] == null) return;
+            bool walking = FirmFootfalls && onFloor && s.grounded && s.speed > FootfallFrom && !s.dashing && !s.crouching && !s.sliding && !s.rolling
+                           && !s.hanging && !s.climbing && !s.swinging && !s.wallSliding;
+            float bodyX = player.transform.position.x;
+            float going = Mathf.Sign(player.Velocity.x);
+            for (int k = 0; k < 2; k++)
+            {
+                var f = footfalls[k];
+                // (the ball of the foot is what stays put: the heel comes down onto it and rolls up off it, as the pose has it)
+                Vector3 at = f.foot.position;
+                float ballX = f.ball.position.x;
+                float rel = ballX - bodyX;
+                float backward = dt > 0f ? -(rel - f.lastRel) / dt * going : 0f;   // (> 0: the foot goes back under him)
+                f.lastRel = rel;
+                bool carries = walking && Carries(f.down, Mathf.Min(LowestOf(f.footPoints), LowestOf(f.toePoints)) - floorY, backward, s.speed);
+                if (carries && !f.down && !f.early)
+                {
+                    f.down = true;
+                    f.heldX = ballX + f.lag;
+                    f.slipped = 0f;
+                }
+                else if (!carries && f.down)
+                {
+                    f.down = false;
+                    f.lag = f.heldX - ballX;
+                }
+                Vector3 target = at;
+                if (f.down)
+                {
+                    Vector3 hip = f.upper.position;
+                    float leg = Vector3.Distance(hip, f.lower.position) + Vector3.Distance(f.lower.position, at);
+                    float drop = Mathf.Sqrt((at.y - hip.y) * (at.y - hip.y) + (at.z - hip.z) * (at.z - hip.z));
+                    float ankle = at.x + (f.heldX - ballX);   // (the ankle, with the ball where it was set down)
+                    float x = PlantedAt(ankle, hip.x, drop, leg);
+                    f.slipped += Mathf.Abs(x - ankle);
+                    f.heldX += x - ankle;
+                    target.x = x;
+                    // The leg at full stretch and the foot still down in the pose: it has carried him as far as it can.
+                    // It leaves the ground now, a little early, rather than be dragged after him.
+                    if (f.slipped > FootSlip)
+                    {
+                        f.down = false;
+                        f.lag = f.heldX - ballX;
+                        f.early = true;
+                    }
+                }
+                if (!f.down)
+                {
+                    f.lag = Mathf.Abs(f.lag) < 1e-4f ? 0f : Mathf.Lerp(f.lag, 0f, 1f - Mathf.Exp(-dt / FootCatchUp));
+                    target.x = at.x + f.lag;
+                    // (lifted early it is flicked up off the floor as it catches up, not slid along it)
+                    if (f.early) target.y += FootFlick * Mathf.Clamp01(Mathf.Abs(f.lag) / 0.25f);
+                    if (Mathf.Abs(f.lag) < 0.01f) f.early = false;
+                }
+                if (Mathf.Abs(target.x - at.x) < 1e-4f && Mathf.Abs(target.y - at.y) < 1e-4f) continue;
+                // (the knee keeps bending the way it bends in the pose; the foot keeps its own turn - heel, sole, toe)
+                Quaternion kept = f.foot.rotation;
+                Vector3 knee = f.lower.position;
+                Vector3 bend = knee - 0.5f * (f.upper.position + at);
+                Vector3 pole = knee + (bend.sqrMagnitude > 1e-6f ? bend.normalized : new Vector3(going, 0f, 0f)) * 0.6f;
+                LimbReach.Solve(f.upper, f.lower, f.foot, target, pole, 1f);
+                f.foot.rotation = kept;
+            }
         }
 
         // --- walls -----------------------------------------------------------------------------------------------

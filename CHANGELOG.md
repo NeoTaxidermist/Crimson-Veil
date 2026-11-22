@@ -5,6 +5,23 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.77.0] – 2026-11-22
+### Změněno
+- **Pevné došlapy: stojná noha už při chůzi a běhu neklouže po zemi.**
+  - **Příčina.** Nahrané kroky se hrají ve vlastním tempu a jsou kratší, než kolik hrdina při tom tempu urazí. Stojná noha proto pod ním ujížděla dozadu: při chůzi (2,4 m/s) o 0,22 až 0,26 m na krok, při klusu o 0,11 až 0,15 m, v plném běhu o půl metru a víc.
+  - **Zamčené chodidlo** (`HeroAnimator.PlantFeet`). Noha, která hrdinu nese, zůstane bříškem chodidla tam, kde došlápla, a stehno s holení se k ní dotočí. Pata se přes bříško zvedá tak, jak to má póza. Když už noha na zamčené místo nedosáhne, zvedne se o chvilku dřív, místo aby se táhla po zemi, a ve vzduchu plynule dožene pózu.
+  - **O něco rychlejší kroky** (`HeroMocap.WalkTempo` 1,2 a `RunTempo` 1,25). V plném běhu byla noha na zemi tak dlouho, že by musela pokrýt 1,2 m, kam nedosáhne. Tempo je teď asi 1,7 cyklu kroků za sekundu při 8 m/s místo 1,4 (pořád běžecké, žádné cupitání) a při chůzi asi 2,4 kroku za sekundu.
+
+### Změřeno
+Ve hře, snímek po snímku (24 snímků za sekundu), bříško chodidla vůči zemi:
+- Zamčené chodidlo se za celý klip pohnulo o 0 až 1,3 cm (chůze 0,2 a 1,3 cm, klus 0 a 0,1 cm, běh 0 cm).
+- Dráha chodidla, dokud je nízko nad zemí (zamčené i nezamčené), jako podíl dráhy hrdiny: chůze 3 až 13 % (dřív 22 až 25 %), klus 6 až 12 % (dřív 17 až 21 %), běh 1 až 28 % (dřív 40 až 44 %). Zbytek dělá hlavně levá noha v plném běhu: zvedne se dřív a kus cesty letí nízko nad zemí.
+
+### Testy
+- `HeroMocapTests`: kdy noha hrdinu nese (došlap, zvednutí, švih dopředu) a kam až na zamčené místo dosáhne; kroky jsou o něco rychlejší než nahrávka, ale ne cupitání.
+- `HeroMoveSetPlayTests` (nový): při chůzi i běhu se obě nohy zamykají při každém kroku a zamčené chodidlo zůstává na místě.
+- Puštěno: všech 596 EditMode testů a celá sada 124 PlayMode testů, všechny prošly.
+
 ## [0.76.0] – 2026-11-22
 ### Změněno
 - **Bič teď šlehá jako bič.** Nápřah dozadu přes rameno, prudký hod, smyčka se odvine ke špičce, bič se na okamžik napne rovně na cíl a pak povolí. Dřív to byl pomalý oblouk shora, který skončil na zemi.

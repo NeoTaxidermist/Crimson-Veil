@@ -209,6 +209,46 @@ namespace CrimsonVeil.Tests
         }
 
         [UnityTest]
+        public IEnumerator TheFootThatCarriesHim_StaysWhereItWasSetDown_WalkingAndRunning()
+        {
+            // The captured steps are shorter than the ground he covers at their tempo: the standing foot slid back under
+            // him - 0.25 m a step at a walk, half a metre and more at a run. Planted, it stays where it was set down.
+            var anim = player.GetComponent<HeroAnimator>();
+            var balls = new[] { RigJoint.FindDeep(player.transform, "Toe.L"), RigJoint.FindDeep(player.transform, "Toe.R") };
+            foreach (float move in new[] { 0.3f, 1f })
+            {
+                yield return StartAt(new Vector3(-12f, 0.05f, 0f));
+                input.moveX = move;
+                yield return Wait(0.7f);
+                var was = new bool[2];
+                var last = new float[2];
+                var footfalls = new int[2];
+                float worst = 0f, slid = 0f;
+                float t0 = Time.time, x0 = Pos.x;
+                yield return Wait(1.6f, () =>
+                {
+                    for (int k = 0; k < 2; k++)
+                    {
+                        bool down = anim.FootDown(k);
+                        float x = balls[k].position.x;
+                        if (down && was[k]) { worst = Mathf.Max(worst, Mathf.Abs(x - last[k])); slid += Mathf.Abs(x - last[k]); }
+                        if (down && !was[k]) footfalls[k]++;
+                        was[k] = down;
+                        last[k] = x;
+                    }
+                });
+                float covered = Mathf.Abs(Pos.x - x0);
+                Debug.Log($"[footfalls] move {move}: {covered:F1} m in {Time.time - t0:F1} s, footfalls {footfalls[0]}+{footfalls[1]}, planted feet moved {slid:F3} m in all, {worst * 100f:F1} cm at most in a frame");
+                Assert.GreaterOrEqual(footfalls[0], 2, $"move {move}: the left foot is set down at every step");
+                Assert.GreaterOrEqual(footfalls[1], 2, $"move {move}: and the right");
+                Assert.Less(worst, 0.03f, $"move {move}: a planted foot stays put from frame to frame");
+                Assert.Less(slid, 0.04f * (footfalls[0] + footfalls[1]), $"move {move}: and through the whole footfall");
+                Assert.Greater(covered, move < 0.5f ? 3f : 10f, "while he covers ground");
+            }
+            input.moveX = 0f;
+        }
+
+        [UnityTest]
         public IEnumerator StandingCrouchingCrawling_TheBodyLiesOnTheFloor_NotInItNorOverIt()
         {
             yield return StartAt(new Vector3(-12f, 0.05f, 0f));

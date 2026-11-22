@@ -5,6 +5,21 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.75.0] – 2026-11-22
+### Změněno
+- **Vlasy hrdiny: nový tvar podle konceptu a nový pohyb.**
+  - **Tvar** (`ArtSource/hero_build.py`). Prameny už nejsou dlouhé rovné jehly do všech stran. Každý vyrůstá z hmoty vlasů ven a stáčí se po směru, kterým je vítr češe: dozadu a mírně nahoru, ofina dopředu přes čelo. Prostřední řada končí tam, kde má špičky obrys z konceptu, prameny po stranách se rozbíhají do šířky. Zepředu a ze tří čtvrtin má hlava objem nad ušima, dřív to byly tři rohy na přilbě. Pramenů je 54 a každý má vlastní řetízek tří kostí podél svého zakřivení.
+  - **Hmota vlasů patří k hlavě.** Dřív byla zčásti navázaná na pružiny pramenů, takže se temeno při každém kroku boulilo a propadalo.
+  - **Pohyb** (`SpringBones`). Každý pramen drží své místo v účesu: u kořene je pevný (12°), u špičky volný (40°) a nemůže se sklopit do lebky. S větrem pohybu se naklání (při běhu asi o 34°, při pádu se vlasy zvedají) a špička se mu třepetá, v klidu pomalu, v běhu rychle. Vítr lebku obtéká, takže ofina se v běhu zvedá a nejde přes obličej. Pružiny k tomu přidávají jen setrvačnost a dokmit.
+  - Dřív byly vlasy jen na měkkých pružinách bez mezí a vítr na ně působil jako síla. Každý krok jimi házel: část pramenů se sklopila do lebky, část trčela dopředu přes obličej a hlava měnila tvar snímek od snímku (za běhu z ní byla hladká přilba).
+
+### Testy
+- `HeroHairTests` (nové): náklon pramene podle rychlosti a jeho strop, vítr obtéká lebku (ofina se zvedá, pramen vzadu vlaje), třepetání v klidu a v běhu, nastavení vlasů v herním prefabu.
+- `SpringChainSolverTests`: pramen je pevný u kořene a volný u špičky.
+- `HeroModelTests`: každý pramen má vlastní řetízek tří kostí z hlavy; vlasy jsou sčesané dozadu a mají šířku na obě strany.
+- `HeroMoveSetPlayTests`: vlasy v běhu, otočce, skoku se saltem a po dopadu drží účes (žádný pramen se nepřetočí ani neskončí v lebce), v běhu jsou sčesané dozadu a po otočce na druhou stranu.
+- Puštěno: všech 592 EditMode testů a celá sada 123 PlayMode testů. Napoprvé prošlo 122, neprošel jen nový test vlasů kvůli vlastnímu špatnému měřítku; po jeho opravě prošel spolu s testem alokací.
+
 ## [0.74.0] – 2026-11-22
 ### Změněno
 - **Šála je teď jedna plynulá křivka.** Na volném prostranství se nezalamuje vůbec, u překážek zbývá jen krátké otření špičky o roh (čísla níže). Místo dalšího záplatování jsem přestavěl to, podle čeho se látka řídí. Zásada: tvar, ke kterému se látka vede, je hladký a přesně tak dlouhý jako šála už tím, jak vzniká.

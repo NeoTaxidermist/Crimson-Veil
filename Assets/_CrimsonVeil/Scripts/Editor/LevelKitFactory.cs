@@ -145,7 +145,9 @@ namespace CrimsonVeil.EditorTools
                 SetRef(anim, "veil", veil);
                 SetRef(anim, "model", hero.transform);
                 SetRef(anim, "veilAnchor", anchor);
-                SetRef(player.AddComponent<SpringBones>(), "root", hero.transform);
+                var hair = player.AddComponent<SpringBones>();
+                SetRef(hair, "root", hero.transform);
+                HeroHair(hair);
                 HeroCloth(player, hero.transform);
                 SetRef(player.AddComponent<HeroFace>(), "model", hero.transform);   // the face (cutscenes)
                 // motion capture over the procedural animation (when the baked clips are there)
@@ -163,6 +165,32 @@ namespace CrimsonVeil.EditorTools
                 SetRef(veil, "stringMaterial", M.rope);
             }
             return player;
+        }
+
+        /// <summary>
+        /// The hero's hair (Hair.N chains): each lock firm where it grows and loose at its tip, leaning with the wind
+        /// of his motion and fluttering, kept out of the skull. (With the springs' defaults - soft, no limit, a force
+        /// for the wind - the locks were flung about by every step and the head changed its shape as he ran.)
+        /// </summary>
+        public static void HeroHair(SpringBones hair)
+        {
+            var so = new SerializedObject(hair);
+            so.FindProperty("prefix").stringValue = "Hair.";
+            so.FindProperty("stiffness").floatValue = 20f;
+            so.FindProperty("tipStiffness").floatValue = 8f;
+            so.FindProperty("damping").floatValue = 0.84f;
+            so.FindProperty("gravity").vector3Value = new Vector3(0f, -2f, 0f);
+            so.FindProperty("drag").floatValue = 0f;        // (the wind leans the locks: lean, below)
+            so.FindProperty("maxBend").floatValue = 12f;
+            so.FindProperty("tipBend").floatValue = 40f;
+            so.FindProperty("lean").floatValue = 7f;
+            so.FindProperty("maxLean").floatValue = 50f;
+            so.FindProperty("flutter").floatValue = 1.6f;
+            so.FindProperty("flutterPerSpeed").floatValue = 0.9f;
+            so.FindProperty("maxFlutter").floatValue = 9f;
+            so.FindProperty("coreRadius").floatValue = 0.1f;
+            so.FindProperty("coreOffset").floatValue = 0.11f;
+            so.ApplyModifiedPropertiesWithoutUndo();
         }
 
         /// <summary>

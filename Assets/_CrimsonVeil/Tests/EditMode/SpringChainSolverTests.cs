@@ -82,5 +82,25 @@ namespace CrimsonVeil.Tests
             }
             Assert.Greater(Vector3.Angle(Vector3.down, s.Positions[1] - s.Positions[0]), 20f, "(it was blown hard to the side)");
         }
+            [Test]
+        public void ALockOfHair_IsFirmWhereItGrows_AndLooseAtItsTip()
+        {
+            Assert.AreEqual(12f, SpringChainSolver.BendLimit(1, 4, 12f, 40f), 1e-4f, "the first segment: the root's limit");
+            Assert.AreEqual(40f, SpringChainSolver.BendLimit(3, 4, 12f, 40f), 1e-4f, "the last: the tip's");
+            Assert.AreEqual(26f, SpringChainSolver.BendLimit(2, 4, 12f, 40f), 1e-4f, "eased between them");
+            Assert.AreEqual(12f, SpringChainSolver.BendLimit(3, 4, 12f, 0f), 1e-4f, "no limit of its own at the tip: the same all along");
+
+            // a lock standing up, thrown hard sideways: each segment stays within its own limit of its rest direction
+            var rest = new[] { Vector3.zero, new Vector3(0f, 0.05f, 0f), new Vector3(0f, 0.1f, 0f), new Vector3(0f, 0.15f, 0f) };
+            var chain = new SpringChainSolver(rest) { Stiffness = 2f, TipStiffness = 1f, Damping = 0.95f, Gravity = new Vector3(400f, 0f, 0f), MaxBend = 12f, TipBend = 40f };
+            for (int f = 0; f < 60; f++) chain.Step(1f / 60f, rest);
+            for (int i = 1; i < chain.Count; i++)
+            {
+                float bent = Vector3.Angle(rest[i] - rest[i - 1], chain.Positions[i] - chain.Positions[i - 1]);
+                Assert.LessOrEqual(bent, SpringChainSolver.BendLimit(i, chain.Count, 12f, 40f) + 0.1f, "segment " + i);
+            }
+            Assert.Greater(Vector3.Angle(rest[3] - rest[2], chain.Positions[3] - chain.Positions[2]), 30f, "the tip swings far");
+            Assert.Less(Vector3.Angle(rest[1] - rest[0], chain.Positions[1] - chain.Positions[0]), 12.2f, "the root hardly at all");
+        }
     }
 }

@@ -1090,36 +1090,16 @@ for name, head, tail, parent in FINGER_BONES:  # (parents come before their chil
     bn.head, bn.tail = head, tail
     bn.parent = eb[parent]
     bn.use_connect = parent.startswith("Finger.") or parent.startswith("Thumb.")
-chains = []  # (angle, root radius, tip radius, [bone names])
-for n, (key, (tip, r_tip, ang)) in enumerate(sorted(bins.items())):
-    d = (tip - centre).normalized()
-    root = centre + d * (SKULL_R * 0.8)
-    parent, names = eb["Head"], []
-    for k in range(3):
-        bn = eb.new("Hair.%d.%d" % (n, k))
-        bn.head, bn.tail = root.lerp(tip, k / 3), root.lerp(tip, (k + 1) / 3)
-        bn.parent, bn.use_connect = parent, k > 0
-        parent = bn
-        names.append(bn.name)
-    chains.append((ang, SKULL_R * 0.8, r_tip, names))
+# (the hair's spring chains are made with its locks, further down: one chain to every lock, along its curve)
+chains = []  # (angle, [bone names]) of the locks in the middle row - the ones that draw his side outline
 with bpy.context.temp_override(**_ctx):
     bpy.ops.object.mode_set(mode='OBJECT')
 
 
 def head_hair_w(p, s):
-    rel = p - centre
-    rel.x = 0
-    r = rel.length
-    if r < SKULL_R or not chains:
-        return {"Head": 1.0}
-    ang = math.degrees(math.atan2(rel.z, -rel.y))
-    best = min(chains, key=lambda c: abs((ang - c[0] + 180) % 360 - 180))
-    if abs((ang - best[0] + 180) % 360 - 180) > 24:
-        return {"Head": 1.0}
-    t = max(0.0, min(0.999, (r - best[1]) / max(best[2] - best[1], 1e-3)))
-    w = max(0.0, min(1.0, (r - SKULL_R) / 0.03))
-    bone = best[3][int(t * 3)]
-    return {bone: 1.0} if w >= 1 else {"Head": 1 - w, bone: w}
+    # The mass of hair is part of the head: only the locks swing. (Skinned to the chains near it, the crown bulged and
+    # dented with every step - the head changed its shape as he ran.)
+    return {"Head": 1.0}
 
 
 # The head itself: a sculpted skull and face, measured against the concept's side outline (the face's front line:
@@ -1417,40 +1397,129 @@ for k in range(_N):
     _face_out((_poles[1], _grid[k1][-1], _grid[k][-1]), Vector((1, 0, 0)))
 
 
-def lock(root, tip, width, thick, bend):
-    """A lock of hair: flat-ish, tapering to a point, bowed a little (bend: metres, + = upwards/outwards)."""
-    d = tip - root
-    side = d.cross(Vector((1, 0, 0)))
-    side = side.normalized() if side.length > 1e-6 else Vector((0, 0, 1))
-    secs = []
-    for k in range(10):
-        t = k / 9
-        p = root + d * t + side * (bend * math.sin(math.pi * t))
-        secs.append((p, thick * (1 - t) ** 0.8 + 0.001, width * (1 - t) ** 1.1 + 0.0012))
-    loft(secs, head_hair_w, n=10)
+# The locks. The drawing's hair is wind-swept: a full mass with short, pointed locks combed back and a little up, a
+# fringe falling forward over the brow, wisps standing off the crown. So every lock is a curved, tapering strand that
+# leaves the mass outwards and is carried round towards the way the wind combs it (SWEEP); the middle row ends where
+# the drawing's outline has its tips, and beside it locks fan out to the sides, shorter, so that from the front and
+# from three quarters the head has tufts over the ears and a crown - not three horns on a helmet. Each lock has its
+# own chain of three bones along its curve (Hair.N.0..2), so each sways on its own.
+SWEEP = Vector((0.0, 0.93, 0.37))      # back and a little up (he faces -Y)
+FRINGE = Vector((0.0, -0.75, -0.66))   # the fringe falls forward and down over the brow
+_tips = sorted((ang, r_tip) for key, (tip, r_tip, ang) in bins.items())
 
 
-for ang, r_root, r_tip, names in chains:
-    tip = rig.data.bones[names[-1]].tail_local.copy()
-    d = (tip - centre).normalized()
-    k = int(((ang + 360) % 360) // 3) % _N
-    root = centre + d * (HAIR_R[k] * 0.62)
-    surf = centre + d * HAIR_R[k]
-    tip = surf + (tip - surf) * 1.7  # long, thin wisps (the drawing's ends fade out lighter, longer than they read)
-    bend = -0.016 if 60 < ang < 200 else 0.01
-    if -20 <= ang < HAIRLINE[1]:
-        # the fringe: the locks grow from the hairline (not out of the brow) and spike forward and up like the
-        # drawing's - three to each forward tip, the outer ones shorter and fanned to the sides
-        ha = math.radians(HAIRLINE[1] - 4)
-        hd = Vector((0.0, -math.cos(ha), math.sin(ha)))
-        hroot = centre + hd * (skull_r(HAIRLINE[1] - 4) - 0.004)
-        for sx, reach in ((0.0, 1.0), (1.0, 0.8), (-1.0, 0.8)):
-            lock(hroot + Vector((sx * 0.035, 0, 0)), hroot.lerp(tip, reach) + Vector((sx * 0.055, 0, 0)), 0.04, 0.02, bend)
-        continue
-    lock(root, tip, 0.046, 0.024, bend)
-    # beside the locks swept back, a lock to each side: they read from the front as well
+def _hair_r(a_deg):
+    return HAIR_R[int(((a_deg + 360) % 360) // 3) % _N]
+
+
+def _reach(a_deg):
+    """How far past the mass the drawing's locks reach at angle a (between its tips: the nearer tip's, a little less)."""
+    best = min(_tips, key=lambda t: abs((a_deg - t[0] + 180) % 360 - 180))
+    gap = abs((a_deg - best[0] + 180) % 360 - 180)
+    return max(0.035, (best[1] - _hair_r(best[0])) * max(0.55, 1.0 - gap / 40.0))
+
+
+def _scalp(a_deg, ph):
+    """A point on the mass at angle a round the head (0 = forward, 90 = up) and ph across it (0 = the middle,
+    +-pi/2 = the sides), and the way out of it there."""
+    a = math.radians(a_deg)
+    d = Vector((0.0, -math.cos(a), math.sin(a)))
+    R = _hair_r(a_deg)
+    W = min(0.09, 0.62 * R + 0.012)
+    pt = centre + d * (R * math.cos(ph)) + Vector((W * math.sin(ph), 0, 0))
+    out = (d * (W * math.cos(ph)) + Vector((R * math.sin(ph), 0, 0))).normalized()
+    return pt, out
+
+
+LOCKS = []   # dict(pts=[...], width=, thick=, names=[...], ang=, mid=)
+
+
+def plan_lock(a_deg, ph, length, comb, width=0.04, thick=0.028, lift=0.0):
+    """A lock rooted at (a, ph) on the mass, `length` long: it starts outwards and is combed (0..1) towards the sweep -
+    or, in front of the crown, towards the fringe's fall. lift (radians) raises the tip (the wisps on the crown)."""
+    surf, out = _scalp(a_deg, ph)
+    root = centre + (surf - centre) * 0.72
+    a = (a_deg + 180) % 360 - 180
+    front = max(0.0, min(1.0, (HAIRLINE[1] + 8 - a) / 30.0)) if a > -30 else 1.0
+    comb_to = (SWEEP * (1 - front) + FRINGE * front).normalized()
+    # to the sides the locks are combed outwards as well: they stand off the head over the ears
+    comb_to = (comb_to + Vector((math.sin(ph) * 0.55, 0, 0))).normalized()
+    start = (out * (1 - 0.35 * comb) + comb_to * (0.35 * comb)).normalized()
+    reach = (surf - root).length + length
+    pts = []
+    for k in range(11):
+        t = k / 10
+        q = root + start * (reach * t) + (comb_to - start * comb_to.dot(start)) * (comb * reach * 0.55 * t * t)
+        q.z += math.sin(lift) * reach * t * t * 0.5
+        pts.append(q)
+    LOCKS.append(dict(pts=pts, width=width, thick=thick, ang=a_deg, mid=abs(ph) < 1e-6, names=[]))
+
+
+random.seed(7)
+for n, (ang, r_tip) in enumerate(_tips):
+    L = (r_tip - _hair_r(ang)) * 1.15 + 0.012
+    crown = 60 < ang < 110
+    if crown:
+        L *= 0.8      # (the wisps on the crown lie back: standing up they were a horn seen from the front)
+    if ang > 185 or ang < -150:
+        L *= 0.65     # (down the nape the locks are short: long, one hung behind the neck like a tail)
+    elif 110 <= ang <= 185:
+        L *= 1.3      # (the locks swept back are the long ones: they stream behind him)
+    # the middle row: the drawing's own tips
+    plan_lock(ang, 0.0, L, 0.9 if crown else 0.75, width=0.05, thick=0.03)
+    # beside it, to either side: a little off its angle, shorter, fanned out
     for sx in (1, -1):
-        lock(root + Vector((sx * 0.04, 0, 0)), root.lerp(tip, 0.82) + Vector((sx * 0.06, 0, 0)), 0.04, 0.022, bend)
+        # (close to its angle: seen from the side they lie behind it and make it fuller, not a second row of spikes)
+        plan_lock(ang + sx * (3 if n % 2 else -3), sx * 0.62, L * random.uniform(0.74, 0.88), 0.72, width=0.038, thick=0.026)
+# the tufts over the ears and round the back of the head, low on the sides
+for a_deg in (66, 92, 118, 144, 170):
+    for sx in (1, -1):
+        plan_lock(a_deg + sx * 5, sx * 1.12, _reach(a_deg) * random.uniform(0.5, 0.68), 0.8, width=0.034, thick=0.024)
+# short wisps between the locks of the middle row, on the crown and down the back
+for a_deg in (68, 104):
+    plan_lock(a_deg, random.choice((-0.3, 0.3)), _reach(a_deg) * 0.5, 0.7, width=0.028, thick=0.02, lift=0.15)
+
+
+def _hair_bones(eb):
+    for n, lk in enumerate(LOCKS):
+        parent = eb["Head"]
+        for k in range(3):
+            bn = eb.new("Hair.%d.%d" % (n, k))
+            bn.head, bn.tail = lk["pts"][1 + k * 3], lk["pts"][1 + (k + 1) * 3]
+            bn.parent, bn.use_connect = parent, k > 0
+            parent = bn
+            lk["names"].append(bn.name)
+        if lk["mid"]:
+            chains.append((lk["ang"], lk["names"]))
+
+
+_rig_edit(_hair_bones)
+
+
+def lock_w(names):
+    """Skin of a lock: its root on the head, then each third on its bone, blended across the joints so it bends."""
+    def w(p, s):
+        if s <= 0.1:
+            return {"Head": 1.0}
+        x = min(2.999, (s - 0.1) / 0.9 * 3)
+        i, fr = int(x), x - int(x)
+        if fr < 0.3 and i > 0:
+            u = 0.5 + fr / 0.6
+            return {names[i - 1]: 1 - u, names[i]: u}
+        if fr > 0.7 and i < 2:
+            u = (fr - 0.7) / 0.6
+            return {names[i]: 1 - u, names[i + 1]: u}
+        return {names[i]: 1.0}
+    return w
+
+
+for lk in LOCKS:
+    secs = []
+    for k, q in enumerate(lk["pts"]):
+        t = k / 10
+        taper = (1 - t) ** 1.1
+        secs.append((q, lk["thick"] * taper + 0.0008, lk["width"] * taper + 0.001))
+    loft(secs, lock_w(lk["names"]), n=8)
 
 # ---------------------------------------------------------------- mesh object
 old = bpy.data.objects.get("Hero")
@@ -1524,7 +1593,7 @@ if _chest is not None:
                     _upper.add([v.index], w * u, 'REPLACE')
 
 bpy.ops.wm.save_as_mainfile(filepath=ROOT + r"\ArtSource\Hero.blend")
-result = {"verts": len(verts), "faces": len(faces), "hair_chains": len(chains), "chain_angles": [round(c[0]) for c in chains],
+result = {"verts": len(verts), "faces": len(faces), "hair_chains": len(LOCKS), "chain_angles": [round(c[0]) for c in chains],
           "boot": round(_boot_len, 3),
           "cloth_bones": len([b for b in rig.data.bones if b.name.startswith("Cloth.") or b.name.startswith("Sash.")]),
           "face_bones": sorted(b.name for b in rig.data.bones if b.name.startswith(FACE_BONES)),

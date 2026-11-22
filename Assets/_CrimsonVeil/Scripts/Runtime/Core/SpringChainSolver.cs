@@ -19,6 +19,14 @@ namespace CrimsonVeil.Core
         public Vector3 Gravity = new Vector3(0f, -4f, 0f);
         /// <summary>Furthest (degrees) a segment may swing from its rest direction; 0 = no limit. Cloth stays cloth.</summary>
         public float MaxBend = 0f;
+        /// <summary>The same limit at the chain's tip: it eases from <see cref="MaxBend"/> at the first segment to this
+        /// (0 = MaxBend all along). A lock of hair is firm where it grows and loose at its end.</summary>
+        public float TipBend = 0f;
+
+        /// <summary>The furthest (degrees) segment <paramref name="i"/> (1 = the first) of a chain of <paramref name="count"/>
+        /// points may swing from its rest direction.</summary>
+        public static float BendLimit(int i, int count, float maxBend, float tipBend)
+            => tipBend > 0f && count > 2 ? Mathf.Lerp(maxBend, tipBend, (i - 1f) / (count - 2f)) : maxBend;
 
         public int Count => Positions.Length;
 
@@ -101,7 +109,7 @@ namespace CrimsonVeil.Core
                 {
                     Vector3 r = rest[i] - rest[i - 1];
                     if (r.sqrMagnitude > 1e-10f)
-                        dir = Vector3.RotateTowards(r.normalized, dir, MaxBend * Mathf.Deg2Rad, 0f);
+                        dir = Vector3.RotateTowards(r.normalized, dir, BendLimit(i, n, MaxBend, TipBend) * Mathf.Deg2Rad, 0f);
                 }
                 Positions[i] = Positions[i - 1] + dir * lengths[i - 1];
             }

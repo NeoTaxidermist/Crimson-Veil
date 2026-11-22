@@ -59,8 +59,44 @@ namespace CrimsonVeil.Tests
         [Test]
         public void WindsweptHair_IsMadeOfSpringChains()
         {
-            var chains = Hero().GetComponentsInChildren<Transform>(true).Count(t => t.name.StartsWith("Hair.") && t.name.EndsWith(".0"));
-            Assert.GreaterOrEqual(chains, 8, "the mop's spikes (traced from the concept) each swing on their own");
+            var bones = Hero().GetComponentsInChildren<Transform>(true);
+            var roots = bones.Where(t => t.name.StartsWith("Hair.") && t.name.EndsWith(".0")).ToArray();
+            Assert.GreaterOrEqual(roots.Length, 40, "every lock swings on a chain of its own (the middle row traced from the concept, locks fanned out beside it)");
+            var head = bones.First(t => t.name == "Head");
+            foreach (var r in roots)
+            {
+                Assert.AreSame(head, r.parent, r.name + " grows from the head");
+                Assert.AreEqual(1, r.childCount, r.name + ": three bones in a row");
+                Assert.AreEqual(1, r.GetChild(0).childCount, r.name);
+            }
+        }
+
+        [Test]
+        public void TheHair_IsCombedBack_AndHasWidth_NotThreeHornsSeenFromTheFront()
+        {
+            // (the model faces -z in Unity's space after import: its back is +z, its left +x)
+            var bones = Hero().GetComponentsInChildren<Transform>(true);
+            var head = bones.First(t => t.name == "Head");
+            var roots = bones.Where(t => t.name.StartsWith("Hair.") && t.name.EndsWith(".0")).ToArray();
+            Vector3 fwd = Hero().transform.InverseTransformDirection(bones.First(t => t.name == "Toe.L").position - bones.First(t => t.name == "Foot.L").position);
+            fwd.y = 0f; fwd.Normalize();
+            int back = 0, left = 0, right = 0;
+            float widest = 0f;
+            foreach (var r in roots)
+            {
+                Transform tip = r.GetChild(0).GetChild(0);
+                Vector3 along = Hero().transform.InverseTransformDirection(tip.position - r.position).normalized;
+                if (Vector3.Dot(along, fwd) < -0.15f) back++;
+                float side = Hero().transform.InverseTransformPoint(tip.position).x;
+                if (side > 0.07f) left++;
+                if (side < -0.07f) right++;
+                widest = Mathf.Max(widest, Mathf.Abs(side));
+            }
+            Assert.Greater(back, roots.Length / 2, "most of the locks are swept back");
+            Assert.GreaterOrEqual(left, 6, "locks stand off the head over his left ear");
+            Assert.GreaterOrEqual(right, 6, "and over his right");
+            // (measured at the locks' last joints, two thirds of the way along: the skull is 0.078 m to the side there)
+            Assert.Greater(widest, 0.085f, "the hair is wider than the skull");
         }
 
         [Test]
@@ -197,7 +233,7 @@ namespace CrimsonVeil.Tests
         public void Hair_IsOneMassWithAFewLocks_NotAHedgehog()
         {
             var mesh = Hero().GetComponentInChildren<SkinnedMeshRenderer>().sharedMesh;
-            Assert.Less(mesh.vertexCount, 45000, "the hair is a smooth mass and ~9 locks (hundreds of strands blew it up)");
+            Assert.Less(mesh.vertexCount, 45000, "the hair is a smooth mass and some fifty locks (hundreds of strands blew it up)");
         }
 
         [Test]

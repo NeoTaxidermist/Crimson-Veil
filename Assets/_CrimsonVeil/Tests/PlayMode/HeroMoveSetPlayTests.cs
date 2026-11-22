@@ -277,6 +277,68 @@ namespace CrimsonVeil.Tests
         }
 
         [UnityTest]
+        public IEnumerator TheHair_KeepsItsStyle_LeansBackAtARun_AndSwingsRoundInATurn()
+        {
+            yield return StartAt(new Vector3(-12f, 0.05f, 0f));
+            SpringBones hair = null;
+            foreach (var sb in player.GetComponents<SpringBones>()) if (sb.Prefix == "Hair.") hair = sb;
+            Assert.IsNotNull(hair, "the hair's springs");
+            int locks = hair.ChainCount;
+            Assert.GreaterOrEqual(locks, 40, "a chain to every lock");
+            // Every lock keeps its place in the hairstyle, whatever he does. (On soft springs with no limit they were
+            // flung about by every step: some folded into the skull, some stood forward over the face - the head
+            // changed its shape as he ran.)
+            var combed = new Vector3[locks];   // each lock's direction (root to last joint) as it is combed, in the head's space
+            var clear = new float[locks];      // how far its last joint stands off the middle of the skull, combed
+            bool styled = false;
+            float furthest = 0f;   // the furthest (degrees) a lock has turned from the way it is combed
+            float sunk = 0f;       // the deepest (m) the end of a lock has been inside the skull (0.1 m round its middle; less, if it is combed closer)
+            float back = 0f;       // how far back (-x) the locks point, on average
+            Action look = () =>
+            {
+                Vector3 core = head.position + head.up * 0.11f;
+                float sum = 0f;
+                for (int c = 0; c < locks; c++)
+                {
+                    var bones = hair.ChainBones(c);
+                    Vector3 end = bones[bones.Length - 1].position;
+                    Vector3 along = (end - bones[0].position).normalized;
+                    Vector3 inHead = head.InverseTransformDirection(along);
+                    if (!styled) { combed[c] = inHead; clear[c] = Vector3.Distance(end, core); }
+                    furthest = Mathf.Max(furthest, Vector3.Angle(combed[c], inHead));
+                    sunk = Mathf.Max(sunk, Mathf.Min(clear[c], 0.1f) - Vector3.Distance(end, core));
+                    sum -= along.x;
+                }
+                styled = true;
+                back = sum / locks;
+            };
+            yield return Wait(0.5f, look);
+            float standing = back;
+            Assert.Less(furthest, 12f, "standing still the locks only sway");
+            input.moveX = 1f;
+            yield return Wait(1.3f, look);
+            Assert.Greater(Speed, 6f, "at a run");
+            Assert.Less(hair.ChainWind(0).x, -4f, "the wind of the run in his hair");
+            Assert.Greater(back, standing + 0.08f, "the locks are swept back by it");
+            input.moveX = -1f;
+            yield return Wait(1.2f, look);
+            Assert.Less(controller.Velocity.x, -6f, "running back");
+            Assert.Greater(-back, 0.05f, "and swept the other way now");
+            // a leap, a somersault and the landing shake them too
+            input.jump = true; input.jumpHeld = true;
+            yield return Wait(0.25f, look);
+            input.jump = true;
+            yield return Wait(0.5f, look);
+            input.jumpHeld = false;
+            yield return Until(() => controller.Motor.IsGrounded, 3f, look);
+            input.moveX = 0f;
+            yield return Wait(0.6f, look);
+            Assert.Less(furthest, 80f, "no lock was ever thrown right over (they stood forward over the face)");
+            // (a centimetre or two is the bones' aim: they are turned towards where the springs put the next joint)
+            Assert.Less(sunk, 0.03f, "nor folded into the skull");
+        }
+
+        [UnityTest]
         public IEnumerator TheScarf_IsWoundRoundTheNeck_AndFallsAgainstTheBody_RunningJumpingAndInTheSomersault()
         {
             // the scarf as 3D cloth on the real hero: its body as capsules round his bones (VeilController), the wrap

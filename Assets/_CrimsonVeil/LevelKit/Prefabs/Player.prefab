@@ -375,14 +375,22 @@ MonoBehaviour:
   m_EditorClassIdentifier: CrimsonVeil.Runtime::CrimsonVeil.Player.SpringBones
   root: {fileID: 2239127941129956613}
   prefix: Hair.
-  stiffness: 9
-  tipStiffness: 2.2
-  damping: 0.86
-  gravity: {x: 0, y: -5, z: 0}
-  drag: 0.6
+  stiffness: 20
+  tipStiffness: 8
+  damping: 0.84
+  gravity: {x: 0, y: -2, z: 0}
+  drag: 0
   colliderBones: []
   colliderRadius: 0.09
-  maxBend: 0
+  maxBend: 12
+  tipBend: 40
+  lean: 7
+  maxLean: 50
+  flutter: 1.6
+  flutterPerSpeed: 0.9
+  maxFlutter: 9
+  coreRadius: 0.1
+  coreOffset: 0.11
 --- !u!114 &336091914274216243
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -409,6 +417,14 @@ MonoBehaviour:
   - LowerLeg.R
   colliderRadius: 0.08
   maxBend: 32
+  tipBend: 0
+  lean: 0
+  maxLean: 34
+  flutter: 0
+  flutterPerSpeed: 0
+  maxFlutter: 9
+  coreRadius: 0
+  coreOffset: 0.11
 --- !u!114 &8432667715012866920
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -433,6 +449,14 @@ MonoBehaviour:
   - UpperLeg.R
   colliderRadius: 0.11
   maxBend: 0
+  tipBend: 0
+  lean: 0
+  maxLean: 34
+  flutter: 0
+  flutterPerSpeed: 0
+  maxFlutter: 9
+  coreRadius: 0
+  coreOffset: 0.11
 --- !u!114 &9039647577719511093
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -461,6 +485,7 @@ MonoBehaviour:
   library: {fileID: 11400000, guid: b69b0150234d99c45b328ab5338296b7, type: 2}
   model: {fileID: 2239127941129956613}
   strength: 1
+  styleLayer: 1
 --- !u!1 &6980102738665917204
 GameObject:
   m_ObjectHideFlags: 0

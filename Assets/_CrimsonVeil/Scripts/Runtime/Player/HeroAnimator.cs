@@ -130,6 +130,26 @@ namespace CrimsonVeil.Player
             toeR = Tip("Toe.R", 0.05f, up);
             SetupContacts();
             SetupFootfalls();
+            lookHead = Find("Head"); lookNeck = Find("Neck"); lookChest = Find("UpperChest");
+            // (the way the face looks, in the head's own space: in the pose he is built in the eyes' bones point
+            // straight ahead - later the eyes move in the head, so the head is what is measured)
+            var eyeL = Find("Eye.L"); var eyeR = Find("Eye.R");
+            hasFace = lookHead != null && eyeL != null && eyeR != null;
+            if (hasFace)
+            {
+                Vector3 ahead = ((eyeL.up + eyeR.up) * 0.5f).normalized;
+                faceAhead = Quaternion.Inverse(lookHead.rotation) * ahead;
+                if (lookChest != null) chestAhead = Quaternion.Inverse(lookChest.rotation) * ahead;
+            }
+            leanSpine = Find("Spine"); leanChest = Find("Chest");
+            if (leanSpine != null && leanChest != null && lookNeck != null)
+            {
+                // (half the turn is taken at the waist and half at the chest: how far that carries the neck, against
+                // the whole of the turn taken at the hips)
+                float whole = Vector3.Distance(hips.position, lookNeck.position);
+                float above = Vector3.Distance(leanSpine.position, lookNeck.position) + Vector3.Distance(leanChest.position, lookNeck.position);
+                leanGain = above > 1e-4f ? Mathf.Clamp(2f * whole / above, 1f, 2.5f) : 1f;
+            }
             SetupBodyPoints();
             return spine != null && thighL != null && thighR != null && armL != null && armR != null;
         }
@@ -306,6 +326,10 @@ namespace CrimsonVeil.Player
                 stillTime = ctx.stillTime;
                 mocap.Apply(HeroMocap.Choose(s, ctx), Time.deltaTime);
             }
+            // the body goes with the blow: striking upwards the trunk goes back into it...
+            LeanIntoTheBlow(s, Time.deltaTime);
+            // ...and his eyes are on it: the neck and the head turn to where it goes
+            LookAlongTheBlow(s, Time.deltaTime);
             // on the ground the body lies on it: the sole, a heel, a knee, a hand on the floor - not through it, not over it
             using (CrimsonVeil.Core.Perf.Begin(CrimsonVeil.Core.Perf.Id.Ground))
             {
@@ -459,6 +483,155 @@ namespace CrimsonVeil.Player
             if (contact && Physics.Raycast(player.transform.position + Vector3.up * 0.5f, Vector3.down, out var h2, 1.5f, ~0, QueryTriggerInteraction.Ignore))
                 SkinOverFloor = SkinLowest() - h2.point.y;
             else SkinOverFloor = float.NaN;
+        }
+
+        // --- eyes on the blow -------------------------------------------------------------------------------------
+
+        Transform lookHead, lookNeck, lookChest;
+        Vector3 faceAhead, chestAhead;
+        bool hasFace;
+        float lookWeight;
+        float lookAim;
+
+        /// <summary>He looks where he strikes (off: the head as the pose has it - to compare).</summary>
+        public bool EyesOnTheBlow { get; set; } = true;
+
+        /// <summary>Degrees his face looks above the level (below: negative), as the head was posed this frame.</summary>
+        public float LookPitch { get; private set; }
+
+        /// <summary>The furthest (degrees) the face is turned up off the way the chest faces to look along a blow, and
+        /// down off it: as far as a neck goes.</summary>
+        public const float LookUpMost = 44f, LookDownMost = 35f;
+        /// <summary>The share of the turn the neck takes (the head takes the rest).</summary>
+        public const float LookNeckShare = 0.4f;
+        /// <summary>How fast (1/s) he turns to look along a blow, and looks ahead again after it.</summary>
+        public const float LookIn = 14f, LookOut = 7f;
+
+        /// <summary>How much (0..1) he looks along the blow at attack progress <paramref name="t"/>: from the wind-up, all
+        /// through the strike, ahead again as it ends.</summary>
+        public static float LookThrough(float t)
+            => t < 0f ? 0f : Mathf.SmoothStep(0f, 1f, t / 0.12f) * (1f - Mathf.SmoothStep(0f, 1f, (t - 0.78f) / 0.22f));
+
+        /// <summary>How much (0..1) a blow aimed <paramref name="aim"/> degrees off the level turns his head: a level
+        /// blow leaves it to the pose (he is looking that way already), a steep one turns it all the way.</summary>
+        public static float LookSteep(float aim) => Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(8f, 30f, Mathf.Abs(aim)));
+
+        /// <summary>
+        /// The turn (degrees, + = back) that brings a face looking <paramref name="pitch"/> degrees above the level to
+        /// look along a blow aimed <paramref name="aim"/> degrees above it, the chest facing <paramref name="chest"/>
+        /// degrees above the level - as far as a neck goes off the chest (<see cref="LookUpMost"/>,
+        /// <see cref="LookDownMost"/>): striking straight up he looks most of the way up.
+        /// </summary>
+        public static float LookTurn(float pitch, float aim, float chest)
+            => chest + Mathf.Clamp(Mathf.DeltaAngle(chest, aim), -LookDownMost, LookUpMost) - pitch;
+
+        /// <summary>
+        /// He looks where he strikes: striking up the head goes back, striking under his feet it goes down, the bow
+        /// drawn at the sky he looks along the arrow. (In the poses the head only nodded towards a blow: thrusting a
+        /// spear straight up he looked 17 to 31 degrees DOWN.) The neck and the head turn, about the axis across his
+        /// body, so it reads in the side view; the trunk has its own part (<see cref="LeanIntoTheBlow"/>). The turn
+        /// comes in with the wind-up and goes as the blow ends.
+        /// </summary>
+        void LookAlongTheBlow(in HeroState s, float dt)
+        {
+            if (!hasFace) return;
+            bool drawing = veil != null && veil.ShapeForm == VeilForm.Bow && veil.Drawing;
+            float through = !EyesOnTheBlow ? 0f : drawing ? 1f : s.attacking ? LookThrough(s.attackT) : 0f;
+            float aim = drawing || s.attacking ? s.attackAim : lookAim;
+            float want = through * LookSteep(aim);
+            if (want > 0f) lookAim = aim;
+            lookWeight = Mathf.Lerp(lookWeight, want, 1f - Mathf.Exp(-(want > lookWeight ? LookIn : LookOut) * dt));
+            if (lookWeight < 1e-3f) lookWeight = 0f;
+            // (his facing is the way the body is turned in the picture)
+            float facing = player.BodyFacing >= 0 ? 1f : -1f;
+            Vector3 look = lookHead.rotation * faceAhead;
+            float pitch = Mathf.Atan2(look.y, look.x * facing) * Mathf.Rad2Deg;
+            if (lookWeight > 0f && look.x * facing > 0.05f)
+            {
+                Vector3 front = lookChest != null ? lookChest.rotation * chestAhead : new Vector3(facing, 0f, 0f);
+                float chest = Mathf.Atan2(front.y, Mathf.Max(0.05f, front.x * facing)) * Mathf.Rad2Deg;
+                float turn = LookTurn(pitch, lookAim, chest) * lookWeight;
+                // (about the axis across the body: seen from the side, anticlockwise is back for one facing right)
+                Vector3 axis = Vector3.forward * facing;
+                float neckShare = lookNeck != null ? LookNeckShare : 0f;
+                if (lookNeck != null) lookNeck.rotation = Quaternion.AngleAxis(turn * neckShare, axis) * lookNeck.rotation;
+                lookHead.rotation = Quaternion.AngleAxis(turn * (1f - neckShare), axis) * lookHead.rotation;
+                look = lookHead.rotation * faceAhead;
+                pitch = Mathf.Atan2(look.y, look.x * facing) * Mathf.Rad2Deg;
+            }
+            LookPitch = pitch;
+        }
+
+        // --- the body in the blow ---------------------------------------------------------------------------------
+
+        Transform leanSpine, leanChest;
+        float leanGain = 1f;
+        float leanWeight;
+        float leanAim;
+
+        /// <summary>Degrees his trunk (the line from the hips to the neck) leans forward off the upright (back: negative),
+        /// as it was posed this frame.</summary>
+        public float TrunkLean { get; private set; }
+
+        /// <summary>Degrees the trunk leans back off the upright striking straight up, and the most its lean is changed
+        /// to get there (running he leans forward: he straightens some for the blow, he is not thrown back).</summary>
+        public const float LeanBackMost = 12f, LeanTurnMost = 18f;
+
+        /// <summary>How much (0..1) the trunk goes back into a blow upwards at attack progress <paramref name="t"/>: not
+        /// in the wind-up (there he coils down for it), back as the blow rises, upright again as it ends.</summary>
+        public static float LeanThrough(float t)
+            => t < 0f ? 0f : Mathf.SmoothStep(0f, 1f, (t - 0.2f) / 0.25f) * (1f - Mathf.SmoothStep(0f, 1f, (t - 0.78f) / 0.22f));
+
+        /// <summary>Where (degrees forward off the upright; back: negative) the trunk leans for a blow aimed
+        /// <paramref name="aim"/> degrees above the level: back for one going up, the more the steeper; the rest is the
+        /// blow's own pose (0).</summary>
+        public static float LeanFor(float aim) => -LeanBackMost * Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(20f, 80f, aim));
+
+        /// <summary>The change of lean (degrees, back: negative) that takes a trunk leaning <paramref name="lean"/>
+        /// degrees forward into a blow aimed <paramref name="aim"/> degrees above the level: only ever back, none for
+        /// one leaning back that far already, and no more than half as much again as the blow asks of one standing
+        /// upright (<see cref="LeanTurnMost"/> for a blow straight up).</summary>
+        public static float LeanTurn(float lean, float aim)
+        {
+            float to = LeanFor(aim);
+            return Mathf.Clamp(to - lean, to * (LeanTurnMost / LeanBackMost), 0f);
+        }
+
+        /// <summary>
+        /// The body goes with the blow: cutting, thrusting, lashing upwards the trunk rises and goes back into it. (The
+        /// keys had it lean back; over the legs' own motion it stood upright or a little forward: 1 to 8 degrees forward
+        /// thrusting the spear straight up.) Half the turn is taken at the waist and half at the chest, about the axis
+        /// across his body; the arms keep the lines the blow gave them, so the weapon goes where it went. Not the bow (an
+        /// archer stays upright) nor the shield (he braces under it), and a blow downwards bends him over by itself.
+        /// </summary>
+        void LeanIntoTheBlow(in HeroState s, float dt)
+        {
+            if (leanSpine == null || leanChest == null || lookNeck == null) return;
+            bool blow = EyesOnTheBlow && s.attacking && !s.lowBlow && s.attackForm != VeilForm.Bow && s.attackForm != VeilForm.Shield
+                        && !s.hanging && !s.climbing && !s.swinging && !s.wallSliding && !s.rolling && !s.sliding;
+            float want = blow && LeanFor(s.attackAim) < 0f ? LeanThrough(s.attackT) : 0f;
+            if (want > 0f) leanAim = s.attackAim;
+            leanWeight = Mathf.Lerp(leanWeight, want, 1f - Mathf.Exp(-(want > leanWeight ? LookIn : LookOut) * dt));
+            if (leanWeight < 1e-3f) leanWeight = 0f;
+            float facing = player.BodyFacing >= 0 ? 1f : -1f;
+            Vector3 line = lookNeck.position - hips.position;
+            float lean = Mathf.Atan2(line.x * facing, line.y) * Mathf.Rad2Deg;
+            // (only on his feet or in a jump: not head down in a somersault)
+            if (leanWeight > 0f && line.y > 0.5f * line.magnitude)
+            {
+                float turn = LeanTurn(lean, leanAim) * leanWeight * leanGain;
+                // (about the axis across the body: seen from the side, anticlockwise is back for one facing right)
+                var half = Quaternion.AngleAxis(-turn * 0.5f, Vector3.forward * facing);
+                Quaternion armL = upperArmL != null ? upperArmL.rotation : Quaternion.identity;
+                Quaternion armR = upperArmR != null ? upperArmR.rotation : Quaternion.identity;
+                leanSpine.rotation = half * leanSpine.rotation;
+                leanChest.rotation = half * leanChest.rotation;
+                if (upperArmL != null) upperArmL.rotation = armL;
+                if (upperArmR != null) upperArmR.rotation = armR;
+                line = lookNeck.position - hips.position;
+                lean = Mathf.Atan2(line.x * facing, line.y) * Mathf.Rad2Deg;
+            }
+            TrunkLean = lean;
         }
 
         // --- firm footfalls ---------------------------------------------------------------------------------------

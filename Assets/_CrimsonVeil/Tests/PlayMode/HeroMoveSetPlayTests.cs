@@ -867,6 +867,111 @@ namespace CrimsonVeil.Tests
             Assert.Contains(HeroMocap.DownStrike, new List<string>(played), "the strike under the feet");
         }
 
+        [UnityTest]
+        public IEnumerator StrikingUp_HeLooksAlongTheBlow_AndLeansBackIntoIt_TheWeaponGoingWhereItWent()
+        {
+            // Cutting and thrusting over his head he looked ahead, even down (the poses nodded the head some 16 degrees:
+            // over the body's own motion it looked 5 to 31 degrees under the level), the trunk upright. Now the head goes
+            // back to look along the blow and the trunk goes back into it - and the weapon goes where it went.
+            var anim = player.GetComponent<HeroAnimator>();
+            yield return StartAt(new Vector3(-12f, 0.05f, 0f));
+            yield return Wait(0.5f);
+            float restLook = anim.LookPitch, restLean = anim.TrunkLean;
+            Assert.That(restLook, Is.InRange(-25f, 10f), "standing he looks ahead");
+            Assert.That(restLean, Is.InRange(-8f, 8f), "and stands upright");
+            foreach (var form in new[] { VeilForm.Sword, VeilForm.Spear, VeilForm.Whip })
+            {
+                var look = new float[2]; var lean = new float[2]; var weapon = new float[2];
+                for (int on = 0; on < 2; on++)
+                {
+                    anim.EyesOnTheBlow = on == 1;
+                    input.aimY = 1f;
+                    yield return Wait(0.15f);
+                    input.cast = form;
+                    float hi = -99f, back = 99f, x = 0f, y = 0f; int n = 0;
+                    yield return Until(() => veil.AttackProgress >= 0.95f, 2f, () =>
+                    {
+                        float t = veil.AttackProgress;
+                        if (t < 0.55f || t > 0.75f) return;
+                        hi = Mathf.Max(hi, anim.LookPitch); back = Mathf.Min(back, anim.TrunkLean);
+                        float w = WeaponPitch() * Mathf.Deg2Rad;
+                        x += Mathf.Cos(w); y += Mathf.Sin(w); n++;
+                    });
+                    input.aimY = 0f;
+                    Assert.Greater(n, 2, $"{form}: the blow was seen");
+                    look[on] = hi; lean[on] = back; weapon[on] = Mathf.Atan2(y, x) * Mathf.Rad2Deg;
+                    yield return Wait(1.5f);
+                }
+                Debug.Log($"[eyes on the blow] {form} up: look {look[0]:F0} -> {look[1]:F0}, trunk {lean[0]:F0} -> {lean[1]:F0}, weapon {weapon[0]:F0} -> {weapon[1]:F0}");
+                Assert.Less(look[0], 25f, $"{form}: (left to the pose he does not look up at it)");
+                Assert.Greater(look[1], 45f, $"{form}: striking straight up he looks up along the blow");
+                Assert.Less(look[1], 80f, $"{form}: as far as a neck goes - the head is not laid on his back");
+                Assert.Less(lean[1], -5f, $"{form}: the trunk goes back into it");
+                Assert.Less(lean[1], lean[0] - 3f, $"{form}: further than the pose had it");
+                Assert.Greater(lean[1], -20f, $"{form}: a lean, not a fall");
+                Assert.Less(Mathf.Abs(Mathf.DeltaAngle(weapon[0], weapon[1])), form == VeilForm.Whip ? 25f : 8f, $"{form}: the weapon goes where it went");
+            }
+            anim.EyesOnTheBlow = true;
+            Assert.AreEqual(restLook, anim.LookPitch, 6f, "after it he looks ahead again");
+            Assert.AreEqual(restLean, anim.TrunkLean, 3f, "and stands as he stood: nothing of the turn stays in the bones");
+
+            // the bow drawn at the sky: he looks along the arrow, standing upright (an archer does not lean back)
+            input.stand = true; input.aimY = 1f;
+            yield return Wait(0.1f);
+            input.held = VeilForm.Bow; input.cast = VeilForm.Bow;
+            yield return Wait(1f);
+            Assert.IsTrue(veil.Drawing, "drawn");
+            Assert.Greater(anim.LookPitch, 35f, "the bow drawn overhead: he looks up along the arrow");
+            Assert.That(anim.TrunkLean, Is.InRange(-8f, 8f), "upright under the bow");
+            input.held = null;
+            yield return Wait(0.3f);
+            foreach (var a in Object.FindObjectsByType<VeilArrow>(FindObjectsSortMode.None)) Object.Destroy(a.gameObject);
+            input.stand = false; input.aimY = 0f;
+            yield return Wait(1.2f);
+
+            // turned the other way it is the same
+            input.moveX = -1f;
+            yield return Wait(0.2f);
+            input.moveX = 0f;
+            yield return Wait(0.9f);
+            Assert.AreEqual(-1, controller.BodyFacing, "facing back");
+            input.aimY = 1f;
+            yield return Wait(0.15f);
+            input.cast = VeilForm.Spear;
+            float hiBack = -99f, leanBack = 99f;
+            yield return Until(() => veil.AttackProgress >= 0.95f, 2f, () =>
+            {
+                float t = veil.AttackProgress;
+                if (t < 0.55f || t > 0.75f) return;
+                hiBack = Mathf.Max(hiBack, anim.LookPitch); leanBack = Mathf.Min(leanBack, anim.TrunkLean);
+            });
+            input.aimY = 0f;
+            Assert.Greater(hiBack, 45f, "facing back: he looks up along the spear");
+            Assert.Less(leanBack, -4f, "facing back: the trunk goes back (not forward)");
+            yield return Wait(1.5f);
+
+            // and a strike under his feet from a leap: he looks down at it
+            input.jump = true; input.jumpHeld = true;
+            yield return Wait(0.25f);
+            input.aimY = -1f; input.cast = VeilForm.Sword;
+            float lo = 99f;
+            yield return Until(() => controller.Motor.IsGrounded && controller.Velocity.y <= 0f, 2f,
+                () => { if (veil.AttackProgress > 0.5f && veil.AttackProgress < 0.9f) lo = Mathf.Min(lo, anim.LookPitch); });
+            input.aimY = 0f; input.jumpHeld = false;
+            Debug.Log($"[eyes on the blow] bow and the spear facing back {hiBack:F0} (trunk {leanBack:F0}), the strike under the feet {lo:F0}");
+            Assert.Less(lo, -50f, "striking under his feet he looks down at it");
+        }
+
+        /// <summary>Degrees the weapon points above the level, from the hand to its tip (0: ahead, the way he faces).</summary>
+        float WeaponPitch()
+        {
+            var p = veil.Simulation.Positions;
+            int n = veil.Simulation.Count;
+            int h = Mathf.Clamp(Mathf.CeilToInt(veil.HandFraction * (n - 1)), 0, n - 2);
+            Vector3 d = p[n - 1] - p[h];
+            return Mathf.Atan2(d.y, d.x * controller.BodyFacing) * Mathf.Rad2Deg;
+        }
+
         /// <summary>A low thing to strike (a trigger: the hero steps into it, not against it); counts the blows.</summary>
         HitDummy LowTarget(float ahead, float height, float bottom = 0f)
         {

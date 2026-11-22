@@ -5,6 +5,36 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.78.0] – 2026-11-22
+### Změněno
+- **Tělo jde za úderem: hrdina se dívá tam, kam útočí, a při úderu vzhůru se zakloní.**
+  - **Jak to bylo.** Pózy úderů vzhůru hlavu jen lehce zvedly (asi o 16°) a přes pohyb zbytku těla z toho nezbylo nic: při seknutí mečem nad hlavu se díval až 18° pod vodorovnou, při bodnutí kopím přímo vzhůru 14 až 26° pod ni. Trup stál svisle nebo mírně v předklonu (kopí až 8° dopředu), i když klíčové pózy záklon chtěly.
+  - **Pohled za úderem** (`HeroAnimator.LookAlongTheBlow`). Při strmém úderu (od 30° nad nebo pod vodorovnou naplno, vodorovné údery nechává póze) se krk a hlava otočí ve směru úderu: krk vezme 40 % a hlava zbytek, nejvýš 44° nahoru a 35° dolů od směru, kterým míří hrudník. Otočení nastoupí s nápřahem a s koncem úderu se plynule vrátí. Platí i pro luk natažený k nebi (dívá se podél šípu) a pro úder pod sebe ve skoku (dívá se dolů na místo, kam seká).
+  - **Záklon trupu** (`HeroAnimator.LeanIntoTheBlow`). Při seku, bodu a šlehu vzhůru se trup zakloní až o 12° od svislice; půlku vezme pas a půlku hrudník. V nápřahu ne (tam se hrdina naopak stahuje dolů), záklon přijde až s úderem. Za běhu, kde je trup v předklonu, se jen o něco narovná (změna náklonu je omezená, při úderu přímo vzhůru nejvýš 18°). Luk se nezaklání (lukostřelec stojí rovně), štít také ne a úder dolů ohýbá tělo sám.
+  - **Zbraň jde, kudy šla.** Paže si při záklonu drží směr, který jim dal úder, takže se čepel ani hrot neodchýlí; jen se s rameny posunou o pár centimetrů dozadu.
+  - Obě vrstvy se dají vypnout přepínačem `HeroAnimator.EyesOnTheBlow` (pro srovnání), `LookPitch` a `TrunkLean` hlásí, kam se právě dívá a jak je trup nakloněný.
+
+### Změřeno
+Ve hře na skutečném hrdinovi, během úderu (55 až 75 % jeho trvání), bez nových vrstev → s nimi:
+- Meč vzhůru: pohled −12° → 71°, trup −1° → −11° (záklon), směr čepele 109° → 107°.
+- Kopí vzhůru: pohled −15° → 71°, trup 0° → −11°, směr kopí 89° → 91°.
+- Bič vzhůru: pohled −15° → 70°, trup 0° → −12°, směr šlehu 124° → 125°.
+- Otočený doleva s kopím: pohled 71°, trup −11° (stejně jako doprava).
+- Úder mečem pod sebe ve skoku: pohled až −85° (dřív −2 až −32°).
+- Luk natažený vzhůru: pohled −10° → 51°, trup zůstává svisle (−4°, stejně jako bez vrstvy).
+- Sek šikmo vzhůru za běhu (míří 45°): pohled 35 až 42° (dřív −5 až −21°), předklon trupu 0 až 8° (dřív 3 až 13°), čepel stejně.
+- Vodorovný sek: beze změny.
+
+### Poctivě
+- Rozdíl ve směru zbraně při úderu dolů, který jsem naměřil v první verzi (33° proti −51°), nebyl vlivem nové vrstvy: čepel se v tom okamžiku otáčí o desítky stupňů na snímek a měřil jsem v trochu jiném čase. Po přeměření snímek po snímku se směry při stejném čase úderu shodují.
+- První pokus otáčel i kostí horního hrudníku. Tu póza každý snímek nenastavuje, takže se otočení sčítalo a táhlo s sebou paži se zbraní. Záklon proto otáčí jen pas a hrudník, které póza nastavuje vždy znovu, a paže vrací do jejich směru.
+- Vodorovné údery se nemění: tam hlavu i trup dál vede póza a nahrávka.
+
+### Testy
+- `HeroBlowBearingTests` (nové, 4): kdy se hlava otáčí (od nápřahu do konce úderu, jen u strmých úderů), kam až krk dosáhne od hrudníku a že se nikdy neotočí za směr úderu; záklon přichází s úderem a ne v nápřahu, roste se strmostí, je jen dozadu a omezený.
+- `HeroMoveSetPlayTests` (nový): meč, kopí a bič vzhůru se zapnutou a vypnutou vrstvou (pohled vzhůru, záklon, stejný směr zbraně), po úderu se hlava i trup vrátí, luk vzhůru, kopí vzhůru čelem doleva a úder pod sebe ve skoku.
+- Puštěno: všech 600 EditMode testů a celá sada 125 PlayMode testů, všechny prošly.
+
 ## [0.77.0] – 2026-11-22
 ### Změněno
 - **Pevné došlapy: stojná noha už při chůzi a běhu neklouže po zemi.**

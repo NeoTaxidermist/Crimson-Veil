@@ -53,6 +53,49 @@ namespace CrimsonVeil.Tests
         }
 
         [Test]
+        public void TheLash_IsQuick_BackOverTheShoulder_Thrown_CrackedAThirdOfASecondAfterThePress()
+        {
+            float d = VeilFormLibrary.AttackDuration(VeilForm.Whip);
+            Assert.That(d, Is.InRange(0.5f, 0.7f), "a lash, not a slow swing of a rope (it took 0.8 s)");
+            Assert.Less(VeilWeaponPose.WhipWoundAt, VeilWeaponPose.WhipThrownAt);
+            Assert.Less((VeilWeaponPose.WhipThrownAt - VeilWeaponPose.WhipWoundAt) * d, 0.1f, "the throw is a snap: the hand stops within a tenth of a second");
+            // the stop sends the loop down the lash: it cracks when the loop has run out, and is held taut after it
+            Assert.AreEqual(VeilWeaponPose.WhipThrownAt * d + VeilWeaponPose.WhipLag, VeilWeaponPose.WhipCrackAt * d, 0.02f, "the crack: the stop and the loop's run");
+            Assert.That(VeilWeaponPose.WhipCrackAt * d, Is.InRange(0.25f, 0.4f), "a third of a second after the press (it was over half a second)");
+            Assert.Greater(VeilWeaponPose.WhipHeldTo, VeilWeaponPose.WhipCrackAt + 0.08f, "held taut for a moment");
+            var window = CrimsonVeil.Combat.VeilCombatProfile.ActiveWindow(VeilForm.Whip);
+            Assert.LessOrEqual(window.y, VeilWeaponPose.WhipHeldTo + 0.03f, "it hits while it is thrown out, not as it falls");
+
+            // thrown out, the lash is all but a straight line to its tip
+            var pts = VeilFormLibrary.ControlPoints(VeilForm.Whip, out _);
+            Vector2 stock = pts[pts.Count - 4], tip = pts[pts.Count - 1];
+            Assert.Greater(tip.x - stock.x, 3f, "over three metres of it");
+            Assert.Less(Mathf.Abs(tip.y - stock.y), 0.2f, "drooping 0.4 m it reached the floor before the target");
+        }
+
+        [Test]
+        public void TheLash_IsThrownFromBehindHim_AndGoesWithItsHandleWhileItIsThrown()
+        {
+            // as the blow begins the lash lies out behind him - where the scarf it forms from is - whatever the arm does
+            Assert.AreEqual(VeilWeaponPose.WhipBack, VeilWeaponPose.WhipLashTurn(0f, -40f, 0f), 1e-3f, "level: up and back over the shoulder");
+            Assert.AreEqual(90f + VeilWeaponPose.WhipBack, VeilWeaponPose.WhipLashTurn(0.05f, -40f, 90f), 1e-3f, "aimed up: down behind the hip");
+            // it joins the arm as the hand arrives back there, and is the arm's from then on
+            float joining = VeilWeaponPose.WhipLashTurn(0.8f * VeilWeaponPose.WhipWoundAt, 120f, 0f);
+            Assert.That(joining, Is.InRange(120f, VeilWeaponPose.WhipBack));
+            Assert.AreEqual(10f, VeilWeaponPose.WhipLashTurn(VeilWeaponPose.WhipWoundAt, 10f, 0f), 1e-3f);
+            Assert.AreEqual(-5f, VeilWeaponPose.WhipLashTurn(VeilWeaponPose.WhipThrownAt, -5f, 0f), 1e-3f, "the throw is the arm's");
+            Assert.AreEqual(-70f, VeilWeaponPose.WhipLashTurn(-1f, -70f, 0f), 1e-3f, "not lashing: it hangs from the hand");
+
+            // from the throw to the end of the hold the whole whip follows its handle exactly; before and after it is supple
+            Assert.IsFalse(VeilWeaponPose.WhipDriven(-1f), "held in the hand");
+            Assert.IsFalse(VeilWeaponPose.WhipDriven(0.02f), "forming out of the scarf");
+            Assert.IsTrue(VeilWeaponPose.WhipDriven(VeilWeaponPose.WhipWoundAt), "wound up");
+            Assert.IsTrue(VeilWeaponPose.WhipDriven(VeilWeaponPose.WhipCrackAt), "the crack");
+            Assert.IsFalse(VeilWeaponPose.WhipDriven(VeilWeaponPose.WhipHeldTo + 0.05f), "let fall");
+            Assert.Greater(VeilController.WhipCoilDelay, 0.15f, "between the blows of a combo it stays out: it is not coiled and thrown again");
+        }
+
+        [Test]
         public void Spear_IsLevel_AndDoesNotTiltWithTheArm()
         {
             var pts = VeilFormLibrary.ControlPoints(VeilForm.Spear, out int start);

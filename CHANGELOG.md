@@ -5,6 +5,22 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.76.0] – 2026-11-22
+### Změněno
+- **Bič teď šlehá jako bič.** Nápřah dozadu přes rameno, prudký hod, smyčka se odvine ke špičce, bič se na okamžik napne rovně na cíl a pak povolí. Dřív to byl pomalý oblouk shora, který skončil na zemi.
+  - **Paži vede hra, ne nahrávka.** Nahrané „biče“ jsou rány pochodní shora: paže končila dole a s ní i rukojeť, takže se šleh položil na podlahu. Šlehnutí potřebuje ruku vyraženou dopředu a zastavenou na délku paže; to dělá procedurální paže a trup. Nahrávka už jen staví nohy, za běhu nohy běží dál.
+  - **Rychlost.** Úder trvá 0,62 s místo 0,8 s, ruka se zastaví za 0,22 s a bič práskne třetinu sekundy po stisku (dřív za víc než půl sekundy).
+  - **Hod zezadu.** Šleh na začátku leží za hrdinou, tam, kde je šála, ze které vzniká, a k paži se přidá, až ruka dojde dozadu (`VeilWeaponPose.WhipLashTurn`). Dřív nejdřív vyletěl dopředu a pak se tahal zpět přes hlavu. Při míření nahoru leží dole za bokem.
+  - **Bez smotku u ruky.** Úder hází bič tak, jak leží; mezi údery komba zůstává rozvinutý a do ruky se smotá až 0,3 s po posledním úderu (`WhipCoilDelay`).
+  - **Při hodu jde celý bič přesně za rukojetí** (`WhipDriven`). Smyčku, která má na špičce desítky metrů za sekundu, pružiny látky nestíhaly a rozmazaly ji do pomalého oblouku.
+  - Napnutý šleh je skoro rovný (konec klesne o 0,14 m místo 0,4 m), takže doletí k cíli dřív než na zem.
+  - **Zásah.** Bič zasahuje od hodu do konce napnutí (`ActiveWindow` 0,24 až 0,68 úderu): při stoupajícím úderu z dřepu je hrdina u nepřítele nad hlavou dřív, než bič práskne.
+
+### Testy
+- `VeilWeaponMotionTests` (nové): šleh je rychlý (trvání, doraz ruky, prásknutí třetinu sekundy po stisku, napnutí, zásah jen dokud je vyhozený, rovný tvar); šleh se hází zezadu a při hodu jde za rukojetí.
+- `HeroMocapTests`: bič hází paže hry, nahrávka jen staví nohy, za běhu zůstává nohám běh.
+- Puštěno: všech 595 EditMode testů. Celá sada 123 PlayMode testů: prošlo 122, neprošel stoupající úder bičem z dřepu (nezasáhl cíl nad hlavou); po rozšíření zásahového okna prošel a znovu jsem pustil 8 testů, kterých se bič týká (dva šlehy, nízký úder z dřepu, údery nahoru a dolů, kombo meč-meč-bič, mnich se štítem, bič v boji a na kruhu, alokace).
+
 ## [0.75.0] – 2026-11-22
 ### Změněno
 - **Vlasy hrdiny: nový tvar podle konceptu a nový pohyb.**

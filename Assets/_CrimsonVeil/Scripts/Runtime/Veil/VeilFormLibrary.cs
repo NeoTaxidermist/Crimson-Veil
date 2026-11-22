@@ -54,7 +54,9 @@ namespace CrimsonVeil.Veil
         {
             switch (form)
             {
-                case VeilForm.Whip: return 0.8f;
+                // (a lash is quick: back over the shoulder, thrown, cracked a third of a second after the press - at
+                // 0.8 s, cracking after half a second, it was a slow swing of a rope)
+                case VeilForm.Whip: return 0.62f;
                 case VeilForm.Sword: return 0.46f;
                 case VeilForm.Spear: return 0.5f;
                 case VeilForm.Shield: return 0.45f;
@@ -98,9 +100,11 @@ namespace CrimsonVeil.Veil
                     pts[2] = Hand - new Vector2(WhipPommel, 0f);
                     pts.Add(Hand);
                     pts.Add(Hand + new Vector2(WhipHandle, 0f));
-                    pts.Add(Hand + new Vector2(1.1f, 0.05f));
-                    pts.Add(Hand + new Vector2(2.3f, -0.1f));
-                    pts.Add(Hand + new Vector2(3.4f, -0.4f));
+                    // (all but straight: thrown out, the lash is a taut line to its tip - drooping 0.4 m it reached the
+                    // floor before the target)
+                    pts.Add(Hand + new Vector2(1.1f, 0.03f));
+                    pts.Add(Hand + new Vector2(2.3f, -0.03f));
+                    pts.Add(Hand + new Vector2(3.4f, -0.14f));
                     break;
                 case VeilForm.Sword:
                 {
@@ -444,7 +448,7 @@ namespace CrimsonVeil.Veil
             switch (form)
             {
                 case VeilForm.Sword: return Curve(t, 0.18f, 55f, 0.55f, -105f);
-                case VeilForm.Whip: return Curve(t, 0.25f, 75f, 0.6f, -35f);
+                case VeilForm.Whip: return Curve(t, WhipWoundAt, 120f, WhipThrownAt, -6f);
                 case VeilForm.Spear: return Curve(t, 0.2f, -0.35f, 0.45f, 1.1f) * 22f;
                 case VeilForm.Shield: return Mathf.Sin(Mathf.Clamp01(t) * Mathf.PI) * 18f;
                 case VeilForm.Bow: return Curve(t, 0.25f, -10f, 0.4f, 4f);
@@ -464,7 +468,7 @@ namespace CrimsonVeil.Veil
             switch (form)
             {
                 case VeilForm.Sword: return Curve(t, 0.18f, 0.75f, 0.55f, -0.65f);
-                case VeilForm.Whip: return Curve(t, 0.25f, 0.55f, 0.6f, -0.5f);
+                case VeilForm.Whip: return Curve(t, WhipWoundAt, 0.55f, WhipThrownAt, -0.3f);
                 case VeilForm.Spear: return Curve(t, 0.2f, 0.18f, 0.45f, -0.12f);
                 default: return 0f;
             }
@@ -492,7 +496,7 @@ namespace CrimsonVeil.Veil
                 case VeilForm.Sword:
                     return armDriven ? local : Rotate(local, pivot, Curve(t, 0.18f, 55f, 0.55f, -105f));
                 case VeilForm.Whip:
-                    return armDriven ? local : Rotate(local, pivot, Curve(t, 0.25f, 75f, 0.6f, -35f));
+                    return armDriven ? local : Rotate(local, pivot, Curve(t, WhipWoundAt, 120f, WhipThrownAt, -6f));
                 case VeilForm.Spear:
                     return local + new Vector2(Curve(t, 0.2f, -0.35f, 0.45f, 1.1f), 0f);
                 case VeilForm.Shield:
@@ -576,13 +580,46 @@ namespace CrimsonVeil.Veil
         }
 
         /// <summary>How far the coiled whip has unfurled (0 coiled .. 1 out) at attack progress t: during the wind-up.</summary>
-        public static float WhipUncoil(float t) => t < 0f ? 0f : Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.04f, 0.4f, t));
+        /// (Early in it: the lash runs out behind him as the hand goes back. Paid out through the whole wind-up, the
+        /// coil hung at the fist as a knot of loops for the first quarter of a second.)
+        public static float WhipUncoil(float t) => t < 0f ? 0f : Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.01f, 0.16f, t));
 
         /// <summary>Per-node unfurling: the coil pays out from the hand towards the tip.</summary>
         public static float WhipNodeOpen(float open, float alongLash) => Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(open * 1.6f - alongLash * 0.6f));
 
-        /// <summary>Attack progress at which the whip's loop reaches the tip (the crack).</summary>
-        public const float WhipCrackAt = 0.66f;
+        /// <summary>Attack progress at which the hand is back over the shoulder (the lash laid out behind him), at which
+        /// it has driven forward and stopped at arm's length, and until which the thrown lash is held taut - then it
+        /// goes slack and is let fall.</summary>
+        public const float WhipWoundAt = 0.24f, WhipThrownAt = 0.36f, WhipHeldTo = 0.66f;
+
+        /// <summary>Seconds the whip's tip lags behind its handle - the loop that rolls down it.</summary>
+        public const float WhipLag = 0.11f;
+
+        /// <summary>Attack progress at which the whip's loop reaches the tip (the crack): the stop of the hand and the
+        /// loop's run down the lash after it.</summary>
+        public const float WhipCrackAt = 0.54f;
+
+        /// <summary>The way the lash is thrown from behind him, in degrees off the blow's aim: up and back for a level
+        /// lash, down behind the hip for one aimed up.</summary>
+        public const float WhipBack = 150f;
+
+        /// <summary>
+        /// The turn (degrees) the lash takes up at attack progress <paramref name="t"/>: the forearm's
+        /// (<paramref name="forearmTurn"/>) - but as the blow begins it lies out behind him (<see cref="WhipBack"/> off
+        /// the <paramref name="aim"/>) and only joins the arm as the hand arrives back there. The scarf is behind him:
+        /// the lash that forms from it is thrown from there. (Following the arm from the first moment it flopped
+        /// out in front of him, then was hauled back over his head for the wind-up.)
+        /// </summary>
+        public static float WhipLashTurn(float t, float forearmTurn, float aim)
+        {
+            if (t < 0f || t >= WhipWoundAt) return forearmTurn;
+            return Mathf.LerpAngle(aim + WhipBack, forearmTurn, Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.45f * WhipWoundAt, WhipWoundAt, t)));
+        }
+
+        /// <summary>Whether the whole whip follows its handle exactly at attack progress <paramref name="t"/>: from the
+        /// throw until the lash has cracked and been held (a loop of 40 m/s at the tip is not something the cloth's
+        /// springs can follow: left to them it was smeared into a slow arc). Before and after, it is supple.</summary>
+        public static bool WhipDriven(float t) => t >= WhipWoundAt * 0.5f && t <= WhipHeldTo;
 
         /// <summary>
         /// Whip as a chain that propagates the handle's motion with a delay: segment k of the lash (s = 0 at the

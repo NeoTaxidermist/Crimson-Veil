@@ -66,10 +66,10 @@ namespace CrimsonVeil.Player
         static readonly Key[] Whip =
         {
             At(Hold, 0f),
-            K(0.38f, 165f, 70f, 25f, 30f, -14f, -12f, 8f, 6f, 15f, -6f, 20f),   // slow wind-up: hand back behind the head
-            K(0.50f, 100f, 8f, -25f, 20f, 18f, 14f, -6f, 30f, 38f, -20f, 15f),  // fast drive forward, stop at arm's length
-            K(0.70f, 90f, 10f, -25f, 20f, 16f, 12f, -6f, 30f, 38f, -20f, 15f),  // hold while the loop rolls out and cracks
-            K(0.86f, 55f, 18f, -10f, 20f, 8f, 6f, -2f, 18f, 25f, -10f, 15f),    // let the whip fall
+            K(0.24f, 165f, 70f, 25f, 30f, -14f, -12f, 8f, 6f, 15f, -6f, 20f),   // wind-up: hand back behind the head
+            K(0.36f, 96f, 6f, -25f, 20f, 18f, 14f, -6f, 30f, 38f, -20f, 15f),   // fast drive forward, stop at arm's length
+            K(0.66f, 92f, 8f, -25f, 20f, 16f, 12f, -6f, 30f, 38f, -20f, 15f),   // hold while the loop rolls out and cracks
+            K(0.84f, 60f, 18f, -10f, 20f, 8f, 6f, -2f, 18f, 25f, -10f, 15f),    // let the whip fall
             At(Hold, 1f),
         };
 
@@ -146,10 +146,10 @@ namespace CrimsonVeil.Player
         static readonly Key[] WhipUp =
         {
             At(Hold, 0f),
-            K(0.38f, -25f, 60f, 25f, 30f, 8f, 10f, -4f, 12f, 30f, -8f, 30f),    // hand back low behind the hip
-            K(0.50f, 170f, 6f, -20f, 20f, -10f, -12f, 16f, 20f, 15f, -12f, 10f), // driven up, stopped over the head
-            K(0.70f, 165f, 8f, -20f, 20f, -8f, -10f, 14f, 20f, 15f, -12f, 10f),  // hold while it cracks
-            K(0.86f, 90f, 18f, -10f, 20f, 0f, -2f, 4f, 12f, 20f, -6f, 15f),
+            K(0.24f, -25f, 60f, 25f, 30f, 8f, 10f, -4f, 12f, 30f, -8f, 30f),    // hand back low behind the hip
+            K(0.36f, 170f, 6f, -20f, 20f, -10f, -12f, 16f, 20f, 15f, -12f, 10f), // driven up, stopped over the head
+            K(0.66f, 165f, 8f, -20f, 20f, -8f, -10f, 14f, 20f, 15f, -12f, 10f),  // hold while it cracks
+            K(0.84f, 90f, 18f, -10f, 20f, 0f, -2f, 4f, 12f, 20f, -6f, 15f),
             At(Hold, 1f),
         };
 
@@ -157,10 +157,10 @@ namespace CrimsonVeil.Player
         static readonly Key[] WhipDown =
         {
             At(Hold, 0f),
-            K(0.38f, 165f, 70f, 25f, 30f, -14f, -12f, 8f, 6f, 15f, -6f, 20f),
-            K(0.50f, 25f, 6f, -25f, 20f, 24f, 18f, -16f, 35f, 45f, -20f, 20f),  // driven down, stopped low in front
-            K(0.70f, 20f, 8f, -25f, 20f, 22f, 16f, -14f, 35f, 45f, -20f, 20f),
-            K(0.86f, 30f, 18f, -10f, 20f, 8f, 6f, -4f, 18f, 25f, -10f, 15f),
+            K(0.24f, 165f, 70f, 25f, 30f, -14f, -12f, 8f, 6f, 15f, -6f, 20f),
+            K(0.36f, 25f, 6f, -25f, 20f, 24f, 18f, -16f, 35f, 45f, -20f, 20f),  // driven down, stopped low in front
+            K(0.66f, 20f, 8f, -25f, 20f, 22f, 16f, -14f, 35f, 45f, -20f, 20f),
+            K(0.84f, 30f, 18f, -10f, 20f, 8f, 6f, -4f, 18f, 25f, -10f, 15f),
             At(Hold, 1f),
         };
 
@@ -197,10 +197,10 @@ namespace CrimsonVeil.Player
         static readonly Key[] WhipLow =
         {
             At(LowHold, 0f),
-            K(0.38f, -45f, 40f, 35f, 40f, 26f, 4f, 20f, 92f, 122f, 80f, 128f),   // hand back low behind the hip
-            K(0.50f, 95f, 2f, -10f, 30f, 40f, 12f, 14f, 92f, 122f, 80f, 128f),   // driven forward low, stopped
-            K(0.70f, 92f, 4f, -10f, 30f, 40f, 12f, 14f, 92f, 122f, 80f, 128f),   // hold while it cracks
-            K(0.86f, 60f, 20f, 15f, 45f, 34f, 10f, 18f, 92f, 122f, 80f, 128f),
+            K(0.24f, -45f, 40f, 35f, 40f, 26f, 4f, 20f, 92f, 122f, 80f, 128f),   // hand back low behind the hip
+            K(0.36f, 95f, 2f, -10f, 30f, 40f, 12f, 14f, 92f, 122f, 80f, 128f),   // driven forward low, stopped
+            K(0.66f, 92f, 4f, -10f, 30f, 40f, 12f, 14f, 92f, 122f, 80f, 128f),   // hold while it cracks
+            K(0.84f, 60f, 20f, 15f, 45f, 34f, 10f, 18f, 92f, 122f, 80f, 128f),
             At(LowHold, 1f),
         };
 

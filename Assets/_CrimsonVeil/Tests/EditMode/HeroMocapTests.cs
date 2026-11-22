@@ -263,7 +263,7 @@ namespace CrimsonVeil.Tests
         {
             var s = Ground();
             s.attacking = true; s.attackT = 0.3f;
-            foreach (var form in new[] { VeilForm.Sword, VeilForm.Spear, VeilForm.Whip })
+            foreach (var form in new[] { VeilForm.Sword, VeilForm.Spear })
             {
                 s.attackForm = form;
                 s.attackAim = 0f;
@@ -275,6 +275,27 @@ namespace CrimsonVeil.Tests
                 s.attackAim = HeroMocap.SteepAim - 5f;
                 Assert.AreEqual(HeroMocap.Mask.Full, HeroMocap.Choose(s, 0f, 0).mask, $"{form} a little up is still the capture's");
             }
+        }
+
+        [Test]
+        public void TheWhip_IsThrownByTheGamesArm_TheCaptureOnlyPlacesTheFeet()
+        {
+            // The captured "whip" blows are chops with a torch: the arm ends low and the lash was laid on the floor.
+            // The lash needs the hand driven forward and stopped at arm's length - that is the procedural arm's.
+            var s = Ground();
+            s.attacking = true; s.attackT = 0.3f; s.attackForm = VeilForm.Whip;
+            foreach (float aim in new[] { 0f, 60f, -45f })
+            {
+                s.attackAim = aim;
+                var standing = HeroMocap.Choose(s, 0f, 0);
+                Assert.AreEqual(HeroMocap.WhipA, standing.key, "the capture still steps into the blow");
+                Assert.AreEqual(HeroMocap.Mask.Legs, standing.mask, $"aim {aim}: the legs only");
+            }
+            s.attackAim = 0f;
+            s.speed = 5f;
+            string moving = HeroMocap.Choose(s, 0f, 0).key;
+            Assert.That(moving, Is.Not.EqualTo(HeroMocap.WhipA).And.Not.EqualTo(HeroMocap.WhipB).And.Not.EqualTo(HeroMocap.WhipC),
+                "on the move the legs keep their gait: the lash is all the game's");
         }
 
         [Test]

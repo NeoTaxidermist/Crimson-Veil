@@ -254,8 +254,13 @@ namespace CrimsonVeil.Player
                     case VeilForm.Sword:
                         return new Choice { key = k == 0 ? SlashA : k == 1 ? SlashB : SlashC, driven = true, time01 = s.attackT, weight = 0.7f, mask = mask };
                     case VeilForm.Whip:
-                        // one-handed lashes: over the shoulder, a wind-up overhead, a low sweep
-                        return new Choice { key = k == 0 ? WhipA : k == 1 ? WhipB : WhipC, driven = true, time01 = s.attackT, weight = 0.7f, mask = mask };
+                        // The lash is thrown by the procedural arm and trunk (hand back over the shoulder, driven
+                        // forward, stopped at arm's length: the stop is what cracks a whip); the captured blows - chops
+                        // with a torch, the arm ending low - only place the feet. (Under them the whip's handle was
+                        // swung down and the lash laid on the floor.)
+                        // (on the move the legs keep their gait - below - and the weapon arm is the game's as always)
+                        if (mask == Mask.Upper) break;
+                        return new Choice { key = k == 0 ? WhipA : k == 1 ? WhipB : WhipC, driven = true, time01 = s.attackT, weight = 0.7f, mask = Mask.Legs };
                     case VeilForm.Spear:
                         return new Choice { key = k == 0 ? Stab : k == 1 ? SpearB : SpearC, driven = true, time01 = s.attackT, weight = 0.7f, mask = mask };
                     case VeilForm.Shield:

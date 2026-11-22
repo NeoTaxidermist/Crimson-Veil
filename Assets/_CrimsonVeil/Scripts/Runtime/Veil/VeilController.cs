@@ -44,13 +44,13 @@ namespace CrimsonVeil.Veil
         float releaseTime = 99f;
 
         [Header("Whip")]
-        [Tooltip("How long (s) the whip's tip lags behind its handle — the travelling loop.")]
-        [SerializeField] float whipLag = 0.16f;
         bool whipCracked;
         Vector2[] restBuf, whipBuf, whipCoil;
         float whipOpen;
-        /// <summary>Seconds the whip takes to coil back into the hand after a blow.</summary>
-        public const float WhipCoilTime = 0.5f;
+        float sinceLash = 10f;
+        /// <summary>Seconds the whip takes to coil back into the hand after a blow, and how long after the blow it
+        /// starts to (a following lash throws it as it lies).</summary>
+        public const float WhipCoilTime = 0.5f, WhipCoilDelay = 0.3f;
         /// <summary>0 = coiled in the hand, 1 = fully paid out.</summary>
         public float WhipOpen => whipOpen;
         const int TurnHistory = 128;
@@ -480,6 +480,9 @@ namespace CrimsonVeil.Veil
             arrowFired = false;
             lunged = false;
             whipCracked = false;
+            // (a blow with the whip throws it from wherever it is: out of the scarf it is not coiled first - the coil
+            // hung at the fist as a knot of loops before every lash)
+            if (ShapeForm == VeilForm.Whip) whipOpen = 1f;
             Drawing = false;
             drawTime = 0f;
             bool airborne = player != null && player.Motor != null && !player.IsGrounded;
@@ -729,6 +732,8 @@ namespace CrimsonVeil.Veil
             // The hilt / handle / grip is in the fist from the moment of the cast; the rest of the weapon grows out of it.
             if (ShapeForm != VeilForm.Flow && VeilFormLibrary.HeldSpan(ShapeForm, out float heldFrom, out float heldTo))
             {
+                // (thrown, the whole whip goes with its handle: see VeilWeaponPose.WhipDriven)
+                if (ShapeForm == VeilForm.Whip && Latched == null && VeilWeaponPose.WhipDriven(AttackProgress)) heldTo = 1f;
                 Simulation.HeldFrom = heldFrom; Simulation.HeldTo = heldTo;
                 Simulation.HeldWeight = Mathf.SmoothStep(0f, 1f, TransformProgress / 0.12f);
             }
@@ -1195,7 +1200,8 @@ namespace CrimsonVeil.Veil
             // ... and stands in the palm's depth, not a fixed way in front of the body
             Simulation.WeaponPlane = hand != null ? VeilSimulation.WeaponPlaneFor(PalmPoint(hand).z, a.z) : float.NaN;
             Vector2 grip = VeilFormLibrary.Hand + handDelta;
-            RecordTurn(time, forearmTurn);
+            // (the whip's lash takes up what is recorded here a moment later, all down its length: WhipChain)
+            RecordTurn(time, ShapeForm == VeilForm.Whip ? VeilWeaponPose.WhipLashTurn(t, forearmTurn, aimTilt) : forearmTurn);
 
             var targets = Simulation.Targets;
             int n = Simulation.Count;
@@ -1205,8 +1211,11 @@ namespace CrimsonVeil.Veil
             if (ShapeForm == VeilForm.Whip)
             {
                 if (whipCoil == null || whipCoil.Length != n) { whipCoil = new Vector2[n]; VeilFormLibrary.BuildWhipCoil(whipCoil); }
+                // (it is coiled again only once he has stopped lashing: between the blows of a combo it stays out)
+                sinceLash = t >= 0f || Latched != null ? 0f : sinceLash + dt;
                 whipOpen = Latched != null ? 1f
-                    : t >= 0f ? Mathf.Max(whipOpen, VeilWeaponPose.WhipUncoil(t)) : Mathf.MoveTowards(whipOpen, 0f, dt / WhipCoilTime);
+                    : t >= 0f ? Mathf.Max(whipOpen, VeilWeaponPose.WhipUncoil(t))
+                    : sinceLash < WhipCoilDelay ? whipOpen : Mathf.MoveTowards(whipOpen, 0f, dt / WhipCoilTime);
             }
             for (int i = 0; i < n; i++)
             {
@@ -1279,7 +1288,7 @@ namespace CrimsonVeil.Veil
                 int handIndex = Mathf.Clamp(Mathf.CeilToInt(stockEnd * (n - 1)), 0, n - 1); // the stiff handle, then the lash
                 Array.Copy(restBuf, whipBuf, n);
                 // (the delegate made once: passing the method itself made a new one every frame of the whip)
-                VeilWeaponPose.WhipChain(restBuf, handIndex, turnAgo ??= TurnAgo, whipLag, whipBuf);
+                VeilWeaponPose.WhipChain(restBuf, handIndex, turnAgo ??= TurnAgo, VeilWeaponPose.WhipLag, whipBuf);
                 Array.Copy(whipBuf, restBuf, n);
                 if (t >= 0f && !whipCracked && t >= VeilWeaponPose.WhipCrackAt)
                 {

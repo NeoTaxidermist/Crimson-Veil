@@ -71,6 +71,29 @@ namespace CrimsonVeil.Tests
         }
 
         [Test]
+        public void TurningRound_TheScarfGoesOverSlim_AndOpensOutAfter()
+        {
+            // how far the tip has swung round: not yet, halfway over the top, trailing behind him again
+            Assert.AreEqual(0f, VeilRenderer.SwungOver(1f, -1f), 1e-4f, "still streaming the old way");
+            Assert.AreEqual(0f, VeilRenderer.SwungOver(0f, -1f), 1e-4f, "over the top");
+            Assert.AreEqual(1f, VeilRenderer.SwungOver(-1f, -1f), 1e-4f, "behind him again");
+            Assert.AreEqual(1f, VeilRenderer.SwungOver(0f, 0f), 1e-4f, "no breeze: nothing to swing");
+            // it slims at once as the swing starts and opens out over a moment after
+            float slim = 0f;
+            for (int f = 0; f < 10; f++) slim = VeilRenderer.TurnSlim(slim, 0f, Dt);
+            Assert.AreEqual(1f, slim, 1e-4f, "slim within a sixth of a second");
+            float half = slim;
+            for (int f = 0; f < 6; f++) half = VeilRenderer.TurnSlim(half, 1f, Dt);
+            Assert.That(half, Is.InRange(0.5f, 0.9f), "opening out gently, not at once");
+            for (int f = 0; f < 60; f++) slim = VeilRenderer.TurnSlim(slim, 1f, Dt);
+            Assert.AreEqual(0f, slim, 1e-4f, "full again within a second");
+            // slim, but still a band: it does not vanish into a thread
+            Assert.That(VeilRenderer.TurnWidth, Is.InRange(0.4f, 0.7f));
+            Assert.That(VeilRenderer.TurnLayers, Is.InRange(0f, 0.5f), "the layers close up on it");
+            Assert.That(VeilRenderer.TurnLayerAlpha, Is.InRange(0f, 0.4f), "and fade into it");
+        }
+
+        [Test]
         public void TheTongues_StayWithTheBand_WhenHeTurnsRound()
         {
             var sim = new VeilSimulation(new VeilSettings(), Vector3.zero) { DriftDirection = -1f, AmbientFlow = new Vector2(-0.75f, 0f), RestShapeWeight = 1f };

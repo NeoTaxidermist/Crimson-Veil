@@ -5,6 +5,25 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.72.0] – 2026-11-22
+### Opraveno
+- **Šála se při otočce z klidu netrhá na střepy.** Když se hrdina rozešel z klidu na druhou stranu, přehodila se celá šála se všemi širokými vrstvami během 0,6 s přes hlavu. Nahoře se pak okraje vrstev přeložily přes sebe a šála vypadala roztrhaná: zuby, hranaté pláty a střepy.
+- Teď šála během přetočení ztratí objem: pás se zúží na 55 % (`VeilRenderer.TurnWidth`), vrstvy se přitáhnou k pásu na 30 % odstupu (`TurnLayers`) a jazyky zesvětlí na 15 % (`TurnLayerAlpha`). Přes hlavu tak přejde čistý tenký pás. Jakmile konec šály zase vlaje za hrdinou (`SwungOver`), šála se během necelé půl sekundy znovu rozvine (`TurnSlim`).
+- Změřeno na rozchodu z klidu, vždy čtyři pokusy: přeložených úseků okrajů za přetočení bylo dřív průměrně asi 1020, teď asi 560. V nejhorším snímku asi 76 místo 133.
+- Otočka v plném běhu zůstala plynulá jako dřív.
+
+### Zkoušeno a nepoužito
+- Zkrácení šály během přetočení: rychle zkrácená šála se stáhla ke krku do klubka a konce se rozletěly do smyček. Bylo to horší.
+- Sedm dalších úprav simulace a kreslení (pojistka zlomů v rovině obrazu, odložené sklopení za hruď, vyhlazení strany vrstev a další): měřitelně nepomohly.
+
+### Zbývá
+- Na pásu jsou při přetočení místy drobné zlomy (zlomy přímo v látce).
+- Pevné došlapy nohou z plánu stylu jsem zatím nedělal.
+
+### Testy
+- `VeilMotionTests`: při otočce šála zeštíhlí hned a po přetočení se zase rozvine; zůstane pásem, nezmizí v nitku.
+- Puštěno: všech 579 EditMode testů, z PlayMode test alokací a `CastingPlayTests` (21 testů). Prošly.
+
 ## [0.71.0] – 2026-11-22
 ### Přidáno
 - **Styl hrdiny jako vrstva nad animací** (`HeroMocap.styleLayer`, ve výchozím stavu zapnuto). Dřív se tam, kde hrála nahraná animace, procedurální póza s klipem prolínala celá, takže se vlastní držení hrdiny i držení z klipu zprůměrovaly. Teď trup, krk a hlava vezmou rotaci z klipu a přičte se k ní část hrdinova vlastního natočení oproti klidové póze (`StyleShare`: trup 0,45, krk a hlava 0,4).

@@ -102,6 +102,29 @@ namespace CrimsonVeil.Veil
         /// <summary>How much the tongues follow the band instead of their own cloth while wound round the body.</summary>
         public const float SwirlFollowBand = 0.75f;
 
+        /// <summary>
+        /// How far (0..1) the scarf's tip has swung round to stream the way <paramref name="dir"/> it is blown
+        /// (<paramref name="tipDrift"/> = VeilSimulation.DriftAt(1)): 0 while it still streams the old way or passes
+        /// over the top, 1 once it trails behind him again.
+        /// </summary>
+        public static float SwungOver(float tipDrift, float dir)
+            => dir == 0f ? 1f : Mathf.InverseLerp(0.8f, 1f, tipDrift * Mathf.Sign(dir));
+
+        /// <summary>
+        /// How far (0..1) the loose scarf is slimmed for a turn: quickly all the way once it starts to swing over
+        /// (<paramref name="swungOver"/> below 1), opening out again over a moment once it trails behind him.
+        /// <paramref name="now"/> is the last value, <paramref name="dt"/> s since.
+        /// </summary>
+        public static float TurnSlim(float now, float swungOver, float dt)
+        {
+            float want = 1f - Mathf.Clamp01(swungOver);
+            return Mathf.MoveTowards(now, want, dt * (want > now ? TurnSlimIn : TurnSlimOut));
+        }
+
+        /// <summary>Slimmed for a turn: the share of its width the band keeps, of their offset from it the layers keep,
+        /// and of their opacity the tongues keep; how fast (1/s) it slims and opens out again.</summary>
+        public const float TurnWidth = 0.55f, TurnLayers = 0.3f, TurnLayerAlpha = 0.15f, TurnSlimIn = 8f, TurnSlimOut = 2.5f;
+
         /// <summary>Radians the band is turned out of the picture plane: from the side it keeps cos of it of its width
         /// (96 %), from the front it shows sin of it (about a third) instead of an edge.</summary>
         public const float BandRoll = 0.3f;
@@ -146,6 +169,7 @@ namespace CrimsonVeil.Veil
 
         Vector3 lastAnchor;
         float speedSmoothed;
+        float turnSlim;   // see TurnSlim
         float sinceSwirl = 10f;
         float settleNow;
 
@@ -378,6 +402,7 @@ namespace CrimsonVeil.Veil
             lastAnchor = p[0];
             if (speed > 40f) speed = 0f; // teleport
             speedSmoothed = Mathf.Lerp(speedSmoothed, speed, 1f - Mathf.Exp(-3f * dt));
+            turnSlim = TurnSlim(turnSlim, SwungOver(sim.DriftAt(1f), sim.DriftDirection), dt);
             float unroll = Mathf.Lerp(1f, 0.62f, Mathf.Clamp01(speedSmoothed / 8f));
             // Against a wall the end hangs down it: no spirals curling round in the pile of cloth (they made a ball of it).
             float walled = 0f;
@@ -488,6 +513,9 @@ namespace CrimsonVeil.Veil
                 widthAt[i] = Mathf.Lerp(flowW * flowProfile, formW * weaponProfile, hard * hard * hard) * Mathf.Lerp(0.45f, 1f, vit);
                 // slipping out from behind the collar it is gathered narrow, and opens out as it flies
                 widthAt[i] *= Mathf.Lerp(1f, NeckGather(t, wrapEnd), 1f - hard);
+                // swinging over his head as he turns round it gives up its volume: a slim band goes over, and it opens
+                // out again once it trails behind him (swung over full, its broad layers crumpled into shards up there)
+                widthAt[i] *= Mathf.Lerp(1f, TurnWidth, turnSlim * (1f - hard));
 
                 // (the loose scarf's length follows its strength in the cloth itself - VeilSimulation.LengthScale - so
                 // its end keeps its curls; fading the tail out instead looked like a scarf cut off)
@@ -609,6 +637,7 @@ namespace CrimsonVeil.Veil
                         braidZ = WeaponBraidDepth(f * braidScale, time, st.phase, w, hard) * braidGain;
                     }
 
+                    off *= Mathf.Lerp(1f, TurnLayers, turnSlim * loose);   // (the layers close up on the band, as above)
                     Vector3 ov = nrm * off;
                     // The band itself is kept from rising over the head; the tongues further back fan as in the key
                     // art - the upper one climbs into its hook, the lower ones stay close under the band.
@@ -671,6 +700,7 @@ namespace CrimsonVeil.Veil
                     alpha *= Mathf.Lerp(LooseLayerAlpha(s, f), 1f, hard);
                     if (branch) alpha *= Mathf.SmoothStep(0f, 1f, u * 5f) * Mathf.Lerp(1f, 0.12f, coiled);
                     if (!main) alpha = Mathf.Lerp(Mathf.Min(1f, alpha * 1.2f), alpha, hard); // fuller tongues (the sheet)
+                    if (!main) alpha *= Mathf.Lerp(1f, TurnLayerAlpha, turnSlim * loose);    // (and fade into it)
 
                     // a tongue of flame ripples on its own, out of step with the band
                     if (branch) c += nrm * (FlameRipple(f, time + st.phase * 0.4f) * TongueRipple * loose);

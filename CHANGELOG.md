@@ -5,6 +5,21 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.66.0] – 2026-11-22
+### Změněno
+- **Úlomky po útocích jsou zpátky.** Kouř zbraně a kouř za švihem (`weaponRate` 2, `swingRate` 2,5) jsem ve verzi 0.64.0 vypnul omylem: zaměnil jsem je s úlomky volné šály, které vadily. Tyhle se ti líbily. Volná šála dál úlomky nepouští.
+- **Zepředu se šála rozevře na obě strany.** Vějíř jazyků do hloubky šel jen dozadu, takže zepředu (hloubka scény je tam šířkou obrazu) se šála rozevřela jen na jednu stranu a nad hlavou zůstávala úzká ploutev. Jazyky se teď střídavě rozevírají ke kameře a od ní (`VeilStrands.DepthSide`). Zboku vypadá šála stejně.
+
+### Opraveno
+- **Ploché „destičky“ na rohu bloku:** v pádu se víry na koncích rozvinou do rovných jazyků, ale měly přitom plnou délku až 1,6 m. Z rovného širokého jazyka byl klín s ostrými hranami. V pádu se teď víry i zkrátí až na 40 % (`CurlLengthInTilt`).
+
+### Zbývá
+- Při dvojskoku s kotoulem a následném pádu těsně podél vysokého bloku se šála na rohu asi 5 snímků zamotá do klubíčka. Ploché destičky jsou pryč.
+
+### Testy
+- `VeilMotionTests`: jazyky se rozevírají na obě strany pásu; zbraň kouří a švih nechává úlomky.
+- Puštěno: všech 576 EditMode testů, z PlayMode test alokací a `CastingPlayTests` (21 testů). Prošly.
+
 ## [0.65.0] – 2026-11-22
 ### Opraveno
 - **Šála u zdi stoupá jako plamen.** Když hrdina stál zády ke zdi, vítr šálu foukal do zdi a ta se zmuchlala do hromádky za hlavou. Teď simulace měří volné místo za hrdinou ve směru vlání. Když je zeď blíž, než je šála dlouhá, esíčko se zvedne podél zdi nahoru (`VeilSimulation.WallTilt`, `RoomBehind`, nejvýš 1,3 rad). Čím blíž zeď, tím strměji, a náklon náběhne i odezní plynule. Podlaha pod hrdinou ani římsa nad ním se za zeď nepočítají.

@@ -301,8 +301,8 @@ MonoBehaviour:
   baseRate: 0
   speedRate: 0
   dropShare: 0.3
-  weaponRate: 0
-  swingRate: 0
+  weaponRate: 2
+  swingRate: 2.5
   lifetime: 1.1
   widthRange: {x: 0.015, y: 0.045}
   followSharpness: 1.6

@@ -330,11 +330,16 @@ namespace CrimsonVeil.Tests
             Assert.AreEqual(VeilStrands.DepthFan, VeilStrands.DepthOf(n - 1, n), 1e-5f, "the last tongue fans out farthest");
             Assert.GreaterOrEqual(VeilStrands.DepthFan, 0.3f, "a flame's volume, not a sheet 0.2 m thick (from above it was a thin line)");
             float last = -1f;
+            int towards = 0, away = 0;
             for (int s = VeilRenderer.MainStrand + 1; s < n; s++)
             {
-                Assert.Greater(VeilStrands.DepthOf(s, n), last, "fanned out in order");
-                last = VeilStrands.DepthOf(s, n);
+                float d = VeilStrands.DepthOf(s, n);
+                Assert.Greater(Mathf.Abs(d), last, "fanned out in order");
+                last = Mathf.Abs(d);
+                if (d < 0f) towards++; else away++;
             }
+            Assert.Greater(towards, 1, "to both sides of the band: from the front it opens out (all behind it, it was a thin fin)");
+            Assert.Greater(away, 1);
             Assert.Greater(VeilRenderer.DepthRoll, 0.2f, "the fanned tongues turn their faces up and out");
             Assert.Less(VeilRenderer.DepthRoll, 0.8f, "but from the side they keep most of their width");
             Assert.Less(VeilRenderer.WeaponTintContrast, 0.75f, "a weapon is the scarf's cloth set solid, not a scribble of bright and dark lines");
@@ -382,8 +387,8 @@ namespace CrimsonVeil.Tests
             var so = new SerializedObject(wisps);
             Assert.AreEqual(0f, so.FindProperty("baseRate").floatValue, "no drops or threads off the loose scarf: in motion they read as broken pieces of it");
             Assert.AreEqual(0f, so.FindProperty("speedRate").floatValue);
-            Assert.AreEqual(0f, so.FindProperty("weaponRate").floatValue, "nor round a weapon: the flecks read as broken pieces of it");
-            Assert.AreEqual(0f, so.FindProperty("swingRate").floatValue, "nor behind a swing");
+            Assert.Greater(so.FindProperty("weaponRate").floatValue, 0f, "a weapon still smokes (the user likes its flecks)");
+            Assert.Greater(so.FindProperty("swingRate").floatValue, 0f, "and a swing leaves its flecks of smoke behind");
         }
     }
 }

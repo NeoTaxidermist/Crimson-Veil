@@ -557,7 +557,7 @@ namespace CrimsonVeil.Veil
                 }
                 // (the tongues fanned out in depth turn their faces a little up and out: seen from above or behind
                 // they show cloth, not a row of edges)
-                float strandTwist = branch ? (st.phase * 0.25f + DepthRoll * VeilStrands.DepthShare(s, Strands.Length)) * turnFacing : 0f;
+                float strandTwist = branch ? (st.phase * 0.25f + DepthRoll * VeilStrands.DepthShare(s, Strands.Length) * VeilStrands.DepthSide(s)) * turnFacing : 0f;
                 int baseF = s * perStrand;
                 float lastTwist = 0f, lastCup = 0f;
 
@@ -693,7 +693,9 @@ namespace CrimsonVeil.Veil
                 float turns = Mathf.Lerp(st.curlSign * 0.2f * flicker, LooseCurl(st) * breathe * unroll, looseEnd);
                 // A pointed weapon ends in its point: the core gets no flame tongue curling off the tip.
                 float tongue = main && Pointed(veil.ShapeForm) ? 0f : FlameTongueLength(main) * (1f - coiled);
-                float length = Mathf.Lerp(tongue * flicker, st.curlLength * curlScale * (1f - 0.6f * walled), looseEnd) * Mathf.Lerp(0.5f, 1f, reach);
+                // (unrolled in a fall the whorl is a straight stroke: at its full length it stood out as a broad flat
+                // wedge with hard edges, CurlLengthInTilt)
+                float length = Mathf.Lerp(tongue * flicker, st.curlLength * curlScale * (1f - 0.6f * walled) * CurlLengthInTilt(sim.TrailTilt), looseEnd) * Mathf.Lerp(0.5f, 1f, reach);
                 lastTan.z = 0f;
                 Vector3 dir = lastTan.sqrMagnitude > 1e-10f ? lastTan.normalized : Vector3.down;
                 // Flames rise: a weapon's tongues bend up and back, away from the direction of the blow.
@@ -1119,6 +1121,9 @@ namespace CrimsonVeil.Veil
 
         /// <summary>How firmly the drawn loose cloth is put out of walls while the scarf is tilted by <paramref name="tilt"/> (radians) into a fall.</summary>
         public static float KeepOutInTilt(float tilt) => 1f - Mathf.SmoothStep(0f, 1f, Mathf.Abs(tilt) / 0.6f);
+
+        /// <summary>How much of their length the end whorls keep while the scarf is tilted by <paramref name="tilt"/> into a fall.</summary>
+        public static float CurlLengthInTilt(float tilt) => 1f - 0.6f * Mathf.SmoothStep(0f, 1f, Mathf.Abs(tilt) / 0.9f);
 
         /// <summary>How wound up the end whorls stay while the scarf is tilted by <paramref name="tilt"/> (radians) into a fall.</summary>
         public static float UnrollInTilt(float tilt) => 1f - 0.8f * Mathf.SmoothStep(0f, 1f, Mathf.Abs(tilt) / 0.9f);

@@ -80,7 +80,13 @@ namespace CrimsonVeil.Veil
         public static float DepthShare(int s, int count) => s <= VeilRenderer.MainStrand ? 0f : (float)(s - VeilRenderer.MainStrand) / Mathf.Max(1, count - 1 - VeilRenderer.MainStrand);
 
         /// <summary>Depth (m, + away from the camera) of strand <paramref name="s"/>'s tail behind the band.</summary>
-        public static float DepthOf(int s, int count) => s == 0 ? -0.03f : DepthShare(s, count) * DepthFan;
+        public static float DepthOf(int s, int count) => s == 0 ? -0.03f : DepthShare(s, count) * DepthFan * DepthSide(s);
+
+        /// <summary>
+        /// Which side of the band strand <paramref name="s"/> fans to: in turn towards the camera and away from it, so
+        /// seen from the front the scarf opens out to both sides (all behind it, it showed as a thin fin over his head).
+        /// </summary>
+        public static float DepthSide(int s) => s <= VeilRenderer.MainStrand ? 0f : ((s - VeilRenderer.MainStrand) % 2 == 0 ? -1f : 1f);
 
         public static Def[] FromDrawing()
         {

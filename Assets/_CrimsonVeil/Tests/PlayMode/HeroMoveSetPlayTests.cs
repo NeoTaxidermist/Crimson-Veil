@@ -1210,6 +1210,124 @@ namespace CrimsonVeil.Tests
         }
 
         [UnityTest]
+        public IEnumerator OnTheRing_TheWhipRunsTautToTheIron_AndIsReeledInWhenHeLetsGo()
+        {
+            // The rope from his hand to the ring was left to the cloth's springs: its end hung up to 2 m short of the ring,
+            // and climbed close under it the rope - a metre longer than the way there - rippled. It lies on its line now.
+            yield return StartAt(new Vector3(Ring.x - 2.5f, 0.05f, 0f));
+            input.jump = true; input.jumpHeld = true;
+            yield return Wait(0.25f);
+            input.cast = VeilForm.Whip;
+            yield return Until(() => controller.Motor.IsSwinging, 1f);
+            input.jumpHeld = false;
+            Assert.IsNotNull(veil.Latched, "the whip caught the ring");
+            yield return Wait(0.5f);   // (thrown, caught, drawn taut)
+            VeilFormLibrary.WhipHandleSpan(out _, out _, out float ropeFrom);
+            float offRing = 0f, bent = 0f, slack = 0f, shortest = 99f;
+            Action rope = () =>
+            {
+                var p = veil.Simulation.Positions;
+                int n = veil.Simulation.Count;
+                offRing = Mathf.Max(offRing, Vector2.Distance(p[n - 1], Ring));
+                int first = -1, last = -1;
+                float along = 0f;
+                for (int i = 1; i < n; i++)
+                {
+                    float at = ((float)i / (n - 1) - ropeFrom) / (1f - ropeFrom);
+                    if (at < 0.02f || at > VeilWeaponPose.RopeTaut) continue;   // (the share of the lash from the hand to the ring)
+                    if (first < 0) first = i;
+                    else
+                    {
+                        along += Vector2.Distance(p[i - 1], p[i]);
+                        if (i - 2 >= first) bent = Mathf.Max(bent, Vector2.Angle(p[i - 1] - p[i - 2], p[i] - p[i - 1]));
+                    }
+                    last = i;
+                }
+                float straight = Vector2.Distance(p[first], p[last]);
+                slack = Mathf.Max(slack, along - straight);
+                shortest = Mathf.Min(shortest, straight);
+            };
+            // hanging, climbing up close under the ring, swinging
+            yield return Wait(0.4f, rope);
+            input.aimY = 1f;
+            yield return Wait(1.2f, rope);
+            input.aimY = 0f;
+            input.moveX = 1f;
+            yield return Wait(0.6f, rope);
+            input.moveX = -1f;
+            yield return Wait(0.6f, rope);
+            input.moveX = 0f;
+            Debug.Log($"[rope on the ring] its end {offRing:F2} m from the ring's centre at most, bent {bent:F1} deg, {slack * 100f:F1} cm of slack, shortest {shortest:F2} m");
+            Assert.Less(offRing, VeilWeaponPose.RingRim + 2f * VeilWeaponPose.RingWind + VeilWeaponPose.RopeEnd + 0.1f, "its end is at the ring, hanging from the knot (it hung up to 2 m short of it)");
+            Assert.Less(bent, 8f, "the rope is straight: no ripples in it");
+            Assert.Less(slack, 0.05f, "and taut under his weight");
+            Assert.Less(shortest, 2.6f, "(he climbed up close under the ring: there it rippled most)");
+
+            // letting go: the rope runs back to him along its own line and out behind him as the scarf
+            int tipNode = veil.Simulation.Count - 1;
+            Vector2 tip = veil.Simulation.Positions[tipNode];
+            float fastest = 0f, fastestAt = 0f, fastestStep = 0f, fastestDt = 0f, letGo = Time.time;
+            input.jump = true;
+            yield return Wait(0.7f, () =>
+            {
+                Vector2 at = veil.Simulation.Positions[tipNode];
+                float step = Vector2.Distance(at, tip);
+                if (Time.deltaTime > 1e-4f && step / Time.deltaTime > fastest)
+                {
+                    fastest = step / Time.deltaTime; fastestAt = Time.time - letGo; fastestStep = step; fastestDt = Time.deltaTime;
+                }
+                tip = at;
+            });
+            Debug.Log($"[rope let go] its end at {fastest:F0} m/s at most ({fastestStep:F2} m in a frame of {fastestDt * 1000f:F1} ms, {fastestAt:F2} s after he let go)");
+            Assert.IsNull(veil.Latched, "let go");
+            Assert.AreEqual(VeilForm.Flow, veil.Form, "let go of, the whip melts back into the scarf at once");
+            Assert.Less(fastest, 75f, "reeled in: its end does not leap (3 to 5 m in a frame: over 100 m/s)");
+        }
+
+        [UnityTest]
+        public IEnumerator TheLash_OnceItHasCracked_FallsSlackInOneCurve_WithNoRipples()
+        {
+            // After the crack the lash was the cloth's again: it stood out level in the air and the scarf's own shape,
+            // pulling its soft end back behind his neck, crumpled it into ripples (up to 19 bends in 30 nodes, up to 2 m
+            // off its line). It is laid on its line all through: thrown, then let fall from the stock onto the floor.
+            yield return StartAt(new Vector3(-12f, 0.05f, 0f));
+            input.cast = VeilForm.Whip;
+            yield return Until(() => veil.AttackProgress >= 0f, 1f);
+            Assert.GreaterOrEqual(veil.AttackProgress, 0f, "the lash is thrown");
+            VeilFormLibrary.WhipHandleSpan(out _, out _, out float stockEnd);
+            int most = 0;
+            float off = 0f, lowest = 9f, slackest = 0f;
+            yield return Until(() => veil.Form == VeilForm.Flow, 3f, () =>
+            {
+                float t = veil.AttackProgress;
+                if (veil.Form != VeilForm.Whip || (t >= 0f && t < VeilWeaponPose.WhipHeldTo + 0.02f)) return;   // (once it has cracked and been held)
+                var p = veil.Simulation.Positions;
+                var line = veil.Simulation.Targets;
+                int n = veil.Simulation.Count;
+                int from = Mathf.Clamp(Mathf.CeilToInt(stockEnd * (n - 1)), 1, n - 2);
+                int turns = 0;
+                float lastSide = 0f;
+                for (int i = from + 1; i < n - 1; i++)
+                {
+                    Vector2 a = p[i] - p[i - 1], b = p[i + 1] - p[i];
+                    off = Mathf.Max(off, Vector2.Distance(p[i], line[i]));
+                    if (Vector2.Angle(a, b) < 12f) continue;
+                    float side = Mathf.Sign(a.x * b.y - a.y * b.x);
+                    if (lastSide != 0f && side != lastSide) turns++;
+                    lastSide = side;
+                }
+                most = Mathf.Max(most, turns);
+                lowest = Mathf.Min(lowest, p[n - 1].y - Pos.y);
+                slackest = Mathf.Max(slackest, veil.WhipSlack);
+            });
+            Debug.Log($"[the lash let fall] {most} ripples at most, {off * 100f:F1} cm off its line, its end down to {lowest:F2} m, slack {slackest:F2}");
+            Assert.Greater(slackest, 0.6f, "it was let fall");
+            Assert.LessOrEqual(most, 2, "one curve: no ripples in it (it crumpled into up to 19 bends)");
+            Assert.Less(off, 0.1f, "it lies on its own line (the scarf's shape pulled it up to 2 m off it)");
+            Assert.Less(lowest, 0.4f, "and comes down to the floor (it stood out level in the air)");
+        }
+
+        [UnityTest]
         public IEnumerator TheWhip_CatchesARing_HeSwingsBothFistsOnTheRope_AndLetsGoWithAJump()
         {
             yield return StartAt(new Vector3(Ring.x - 2.5f, 0.05f, 0f));

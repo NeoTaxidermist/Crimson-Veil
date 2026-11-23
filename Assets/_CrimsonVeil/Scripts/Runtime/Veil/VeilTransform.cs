@@ -161,6 +161,53 @@ namespace CrimsonVeil.Veil
             }
         }
 
+        /// <summary>The share of the melt in which the rope let go of a ring is reeled in (then it lies on the scarf's
+        /// line until the cloth takes it over).</summary>
+        public const float ReelShare = 0.7f;
+
+        /// <summary>
+        /// The rope let go of a ring, reeled in: the whole of it runs back along its own line - down the rope, through
+        /// the hand, up the arm to the neck - and out behind him along the line the scarf is laid on, every node keeping
+        /// to that one path and ending on its own place in the scarf. (Unrolled neck first like the other weapons,
+        /// <see cref="MeltChain"/>, the first pieces to turn swung all the rope beyond them round with them: metres of it,
+        /// its tip 3 m in a frame. And reeled onto the scarf's level rest line instead of where the cloth is laid - up
+        /// behind him as he drops from the ring - it leapt over to that line as the cloth took it: 0.6 m in a frame.)
+        /// <paramref name="from"/> is the rope's shape and <paramref name="behind"/> the scarf's line, both from the neck,
+        /// in the world's left-and-right; <paramref name="pts"/> receives the path.
+        /// </summary>
+        public static void ReelIn(Vector2[] from, Vector2[] behind, float melt, Vector2[] pts, float[] guide)
+        {
+            int n = from.Length;
+            float reeled = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(melt / ReelShare));
+            // (led all the way, then handed over to the cloth)
+            float led = 1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.88f, 1f, melt));
+            float arc = 0f, back = 0f;
+            for (int i = 0; i < n; i++)
+            {
+                if (i > 0)
+                {
+                    arc += Vector2.Distance(from[i - 1], from[i]);
+                    back += Vector2.Distance(behind[i - 1], behind[i]);
+                }
+                // (where the node is along the one path: ahead of the neck on the rope's line, behind it on the scarf's)
+                float at = Mathf.Lerp(arc, -back, reeled);
+                pts[i] = at >= 0f ? AlongLine(from, at) : AlongLine(behind, -at);
+                guide[i] = i == 0 ? 0f : led;
+            }
+        }
+
+        /// <summary>The point <paramref name="arc"/> m along the polyline <paramref name="line"/> from its start.</summary>
+        public static Vector2 AlongLine(Vector2[] line, float arc)
+        {
+            for (int i = 1; i < line.Length; i++)
+            {
+                float d = Vector2.Distance(line[i - 1], line[i]);
+                if (arc <= d) return d > 1e-6f ? Vector2.Lerp(line[i - 1], line[i], Mathf.Clamp01(arc / d)) : line[i];
+                arc -= d;
+            }
+            return line[line.Length - 1];
+        }
+
         /// <summary>
         /// The shield ring unfurls from the hand like a thrown loop: at <paramref name="s"/> = 0 the whole ring is
         /// gathered at the palm, at 1 it is closed round the body. <paramref name="points"/>[from..] is the ring

@@ -166,6 +166,13 @@ namespace CrimsonVeil.Veil
         public float HeldFrom { get; set; }
         public float HeldTo { get; set; }
         public float HeldWeight { get; set; }
+        /// <summary>The loose scarf's place for node <paramref name="i"/> (the world's x and y): the line it is laid
+        /// along from the neck this step and led to - level behind him, tilted up in a fall, round a wall.</summary>
+        public Vector2 PlaceOf(int i) => shapeAt[i];
+        /// <summary>0..1 how firmly the rest of the weapon, beyond <see cref="HeldTo"/>, is held on its line as well
+        /// (the whip: thrown, fallen slack, lashed round a ring - its line is laid for it, the cloth's springs and the
+        /// scarf's own shape have no say in it).</summary>
+        public float HeldBeyond { get; set; }
 
         /// <summary>The set weapon's turn through depth (radians, + far end behind the hero) about
         /// <see cref="WeaponPivot"/>: a blow sweeps through the depth of the scene (VeilWeaponPose.SweepTilt).</summary>
@@ -1341,9 +1348,7 @@ namespace CrimsonVeil.Veil
             // the half-set cloth in between stays soft. Its previous position moves along, so no speed is invented.
             for (int i = 1; i < Count; i++)
             {
-                float rigid = RigidHold(H(i));
-                float fi = (float)i / (Count - 1);
-                if (HeldWeight > 0f && fi >= HeldFrom && fi <= HeldTo) rigid = Mathf.Max(rigid, HeldWeight);
+                float rigid = Mathf.Max(RigidHold(H(i)), Held(i));
                 if (rigid <= 0f) continue;
                 Vector3 want = Targets[i] + targetOffset;
                 want.z = Positions[i].z;
@@ -1383,10 +1388,11 @@ namespace CrimsonVeil.Veil
                 z = Mathf.Clamp(z, zRest - s.maxDepth, zRest + s.maxDepth);
                 float plane = float.IsNaN(WeaponPlane) ? a.z - s.weaponDepth : WeaponPlane;
                 z = Mathf.Lerp(z, plane + SweepDepth(Positions[i], WeaponPivot, WeaponTilt), weapon);
-                if (HeldWeight > 0f && t >= HeldFrom && t <= HeldTo) z = Mathf.Lerp(z, plane + (float.IsNaN(WeaponPlane) ? HeldTuck : 0f), HeldWeight);
+                float heldHere = Held(i);
+                if (heldHere > 0f) z = Mathf.Lerp(z, plane + (float.IsNaN(WeaponPlane) ? HeldTuck : 0f), heldHere);
                 // A weapon melting back passes over the body: drawn in front, so the torso doesn't swallow it.
                 z = Mathf.Lerp(z, a.z - s.weaponDepth, GuideWeight[i]);
-                float held = Mathf.Max(weapon, Mathf.Max(GuideWeight[i], HeldWeight > 0f && t >= HeldFrom && t <= HeldTo ? HeldWeight : 0f));
+                float held = Mathf.Max(weapon, Mathf.Max(GuideWeight[i], heldHere));
                 previous[i].z = Mathf.Lerp(previous[i].z + (z - Positions[i].z), z, held);   // (held: no speed in depth)
                 Positions[i].z = z;
             }
@@ -1447,7 +1453,7 @@ namespace CrimsonVeil.Veil
             float skin = Settings.bodySkin;
             for (int i = 1; i < Count; i++)
             {
-                float loose = (1f - Mathf.Max(RigidHold(H(i)), GuideWeight[i])) * Free(i);
+                float loose = (1f - Mathf.Max(Mathf.Max(RigidHold(H(i)), GuideWeight[i]), Held(i))) * Free(i);
                 if (loose <= 0.01f) continue;
                 for (int c = 0; c < Body.Count; c++)
                 {
@@ -1492,12 +1498,23 @@ namespace CrimsonVeil.Veil
         /// It loses its speed into the wall and slides along it with a little friction. Set weapons are left alone
         /// (they are held in the hand).
         /// </summary>
+        /// <summary>0..1 how firmly node <paramref name="i"/> is held on the weapon's line (the span HeldFrom..HeldTo).</summary>
+        float Held(int i)
+        {
+            if (HeldWeight <= 0f) return 0f;
+            float f = (float)i / (Count - 1);
+            if (f < HeldFrom) return 0f;
+            return f <= HeldTo ? HeldWeight : HeldWeight * HeldBeyond;
+        }
+
         void CollideWithObstacles()
         {
             if (Obstacles.Count == 0) return;
             for (int i = 1; i < Count; i++)
             {
-                float loose = 1f - Mathf.Max(RigidHold(H(i)), GuideWeight[i]);
+                // (what is held on a weapon's line is placed by it: the whip lies on the floor where its own line lays
+                // it - pushed out of the floor's skin here as well, the lash was bunched up to half its length)
+                float loose = 1f - Mathf.Max(Mathf.Max(RigidHold(H(i)), GuideWeight[i]), Held(i));
                 if (loose <= 0.01f) continue;
                 Vector2 p = Positions[i];
                 Vector2 from = Positions[i - 1];

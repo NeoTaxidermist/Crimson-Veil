@@ -191,7 +191,7 @@ namespace CrimsonVeil.Veil
 
         /// <summary>Slimmed for a turn: the share of its width the band keeps, of their offset from it the layers keep,
         /// and of their opacity the tongues keep; how fast (1/s) it slims and opens out again.</summary>
-        public const float TurnWidth = 0.55f, TurnLayers = 0.3f, TurnLayerAlpha = 0.15f, TurnSlimIn = 8f, TurnSlimOut = 2.5f;
+        public const float TurnWidth = 0.66f, TurnLayers = 0.38f, TurnLayerAlpha = 0.5f, TurnSlimIn = 8f, TurnSlimOut = 2.5f;
 
         /// <summary>Radians the band is turned out of the picture plane: from the side it keeps cos of it of its width
         /// (96 %), from the front it shows sin of it (about a third) instead of an edge.</summary>

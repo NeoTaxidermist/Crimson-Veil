@@ -90,8 +90,10 @@ Material:
     - _SrcBlendAlpha: 1
     - _Surface: 1
     - _Volume: 1
-    - _WeaponInk: 0.85
+    - _WeaponHeat: 0.25
+    - _WeaponInk: 1
     - _WeaponStroke: 0.3
+    - _WeaponTone: 0.74
     - _ZWrite: 0
     m_Colors:
     - _BaseColor: {r: 1.25, g: 0.06, b: 0.07, a: 1}

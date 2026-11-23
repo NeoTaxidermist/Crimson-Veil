@@ -5,6 +5,41 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.79.0] – 2026-11-23
+### Opraveno
+- **Bič na kruhu už „nelevituje“.** Lano od ruky ke kruhu nebylo drženo na svém tvaru, bylo ponecháno pružinám látky. Při dlouhém laně proto konec biče na kruh vůbec nedosáhl (visel až 2,2 m pod ním), při krátkém byla látka o metr delší než vzdálenost ke kruhu a shrnula se do vlnek.
+  - Lano teď vede napnuté od ruky k železu kruhu na straně hrdiny, je kolem něj jednou omotané a konec visí z uzlu a lehce se houpe (`VeilWeaponPose.WhipOnRing`). Dřív jeho tvar končil ve vzduchu uprostřed kruhu.
+  - **Po puštění kruhu se lano navine zpět do šály** (`VeilTransform.ReelIn`): celé běží po své vlastní čáře k ruce, přes paži ke krku a ven za hrdinu, vzdálený konec zůstává u kruhu, dokud se nenavine. Bič se rozplyne hned při puštění; dřív zůstal čtvrt sekundy v ruce a při saltu se smrskl a přeskočil.
+- **Bič se po prásknutí nekrabatí do vlnek.** Po prásknutí byl bič znovu „poddajný“ a jeho měkký konec táhl tvar šály dozadu za krk proti tvaru biče. Výsledek byl až 19 zlomů na 30 uzlech, konec až 2 m mimo tvar a šleh trčící vodorovně ve vzduchu.
+  - Bič teď leží celou dobu přesně na svém tvaru (`VeilSimulation.HeldBeyond`). Po prásknutí plynule spadne: od rukojeti se stáčí dolů obloukem provazu, dosedne na zem a leží po ní ve směru hodu (`VeilWeaponPose.WhipSlack`). Mísí se úhly kousků, ne jejich polohy, takže bič drží délku a nikde nemá roh.
+  - U zdi steče po její stěně a složí se zpět od její paty, místo aby do kamene vjel.
+  - Když se bič rozplývá do šály ze země, nejdřív se zvedne zpět na čáru hodu a teprve pak jde přes rameno.
+- **Zbraně mají stejnou karmínovou jako šála.** V obraze měla šála průměr červených pixelů (112, 4, 4), zbraně (150, 26, 26), tedy o třetinu světlejší a do růžova. Zbraň měla nižší prahy pro světlé tahy, „žár“ v jádru, odlesk ze čtvrtiny bílý a mezi tahy byla průsvitná, takže prosvítalo šedé pozadí. V shaderu je teď zbraň celá z inkoustu šály (`_WeaponInk` 1), s malým žárem (`_WeaponHeat` 0,25), neprůsvitným tělem a tónem staženým k vrstvám šály (`_WeaponTone` 0,74). Tvar ani odlesk hran se nemění.
+- **V otočce je víc než jeden pruh látky.** Šála se v otočce schválně ztenčuje, ale vrstvy se stáhly a zbledly tak, že zbyl jediný pruh. Teď si pás drží 66 % šířky (dřív 55 %), vrstvy 38 % rozestupu (dřív 30 %) a 50 % krytí (dřív 15 %): šála je v otočce štíhlejší, ale pořád vrstvená.
+
+### Změřeno
+Ve hře, snímek po snímku (24 snímků za sekundu), není-li uvedeno jinak:
+- Lano na kruhu při houpání a šplhání: odchylka od tvaru 0 až 5 cm (dřív 0,15 až 2,2 m). V testu na skutečném hrdinovi: konec nejvýš 0,68 m od středu kruhu (uzel a visící konec), ohyb lana nejvýš 0,7°, vůle 0,2 cm, i při laně zkráceném na 1,1 m.
+- Šleh po prásknutí: 0 až 1 vlnka (dřív až 19), odchylka od tvaru 0 cm (dřív až 2,5 m), největší ohyb při ležení na zemi 16 až 18°.
+- Puštění kruhu: konec lana se v prvním snímku pohne o 0,22 až 0,25 m a pak se asi po metru za snímek navine během čtyř až pěti snímků (dřív skok 3 až 5 m v jednom snímku). V testu na skutečném hrdinovi nejvýš 38 m/s.
+- Odstíny (průměr červených pixelů, R, G, B): šála (122 až 128, 4 až 7, 4 až 7); meč (129 až 133, 27 až 29, 27 až 29), kopí (126, 27, 27), štít (117, 18, 18), luk (131, 21, 21), bič (129, 19, 19). Před úpravou: meč (150 až 153, 26, 26), kopí (148, 26, 26), štít (158, 28, 27), luk (166, 23, 22), bič (136, 20, 21).
+
+### Poctivě
+- Hozený, ještě napnutý šleh zdí dál prochází; ze zdi ho vyvede až pád.
+- Když se hrdina otočí s bičem venku, šleh se překlopí přes něj na druhou stranu stejně jako ostatní zbraně; neobtáčí ho.
+- Červená složka zbraní teď odpovídá šále, zelená a modrá jsou ale pořád o 12 až 25 vyšší: zbraně jsou o něco méně syté než šála.
+- Test zamčených chodidel z verze 0.77.0 je nestálý (viz Testy). V testu, kde má každý snímek jinou délku, se zamčená chodidla posunou o 3 až 5 cm na došlap; při pevném kroku záznamu jsem tehdy naměřil 0 až 1,3 cm za celý klip. Je to k samostatnému prošetření.
+- Hodnoty pro otočku jsem volil od oka ze snímků: první pokus (72 / 50 / 60 %) rozhodil vrstvy až před obličej, tak jsem ubral.
+- Cestou jsem udělal a opravil tyto chyby: pevně držený bič se při rozplývání otočil kolem ruky a šála spadla k nohám; u zdi se šleh zrcadlil do dlouhé smyčky; v navíjení lana jsem použil `Mathf.SmoothStep` s jiným významem parametrů, takže bylo vedeno jen z 12 %; lano jsem nejdřív navíjel na klidovou čáru šály místo tam, kam ji simulace klade, a při předání přeskočilo o 0,6 m.
+- Starší chyba, kterou jsem nechal být: `VeilTransform.MeltGuide` má stejnou záměnu parametrů `Mathf.SmoothStep`, takže rozplývající se zbraně jsou vedeny nejvýš z 12 %. Oprava by změnila rozplývání všech zbraní, proto ji nedělám bez zadání.
+
+### Testy
+- `VeilWeaponMotionTests` (4 nové): šleh puštěný z ruky padá obloukem, drží délku, nemá roh a leží na zemi; u zdi steče po stěně a vrací se od paty; lano na kruhu vede napnuté k železu, je omotané a konec visí z uzlu; puštěné lano se navíjí po své čáře, žádný uzel nepřeskočí a skončí na místě, kam šálu klade simulace.
+- `VeilRendererTests` (1 nový): materiály šály mají zbraně celé z inkoustu, tón stažený k šále a jen malý žár.
+- `VeilMotionTests`: upravené meze ztenčení v otočce (vrstvy zůstávají vrstvami).
+- `HeroMoveSetPlayTests` (2 nové): na kruhu je lano rovné a napnuté při visu, šplhu i houpání a po puštění se navine bez skoku; šleh po prásknutí spadne jedním obloukem na zem bez vlnek.
+- Puštěno: celý EditMode (605 testů) a celá sada PlayMode (127 testů). EditMode: při prvním spuštění neprošel nový test pádu šlehu (ohyb při dopadu 30,6° místo pod 28°), po úpravě neprošel jeho další krok (konec biče 2,8 cm nad zemí), po další úpravě prošlo všech 605. PlayMode: nový test lana na kruhu napoprvé neprošel na rychlosti konce lana po puštění (90 m/s, mez 75), po opravě navíjení prošel (38 m/s). V celé sadě prošlo 126 ze 127: neprošel `TheFootThatCarriesHim_StaysWhereItWasSetDown_WalkingAndRunning` (zamčená chodidla z verze 0.77.0). Ten samý test jsem pustil dvakrát na předchozím commitu v0.78.0 bez dnešních změn: jednou prošel (posun chodidel 0,23 m při mezi 0,24 m), jednou neprošel (0,26 m). Je tedy nestálý sám o sobě a s touto změnou nesouvisí; nechal jsem ho beze změny.
+
 ## [0.78.0] – 2026-11-22
 ### Změněno
 - **Tělo jde za úderem: hrdina se dívá tam, kam útočí, a při úderu vzhůru se zakloní.**

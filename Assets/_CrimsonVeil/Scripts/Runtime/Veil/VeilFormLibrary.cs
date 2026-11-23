@@ -643,6 +643,142 @@ namespace CrimsonVeil.Veil
             }
         }
 
+        /// <summary>Degrees the slack lash bends from one piece to the next as it falls from the stock: a rope's curve,
+        /// not a corner.</summary>
+        public const float WhipSlackBend = 16f;
+        /// <summary>Seconds the lash takes to fall slack once it has cracked, and to be taken up again by the next blow.</summary>
+        public const float WhipSlackTime = 0.4f, WhipTakeUpTime = 0.07f;
+        /// <summary>How high (m) over the floor the lash lies on it, and from how high over it the falling lash starts
+        /// to turn along it (it is laid down along the floor: no corner where it lands).</summary>
+        public const float WhipOnFloor = 0.03f, WhipLandFrom = 0.7f;
+        /// <summary>Degrees under the level the lash still runs as it reaches the floor: it comes down onto it. (Turned
+        /// right along the floor it only ever neared it, and hung a few centimetres over it all its length.)</summary>
+        public const float WhipLandAngle = 8f;
+
+        /// <summary>
+        /// The way (degrees) the slack lash wants to run at <paramref name="height"/> m over the floor, heading
+        /// <paramref name="heading"/> (+1 ahead, -1 back): straight down while it is high, turning along the floor
+        /// as it comes down to it - still a little down (<see cref="WhipLandAngle"/>), so it lands.
+        /// </summary>
+        public static float WhipHang(float height, float heading)
+        {
+            float land = 1f - Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(height / WhipLandFrom));
+            return heading >= 0f ? Mathf.Lerp(-90f, -WhipLandAngle, land) : Mathf.Lerp(-90f, -180f + WhipLandAngle, land);
+        }
+
+        /// <summary>Whether the lash hangs slack at attack progress <paramref name="t"/>: in the hand between blows, and
+        /// once the thrown lash has cracked and been held (<see cref="WhipHeldTo"/>).</summary>
+        public static bool WhipFalls(float t) => t < 0f || t > WhipHeldTo;
+
+        /// <summary>How slack (0 taut .. 1 hanging) the piece of the lash at <paramref name="along"/> (0 the stock .. 1
+        /// the tip) is when the whip as a whole is <paramref name="slack"/>: the tip, which nothing holds, goes first.</summary>
+        public static float WhipSlackAt(float slack, float along)
+            => Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(slack * 1.3f - (1f - along) * 0.3f));
+
+        /// <summary>
+        /// The lash let go: it falls from the stock in a rope's curve - each piece bent a little further down than the
+        /// one before, until it hangs straight - reaches the floor and lies along it, the way it was going. Blended in
+        /// by <paramref name="slack"/> from the thrown lash <paramref name="lash"/>, by the pieces' ANGLES (not their
+        /// places): the lash keeps its length and has no corner at any stage of the fall. (Left to the cloth's springs
+        /// it stood out level in the air after the crack, and the scarf's own shape, pulling its soft end back behind
+        /// his neck, crumpled it into ripples: up to 19 bends in 30 nodes.)
+        /// </summary>
+        /// <param name="floorAt">The floor's height under a point of the shape (null: none); a negative infinity where
+        /// there is none.</param>
+        /// <param name="blocked">Whether a point of the shape is inside a wall (null: never): there the lash doubles
+        /// back along the floor instead of running into the stone.</param>
+        public static void WhipSlack(Vector2[] lash, int handIndex, float slack, System.Func<Vector2, float> floorAt,
+            System.Func<Vector2, bool> blocked, Vector2[] output)
+        {
+            int last = lash.Length - 1;
+            for (int i = 0; i <= handIndex && i <= last; i++) output[i] = lash[i];
+            if (handIndex >= last) return;
+            Vector2 stock = handIndex > 0 ? lash[handIndex] - lash[handIndex - 1] : lash[handIndex + 1] - lash[handIndex];
+            float hang = Mathf.Atan2(stock.y, stock.x) * Mathf.Rad2Deg;
+            float heading = stock.x >= 0f ? 1f : -1f;
+            bool turned = false, atWall = false;   // (sent back by a wall: from there on it runs the other way)
+            float onFloor = Mathf.SmoothStep(0f, 1f, slack / 0.25f);
+            for (int i = handIndex + 1; i <= last; i++)
+            {
+                Vector2 seg = lash[i] - lash[i - 1];
+                float len = seg.magnitude;
+                float own = Mathf.Atan2(seg.y, seg.x) * Mathf.Rad2Deg;
+                float along = (float)(i - handIndex) / (last - handIndex);
+                Vector2 from = output[i - 1];
+                float over = floorAt != null ? from.y - (floorAt(from) + WhipOnFloor) : float.PositiveInfinity;
+                hang = Mathf.MoveTowardsAngle(hang, WhipHang(over, heading), WhipSlackBend);
+                float angle = Mathf.LerpAngle(own, hang, WhipSlackAt(slack, along)) * Mathf.Deg2Rad;
+                var dir = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle));
+                if (turned) dir.x = heading * Mathf.Abs(dir.x);
+                else if (Mathf.Abs(dir.x) > 0.2f) heading = Mathf.Sign(dir.x);
+                Vector2 p = from + dir * len;
+                if (onFloor > 0f)
+                {
+                    if (blocked != null && blocked(p))
+                    {
+                        // a wall: it cannot go on - it drops down the wall's face and runs back from its foot (eased in
+                        // with the fall: thrown, it went through)
+                        if (!atWall) { heading = -heading; turned = true; }
+                        atWall = true;
+                        p = Vector2.Lerp(p, from + Vector2.down * len, onFloor);
+                        hang = -90f;
+                    }
+                    else atWall = false;
+                    float floor = floorAt != null ? floorAt(p) + WhipOnFloor : float.NegativeInfinity;
+                    if (p.y < floor)
+                    {
+                        // laid on the floor (or up a low step onto it), as far along it as the piece is long
+                        float rise = Mathf.Clamp(floor - from.y, -len, len);
+                        float run = Mathf.Sqrt(Mathf.Max(0f, len * len - rise * rise));
+                        var laid = new Vector2(from.x + heading * run, from.y + rise);
+                        p = Vector2.Lerp(p, laid, onFloor);
+                        hang = heading > 0f ? 0f : 180f;   // (and on along the floor)
+                    }
+                }
+                output[i] = p;
+            }
+        }
+
+        /// <summary>The grapple ring's iron: the middle of its rim, from the ring's centre (m).</summary>
+        public const float RingRim = 0.34f;
+        /// <summary>The whip wound round the ring's iron: the loop's radius (m), and how far round it goes (turns).</summary>
+        public const float RingWind = 0.09f, RingTurns = 0.85f;
+        /// <summary>The lash on a ring: up to this share of it runs from the hand to the ring, up to the second it is
+        /// wound round the iron; the rest is its end, hanging from the knot.</summary>
+        public const float RopeTaut = 0.78f, RopeWound = 0.94f;
+        /// <summary>How far (m) the whip's end hangs down from the knot.</summary>
+        public const float RopeEnd = 0.24f;
+
+        /// <summary>
+        /// The whip lashed round a ring, at <paramref name="along"/> of its lash (0 the stock .. 1 the tip): taut from
+        /// the hand to the ring's iron on his side (he hangs on it: barely a sag), wound round the iron, its end hanging
+        /// from the knot (swayed <paramref name="sway"/> m by his swing).
+        /// </summary>
+        public static Vector2 WhipOnRing(Vector2 grip, Vector2 ring, float along, float sway)
+        {
+            Vector2 to = ring - grip;
+            float dist = to.magnitude;
+            Vector2 dir = dist > 1e-4f ? to / dist : Vector2.up;
+            var side = new Vector2(-dir.y, dir.x);
+            Vector2 iron = ring - dir * Mathf.Min(RingRim, 0.5f * dist);
+            float turns = RingTurns * 2f * Mathf.PI;
+            if (along <= RopeTaut)
+            {
+                float u = along / RopeTaut;
+                // (it meets the loop along the loop's own line: no corner where it goes round the iron)
+                Vector2 sag = side.y > 0f ? -side : side;   // (the way it sags: down)
+                return Vector2.Lerp(grip, iron + side * RingWind, u) + sag * (Mathf.Sin(u * Mathf.PI) * 0.03f);
+            }
+            if (along <= RopeWound)
+            {
+                float w = (along - RopeTaut) / (RopeWound - RopeTaut) * turns;
+                return iron + (side * Mathf.Cos(w) + dir * Mathf.Sin(w)) * RingWind;
+            }
+            Vector2 knot = iron + (side * Mathf.Cos(turns) + dir * Mathf.Sin(turns)) * RingWind;
+            float v = (along - RopeWound) / (1f - RopeWound);
+            return knot + new Vector2(sway * v * v, -RopeEnd * v);
+        }
+
         public static Vector2 Rotate(Vector2 p, Vector2 pivot, float degrees)
         {
             float r = degrees * Mathf.Deg2Rad;

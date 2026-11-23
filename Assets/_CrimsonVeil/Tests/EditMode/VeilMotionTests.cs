@@ -107,9 +107,11 @@ namespace CrimsonVeil.Tests
             for (int f = 0; f < 60; f++) slim = VeilRenderer.TurnSlim(slim, 1f, Dt);
             Assert.AreEqual(0f, slim, 1e-4f, "full again within a second");
             // slim, but still a band: it does not vanish into a thread
-            Assert.That(VeilRenderer.TurnWidth, Is.InRange(0.4f, 0.7f));
-            Assert.That(VeilRenderer.TurnLayers, Is.InRange(0f, 0.5f), "the layers close up on it");
-            Assert.That(VeilRenderer.TurnLayerAlpha, Is.InRange(0f, 0.4f), "and fade into it");
+            Assert.That(VeilRenderer.TurnWidth, Is.InRange(0.55f, 0.8f));
+            // (drawn in on the band and faded right into it, the turn showed a single strip of cloth: too little. The
+            // layers stay layers through it - closer together, a little fainter)
+            Assert.That(VeilRenderer.TurnLayers, Is.InRange(0.3f, 0.45f), "the layers draw in on it, and stay layers");
+            Assert.That(VeilRenderer.TurnLayerAlpha, Is.InRange(0.4f, 0.65f), "and stay seen");
         }
 
         [Test]

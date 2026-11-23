@@ -207,6 +207,22 @@ namespace CrimsonVeil.Tests
         }
 
         [Test]
+        public void AWeapon_IsTheScarfsOwnCrimson_NotABrighterPinkerRedBesideIt()
+        {
+            // Measured in the game, the red of the picture's crimson pixels: the scarf (112, 4, 4), the weapons
+            // (150, 26, 26) - a third brighter, and pink. A weapon had lower thresholds for the scarf's bright strokes, a
+            // heat in its core, a glint a quarter white, and was thin between its streaks (the grey behind showed).
+            foreach (var path in new[] { "Assets/_CrimsonVeil/Materials/Veil.mat", "Assets/_CrimsonVeil/Materials/VeilSmoke.mat" })
+            {
+                var m = UnityEditor.AssetDatabase.LoadAssetAtPath<Material>(path);
+                Assert.IsTrue(m.HasProperty("_WeaponTone") && m.HasProperty("_WeaponHeat"), path);
+                Assert.AreEqual(1f, m.GetFloat("_WeaponInk"), 1e-4f, path + ": a weapon is all ink - none of the orange flame under it");
+                Assert.That(m.GetFloat("_WeaponTone"), Is.InRange(0.6f, 0.85f), path + ": toned to the scarf's layers");
+                Assert.LessOrEqual(m.GetFloat("_WeaponHeat"), 0.35f, path + ": only a little heat and white in it");
+            }
+        }
+
+        [Test]
         public void ScarfColours_AreTheKeyArtsCrimson_NeverOrangeOrGrey()
         {
             var m = UnityEditor.AssetDatabase.LoadAssetAtPath<Material>("Assets/_CrimsonVeil/Materials/Veil.mat");

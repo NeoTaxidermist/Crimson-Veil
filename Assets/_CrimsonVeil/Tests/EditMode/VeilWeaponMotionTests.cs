@@ -96,6 +96,156 @@ namespace CrimsonVeil.Tests
         }
 
         [Test]
+        public void TheLashLetGo_FallsFromTheStockInARopesCurve_AndLiesOnTheFloor()
+        {
+            // (after the crack the lash was the cloth's: it stood out level in the air and the scarf's own shape, pulling
+            // its soft end back behind his neck, crumpled it into ripples - up to 19 bends in 30 nodes)
+            Assert.IsTrue(VeilWeaponPose.WhipFalls(-1f), "in the hand between blows it hangs");
+            Assert.IsFalse(VeilWeaponPose.WhipFalls(VeilWeaponPose.WhipCrackAt), "thrown: taut");
+            Assert.IsFalse(VeilWeaponPose.WhipFalls(VeilWeaponPose.WhipHeldTo));
+            Assert.IsTrue(VeilWeaponPose.WhipFalls(VeilWeaponPose.WhipHeldTo + 0.01f), "cracked and held: let fall");
+            Assert.AreEqual(0f, VeilWeaponPose.WhipSlackAt(0f, 1f), 1e-5f);
+            Assert.AreEqual(1f, VeilWeaponPose.WhipSlackAt(1f, 0f), 1e-4f, "wholly slack: right up to the stock");
+            Assert.Greater(VeilWeaponPose.WhipSlackAt(0.5f, 1f), VeilWeaponPose.WhipSlackAt(0.5f, 0f) + 0.1f, "the tip, which nothing holds, goes first");
+
+            const int n = 30, hand = 4;
+            var lash = StraightWhip(n, hand);   // thrown out level, 3.75 m of it, the hand a metre over the floor
+            var outp = new Vector2[n];
+            System.Func<Vector2, float> floor = _ => -1f;
+            float lies = -1f + VeilWeaponPose.WhipOnFloor;
+            VeilWeaponPose.WhipSlack(lash, hand, 0f, floor, null, outp);
+            for (int i = 0; i < n; i++) Assert.Less(Vector2.Distance(lash[i], outp[i]), 1e-4f, "taut: as it was thrown");
+            foreach (float slack in new[] { 0.25f, 0.5f, 0.75f, 1f })
+            {
+                VeilWeaponPose.WhipSlack(lash, hand, slack, floor, null, outp);
+                float length = 0f, sharpest = 0f;
+                for (int i = hand + 1; i < n; i++)
+                {
+                    length += Vector2.Distance(outp[i - 1], outp[i]);
+                    Assert.GreaterOrEqual(outp[i].y, lies - 1e-3f, $"never under the floor ({slack})");
+                    if (i < n - 1) sharpest = Mathf.Max(sharpest, Vector2.Angle(outp[i] - outp[i - 1], outp[i + 1] - outp[i]));
+                }
+                Assert.AreEqual(0.15f * (n - 1 - hand), length, 0.02f, $"it keeps its length ({slack})");
+                Assert.Less(sharpest, VeilWeaponPose.WhipSlackBend + 12f, $"one curve, no corner in it ({slack})");
+            }
+            // wholly slack it curves down from the stock, comes down onto the floor and lies along it, the way it was thrown
+            Assert.Less(outp[hand + 3].y, -0.1f, "down from the stock");
+            Assert.AreEqual(lies, outp[n - 1].y, 1e-3f, "its end on the floor");
+            Assert.Greater(outp[n - 1].x, 1.5f, "ahead of him");
+            int lying = 0;
+            for (int i = hand + 1; i < n; i++) if (Mathf.Abs(outp[i].y - lies) < 1e-3f) lying++;
+            Assert.Greater(lying, 8, "a good length of it lies on the floor");
+            Assert.AreEqual(-90f, VeilWeaponPose.WhipHang(5f, 1f), 1e-3f, "high up it hangs straight down");
+            Assert.AreEqual(-VeilWeaponPose.WhipLandAngle, VeilWeaponPose.WhipHang(0f, 1f), 1e-3f, "at the floor it runs along it, still a little down: it is laid onto it - no corner where it lands");
+            Assert.AreEqual(-180f + VeilWeaponPose.WhipLandAngle, VeilWeaponPose.WhipHang(0f, -1f), 1e-3f, "...the way it was going");
+            Assert.That(VeilWeaponPose.WhipLandAngle, Is.InRange(3f, VeilWeaponPose.WhipSlackBend), "down enough to land, less than one piece's bend");
+        }
+
+        [Test]
+        public void TheSlackLash_MeetingAWall_DropsDownItsFace_AndRunsBackFromItsFoot()
+        {
+            const int n = 30, hand = 4;
+            var lash = StraightWhip(n, hand);
+            var outp = new Vector2[n];
+            System.Func<Vector2, float> floor = _ => -1f;
+            System.Func<Vector2, bool> wall = p => p.x > 1.5f;
+            VeilWeaponPose.WhipSlack(lash, hand, 1f, floor, wall, outp);
+            float length = 0f, furthest = 0f;
+            for (int i = hand + 1; i < n; i++)
+            {
+                length += Vector2.Distance(outp[i - 1], outp[i]);
+                furthest = Mathf.Max(furthest, outp[i].x);
+            }
+            Assert.LessOrEqual(furthest, 1.5f + 1e-3f, "not into the stone");
+            Assert.Greater(furthest, 1.3f, "up to it");
+            Assert.Less(outp[n - 1].x, 1.2f, "and back from its foot");
+            Assert.AreEqual(0.15f * (n - 1 - hand), length, 0.02f, "all of it still there");
+            // thrown (not yet slack) it goes where it was thrown - the fall brings it out of the wall
+            VeilWeaponPose.WhipSlack(lash, hand, 0f, floor, wall, outp);
+            Assert.Greater(outp[n - 1].x, 3f);
+        }
+
+        [Test]
+        public void RoundARing_TheWhipRunsTautToTheIron_IsWoundRoundIt_AndItsEndHangsFromTheKnot()
+        {
+            // (its line used to end in the middle of the ring's hole, and the cloth did not keep to it: its end hung up to
+            // 2 m short of the ring, and close under the ring the rope - a metre longer than the way there - rippled)
+            foreach (var grip in new[] { new Vector2(0.5f, 1.4f), new Vector2(3.5f, 2f), new Vector2(2.1f, 5f) })
+            {
+                var ring = new Vector2(2f, 6f);
+                Vector2 dir = (ring - grip).normalized;
+                Vector2 iron = ring - dir * VeilWeaponPose.RingRim;
+                Assert.Less(Vector2.Distance(grip, VeilWeaponPose.WhipOnRing(grip, ring, 0f, 0f)), 1e-4f, "from the hand");
+                float gone = -1f;
+                for (float along = 0f; along <= VeilWeaponPose.RopeTaut; along += 0.02f)
+                {
+                    Vector2 p = VeilWeaponPose.WhipOnRing(grip, ring, along, 0f) - grip;
+                    Assert.Less(Mathf.Abs(p.x * dir.y - p.y * dir.x), VeilWeaponPose.RingWind + 0.04f, "taut: on the straight line, barely a sag");
+                    float on = Vector2.Dot(p, dir);
+                    Assert.Greater(on, gone, "running on towards the ring all the way");
+                    gone = on;
+                }
+                Vector2 touch = VeilWeaponPose.WhipOnRing(grip, ring, VeilWeaponPose.RopeTaut, 0f);
+                Assert.AreEqual(VeilWeaponPose.RingWind, Vector2.Distance(touch, iron), 1e-3f, "it meets the ring's iron (not the air in its middle)");
+                for (float along = VeilWeaponPose.RopeTaut; along <= VeilWeaponPose.RopeWound; along += 0.01f)
+                    Assert.AreEqual(VeilWeaponPose.RingWind, Vector2.Distance(VeilWeaponPose.WhipOnRing(grip, ring, along, 0f), iron), 1e-3f, "wound round the iron");
+                Vector2 before = touch - VeilWeaponPose.WhipOnRing(grip, ring, VeilWeaponPose.RopeTaut - 0.01f, 0f);
+                Vector2 after = VeilWeaponPose.WhipOnRing(grip, ring, VeilWeaponPose.RopeTaut + 0.01f, 0f) - touch;
+                Assert.Less(Vector2.Angle(before, after), 35f, "no corner where it goes round");
+                Vector2 knot = VeilWeaponPose.WhipOnRing(grip, ring, VeilWeaponPose.RopeWound, 0f), end = VeilWeaponPose.WhipOnRing(grip, ring, 1f, 0f);
+                Assert.AreEqual(VeilWeaponPose.RopeEnd, knot.y - end.y, 1e-3f, "its end hangs down from the knot");
+                Assert.AreEqual(knot.x, end.x, 1e-3f);
+                Assert.AreEqual(0.08f, VeilWeaponPose.WhipOnRing(grip, ring, 1f, 0.08f).x - end.x, 1e-3f, "swayed by his swing");
+            }
+            Assert.That(VeilWeaponPose.RingRim, Is.InRange(0.28f, 0.4f), "the ring's iron (its rim runs from 0.28 to 0.40 m)");
+        }
+
+        [Test]
+        public void LetGoOfTheRing_TheRopeIsReeledInAlongItsOwnLine_AndNothingLeaps()
+        {
+            // (unrolled into the scarf neck first, like the short weapons, the first pieces to turn swung the whole rope
+            // round with them: its tip leapt 3 to 5 m in a frame)
+            const int n = 30;
+            var dir = new Vector2(0.6f, 0.8f);
+            var rope = new Vector2[n];
+            var behind = new Vector2[n];   // (the line the scarf is laid on: up behind him, as he drops from the ring)
+            var up = new Vector2(-0.8f, 0.6f);
+            for (int i = 0; i < n; i++)
+            {
+                rope[i] = dir * (5f * i / (n - 1));
+                behind[i] = up * (3f * i / (n - 1));
+            }
+            var was = new Vector2[n];
+            var now = new Vector2[n];
+            var guide = new float[n];
+            VeilTransform.ReelIn(rope, behind, 0f, was, guide);
+            for (int i = 0; i < n; i++) Assert.Less(Vector2.Distance(was[i], rope[i]), 1e-3f, "it starts where the rope hangs");
+            Assert.AreEqual(1f, guide[n - 1], 1e-4f, "led all the way");
+            Assert.AreEqual(0f, guide[0], "the neck is the neck");
+            float worst = 0f;
+            for (float melt = 0.02f; melt <= 1.0001f; melt += 0.02f)
+            {
+                VeilTransform.ReelIn(rope, behind, melt, now, guide);
+                for (int i = 0; i < n; i++)
+                {
+                    worst = Mathf.Max(worst, Vector2.Distance(was[i], now[i]));
+                    // every node keeps to the one path: on the rope's own line, or on the scarf's
+                    float offRope = Mathf.Abs(now[i].x * dir.y - now[i].y * dir.x), offScarf = Mathf.Abs(now[i].x * up.y - now[i].y * up.x);
+                    Assert.Less(Mathf.Min(offRope, offScarf), 0.02f, $"node {i} at {melt:F2}: on the path");
+                    was[i] = now[i];
+                }
+            }
+            Assert.Less(worst, 0.45f, "no node leaps (8 m of path in 35 fiftieths of the melt: a third of a metre a step at most)");
+            for (int i = 0; i < n; i++)
+                Assert.Less(Vector2.Distance(now[i], behind[i]), 1e-3f, "at the end every node is on its own place in the scarf's line: the cloth takes it over where it lies");
+            Assert.AreEqual(0f, guide[n - 1], 1e-4f, "handed over to the cloth");
+            VeilTransform.ReelIn(rope, behind, 0.9f, now, guide);
+            Assert.That(guide[n - 1], Is.InRange(0.5f, 1f), "still led as it arrives (a guide of an eighth let the cloth's springs have it)");
+            Assert.Less(Vector2.Distance(new Vector2(1.5f, 2f), VeilTransform.AlongLine(rope, 2.5f)), 1e-3f);
+            Assert.Less(Vector2.Distance(rope[n - 1], VeilTransform.AlongLine(rope, 99f)), 1e-4f, "past its end: its end");
+        }
+
+        [Test]
         public void Spear_IsLevel_AndDoesNotTiltWithTheArm()
         {
             var pts = VeilFormLibrary.ControlPoints(VeilForm.Spear, out int start);

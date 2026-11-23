@@ -16,7 +16,9 @@ Shader "CrimsonVeil/Veil"
         _EdgeSoftness ("Edge Softness", Range(0.05, 1)) = 0.45
         _Erosion ("Tail Erosion", Range(0, 1)) = 0.75
         _Cloth ("Cloth Look (the scarf painted in red ink)", Range(0, 1)) = 0
-        _WeaponInk ("Ink Look on Weapons", Range(0, 1)) = 0.85
+        _WeaponInk ("Ink Look on Weapons", Range(0, 1)) = 1
+        _WeaponTone ("A Weapon's Tone Against the Scarf (lit all over and solid, it stood brighter than the cloth's layers)", Range(0.4, 1)) = 0.74
+        _WeaponHeat ("Heat in a Weapon's Core and Glint (it lifted the weapons a third brighter and pinker than the scarf)", Range(0, 1)) = 0.25
         _WeaponStroke ("Brush Strokes on Weapons (dry bristles, a sheaf of fine strands)", Range(0, 1)) = 0.3
         _ClothDeep ("Cloth Wine", Color) = (0.36, 0.0, 0.01, 1)
         _ClothMid ("Cloth Crimson", Color) = (0.8, 0.02, 0.03, 1)
@@ -46,6 +48,8 @@ Shader "CrimsonVeil/Veil"
                 float _Erosion;
                 float _Cloth;
                 float _WeaponInk;
+                float _WeaponHeat;
+                float _WeaponTone;
                 float _WeaponStroke;
                 half4 _ClothDeep;
                 half4 _ClothMid;
@@ -182,7 +186,8 @@ Shader "CrimsonVeil/Veil"
                     // the whorls
                     // (the key art: a solid flame body, thinning only into its smoke curls)
                     float wash = lerp(lerp(1.0, 0.92, smoothstep(0.55, 0.92, along)), 1.0, hard);  // a weapon is solid ink
-                    clothAlpha *= wash * lerp(0.82, 1.0, smoothstep(0.3, 0.6, streak));
+                    // (a weapon's body is solid: thin between its streaks, the grey behind it showed through as pink)
+                    clothAlpha *= wash * lerp(lerp(0.82, 1.0, smoothstep(0.3, 0.6, streak)), 1.0, hard);
                     clothAlpha *= 1.0 - smoothstep(0.86, 0.9, along + (rag - 0.5) * 0.1);   // stroke ends in a point
                     // dry brush: the bristles leave streaks along the stroke - at its edges and all over the thin,
                     // fast strokes of the curls
@@ -198,12 +203,14 @@ Shader "CrimsonVeil/Veil"
                     // sheaf; set into a weapon: the sheaf of fine strands
                     sheen = lerp(saturate(sheen * 1.05 - 0.02), saturate(sheen * 0.6 + sheaf * 0.55 - 0.08), hs);
                     clothAlpha *= lerp(1.0, lerp(0.78, 1.0, smoothstep(0.25, 0.6, sheaf)), hs);
-                    half3 cc = lerp(_ClothDeep.rgb, _ClothMid.rgb, smoothstep(lerp(0.32, 0.18, hard), lerp(0.56, 0.46, hard), sheen));   // darker crimson strokes
-                    cc = lerp(cc, _ClothLight.rgb * 1.15, smoothstep(0.58, 0.82, sheen) * (0.5 + core * 0.5));   // and hot bright ones
+                    // (a weapon is the scarf's own crimson: the same wine and crimson strokes, as many of them - with
+                    // lower thresholds and all its heat it stood a third brighter than the scarf, and pink)
+                    half3 cc = lerp(_ClothDeep.rgb, _ClothMid.rgb, smoothstep(0.32, 0.56, sheen));   // darker crimson strokes
+                    cc = lerp(cc, _ClothLight.rgb * 1.15, smoothstep(0.58, 0.82, sheen) * (0.5 + core * 0.5) * lerp(1.0, _WeaponHeat, hard));   // and hot bright ones
                     cc *= lerp(lerp(0.93, 0.72, hard), 1.0, smoothstep(0.0, 0.3, edge));   // a weapon's edges a shade deeper (the loose cloth's layers stacked them into stripes)
                     col = lerp(col, cc, cloth);
                     // a weapon's ink still smoulders: a little heat in its core
-                    col += _ClothLight.rgb * (0.3 * hard * core) * cloth;
+                    col += _ClothLight.rgb * (0.3 * _WeaponHeat * hard * core) * cloth;
                     alpha = lerp(alpha, clothAlpha, cloth);
                 }
 
@@ -214,7 +221,8 @@ Shader "CrimsonVeil/Veil"
                 float shadeV = saturate(max(vtint.r, max(vtint.g, vtint.b)));
                 half3 clothCol = lerp(_ClothDeep.rgb, col, smoothstep(0.25, 1.0, shadeV));
                 // a thin wash is clear bright red (pink on the paper), never a dark shade seen through
-                clothCol = lerp(_ClothLight.rgb, clothCol, smoothstep(0.3, 0.85, alpha * i.color.a));
+                // (a weapon's thin places - between the strands of its sheaf, at its brushed edge - stay crimson)
+                clothCol = lerp(lerp(_ClothLight.rgb, _ClothMid.rgb, hard * (1.0 - _WeaponHeat)), clothCol, smoothstep(0.3, 0.85, alpha * i.color.a));
                 col = lerp(col * vtint, clothCol * max(1.0, vtint.r), clothV);
                 // the ribbon is painted, not smoke: the layers' soft vertex alpha is lifted on the cloth
                 float va = lerp(i.color.a, saturate(i.color.a * 1.6), clothV);
@@ -223,7 +231,10 @@ Shader "CrimsonVeil/Veil"
                 // wine and never as a grey veil over the background
                 float darkInk = (1.0 - smoothstep(0.3, 1.0, shadeV)) * clothV * (1.0 - smoothstep(0.3, 0.55, along));
                 outA = lerp(outA, saturate(outA * 2.2), darkInk);
-                col += _ClothLight.rgb * glint * 0.8 + glint * 0.25;   // a hot red sheen, white at its heart
+                // (a weapon is the scarf's own crimson, not a brighter red beside it)
+                col *= lerp(1.0, _WeaponTone, hard * clothV);
+                // a red sheen, a touch of white at its heart (a quarter of it white, it paled the whole weapon)
+                col += _ClothLight.rgb * glint * lerp(0.45, 0.8, _WeaponHeat) + glint * 0.25 * _WeaponHeat;
                 return half4(col, outA);
             }
         ENDHLSL

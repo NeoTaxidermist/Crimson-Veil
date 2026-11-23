@@ -451,7 +451,33 @@ namespace CrimsonVeil.Player
             }
 
             squash = Vector3.Lerp(squash, Vector3.one, MovementMath.Damp(squashRecover, dt));
-            visualRoot.localScale = squash;
+            visualRoot.localScale = UnderTheRoof(squash);
         }
+
+        /// <summary>How far (m) under a roof the stretched body's top is kept.</summary>
+        public const float RoofClearance = 0.03f;
+
+        /// <summary>
+        /// The stretch of a jump stops at a roof. Taking off, the body is drawn a fifth taller for a moment; under a low
+        /// roof that put the head 0.37 m into the stone. It is stretched only as far as there is room over him
+        /// (never squeezed below his own height: the capsule has that much room).
+        /// </summary>
+        Vector3 UnderTheRoof(Vector3 scale)
+        {
+            if (scale.y <= 1f || controller == null) return scale;
+            float height = controller.height;
+            float r = controller.radius * 0.9f;
+            var origin = transform.position + Vector3.up * (height * 0.5f);
+            float reach = height * (scale.y - 0.5f) - r + 0.05f;   // (up to where the stretched head would be)
+            if (reach <= 0f || !Physics.SphereCast(origin, r, Vector3.up, out var hit, reach, environment, QueryTriggerInteraction.Ignore))
+                return scale;
+            scale.y = StretchUnder(scale.y, height, height * 0.5f + hit.distance + r);
+            return scale;
+        }
+
+        /// <summary>The stretch (the body's scale up, 1 = his own height) that a roof <paramref name="room"/> m over his
+        /// feet leaves a body <paramref name="height"/> m tall, of the <paramref name="stretch"/> asked for.</summary>
+        public static float StretchUnder(float stretch, float height, float room)
+            => stretch <= 1f ? stretch : Mathf.Clamp((room - RoofClearance) / Mathf.Max(0.01f, height), 1f, stretch);
     }
 }

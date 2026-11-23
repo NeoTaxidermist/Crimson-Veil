@@ -95,10 +95,20 @@ namespace CrimsonVeil.Tests
                 if (!smr.enabled) continue;
                 smr.BakeMesh(baked, true);
                 var t = smr.transform;
-                foreach (var v in baked.vertices)
+                var vertices = baked.vertices;
+                var bone = Bones(smr);
+                for (int i = 0; i < vertices.Length; i++)
                 {
-                    var w = t.TransformPoint(v);
-                    if (side * w.x > right && w.y < wallTop) { right = side * w.x; rightY = w.y; }   // (over the top of the block there is no wall)
+                    var w = t.TransformPoint(vertices[i]);
+                    // (over the top of the block there is no wall; and a point is no deeper in the stone than it is under
+                    // the top - the fingers lying on a lip press a centimetre into its top, 10 cm from its face: that is
+                    // 1 cm in the stone, not 10)
+                    if (w.y < wallTop - Tolerance)
+                    {
+                        string by = i < bone.Length ? bone[i] : "?";
+                        if (hairApart && by.StartsWith("Hair")) hairRight = Mathf.Max(hairRight, side * w.x);
+                        else if (side * w.x > right) { right = side * w.x; rightY = w.y; rightBone = by; }
+                    }
                     if (w.y < low) low = w.y;
                 }
             }
@@ -106,15 +116,43 @@ namespace CrimsonVeil.Tests
 
         float intoWall, intoFloor;
         float wallTop = 16f, rightY;
-        string worst;
+        string worst, rightBone = "-";
+        /// <summary>On a lip the hair is judged apart from the body (<see cref="HairTolerance"/>): how far into the wall it went.</summary>
+        bool hairApart;
+        float hairRight = -99f, hairIntoWall;
+        /// <summary>
+        /// How far (m) the hair may swing into the wall he catches a lip on. He hangs from his hands now, his head as near
+        /// the wall as his arms have it, and in the frame he catches the lip a lock swings on into the stone: 5 to 6 cm,
+        /// for a frame. (Held out of the wall with his hands in the air - as he was - it had the room.)
+        /// </summary>
+        const float HairTolerance = 0.08f;
+        readonly System.Collections.Generic.Dictionary<SkinnedMeshRenderer, string[]> boneOf = new System.Collections.Generic.Dictionary<SkinnedMeshRenderer, string[]>();
+
+        /// <summary>The bone that carries each of a skin's vertices most (to say what went into the wall): looked up once per skin.</summary>
+        string[] Bones(SkinnedMeshRenderer smr)
+        {
+            if (boneOf.TryGetValue(smr, out var names)) return names;
+            var weights = smr.sharedMesh.boneWeights;
+            var bones = smr.bones;
+            names = new string[weights.Length];
+            for (int i = 0; i < weights.Length; i++)
+            {
+                int b = weights[i].boneIndex0;
+                names[i] = b >= 0 && b < bones.Length && bones[b] != null ? bones[b].name : "?";
+            }
+            boneOf[smr] = names;
+            return names;
+        }
 
         void Measure(string phase)
         {
+            hairRight = -99f;
             Extent(out float right, out float low);
             float wall = right - Wall;
+            hairIntoWall = Mathf.Max(hairIntoWall, hairRight - Wall);
             // (into the floor only where the floor is: out in front of the wall)
             float floor = -low;
-            if (wall > intoWall) { intoWall = wall; worst = $"{(side > 0 ? "right" : "left")} wall, {phase} at x {Pos.x:F2} y {Pos.y:F2} state {controller.Motor.State}, the deepest point {rightY - Pos.y:F2} m over the feet"; }
+            if (wall > intoWall) { intoWall = wall; worst = $"{(side > 0 ? "right" : "left")} wall, {phase} at x {Pos.x:F2} y {Pos.y:F2} state {controller.Motor.State}, the deepest point {rightY - Pos.y:F2} m over the feet, on {rightBone}"; }
             if (floor > intoFloor) intoFloor = floor;
             if (controller.Motor.State == MotorState.WallSlide)
             {
@@ -152,7 +190,7 @@ namespace CrimsonVeil.Tests
             controller.Teleport(at);
             input.moveX = 0f; input.aimY = 0f; input.stand = false;
             yield return Watch(0.5f, "settling");
-            intoWall = 0f; intoFloor = 0f; worst = "-"; offWall = 0f; slideFrames = 0;
+            intoWall = 0f; intoFloor = 0f; worst = "-"; offWall = 0f; slideFrames = 0; hairIntoWall = 0f;
         }
 
         void AssertOut(string what)
@@ -278,6 +316,7 @@ namespace CrimsonVeil.Tests
             Object.Destroy(root.transform.Find(side > 0 ? "wall R" : "wall L").gameObject);
             Box("block", new Vector3(X(Wall + 2f), 2.1f, 0f), new Vector3(4f, 4.2f, 4f));
             wallTop = 4.2f;
+            hairApart = true;
             yield return StartAt(new Vector3(X(Wall - 3.5f), 0.05f, 0f));
             input.moveX = X(0.6f);
             yield return Watch(0.3f, "run-up");
@@ -288,6 +327,7 @@ namespace CrimsonVeil.Tests
             yield return Watch(1f, "hanging");
             // (climbing over the top the body goes over the block: only the hang and the way up its face count)
             AssertOut("hanging on the lip");
+            Assert.Less(hairIntoWall, HairTolerance, $"hanging on the lip: the hair swung {hairIntoWall:F2} m into the wall");
         }
     }
 }

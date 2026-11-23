@@ -684,19 +684,23 @@ namespace CrimsonVeil.Player
                 armL = -14f, elbowL = 10f, armR = -18f, elbowR = 12f,
                 shoulderL = -12f, shoulderR = -12f, wristL = -70f, wristR = -70f,   // the palms flat on the top
             };
+            // The knee comes up over the lip and the foot is set down on the top, the body still low over the hands:
+            // the climb has his place on the top by now (ClimbRiseOver), so he is crouched deep on it (the bob) and
+            // rises from there - the hips go up evenly from the press to standing, not 0.85 m in a hop.
             var knee = new HeroPose
             {
-                spine = 40f, chest = 18f, head = -14f, neck = -8f, bob = -0.06f,
-                thighL = 112f, kneeL = 138f, footL = 12f, toeL = 10f, thighR = 18f, kneeR = 64f, footR = -10f,
-                armL = -6f, elbowL = 28f, armR = -10f, elbowR = 32f,
-                shoulderL = -6f, shoulderR = -6f, wristL = -60f, wristR = -60f,
+                spine = 46f, chest = 20f, head = -16f, neck = -8f, bob = ClimbCrouch,
+                // (the trailing leg still hangs off the edge behind him, down the wall: forward of that its thigh went through the corner)
+                thighL = 104f, kneeL = 124f, footL = 14f, toeL = 4f, thighR = -10f, kneeR = 36f, footR = -10f,
+                armL = 72f, elbowL = 24f, armR = 64f, elbowR = 30f,   // (the arms straight down under the leaned chest)
+                shoulderL = -6f, shoulderR = -6f, wristL = -30f, wristR = -30f,
             };
-            // rising on the knee, the trailing leg swings through and steps up beside it
+            // rising on that foot, the trailing leg swings through and steps up beside it
             var step = new HeroPose
             {
-                spine = 22f, chest = 10f, head = -8f, neck = -4f, bob = -0.03f,
-                thighL = 52f, kneeL = 70f, footL = 4f, thighR = 58f, kneeR = 92f, footR = 8f, toeR = 6f,
-                armL = 4f, elbowL = 26f, armR = -2f, elbowR = 28f,
+                spine = 26f, chest = 12f, head = -8f, neck = -4f, bob = ClimbCrouch * 0.45f,
+                thighL = 58f, kneeL = 80f, footL = 6f, thighR = 62f, kneeR = 96f, footR = 8f, toeR = 6f,
+                armL = 38f, elbowL = 28f, armR = 28f, elbowR = 32f,
             };
             var up = new HeroPose
             {
@@ -731,15 +735,23 @@ namespace CrimsonVeil.Player
         /// <summary>Climb progress at which the trailing leg has stepped up beside the knee.</summary>
         public const float ClimbStep = 0.9f;
 
+        /// <summary>How low (m, the hips) he is crouched on the top as the knee comes up onto it.</summary>
+        public const float ClimbCrouch = -0.66f;
+
         /// <summary>How firmly the hands are kept on the lip (0..1): all the way while hanging, pulling up and pressing over;
         /// they let go as the knee comes up and the hero stands.</summary>
         public static float LipHold(bool hanging, bool climbing, float climbProgress)
         {
             if (hanging) return 1f;
             if (!climbing) return 0f;
-            // (past the press the body rises out of the arms' reach: they push off and let go as the knee comes up)
-            return 1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(ClimbPressEnd, ClimbPressEnd + 0.12f, climbProgress));
+            // (they stay on the top while the knee comes up over it and the foot is set down, and are off it by the time
+            // he is on his feet: let go straight after the press - at 0.6 to 0.72 it was - he rose the last 0.85 m with
+            // nothing under him)
+            return 1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(LipLetGo, ClimbKneeEnd, climbProgress));
         }
+
+        /// <summary>Climb progress from which the hands come off the lip (they are off it at <see cref="ClimbKneeEnd"/>).</summary>
+        public const float LipLetGo = 0.66f;
 
         /// <summary>
         /// Where the wrists are on the lip (x towards the ledge, y up, from the lip's corner) at climb progress
@@ -749,16 +761,37 @@ namespace CrimsonVeil.Player
         public static Vector2 LipHandOffset(float t)
         {
             var grip = new Vector2(-0.04f, 0.05f);   // (the wrist level with the corner put the palm 8 cm into the stone)
-            var flat = new Vector2(0.08f, 0.04f);
-            return Vector2.Lerp(grip, flat, Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(ClimbPullEnd - 0.05f, ClimbPressEnd - 0.05f, t)));
+            var flat = new Vector2(0.08f, 0.05f);
+            return Vector2.Lerp(grip, flat, LipPress(t));
         }
 
-        /// <summary>How tightly the hands grip while hanging or climbing (they hold the lip until the knee is on top).</summary>
+        /// <summary>How far (0..1) the hands have gone from hooked over the lip's corner to pressing flat on its top, at
+        /// climb progress <paramref name="t"/> (0 = hanging).</summary>
+        public static float LipPress(float t)
+            => Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(ClimbPullEnd - 0.05f, ClimbPressEnd - 0.05f, t));
+
+        /// <summary>
+        /// How far a shoulder at <paramref name="shoulder"/> has to move for an arm that reaches <paramref name="reach"/>
+        /// m to get its hand onto <paramref name="target"/>: nothing while it reaches, else straight towards the target
+        /// by what is missing. (The hands hold the lip and the body hangs from them.)
+        /// </summary>
+        public static Vector3 PullToReach(Vector3 shoulder, Vector3 target, float reach)
+        {
+            Vector3 to = target - shoulder;
+            float d = to.magnitude;
+            return d <= reach || d < 1e-5f ? Vector3.zero : to * ((d - reach) / d);
+        }
+
+        /// <summary>How far the fingers close on a lip: the hand lies on its top and the fingers press onto the stone.
+        /// (A fist there - 0.8 it was - closed on nothing, over the lip.)</summary>
+        public const float LipFingers = 0.2f;
+
+        /// <summary>How far the fingers close while hanging or climbing (they hold the lip until the knee is on top).</summary>
         public static float LedgeGrip(bool hanging, bool climbing, float climbProgress)
         {
-            if (hanging) return 0.8f;
+            if (hanging) return LipFingers;
             if (!climbing) return 0f;
-            if (climbProgress < ClimbPullEnd) return 0.85f;
+            if (climbProgress < ClimbPullEnd) return LipFingers;
             // pressing down on the top the fingers open flat, then let go
             return Mathf.Lerp(0.15f, 0f, Mathf.InverseLerp(ClimbKneeEnd, 1f, climbProgress));
         }

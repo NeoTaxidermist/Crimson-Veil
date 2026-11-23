@@ -72,8 +72,9 @@ namespace CrimsonVeil.Tests
         [Test]
         public void TheHands_GripTheLip_AndOpenOnTheTop()
         {
-            Assert.Greater(HeroPoseSolver.LedgeGrip(true, false, 0f), 0.6f);
-            Assert.Greater(HeroPoseSolver.LedgeGrip(false, true, 0.1f), 0.6f);
+            // (the hand lies on the lip's top, the fingers pressing onto it: the fist it made there - 0.8 - closed on nothing)
+            Assert.That(HeroPoseSolver.LedgeGrip(true, false, 0f), Is.InRange(0.05f, 0.4f));
+            Assert.That(HeroPoseSolver.LedgeGrip(false, true, 0.1f), Is.InRange(0.05f, 0.4f));
             Assert.Less(HeroPoseSolver.LedgeGrip(false, true, 0.7f), 0.3f, "palms flat as he presses over");
             Assert.AreEqual(0f, HeroPoseSolver.LedgeGrip(false, false, 0f));
         }

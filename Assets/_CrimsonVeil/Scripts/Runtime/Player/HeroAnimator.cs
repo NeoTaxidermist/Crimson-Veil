@@ -123,12 +123,14 @@ namespace CrimsonVeil.Player
             // (for the brace on a wall: found here, as a search reads every bone's name - a new string each)
             braceFingerL = handL != null ? RigJoint.FindDeep(handL, "Finger.L.2.0") : null;
             braceFingerR = handR != null ? RigJoint.FindDeep(handR, "Finger.R.2.0") : null;
+            palmL = PalmOf(handL, "L"); palmR = PalmOf(handR, "R");
             legUpperL = Find("UpperLeg.L"); legLowerL = Find("LowerLeg.L"); legFootL = Find("Foot.L");
             wristL = Tip("Hand.L", 0.08f, forward);
             wristR = Tip("Hand.R", 0.08f, forward);
             toeL = Tip("Toe.L", 0.05f, up);
             toeR = Tip("Toe.R", 0.05f, up);
             SetupContacts();
+            handSkinR = System.Array.IndexOf(ContactBones, "Hand.R");
             SetupFootfalls();
             lookHead = Find("Head"); lookNeck = Find("Neck"); lookChest = Find("UpperChest");
             // (the way the face looks, in the head's own space: in the pose he is built in the eyes' bones point
@@ -240,14 +242,232 @@ namespace CrimsonVeil.Player
         void ReachLip(in HeroState s)
         {
             float weight = HeroPoseSolver.LipHold(s.hanging, s.climbing, s.climbProgress);
-            if (weight <= 0f) return;
+            HandsOffLip = 0f;
+            LipPull = 0f;
             int dir = player.Motor.AttachSide != 0 ? player.Motor.AttachSide : player.Motor.Facing;
-            Vector2 off = HeroPoseSolver.LipHandOffset(s.hanging ? 0f : s.climbProgress);
+            float climb = s.hanging ? 0f : s.climbProgress;
+            Vector2 off = HeroPoseSolver.LipHandOffset(climb);
             var lip = player.LipPoint;
-            Reach(upperArmL, lowerArmL, handL, lip, off, dir, weight);
+            if (weight <= 0f)
+            {
+                LegsAtTheLip(lip, dir, s.climbing);
+                return;
+            }
             // hanging with a weapon cast, the right hand has let go of the lip to wield it
             float free = HeroPoseSolver.HangFreeArm(s.hanging, s.weaponHeld);
-            Reach(upperArmR, lowerArmR, handR, lip, off, dir, weight * (1f - free));
+            float right = weight * (1f - free);
+
+            // The hands hold the lip and the body hangs from them - never the other way round. The catch throws the
+            // knees at the wall, and the body, put back out of it (KeepOffWalls), went further from the lip than the
+            // arms are long: for the first half second of every hang the hands were 15 to 25 cm off the stone, in the
+            // air. So the body comes back as far as the arms need, and under the lip it is the legs that give way.
+            Vector3 pull = WithinReach(upperArmL, lowerArmL, handL, lip, off, dir);
+            if (right > 0.5f)
+            {
+                Vector3 other = WithinReach(upperArmR, lowerArmR, handR, lip, off, dir);
+                if (other.sqrMagnitude > pull.sqrMagnitude) pull = other;
+            }
+            pull *= weight;
+            if (pull.sqrMagnitude > 0f) hips.position += pull;
+            LipPull = pull.magnitude;
+            LegsAtTheLip(lip, dir, s.climbing);
+            float press = HeroPoseSolver.LipPress(climb);
+            HandsOffLip = Reach(upperArmL, lowerArmL, handL, lip, off, dir, weight, press);
+            float offRight = Reach(upperArmR, lowerArmR, handR, lip, off, dir, right, press);
+            if (right > 0.5f) HandsOffLip = Mathf.Max(HandsOffLip, offRight);
+            LayOnLip(handL, palmL, dir, weight);
+            LayOnLip(handR, palmR, dir, right);
+            if (free > 0f) KeepHandOffTheFace(upperArmR, lowerArmR, handR, handSkinR, lip, dir, free);
+        }
+
+        /// <summary>How far (m) the fingers reach past the hand's own skin (a fist round a grip, an open hand).</summary>
+        public const float FingersPastHand = 0.08f;
+        int handSkinR = -1;
+
+        /// <summary>
+        /// Hanging with a weapon cast, the hand that wields it has let go of the lip - and, wielding it at the wall he
+        /// hangs on, went into the stone (up to 19 cm, the forearm after it). Below the lip's top it stays this side of
+        /// the face: the arm folds, the elbow back and down. Over the top there is no wall, and the hand is free.
+        /// </summary>
+        void KeepHandOffTheFace(Transform upper, Transform lower, Transform hand, int skin, Vector3 lip, int dir, float weight)
+        {
+            if (upper == null || lower == null || hand == null || skin < 0 || contactBones == null) return;
+            float ahead = FurthestOf(skin, dir);
+            if (float.IsInfinity(ahead)) return;
+            float past = ahead + FingersPastHand - lip.x * dir + ToesOffFace;
+            float below = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(lip.y + 0.1f, lip.y, hand.position.y));
+            float back = past * below * weight;
+            if (back <= 0f) return;
+            Vector3 target = hand.position - new Vector3(dir * back, 0f, 0f);
+            Vector3 pole = upper.position + new Vector3(-dir * 0.6f, -0.6f, 0f);
+            Quaternion kept = hand.rotation;
+            LimbReach.Solve(upper, lower, hand, target, pole, 1f);
+            hand.rotation = kept;
+        }
+
+        /// <summary>A hand's own frame, found once from the fingers as they were modelled: forward along the hand (wrist
+        /// to knuckles), up out of its back - in the hand bone's space.</summary>
+        struct Palm { public bool known; public Quaternion frame; }
+        Palm palmL, palmR;
+
+        static Palm PalmOf(Transform hand, string side)
+        {
+            if (hand == null) return default;
+            var first = RigJoint.FindDeep(hand, "Finger." + side + ".0.0");
+            var last = RigJoint.FindDeep(hand, "Finger." + side + ".3.0");
+            var knuckle = RigJoint.FindDeep(hand, "Finger." + side + ".1.0");
+            var tip = RigJoint.FindDeep(hand, "Finger." + side + ".1.2");
+            if (first == null || last == null || knuckle == null || tip == null) return default;
+            Vector3 a = hand.InverseTransformPoint(first.position), b = hand.InverseTransformPoint(last.position);
+            Vector3 along = (0.5f * (a + b)).normalized;
+            Vector3 palm = Vector3.Cross(along, b - a);
+            if (palm.sqrMagnitude < 1e-10f) return default;
+            // (the fingers curl towards the palm: that is its side)
+            Vector3 curl = hand.InverseTransformPoint(tip.position) - hand.InverseTransformPoint(knuckle.position);
+            if (Vector3.Dot(palm, curl) < 0f) palm = -palm;
+            return new Palm { known = true, frame = Quaternion.LookRotation(along, -palm.normalized) };
+        }
+
+        /// <summary>How far down (degrees) from level the fingers point, lying on a lip's top: onto the stone.</summary>
+        public const float LipFingersDown = 0f;
+
+        /// <summary>
+        /// The hand lies on the lip's top: the palm down on the stone, the fingers into the ledge. (Left as the arm
+        /// brought it, it stood up over the corner like a hook closed on nothing; and pressing over the lip the fingers
+        /// went down into its top, 11 cm.)
+        /// </summary>
+        static void LayOnLip(Transform hand, in Palm palm, int dir, float weight)
+        {
+            if (hand == null || !palm.known || weight <= 0f) return;
+            float tilt = LipFingersDown * Mathf.Deg2Rad;
+            var fingers = new Vector3(dir * Mathf.Cos(tilt), -Mathf.Sin(tilt), 0f);
+            Quaternion want = Quaternion.LookRotation(fingers, Vector3.up) * Quaternion.Inverse(palm.frame);
+            hand.rotation = Quaternion.Slerp(hand.rotation, want, weight);
+        }
+
+        /// <summary>How far (m) the wrists of the hands that hold a lip are from their place on it this frame, the reach
+        /// done (0 when he holds none).</summary>
+        public float HandsOffLip { get; private set; }
+
+        /// <summary>How far (m) the body was brought back towards the lip this frame so the arms reach it.</summary>
+        public float LipPull { get; private set; }
+
+        /// <summary>The share of the arm's length it is stretched to at the most, holding a lip.</summary>
+        public const float ArmStretch = 0.98f;
+
+        /// <summary>How near (m) the wall under a lip a knee's joint may come before the leg gives way (the knee's own thickness).</summary>
+        public const float LegOffFace = 0.06f;
+
+        /// <summary>How far the shoulder has to come towards the hand's place on the lip for the arm to reach it.</summary>
+        static Vector3 WithinReach(Transform upper, Transform lower, Transform hand, Vector3 lip, Vector2 off, int dir)
+        {
+            if (upper == null || lower == null || hand == null) return Vector3.zero;
+            var target = new Vector3(lip.x + dir * off.x, lip.y + off.y, upper.position.z);
+            float arm = Vector3.Distance(upper.position, lower.position) + Vector3.Distance(lower.position, hand.position);
+            return HeroPoseSolver.PullToReach(upper.position, target, arm * ArmStretch);
+        }
+
+        /// <summary>How far (m) clear of the stone the toes are kept beside the wall under a lip; a leg gives way to the
+        /// stone fully once it is this far (m) into where it may not be.</summary>
+        public const float ToesOffFace = 0.015f, LegGive = 0.03f;
+        /// <summary>How far (m) over a lip's top the middle of a knee or of a shin is kept (their own thickness).</summary>
+        public const float ShinOverCorner = 0.07f;
+        /// <summary>Coming over a lip, a foot over its top and within this (m) above it is set down on it (fully from
+        /// half of it).</summary>
+        public const float StepDown = 0.25f;
+
+        /// <summary>
+        /// The legs at a lip, hanging from it and coming up over it. Under the lip a foot stays off its wall: it is set
+        /// back off the face, the knee turned out to the side (as a climber's against a wall), where from the side it
+        /// reads as a leg hanging a little bent. Coming up over the lip, a foot the pose has in the stone is set back and
+        /// up by as much: so it slides up the face to the corner and from there on along the top, where it stands, the
+        /// knee folded up and forward - one unbroken way, whichever part of the stone the pose swings it through. (The
+        /// climb sets his place on the top while the body is still low over the hands: a foot that came over the lip hung
+        /// under its top, in the stone - or, the body lifted clear of it, he rose over the ledge with nothing under him.)
+        /// </summary>
+        void LegsAtTheLip(Vector3 lip, int dir, bool climbing)
+        {
+            if (footfalls[0] == null || footfalls[1] == null) return;
+            for (int k = 0; k < 2; k++)
+            {
+                var f = footfalls[k];
+                if (f.footPoints < 0 || f.toePoints < 0) continue;
+                // (the foot by its skin, not its bones: the toes reach 8 cm past theirs)
+                float low = Mathf.Min(LowestOf(f.footPoints), LowestOf(f.toePoints));
+                float ahead = Mathf.Max(FurthestOf(f.footPoints, dir), FurthestOf(f.toePoints, dir));
+                if (float.IsInfinity(low) || float.IsInfinity(ahead)) continue;
+                float under = lip.y - low;                         // how far the foot's lowest point is under the lip's top
+                float past = ahead - lip.x * dir + ToesOffFace;    // how far its foremost point is past where it may be at the face
+                if (under > 0f && past > 0f)
+                {
+                    float back = climbing ? Mathf.Min(past, under) : past;
+                    float up = climbing ? back : 0f;
+                    Vector3 hip = f.upper.position, foot = f.foot.position;
+                    var target = new Vector3(foot.x - dir * back, foot.y + up, foot.z);
+                    Vector3 mid = 0.5f * (hip + target);
+                    // (the knee out to its own side: the left leg's to the left, the right leg's to the right)
+                    Vector3 aside = mid + new Vector3(-dir * 0.15f, 0f, hip.z >= hips.position.z ? 1f : -1f);
+                    Vector3 ahead3 = mid + new Vector3(dir, 0.3f, 0f);
+                    float onTop = climbing ? Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(-0.06f, 0.06f, past - under)) : 0f;
+                    Vector3 pole = Vector3.Lerp(f.lower.position, Vector3.Lerp(aside, ahead3, onTop), Mathf.SmoothStep(0f, 1f, back / LegGive));
+                    Quaternion kept = f.foot.rotation;
+                    LimbReach.Solve(f.upper, f.lower, f.foot, target, pole, 1f);
+                    f.foot.rotation = kept;
+                }
+                else if (climbing && under <= 0f)
+                {
+                    // Over the top and close above it, the foot is set down on it: it is that foot that carries him
+                    // once the hands let go. (Left where the pose had it - a hand's breadth over the stone while the
+                    // body caught up - there was a moment with neither a hand on the lip nor a foot on the top.)
+                    float over = (f.foot.position.x - lip.x) * dir;
+                    float down = -under;
+                    float set = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.02f, 0.1f, over))
+                                * Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(StepDown, StepDown * 0.5f, down));
+                    if (set > 0f && down > 0f)
+                    {
+                        Vector3 target = f.foot.position + Vector3.down * (down * set);
+                        Quaternion kept = f.foot.rotation;
+                        LimbReach.Solve(f.upper, f.lower, f.foot, target, f.lower.position, 1f);
+                        f.foot.rotation = kept;
+                    }
+                }
+                KneeOutOfTheStone(f, lip, dir);
+            }
+        }
+
+        /// <summary>The foremost point (world x, times <paramref name="dir"/>) of the skin one contact bone carries.</summary>
+        float FurthestOf(int c, int dir)
+        {
+            var b = contactBones[c];
+            if (b == null) return float.NegativeInfinity;
+            var m = b.localToWorldMatrix;
+            float x = float.NegativeInfinity;
+            foreach (var p in contactPoints[c]) x = Mathf.Max(x, m.MultiplyPoint3x4(p).x * dir);
+            return x;
+        }
+
+        /// <summary>
+        /// A knee at the wall under the lip, a knee at the lip's corner not yet clear over it, a shin lying across the
+        /// corner (the knee over the top, the foot still out past the edge - the trailing leg, coming up after him): the
+        /// knee is turned out to the side, as a hurdler's trailing leg goes over the bar. From the side it reads as the
+        /// leg drawn up short, and it is clear of the stone. The foot stays where it is.
+        /// </summary>
+        void KneeOutOfTheStone(Footfall f, Vector3 lip, int dir)
+        {
+            Vector3 hip = f.upper.position, knee = f.lower.position, foot = f.foot.position;
+            float kx = (knee.x - lip.x) * dir, ax = (foot.x - lip.x) * dir;
+            // (how far the knee, with its thickness, is into the stone: past the face and under the top)
+            float into = Mathf.Min(kx + LegOffFace, lip.y + ShinOverCorner - knee.y);
+            if (kx > 0f && ax < 0f)
+            {
+                float along = kx / (kx - ax);   // where along the shin (knee to ankle) it is over the face
+                into = Mathf.Max(into, lip.y + ShinOverCorner - Mathf.Lerp(knee.y, foot.y, along));
+            }
+            if (into <= 0f) return;
+            Vector3 pole = 0.5f * (hip + foot) + new Vector3(-dir * 0.15f, 0f, hip.z >= hips.position.z ? 1f : -1f);
+            Quaternion kept = f.foot.rotation;
+            LimbReach.Solve(f.upper, f.lower, f.foot, foot, pole, Mathf.SmoothStep(0f, 1f, into / LegGive));
+            f.foot.rotation = kept;
         }
 
         /// <summary>
@@ -273,12 +493,16 @@ namespace CrimsonVeil.Player
             LimbReach.Solve(upper, lower, hand, target, pole, 1f);
         }
 
-        static void Reach(Transform upper, Transform lower, Transform hand, Vector3 lip, Vector2 off, int dir, float weight)
+        /// <summary>Reaches the hand onto the lip; returns how far (m) the wrist is from its place once that is done.</summary>
+        static float Reach(Transform upper, Transform lower, Transform hand, Vector3 lip, Vector2 off, int dir, float weight, float press)
         {
-            if (upper == null) return;
+            if (upper == null) return 0f;
             var target = new Vector3(lip.x + dir * off.x, lip.y + off.y, upper.position.z);
-            var pole = upper.position + new Vector3(-dir * 1f, -0.6f, 0f);   // the elbows bend back and down, away from the wall
+            // The elbows bend back, away from the wall: down while he hangs and pulls up; pressing over the lip they are
+            // up, over the hands, as in any press (kept down there, the forearm came up to the palm from under the lip).
+            var pole = upper.position + new Vector3(-dir * 1f, Mathf.Lerp(-0.6f, 0.8f, press), 0f);
             LimbReach.Solve(upper, lower, hand, target, pole, weight);
+            return Vector3.Distance(hand.position, target);
         }
 
         void LateUpdate()
@@ -917,7 +1141,9 @@ namespace CrimsonVeil.Player
         {
             float want = 0f;
             // (on the lip too: the hands are reached onto it afterwards; on the rope the swing keeps the body clear)
-            bool free = !s.swinging && bodyBones != null;
+            // (coming over a lip he is on his way onto that wall's top: there the lip's own rules keep the legs out of the
+            // stone - off its face below it, on its top above it)
+            bool free = !s.swinging && bodyBones != null && !(s.climbing && s.climbProgress > HeroPoseSolver.ClimbPressEnd);
             wallFree = free;
             if (free)
             {

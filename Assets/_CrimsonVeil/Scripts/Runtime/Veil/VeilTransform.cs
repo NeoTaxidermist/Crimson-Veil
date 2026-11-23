@@ -113,8 +113,17 @@ namespace CrimsonVeil.Veil
 
         /// <summary>How firmly a melting node is led along its path: fully until it nearly reaches the scarf, then
         /// handed over to the cloth (which is pulled to the same shape), so nothing jumps or bunches up.</summary>
-        public static float MeltGuide(float m) => 1f - Mathf.SmoothStep(0.88f, 1f, m); // let go only once on the scarf's
-                                                                                      // line: handed over still curled, it fell into a lump
+        /// (It used to read 1 - Mathf.SmoothStep(0.88, 1, m), meant as "fully, until it nearly reaches the scarf" - which
+        /// is 0.12 at most: Unity's SmoothStep runs from its first argument to its second. So the weapon was only ever
+        /// led lightly, and that is what it looks like and is kept as: <see cref="MeltLead"/>.)
+        public static float MeltGuide(float m) => MeltLead * (1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.88f, 1f, m)));
+
+        /// <summary>
+        /// How firmly a melting weapon's cloth is led along its path: lightly - the cloth's own springs, the floor and
+        /// the body do most of it. (Led all the way, measured: half the kinks, but the unrolling chain knows no floor
+        /// and swept the cloth up to 1.1 m under it - the spear's 0.64 m, the shield's 1.09 m.)
+        /// </summary>
+        public const float MeltLead = 0.12f;
 
         /// <summary>The streaming scarf's centre line in facing-normalised local space (behind the hero = -x),
         /// as the cloth is pulled to it (see VeilSimulation.RestReach and VeilRestShape).</summary>
@@ -129,11 +138,14 @@ namespace CrimsonVeil.Veil
         /// weapon to its direction in the streaming scarf (neck first) and keeps its length in between, and the
         /// chain is laid out from the neck. Nothing is squeezed together, so the cloth can't crumple into a lump.
         /// <paramref name="from"/> is the weapon's shape, <paramref name="pts"/> receives the path (local space).
+        /// <paramref name="rest"/> is the line the scarf is laid on (null: its level rest line): led all the way, the
+        /// cloth is handed over where it will be lying - not on the level line while the scarf streams up behind a
+        /// falling hero, to leap over to it.
         /// </summary>
-        public static void MeltChain(Vector2[] from, float melt, float length, float time, Vector2[] pts, float[] guide, float spread = 0.7f)
+        public static void MeltChain(Vector2[] from, float melt, float length, float time, Vector2[] pts, float[] guide, float spread = 0.7f, Vector2[] rest = null)
         {
             int n = from.Length;
-            Vector2 r0 = ClothRestPoint(0f, length, time);
+            Vector2 r0 = rest != null ? rest[0] : ClothRestPoint(0f, length, time);
             float m0 = MeltProgress(melt, 0f, spread);
             pts[0] = Vector2.Lerp(from[0], r0, m0);
             guide[0] = 0f;
@@ -143,7 +155,7 @@ namespace CrimsonVeil.Veil
             {
                 float fa = (float)i / (n - 1), fb = (float)(i + 1) / (n - 1);
                 Vector2 df = from[i + 1] - from[i];
-                Vector2 rNext = ClothRestPoint(fb, length, time);
+                Vector2 rNext = rest != null ? rest[i + 1] : ClothRestPoint(fb, length, time);
                 Vector2 dr = rNext - rPrev;
                 rPrev = rNext;
                 float af = df.sqrMagnitude > 1e-8f ? Mathf.Atan2(df.y, df.x) * Mathf.Rad2Deg : prevF;

@@ -616,6 +616,13 @@ namespace CrimsonVeil.Veil
             return Mathf.LerpAngle(aim + WhipBack, forearmTurn, Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.45f * WhipWoundAt, WhipWoundAt, t)));
         }
 
+        /// <summary>
+        /// How far (0..1) the wrist lays the sword's blade level along the thrust from the crouch at attack progress
+        /// <paramref name="t"/>: from the draw-back to the end of the reach, then the blade comes back up into the guard.
+        /// </summary>
+        public static float LowThrust(float t)
+            => t < 0f ? 0f : Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.06f, 0.22f, t)) * (1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.7f, 0.9f, t)));
+
         /// <summary>Whether the whole whip follows its handle exactly at attack progress <paramref name="t"/>: from the
         /// throw until the lash has cracked and been held (a loop of 40 m/s at the tip is not something the cloth's
         /// springs can follow: left to them it was smeared into a slow arc). Before and after, it is supple.</summary>
@@ -697,7 +704,6 @@ namespace CrimsonVeil.Veil
             float hang = Mathf.Atan2(stock.y, stock.x) * Mathf.Rad2Deg;
             float heading = stock.x >= 0f ? 1f : -1f;
             bool turned = false, atWall = false;   // (sent back by a wall: from there on it runs the other way)
-            float onFloor = Mathf.SmoothStep(0f, 1f, slack / 0.25f);
             for (int i = handIndex + 1; i <= last; i++)
             {
                 Vector2 seg = lash[i] - lash[i - 1];
@@ -707,33 +713,31 @@ namespace CrimsonVeil.Veil
                 Vector2 from = output[i - 1];
                 float over = floorAt != null ? from.y - (floorAt(from) + WhipOnFloor) : float.PositiveInfinity;
                 hang = Mathf.MoveTowardsAngle(hang, WhipHang(over, heading), WhipSlackBend);
-                float angle = Mathf.LerpAngle(own, hang, WhipSlackAt(slack, along)) * Mathf.Deg2Rad;
+                // (what a wall has stopped is slack from there on, however hard the rest was thrown)
+                float angle = Mathf.LerpAngle(own, hang, turned ? 1f : WhipSlackAt(slack, along)) * Mathf.Deg2Rad;
                 var dir = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle));
                 if (turned) dir.x = heading * Mathf.Abs(dir.x);
                 else if (Mathf.Abs(dir.x) > 0.2f) heading = Mathf.Sign(dir.x);
                 Vector2 p = from + dir * len;
-                if (onFloor > 0f)
+                if (blocked != null && blocked(p))
                 {
-                    if (blocked != null && blocked(p))
-                    {
-                        // a wall: it cannot go on - it drops down the wall's face and runs back from its foot (eased in
-                        // with the fall: thrown, it went through)
-                        if (!atWall) { heading = -heading; turned = true; }
-                        atWall = true;
-                        p = Vector2.Lerp(p, from + Vector2.down * len, onFloor);
-                        hang = -90f;
-                    }
-                    else atWall = false;
-                    float floor = floorAt != null ? floorAt(p) + WhipOnFloor : float.NegativeInfinity;
-                    if (p.y < floor)
-                    {
-                        // laid on the floor (or up a low step onto it), as far along it as the piece is long
-                        float rise = Mathf.Clamp(floor - from.y, -len, len);
-                        float run = Mathf.Sqrt(Mathf.Max(0f, len * len - rise * rise));
-                        var laid = new Vector2(from.x + heading * run, from.y + rise);
-                        p = Vector2.Lerp(p, laid, onFloor);
-                        hang = heading > 0f ? 0f : 180f;   // (and on along the floor)
-                    }
+                    // a wall: it cannot go on - thrown or slack, it drops down the wall's face and runs back from its foot
+                    if (!atWall) { heading = -heading; turned = true; }
+                    atWall = true;
+                    p = from + Vector2.down * len;
+                    hang = -90f;
+                }
+                else atWall = false;
+                float floor = floorAt != null ? floorAt(p) + WhipOnFloor : float.NegativeInfinity;
+                if (p.y < floor)
+                {
+                    // Laid on the floor (or up a low step onto it), as far along it as the piece is long - thrown or
+                    // slack: the lash never goes under the floor. (Thrown from the crouch, coming down from over his
+                    // head, its far end went 8 cm under it.)
+                    float rise = Mathf.Clamp(floor - from.y, -len, len);
+                    float run = Mathf.Sqrt(Mathf.Max(0f, len * len - rise * rise));
+                    p = new Vector2(from.x + heading * run, from.y + rise);
+                    hang = heading > 0f ? 0f : 180f;   // (and on along the floor)
                 }
                 output[i] = p;
             }
@@ -766,7 +770,10 @@ namespace CrimsonVeil.Veil
             {
                 float u = along / RopeTaut;
                 // (it meets the loop along the loop's own line: no corner where it goes round the iron)
-                Vector2 sag = side.y > 0f ? -side : side;   // (the way it sags: down)
+                // (the way it sags: down, by as much as it lies across - straight under the ring not at all. Sagging to
+                // whichever side was the lower, a rope hanging still leapt 6 cm from side to side as he swayed a hair's
+                // breadth either way.)
+                Vector2 sag = Vector2.down - dir * Vector2.Dot(Vector2.down, dir);
                 return Vector2.Lerp(grip, iron + side * RingWind, u) + sag * (Mathf.Sin(u * Mathf.PI) * 0.03f);
             }
             if (along <= RopeWound)

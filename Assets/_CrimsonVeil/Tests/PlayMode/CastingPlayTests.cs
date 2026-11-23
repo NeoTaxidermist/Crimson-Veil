@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using CrimsonVeil.Combat;
 using CrimsonVeil.Player;
 using CrimsonVeil.Veil;
@@ -263,16 +264,70 @@ namespace CrimsonVeil.Tests
         }
 
         [UnityTest]
-        public IEnumerator MashingEarlyInABlow_DoesNotChainBlows()
+        public IEnumerator MashingInABlow_GivesOneFollowUp_NoSoonerAndNoMore()
         {
+            // (presses early in a blow used to be dropped altogether: a press not heard, with nothing to tell why)
             int blows = 0;
-            veil.Attacked += _ => blows++;
+            float second = -1f, started = -1f;
+            veil.Attacked += _ => { blows++; if (blows == 1) started = Time.time; if (blows == 2) second = Time.time; };
             yield return Wait(0.3f);
             input.cast = VeilForm.Sword;
             yield return Wait(0.12f); // the blow has only just begun
             for (int k = 0; k < 4; k++) { input.cast = VeilForm.Sword; yield return null; yield return null; }
-            yield return Wait(1.2f);
-            Assert.AreEqual(1, blows, "presses early in a blow are dropped: no spam");
+            yield return Wait(1.6f);
+            Assert.AreEqual(2, blows, "mashing in a blow: one follows it - not none, not four");
+            float whole = VeilFormLibrary.AttackDuration(VeilForm.Sword) + VeilCasting.Recovery(VeilForm.Sword);
+            Assert.Greater(second - started, whole * 0.6f, "and no sooner than the blow and its recovery allow: mashing cannot hurry it");
+        }
+
+        [UnityTest]
+        public IEnumerator EveryPressCounts_ABowPressedDuringAnotherBlow_LoosesItsArrowAfterIt()
+        {
+            // "The bow sometimes does not shoot": pressed in the first 40 % of another blow, the press was dropped - a bow
+            // 0.12 s after a sword cut or 0.2 s after a spear thrust never came, and of six bow presses 0.9 s apart one
+            // was lost. And a scarf too short for the bow's whole cost refused it without a sign.
+            var seen = new HashSet<int>();
+            System.Func<int> arrows = () =>
+            {
+                foreach (var a in Object.FindObjectsByType<VeilArrow>(FindObjectsSortMode.None)) seen.Add(a.GetInstanceID());
+                return seen.Count;
+            };
+            yield return Wait(0.3f);
+            input.cast = VeilForm.Sword;
+            yield return Wait(0.12f);
+            Assert.IsTrue(veil.IsAttacking && veil.AttackProgress < 0.4f, "early in the sword's cut");
+            input.cast = VeilForm.Bow;
+            { float until1 = Time.time + 1.6f; while (Time.time < until1) { arrows(); yield return null; } }
+            Assert.AreEqual(1, arrows(), "the bow pressed early in a sword cut follows it and looses");
+            yield return Wait(2.5f);   // (the scarf grows back)
+
+            input.cast = VeilForm.Spear;
+            yield return Wait(0.2f);
+            input.cast = VeilForm.Bow;
+            { float until2 = Time.time + 1.8f; while (Time.time < until2) { arrows(); yield return null; } }
+            Assert.AreEqual(2, arrows(), "and after a spear thrust");
+            yield return Wait(3f);
+            Assert.AreEqual(1f, veil.Charge.Value, 0.02f, "(the scarf is whole again)");
+
+            // six presses 0.9 s apart - quicker than the bow can follow: every one of them looses an arrow
+            int before = arrows();
+            int fizzles = 0;
+            veil.CastFizzled += _ => fizzles++;
+            for (int k = 0; k < 6; k++)
+            {
+                input.cast = VeilForm.Bow;
+                { float until3 = Time.time + 0.9f; while (Time.time < until3) { arrows(); yield return null; } }
+            }
+            { float until4 = Time.time + 1.6f; while (Time.time < until4) { arrows(); yield return null; } }
+            Assert.AreEqual(6, arrows() - before, "six presses, six arrows (the scarf had a stub left for the last: it took all of it)");
+            Assert.AreEqual(0, fizzles);
+            Assert.Less(veil.Charge.Value, 0.6f, "the scarf is spent on them");
+            // ...and with nothing left it says so
+            veil.Charge.Drain(100f, 1f);
+            input.cast = VeilForm.Bow;
+            { float until5 = Time.time + 0.4f; while (Time.time < until5) { arrows(); yield return null; } }
+            Assert.AreEqual(1, fizzles, "no scarf: the cast fizzles - told, and shown at the hand");
+            Assert.AreEqual(6, arrows() - before, "and nothing is loosed");
         }
 
         [UnityTest]

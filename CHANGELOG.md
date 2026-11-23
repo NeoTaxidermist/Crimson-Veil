@@ -5,6 +5,44 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.80.0] – 2026-11-23
+### Opraveno
+- **Každý stisk zbraně se počítá.** Stisk v prvních 40 % rozjetého úderu se dosud zahodil (pravidlo proti mačkání z verze 0.16.20), bez jakékoli odezvy. Odtud „luk někdy nevystřelí“: luk stisknutý 0,12 s po seknutí mečem nebo 0,2 s po bodnutí kopím nepřišel vůbec a ze šesti stisků luku po 0,9 s se jeden ztratil. Teď se stisk během úderu, během tvarování zbraně i během zotavení zapamatuje (vždy ten poslední) a provede se hned, jak úder doběhne. Úder se dál nedá přerušit ani urychlit: mačkání dá jeden navazující úder, ne žádný a ne čtyři.
+- **Na seslání stačí viditelný kousek šály.** Každá zbraň dosud potřebovala celou svou cenu, takže šála na čtvrtině délky hodila bič (0,15), ale luk (0,3) ne, a nic to neukázalo. Teď jde zbraň seslat, dokud ze šály zbývá aspoň desetina (`VeilCasting.MinToCast`); vezme si svou cenu, nebo všechno, co zbylo. Když nezbývá ani to, seslání viditelně selže: u ruky vyfoukne obláček inkoustu (dřív se nestalo nic).
+- **Meč v podřepu bodá.** Nízký úder mečem byl sek ke kotníkům: čepel klesla před hrdinou k zemi a zase se zvedla, vypadalo to jako ťukání do podlahy. Teď je to bod: pěst se stáhne k boku a vyrazí rovně dopředu a zápěstí drží čepel po celou dobu vodorovně (`VeilWeaponPose.LowThrust`), ať paže opisuje jakýkoli oblouk.
+- **Bič v podřepu práská nad zemí.** Ruka se dřív stahovala nízko za bok s předloktím dolů. Šleh jde tam, kam míří předloktí, takže v nápřahu plácl o zem před hrdinou a po hodu ležel na zemi celý, od metru před ním až ke špičce. Teď je to stejný hod jako ve stoje, jen menší: ruka jde dozadu vedle hlavy, vyrazí dopředu a zastaví se skoro vodorovně, takže smyčka přeletí vrchem a šleh práskne nízko nad zemí.
+- **Lano na kruhu ve visu nepřeskakuje.** Průvěs lana mířil na tu stranu, která byla zrovna níž. Rovně pod kruhem se to měnilo s každým nepatrným zhoupnutím a střed lana přeskakoval o 6 cm ze strany na stranu. Průvěs teď míří dolů úměrně tomu, jak moc lano leží napříč; svislé lano se neprověsí vůbec. Lano se navíc klade ve světových souřadnicích, takže se kruhu drží i ve chvíli, kdy se hrdina otáčí (dřív se při otočce na okamžik pustilo).
+- **Tětiva luku má barvu šály.** Byla čistě červená naplno a vedle tmavě karmínového luku svítila. Teď je to tmavá karmínová nit (`VeilController.BowStringColour`).
+- **Hozený bič neprochází zdí ani podlahou.** U zdi steče po její stěně a vrátí se po zemi i během hodu, ne až při pádu; pod podlahu nejde nikdy (v podřepu se mu při dopadu shora nořil konec 8 cm pod zem).
+- **Bič se v otočce nezrcadlí skrz hrdinu.** Když se hrdina otočí s bičem ležícím na zemi, bič se zvedne za rukou a spadne na druhé straně.
+- **Vedení zbraně při rozplývání říká, co dělá.** `VeilTransform.MeltGuide` mělo vést látku „naplno, až skoro k šále“, ale kvůli záměně parametrů `Mathf.SmoothStep` vedlo nejvýš z 12 %. Vyzkoušel jsem plné vedení (viz Změřeno) a nechal lehké, teď pojmenované (`VeilTransform.MeltLead`). Látka se navíc vede na čáru, kam ji simulace opravdu klade, ne na klidovou vodorovnou.
+
+### Změřeno
+Ve hře, snímek po snímku (24 snímků za sekundu), a v testech na skutečném hrdinovi:
+- Luk: osm stisků po 0,9 s dalo sedm šípů během nahrávky a osmý čekal ve frontě (dřív ze šesti stisků pět šípů). Luk 0,12 s po meči: jeden šíp (dřív žádný). Luk 0,2 s po kopí: jeden šíp (dřív žádný). Meč a čtyři další stisky na začátku úderu: dva údery.
+- Bod mečem v podřepu: čepel do 2° od vodorovné po celou dobu bodu, 0,36 až 0,57 m nad zemí, hrot vyrazí o 0,74 m dopředu.
+- Šleh v podřepu: nikdy pod podlahou, při prásknutí leží na zemi 20 % jeho délky (konec); dřív ležel na zemi celý už během nápřahu (špička 2,5 m před hrdinou na úrovni podlahy) a po hodu znovu.
+- Lano ve visu: v testu na skutečném hrdinovi se střed lana při visu rovně pod kruhem nehne (0,00 cm za snímek); ve hře jsem po zachycení naměřil nejvýš 1 cm pohybu, a to u krku (dýchání), ne na laně. Staré přeskakování jsem v nahrávce znovu nevyvolal: opravil jsem ho podle vzorce, kde průvěs 3 cm mířil na tu stranu, která byla níž, takže se při nepatrné výchylce překlápěl o 6 cm. Nový test v EditMode hlídá, že výchylka 1 mm doleva a doprava dá rozdíl pod 4 mm.
+- Chodidla, měřeno na konci snímku: zamčená noha se za došlap posune průměrně o 0,7 cm při chůzi a o 1 cm při běhu, nejvýš o 2,6 cm v posledním snímku před zvednutím (povolený skluz 3 cm z verze 0.77.0). Brzdění z běhu: 0,08 s po zastavení je nejnižší bod postavy nejvýš 1,7 cm nad zemí.
+- Rozplývání s lehkým a s plným vedením (meč, kopí, štít, luk, meč za běhu): plné vedení má méně zlomů (2 až 4 místo 6 až 9), ale táhne látku pod podlahu (kopí o 0,64 m, štít o 1,09 m, luk o 0,5 m). Proto zůstalo lehké.
+
+### Poctivě
+- **Ruším pravidlo z verze 0.16.20**, že se stisky na začátku úderu zahazují. Dvojí stisk teď dá dva údery za sebou. Úder se pořád nedá přerušit ani zrychlit.
+- **Nové pravidlo síly šály mění vyvážení:** z plné šály jdou vystřelit čtyři šípy za sebou místo tří, poslední za zbytek.
+- Bič v podřepu teď švihá vrchem, takže v nízkém tunelu smyčka projde stropem stejně jako u hodu ve stoje.
+- Test zamčených chodidel i test brzdění z běhu byly nestálé vlastní vinou, ne vinou hry. První četl polohu chodidla uprostřed snímku (po posunu těla, před dořešením pózy), takže měřil rychlost krát rozdíl délek dvou snímků; čísla „3 až 5 cm na došlap“ z minulé verze tedy nebyla skutečný skluz. Druhý se díval už 0,05 s po zastavení, kdy noha při krátkých snímcích ještě dosedá (3,3 až 3,6 cm při mezi 3 cm). Oba jsem ověřil i na předchozím commitu, kde střídavě procházely a neprocházely. Zkusil jsem také zvedat nohu hned, bez povoleného skluzu; chůzi to viditelně nezlepšilo, tak jsem to vrátil a chování nohou se v této verzi nemění.
+- Co jsem cestou udělal špatně a opravil: první verze bodu mířila čepelí 0,44 m pod podlahu (paže šla moc dolů); pak čepel sledovala paži a její hrot vystoupal na 1,1 m a spadl k zemi, tedy zase sek; nápřah biče jsem zkusil držet za zády do poslední chvíle a šleh se přetočil spodem skrz podlahu; dva nové testy pózy měřily ve špatném okamžiku.
+- U zdi dělá vracející se šleh na zemi drobné obloučky z tenkých pramínků.
+- Galerie tuto ani předchozí dvě verze neukazuje (nahrává se jen na vyžádání) a do main není nic sloučeno.
+
+### Testy
+- `VeilCastingTests`: seslání potřebuje kousek šály a vezme, co zbylo (nahrazuje test zahazování stisků); vedení při rozplývání je lehké a přiznané.
+- `LowBlowTests` (2 nové): nízký meč je bod (stažení k boku, vyražení, držení) a zápěstí drží čepel; nízký šleh je malý hod vrchem se zastavením skoro vodorovně. Upravená mez „paže není zvednutá“.
+- `VeilWeaponMotionTests` (1 nový, 1 rozšířený): lano rovně pod kruhem nepřeskakuje a napříč se prověsí dolů z obou stran; hozený šleh se u zdi zastaví.
+- `CastingPlayTests` (1 nový, 1 přepsaný): luk stisknutý během meče i kopí vystřelí, šest stisků dá šest šípů, prázdná šála selže s odezvou; mačkání dá právě jeden navazující úder a ne dřív.
+- `HeroMoveSetPlayTests` (2 nové, 2 opravené): bod mečem a šleh v podřepu; lano ve visu stojí; test chodidel a test brzdění z běhu měří na konci snímku, brzdění se hodnotí od 0,08 s po zastavení.
+- Puštěno: celý EditMode (609 testů) a celá sada PlayMode (130 testů); na konečném stavu prošly všechny. Cestou: EditMode napoprvé 607 z 609 (dva nové testy pózy měřily ve špatném okamžiku). Nový test šlehu v podřepu napoprvé neprošel (konec šlehu 8 cm pod podlahou), po opravě prošel. První celá sada PlayMode dala 129 ze 130: neprošel `StoppingFromARun_AtAnyPointOfTheStride_HeBrakesOnTheFloor` (brzdění z běhu), který je nestálý i na předchozím commitu (jednou prošel, jednou ne); po zpevnění prochází s rezervou.
+
 ## [0.79.0] – 2026-11-23
 ### Opraveno
 - **Bič na kruhu už „nelevituje“.** Lano od ruky ke kruhu nebylo drženo na svém tvaru, bylo ponecháno pružinám látky. Při dlouhém laně proto konec biče na kruh vůbec nedosáhl (visel až 2,2 m pod ním), při krátkém byla látka o metr delší než vzdálenost ke kruhu a shrnula se do vlnek.

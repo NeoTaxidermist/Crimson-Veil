@@ -160,9 +160,45 @@ namespace CrimsonVeil.Tests
             Assert.Greater(furthest, 1.3f, "up to it");
             Assert.Less(outp[n - 1].x, 1.2f, "and back from its foot");
             Assert.AreEqual(0.15f * (n - 1 - hand), length, 0.02f, "all of it still there");
-            // thrown (not yet slack) it goes where it was thrown - the fall brings it out of the wall
+            // thrown, taut, it meets the wall just the same: what the wall stops falls down its face
             VeilWeaponPose.WhipSlack(lash, hand, 0f, floor, wall, outp);
-            Assert.Greater(outp[n - 1].x, 3f);
+            float thrown = 0f, kept = 0f;
+            for (int i = hand + 1; i < n; i++)
+            {
+                thrown = Mathf.Max(thrown, outp[i].x);
+                kept += Vector2.Distance(outp[i - 1], outp[i]);
+            }
+            Assert.LessOrEqual(thrown, 1.5f + 1e-3f, "thrown at a wall it does not go through it");
+            Assert.AreEqual(0.15f * (n - 1 - hand), kept, 0.02f);
+            for (int i = hand + 1; i < n && lash[i].x < 1.4f; i++)
+                Assert.Less(Vector2.Distance(lash[i], outp[i]), 1e-3f, "and short of the wall it is as it was thrown");
+            // with no wall in its way the thrown lash is untouched
+            VeilWeaponPose.WhipSlack(lash, hand, 0f, floor, _ => false, outp);
+            for (int i = 0; i < n; i++) Assert.Less(Vector2.Distance(lash[i], outp[i]), 1e-3f);
+        }
+
+        [Test]
+        public void HangingStraightUnderTheRing_TheRopeDoesNotLeapFromSideToSide()
+        {
+            // (its sag went to whichever side was the lower: hanging still, a hair's breadth either way, the middle of
+            // the rope leapt 6 cm from one side to the other)
+            var ring = new Vector2(0f, 6f);
+            for (float along = 0.05f; along <= 1f; along += 0.05f)
+            {
+                Vector2 left = VeilWeaponPose.WhipOnRing(new Vector2(-0.001f, 2f), ring, along, 0f);
+                Vector2 right = VeilWeaponPose.WhipOnRing(new Vector2(0.001f, 2f), ring, along, 0f);
+                Assert.Less(Vector2.Distance(left, right), 0.004f, $"at {along:F2} of the lash");
+            }
+            // straight under the ring the rope does not sag; lying across, it sags down
+            Vector2 mid = VeilWeaponPose.WhipOnRing(new Vector2(0f, 2f), ring, VeilWeaponPose.RopeTaut * 0.5f, 0f);
+            Assert.AreEqual(VeilWeaponPose.RingWind * 0.5f, Mathf.Abs(mid.x), 0.002f, "straight: only on its way to the side of the iron");
+            Vector2 a = new Vector2(-4f, 4f), b = new Vector2(4f, 4f);
+            foreach (var grip in new[] { a, b })
+            {
+                Vector2 dir = (ring - grip).normalized;
+                Vector2 chord = Vector2.Lerp(grip, ring - dir * VeilWeaponPose.RingRim + new Vector2(-dir.y, dir.x) * VeilWeaponPose.RingWind, 0.5f);
+                Assert.Less(VeilWeaponPose.WhipOnRing(grip, ring, VeilWeaponPose.RopeTaut * 0.5f, 0f).y, chord.y - 0.01f, "across: it sags down, from either side");
+            }
         }
 
         [Test]

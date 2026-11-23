@@ -51,7 +51,8 @@ namespace CrimsonVeil.Veil
         float meltSlack;
         float whipHold;
         bool meltRope;
-        Vector2[] meltWorld, meltBack;
+        Vector2[] meltWorld, meltBack, ropeWorld;
+        float ropeFromAt;
         /// <summary>Seconds over which the whip is taken onto its line (out of the scarf, off a ring it has let go).</summary>
         public const float WhipHoldEase = 0.1f;
         /// <summary>0 = the lash thrown and taut, 1 = hanging slack from the hand.</summary>
@@ -269,24 +270,25 @@ namespace CrimsonVeil.Veil
             if (Latched != null) return false;
             float cost = VeilCasting.Cost(form);
 
-            // A blow is committed: nothing cuts it short (not even the whip's grapple). A press late in the blow,
-            // or while recovering from it, is the follow-up; earlier presses are dropped, so mashing doesn't chain.
+            // A blow is committed: nothing cuts it short (not even the whip's grapple). Every press counts: one that
+            // comes during a blow, while the weapon is still forming or while he recovers is remembered - the last one
+            // - and follows once the blow is spent. Mashing cannot make blows come faster nor pile them up: one follows.
+            // (Presses in the first 40 % of a blow used to be dropped. Of six bow presses 0.9 s apart one was lost, and
+            // a bow pressed 0.1 to 0.2 s after a sword cut or a spear thrust never came at all.)
             if (attackTime >= 0f || pendingAttack.HasValue || recoverTimer > 0f)
             {
-                bool late = recoverTimer > 0f || (attackTime >= 0f && VeilCasting.AcceptsFollowUp(AttackProgress));
-                if (!late) return false;
                 buffered = form;
                 return true;
             }
 
             if (form == VeilForm.Whip && GrappleCandidate != null && player != null)
             {
-                if (!Charge.CanAfford(cost)) { CastFizzled?.Invoke(form); return false; }
+                if (!Charge.CanCast(cost)) { Fizzle(form); return false; }
                 var ring = GrappleCandidate;
                 BeginCast(form);
                 if (player.TryGrapple(ring.transform.position))
                 {
-                    Charge.TrySpend(cost);
+                    Charge.TryCast(cost);
                     Latched = ring;
                     whipOpen = 1f;
                     whipSlack = 0f;
@@ -296,11 +298,22 @@ namespace CrimsonVeil.Veil
                 }
             }
 
-            if (!Charge.TrySpend(cost)) { CastFizzled?.Invoke(form); return false; }
+            if (!Charge.TryCast(cost)) { Fizzle(form); return false; }
             if (Form != form || !castMode) BeginCast(form);
             pendingAttack = form;
             if (form == VeilForm.Shield) sinceShieldRaised = 0f;
             return true;
+        }
+
+        /// <summary>
+        /// The scarf is spent: nothing to make the weapon of. It is shown - a puff of ink at the hand - and told
+        /// (<see cref="CastFizzled"/>): a cast that fails must not look like a press that was not heard.
+        /// </summary>
+        void Fizzle(VeilForm form)
+        {
+            CastFizzled?.Invoke(form);
+            Vector3 at = hand != null ? hand.position : transform.position + Vector3.up;
+            CrimsonVeil.Combat.CombatFx.Burst(at, new Vector2(Facing * 0.4f, 0.6f), CrimsonVeil.Combat.CombatFx.Ink, 7, 2.5f);
         }
 
         void BeginCast(VeilForm form)
@@ -962,7 +975,7 @@ namespace CrimsonVeil.Veil
             CrimsonVeil.World.GrapplePoint candidate = null;
             // Any ring in reach lights up once the hero knows the whip and has the strength to cast it.
             // (not in a fight: there the whip is a weapon)
-            if (Latched == null && player != null && !InCombat && IsUnlocked(VeilForm.Whip) && Charge.CanAfford(VeilCasting.Cost(VeilForm.Whip)))
+            if (Latched == null && player != null && !InCombat && IsUnlocked(VeilForm.Whip) && Charge.CanCast(VeilCasting.Cost(VeilForm.Whip)))
                 candidate = CrimsonVeil.World.GrapplePoint.FindBest(player.GripPosition, Facing, ~0);
             if (candidate != GrappleCandidate)
             {
@@ -990,7 +1003,8 @@ namespace CrimsonVeil.Veil
                 bowString.widthMultiplier = 0.04f;
                 bowString.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
                 bowString.sharedMaterial = stringMaterial;
-                bowString.startColor = bowString.endColor = new Color(1f, 0.1f, 0.1f, 0.9f);
+                // (a taut thread of the scarf's own deep crimson: pure red at full strength, it glowed beside the bow)
+                bowString.startColor = bowString.endColor = BowStringColour;
             }
             bowString.enabled = true;
             bowString.gameObject.layer = gameObject.layer;
@@ -1005,6 +1019,9 @@ namespace CrimsonVeil.Veil
             bowString.SetPosition(1, p[mid]);
             bowString.SetPosition(2, p[bottom]);
         }
+
+        /// <summary>The bow string's colour over the rope's red: the scarf's deep crimson.</summary>
+        public static readonly Color BowStringColour = new Color(0.3f, 0.55f, 0.5f, 0.95f);
 
         LineRenderer whipHandle;
 
@@ -1222,7 +1239,14 @@ namespace CrimsonVeil.Veil
                 VeilWeaponPose.WhipSlack(meltTaut, handIndex, left, slackFloor ??= SlackFloor, slackBlocked ??= SlackBlocked, meltSpun);
                 from = meltSpun;
             }
-            VeilTransform.MeltChain(from, chainT, length, time, meltPath, Simulation.GuideWeight, VeilTransform.MeltSpread(meltForm));
+            // (onto the line the cloth is laid on, in his own left-and-right)
+            if (meltBack == null || meltBack.Length != n) meltBack = new Vector2[n];
+            for (int i = 0; i < n; i++)
+            {
+                Vector2 place = Simulation.PlaceOf(i);
+                meltBack[i] = new Vector2((place.x - a.x) / s, place.y - a.y);
+            }
+            VeilTransform.MeltChain(from, chainT, length, time, meltPath, Simulation.GuideWeight, VeilTransform.MeltSpread(meltForm), meltBack);
             for (int i = 1; i < n; i++) gt[i] = a + new Vector3(meltPath[i].x * s, meltPath[i].y, 0f);
         }
 
@@ -1307,6 +1331,15 @@ namespace CrimsonVeil.Veil
             var targets = Simulation.Targets;
             int n = Simulation.Count;
             if (restBuf == null || restBuf.Length != n) { restBuf = new Vector2[n]; whipBuf = new Vector2[n]; }
+            // From the crouch the sword is thrust: the wrist lays the blade level along the thrust all through it,
+            // whatever arc the arm itself makes. (Gripped, the blade stands some 50 degrees up off the forearm: going
+            // with the arm its point rose to 1.1 m and came down onto the floor - a chop, a tap on the ground.)
+            if (LowBlow && ShapeForm == VeilForm.Sword && armDriven && attackTime >= 0f)
+            {
+                Vector2 blade = shape[n - 1] - VeilFormLibrary.Hand;
+                float raw = Mathf.Atan2(blade.y, blade.x) * Mathf.Rad2Deg + forearmTurn;
+                aimTilt = aimTiltTarget = -Mathf.DeltaAngle(0f, raw) * VeilWeaponPose.LowThrust(t);
+            }
             bool whip = ShapeForm == VeilForm.Whip && armDriven && Latched == null;
             // The whip hangs coiled in the hand; it pays out during the wind-up and coils back after the blow.
             if (ShapeForm == VeilForm.Whip)
@@ -1318,7 +1351,9 @@ namespace CrimsonVeil.Veil
                     : t >= 0f ? Mathf.Max(whipOpen, VeilWeaponPose.WhipUncoil(t))
                     : sinceLash < WhipCoilDelay ? whipOpen : Mathf.MoveTowards(whipOpen, 0f, dt / WhipCoilTime);
                 // (once it has cracked and been held the lash falls slack; the next blow takes it up from where it lies)
-                bool falls = Latched == null && VeilWeaponPose.WhipFalls(t);
+                // (turning round with it he takes it up - it goes round with his hand - and it falls again on the other
+                // side: lying slack on the floor it was mirrored through him to his other side)
+                bool falls = Latched == null && VeilWeaponPose.WhipFalls(t) && Mathf.Abs(facingScale) > 0.98f;
                 whipSlack = Mathf.MoveTowards(whipSlack, falls ? 1f : 0f, dt / (falls ? VeilWeaponPose.WhipSlackTime : VeilWeaponPose.WhipTakeUpTime));
             }
             for (int i = 0; i < n; i++)
@@ -1366,14 +1401,20 @@ namespace CrimsonVeil.Veil
                 var ring = new Vector2((r.x - a.x) / sx, r.y - a.y);
                 VeilFormLibrary.WhipHandleSpan(out _, out _, out float ropeFrom);
                 // (the end trails his swing a little)
-                float sway = player != null ? Mathf.Clamp(-player.Velocity.x / sx * 0.015f, -0.1f, 0.1f) : 0f;
+                float sway = player != null ? Mathf.Clamp(-player.Velocity.x * 0.015f, -0.1f, 0.1f) : 0f;
                 Vector2 from = grip;
+                if (ropeWorld == null || ropeWorld.Length != n) ropeWorld = new Vector2[n];
+                ropeFromAt = ropeFrom;
+                // It is laid in the world's own left-and-right, from where the stock is drawn to where the ring is: in
+                // his (which is squeezed flat and turned over as he turns round) the rope let go of the ring for the turn.
+                var ringWorld = new Vector2(r.x - a.x, r.y - a.y);
                 for (int i = 0; i < n; i++)
                 {
                     float f = (float)i / (n - 1);
                     if (f < ropeFrom) { from = restBuf[i]; continue; } // the handle stays in the fist; the lash runs on from its end
                     float along = (f - ropeFrom) / Mathf.Max(1e-3f, 1f - ropeFrom);
-                    restBuf[i] = VeilWeaponPose.WhipOnRing(from, ring, along, sway);
+                    ropeWorld[i] = VeilWeaponPose.WhipOnRing(new Vector2(from.x * facingScale, from.y), ringWorld, along, sway);
+                    restBuf[i] = new Vector2(ropeWorld[i].x / sx, ropeWorld[i].y);
                 }
             }
             if (whip)
@@ -1388,14 +1429,11 @@ namespace CrimsonVeil.Veil
                 Array.Copy(whipBuf, restBuf, n);
                 if (whipTaut == null || whipTaut.Length != n) whipTaut = new Vector2[n];
                 Array.Copy(restBuf, whipTaut, n);   // (the line it was thrown along: a melt takes it up onto this)
-                if (whipSlack > 0f)
-                {
-                    // ...and let go, it falls from the stock and lies on the floor
-                    slackAnchor = a;
-                    slackScale = Mathf.Abs(facingScale) < 0.3f ? Facing : facingScale;
-                    VeilWeaponPose.WhipSlack(restBuf, handIndex, whipSlack, slackFloor ??= SlackFloor, slackBlocked ??= SlackBlocked, whipBuf);
-                    Array.Copy(whipBuf, restBuf, n);
-                }
+                // ...and let go, it falls from the stock and lies on the floor; thrown or slack, it does not go into a wall
+                slackAnchor = a;
+                slackScale = Mathf.Abs(facingScale) < 0.3f ? Facing : facingScale;
+                VeilWeaponPose.WhipSlack(restBuf, handIndex, whipSlack, slackFloor ??= SlackFloor, slackBlocked ??= SlackBlocked, whipBuf);
+                Array.Copy(whipBuf, restBuf, n);
                 if (t >= 0f && !whipCracked && t >= VeilWeaponPose.WhipCrackAt)
                 {
                     whipCracked = true;
@@ -1450,6 +1488,12 @@ namespace CrimsonVeil.Veil
                     l = VeilWeaponPose.Rotate(l, grip, -0.6f * VeilTransform.SpiralIn(1f - TransformProgress) * spiralDirection);
                 current[i] = l;
                 targets[i] = a + new Vector3(l.x * facingScale, l.y, 0f);
+                if (Latched != null && ropeWorld != null && ropeWorld.Length == n && f >= ropeFromAt)
+                {
+                    // (the rope: as it forms out of the scarf it comes onto its line in the world)
+                    float formed = morph < 1f ? VeilTransform.MorphProgress(morph, f) : 1f;
+                    targets[i] = Vector3.Lerp(targets[i], a + new Vector3(ropeWorld[i].x, ropeWorld[i].y, 0f), formed);
+                }
             }
             Simulation.RecomputeTargetRest();
         }

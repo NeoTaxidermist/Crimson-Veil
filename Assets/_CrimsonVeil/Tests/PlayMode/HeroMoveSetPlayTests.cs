@@ -215,6 +215,12 @@ namespace CrimsonVeil.Tests
             // him - 0.25 m a step at a walk, half a metre and more at a run. Planted, it stays where it was set down.
             var anim = player.GetComponent<HeroAnimator>();
             var balls = new[] { RigJoint.FindDeep(player.transform, "Toe.L"), RigJoint.FindDeep(player.transform, "Toe.R") };
+            // (Looked at once the frame's pose is solved - at the end of the frame, as it is drawn. Read in the middle of
+            // the frame, after he had moved on and before the legs were set again, a planted foot seemed to shake by his
+            // speed times the difference between two frames' lengths: 0.2 to 1.4 cm a frame, 3 to 5 cm a footfall - and
+            // the test passed or failed with the frame times.)
+            var probe = player.GetComponent<EndOfFrameProbe>();
+            if (probe == null) probe = player.AddComponent<EndOfFrameProbe>();
             foreach (float move in new[] { 0.3f, 1f })
             {
                 yield return StartAt(new Vector3(-12f, 0.05f, 0f));
@@ -225,7 +231,7 @@ namespace CrimsonVeil.Tests
                 var footfalls = new int[2];
                 float worst = 0f, slid = 0f;
                 float t0 = Time.time, x0 = Pos.x;
-                yield return Wait(1.6f, () =>
+                probe.each = () =>
                 {
                     for (int k = 0; k < 2; k++)
                     {
@@ -236,13 +242,16 @@ namespace CrimsonVeil.Tests
                         was[k] = down;
                         last[k] = x;
                     }
-                });
+                };
+                yield return Wait(1.6f);
+                probe.each = null;
                 float covered = Mathf.Abs(Pos.x - x0);
-                Debug.Log($"[footfalls] move {move}: {covered:F1} m in {Time.time - t0:F1} s, footfalls {footfalls[0]}+{footfalls[1]}, planted feet moved {slid:F3} m in all, {worst * 100f:F1} cm at most in a frame");
+                Debug.Log($"[footfalls] move {move}: {covered:F1} m in {Time.time - t0:F1} s, footfalls {footfalls[0]}+{footfalls[1]}, planted feet moved {slid * 100f:F1} cm in all, {worst * 100f:F2} cm at most in a frame");
                 Assert.GreaterOrEqual(footfalls[0], 2, $"move {move}: the left foot is set down at every step");
                 Assert.GreaterOrEqual(footfalls[1], 2, $"move {move}: and the right");
-                Assert.Less(worst, 0.03f, $"move {move}: a planted foot stays put from frame to frame");
-                Assert.Less(slid, 0.04f * (footfalls[0] + footfalls[1]), $"move {move}: and through the whole footfall");
+                // (a foot the leg can no longer reach may slip HeroAnimator.FootSlip before it is lifted)
+                Assert.Less(worst, 0.01f + HeroAnimator.FootSlip, $"move {move}: a planted foot stays put from frame to frame");
+                Assert.Less(slid, (0.01f + HeroAnimator.FootSlip) * (footfalls[0] + footfalls[1]), $"move {move}: and through the whole footfall");
                 Assert.Greater(covered, move < 0.5f ? 3f : 10f, "while he covers ground");
             }
             input.moveX = 0f;
@@ -286,16 +295,23 @@ namespace CrimsonVeil.Tests
                 yield return Wait(0.7f);
                 yield return Until(() => Mathf.Abs(Mathf.DeltaAngle(mocap.GaitPhase * 360f, phase * 360f)) < 20f, 1f);
                 input.moveX = 0f;
-                // (the brake's first instants are still the run - a frame or so, at 60 fps; the fault held him in the
-                // run's flight for a quarter of a second)
+                // (The brake's first instants are still the run: he is set down within 0.08 s of the stop - the fault held
+                // him in the run's flight for a quarter of a second. Looked at from 0.05 s on, the test stood or fell with
+                // the frame time: at 7 ms frames its first look came at 0.051 s, his sole still 3.3 to 3.6 cm up and
+                // coming down. And he is looked at as the frame is drawn, once its pose is solved.)
                 float from = Time.time;
-                yield return Wait(0.05f);
+                yield return Wait(0.08f);
                 float highest = 0f; string when = "";
-                yield return Wait(0.3f, () =>
+                var probe = player.GetComponent<EndOfFrameProbe>();
+                if (probe == null) probe = player.AddComponent<EndOfFrameProbe>();
+                probe.each = () =>
                 {
                     float h = BodyBottom() - standing;
                     if (h > highest) { highest = h; when = $"{Time.time - from:F3}s after, {mocap.Current} w{mocap.Weight:F2}, {Speed:F1} m/s, frame {Time.deltaTime * 1000f:F0} ms"; }
-                });
+                };
+                yield return Wait(0.3f);
+                probe.each = null;
+                Debug.Log($"[braking] stopped at {phase:F2} of the stride: the lowest of him {highest * 100f:F1} cm over the floor at the most ({when})");
                 Assert.Less(highest, 0.03f, $"stopping at {phase:F2} of the stride: a foot stays on the floor as he brakes ({when})");
                 Assert.Contains(HeroMocap.RunStop, new List<string>(played), "the last steps brake");
                 yield return Wait(0.6f);
@@ -1207,6 +1223,122 @@ namespace CrimsonVeil.Tests
             Assert.IsFalse(veil.Rising, "standing: no rising strike");
             Assert.IsTrue(controller.Motor.IsGrounded, "he stays on the ground");
             input.aimY = 0f;
+        }
+
+        [UnityTest]
+        public IEnumerator FromTheCrouch_TheSwordIsThrustLevel_AndTheLashCracksOverTheFloor()
+        {
+            // "Tapping the ground instead of stabbing": the low sword was a chop at the ankles - the blade came down onto
+            // the floor in front of him - and the low lash, thrown from a hand drawn back low behind the hip, flopped
+            // onto the floor in front of him and was laid along the ground. Now the sword is thrust, its blade level,
+            // and the lash is thrown over the top and cracks over the floor.
+            yield return StartAt(new Vector3(-12f, 0.05f, 0f));
+            input.aimY = -1f;
+            yield return Wait(0.5f);
+            Assert.IsTrue(controller.Motor.IsCrouching, "down held: crouched");
+            input.cast = VeilForm.Sword;
+            float steepest = 0f, lowest = 9f, highest = -9f, near = 99f, far = -99f;
+            bool started = false;
+            yield return Until(() => started && veil.AttackProgress < 0f, 3f, () =>
+            {
+                float t = veil.AttackProgress;
+                if (t < 0f) return;
+                started = true;
+                if (t < 0.12f || t > 0.7f) return;   // (drawn back, driven out, held)
+                var p = veil.Simulation.Positions;
+                int n = veil.Simulation.Count;
+                float ahead = (p[n - 1].x - Pos.x) * controller.BodyFacing;
+                near = Mathf.Min(near, ahead);
+                far = Mathf.Max(far, ahead);
+                if (t < 0.24f) return;
+                steepest = Mathf.Max(steepest, Mathf.Abs(WeaponPitch()));
+                lowest = Mathf.Min(lowest, WeaponLow() - Pos.y);
+                highest = Mathf.Max(highest, p[n - 1].y - Pos.y);
+            });
+            Debug.Log($"[low thrust] blade within {steepest:F0} deg of level, between {lowest:F2} and {highest:F2} m over the floor, its point driven {far - near:F2} m forward");
+            Assert.IsTrue(started, "the blow was struck");
+            Assert.Less(steepest, 12f, "the blade lies level all through the thrust (going with the arm it stood up to 36 degrees up and 24 down)");
+            Assert.Greater(lowest, 0.2f, "it does not come down onto the floor");
+            Assert.Less(highest, 0.8f, "nor is its point raised (going with the arm it rose to 1.1 m)");
+            Assert.Greater(far - near, 0.5f, "its point is driven forward: a stab");
+            yield return Wait(1.5f);
+
+            input.aimY = -1f;
+            yield return Wait(0.4f);
+            Assert.IsTrue(controller.Motor.IsCrouching);
+            input.cast = VeilForm.Whip;
+            float crackLow = 9f, reach = 0f, onTheFloor = 0f;
+            bool flopped = false;
+            started = false;
+            yield return Until(() => started && veil.AttackProgress < 0f, 3f, () =>
+            {
+                float t = veil.AttackProgress;
+                if (t < 0f) return;
+                started = true;
+                var p = veil.Simulation.Positions;
+                int n = veil.Simulation.Count;
+                float ahead = (p[n - 1].x - Pos.x) * controller.BodyFacing, up = p[n - 1].y - Pos.y;
+                // winding up, the lash is behind him and over him - not out on the floor in front of him
+                if (t > 0.12f && t < VeilWeaponPose.WhipThrownAt && ahead > 1.5f && up < 0.15f) flopped = true;
+                crackLow = Mathf.Min(crackLow, WeaponLow() - Pos.y);
+                if (t >= VeilWeaponPose.WhipCrackAt + 0.04f && t <= VeilWeaponPose.WhipHeldTo)
+                {
+                    reach = Mathf.Max(reach, ahead);
+                    int from = Mathf.Clamp(Mathf.CeilToInt(veil.HandFraction * (n - 1)), 0, n - 2), lying = 0;
+                    for (int i = from; i < n; i++) if (p[i].y - Pos.y < 0.1f) lying++;
+                    onTheFloor = Mathf.Max(onTheFloor, (float)lying / (n - from));
+                }
+            });
+            input.aimY = 0f;
+            Debug.Log($"[low lash] {crackLow:F2} m over the floor at the lowest all through the blow, {onTheFloor * 100f:F0} % of it on the floor as it cracks, {reach:F2} m ahead");
+            Assert.IsTrue(started, "the lash was thrown");
+            Assert.IsFalse(flopped, "winding up, the lash does not flop onto the floor in front of him");
+            Assert.Greater(crackLow, -0.02f, "the lash never goes under the floor");
+            Assert.Less(onTheFloor, 0.3f, "cracking, the lash is over the floor - not laid along it (all of it lay on the ground from a metre ahead of him)");
+            Assert.Greater(reach, 3f, "out ahead of him");
+        }
+
+        [UnityTest]
+        public IEnumerator HangingStillOnTheRing_TheRopeHoldsStill()
+        {
+            // Hanging straight under the ring the rope leapt from side to side: its sag went to whichever side was the
+            // lower, and straight under the ring that changed with a hair's breadth of sway - 6 cm at its middle.
+            yield return StartAt(new Vector3(Ring.x, 0.05f, 0f));
+            input.jump = true; input.jumpHeld = true;
+            yield return Wait(0.2f);
+            input.cast = VeilForm.Whip;
+            yield return Until(() => controller.Motor.IsSwinging, 1f);
+            input.jumpHeld = false;
+            Assert.IsNotNull(veil.Latched, "the whip caught the ring");
+            yield return Wait(1.2f);   // (caught, drawn taut, come to rest)
+            VeilFormLibrary.WhipHandleSpan(out _, out _, out float ropeFrom);
+            int count = veil.Simulation.Count;
+            int first = Mathf.Clamp(Mathf.CeilToInt(ropeFrom * (count - 1)), 1, count - 2);
+            int mid = Mathf.Clamp(Mathf.RoundToInt((ropeFrom + (1f - ropeFrom) * VeilWeaponPose.RopeTaut * 0.5f) * (count - 1)), first + 1, count - 2);
+            float least = 9f, most = -9f, leap = 0f, lastOff = float.NaN, swing = 0f;
+            var probe = player.GetComponent<EndOfFrameProbe>();
+            if (probe == null) probe = player.AddComponent<EndOfFrameProbe>();
+            probe.each = () =>
+            {
+                var p = veil.Simulation.Positions;
+                Vector2 from = p[first];
+                Vector2 dir = ((Vector2)Ring - from).normalized;
+                Vector2 to = (Vector2)p[mid] - from;
+                float off = to.x * dir.y - to.y * dir.x;   // (how far the middle of the rope is off the straight line, and to which side)
+                least = Mathf.Min(least, off);
+                most = Mathf.Max(most, off);
+                if (!float.IsNaN(lastOff)) leap = Mathf.Max(leap, Mathf.Abs(off - lastOff));
+                lastOff = off;
+                swing = Mathf.Max(swing, Mathf.Abs(controller.Motor.SwingAngle));
+            };
+            yield return Wait(1.5f);
+            probe.each = null;
+            Debug.Log($"[rope hanging still] its middle {least * 100f:F1} .. {most * 100f:F1} cm off the line, {leap * 100f:F2} cm in a frame at most (swing {swing:F3} rad)");
+            Assert.Less(swing, 0.2f, "(he hangs nearly still)");
+            Assert.Less(leap, 0.01f, "the rope does not leap from frame to frame");
+            Assert.Less(most - least, 0.03f, "nor from side to side (6 cm between the two sides of its old sag)");
+            input.jump = true;
+            yield return Wait(0.3f);
         }
 
         [UnityTest]

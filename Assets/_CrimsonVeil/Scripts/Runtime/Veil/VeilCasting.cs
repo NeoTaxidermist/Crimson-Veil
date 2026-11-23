@@ -40,10 +40,11 @@ namespace CrimsonVeil.Veil
         }
 
         /// <summary>
-        /// A blow is committed: once begun it plays to its end. A press only counts as the follow-up from this far
-        /// into the blow (attack progress 0..1); earlier presses are dropped, so mashing doesn't chain blows.
+        /// The least of the scarf (its share) a cast needs: a stub one can see. With that much there any weapon can be
+        /// cast - it takes what it costs, or all that is left. (Each weapon needing its whole cost, a scarf a quarter
+        /// long threw the whip but not the bow, with nothing to tell which: "the bow sometimes does not shoot".)
         /// </summary>
-        public const float ComboWindow = 0.4f;
+        public const float MinToCast = 0.1f;
 
         /// <summary>Seconds after a blow before the next can begin: the body recovers from the swing.</summary>
         public static float Recovery(VeilForm form)
@@ -58,9 +59,6 @@ namespace CrimsonVeil.Veil
                 default: return 0f;
             }
         }
-
-        /// <summary>Is a press at attack progress <paramref name="t"/> taken as the follow-up (or dropped)?</summary>
-        public static bool AcceptsFollowUp(float t) => t >= ComboWindow;
 
         /// <summary>Strength drained per second while the shield is held up or the scarf glides.</summary>
         public const float ShieldHoldDrain = 0.18f;
@@ -83,6 +81,21 @@ namespace CrimsonVeil.Veil
         public bool IsFull => Value >= 0.999f;
 
         public bool CanAfford(float cost) => Value + 1e-4f >= cost;
+
+        /// <summary>Can a weapon costing <paramref name="cost"/> be cast: there is a stub of scarf to make it of
+        /// (<see cref="VeilCasting.MinToCast"/>), or all it costs if that is less. The sword is always there.</summary>
+        public bool CanCast(float cost) => cost <= 0f || Value + 1e-4f >= Mathf.Min(cost, VeilCasting.MinToCast);
+
+        /// <summary>Casts: takes the weapon's cost of the scarf, or all that is left of it. False (and nothing taken)
+        /// when there is not even a stub.</summary>
+        public bool TryCast(float cost)
+        {
+            if (!CanCast(cost)) return false;
+            if (cost <= 0f) return true;
+            Value = Mathf.Max(0f, Value - cost);
+            sinceSpend = 0f;
+            return true;
+        }
 
         public bool TrySpend(float cost)
         {

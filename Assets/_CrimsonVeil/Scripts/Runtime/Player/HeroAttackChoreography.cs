@@ -170,15 +170,17 @@ namespace CrimsonVeil.Player
         // (spine + chest) on top of its 90 degrees.
         static readonly Key LowHold = new Key(0f, H, 18f, 32f, 55f, 30f, 10f, 22f, 92f, 122f, 80f, 128f);
 
-        // A low cut at the ankles: the blade raised only so far that it stays under a tunnel's roof (the forearm
-        // level, the blade ~20 degrees up), then chopped down level just over the floor, the body leaning into it.
+        // A thrust from the crouch: the fist drawn back to the hip, the point at the foe, then driven straight out,
+        // level, at the height of a crouched man's hand - a stab. (It was a chop at the ankles: the blade dipped to the
+        // floor in front of him and came up again - he tapped the ground with it.) Nothing is raised: it stays under a
+        // tunnel's roof.
         static readonly Key[] SwordLow =
         {
             At(LowHold, 0f),
-            K(0.26f, 30f, 46f, 40f, 70f, 26f, 6f, 22f, 92f, 122f, 80f, 128f),    // raised low in front, under the roof
-            K(0.50f, 50f, 16f, 10f, 60f, 40f, 12f, 14f, 92f, 122f, 80f, 128f),      // chopped down level over the floor
-            K(0.66f, 62f, 18f, 5f, 60f, 42f, 12f, 14f, 92f, 122f, 80f, 128f),     // follow-through low in front
-            K(0.82f, 40f, 25f, 25f, 55f, 34f, 10f, 18f, 92f, 122f, 80f, 128f),
+            K(0.26f, -6f, 104f, 34f, 62f, 24f, 6f, 20f, 92f, 122f, 80f, 128f),    // drawn back: the fist by the hip, the point forward
+            K(0.42f, 90f, 6f, 14f, 34f, 42f, 12f, 14f, 92f, 122f, 80f, 128f),     // driven straight out
+            K(0.62f, 88f, 8f, 14f, 36f, 40f, 12f, 14f, 92f, 122f, 80f, 128f),     // held at full reach
+            K(0.84f, 40f, 44f, 28f, 52f, 32f, 10f, 18f, 92f, 122f, 80f, 128f),
             At(LowHold, 1f),
         };
 
@@ -192,14 +194,17 @@ namespace CrimsonVeil.Player
             At(LowHold, 1f),
         };
 
-        // A lash along the floor: the hand drawn back low behind the hip, driven forward at shoulder height and
-        // stopped there, so the loop rolls out ahead and the lash comes down along the ground.
+        // A lash low over the floor: the same throw as standing, made small - the hand back beside the head (under a
+        // tunnel's roof), driven forward and stopped with the arm nearly level, so the loop rolls out ahead and the lash
+        // cracks at shin height: over the floor, not along it. (The hand used to be drawn back low behind the hip, the
+        // forearm hanging: the lash, which goes where the forearm points, flopped onto the floor in front of him in
+        // the wind-up, and thrown from so low it was laid on the ground from a metre ahead of him to its tip.)
         static readonly Key[] WhipLow =
         {
             At(LowHold, 0f),
-            K(0.24f, -45f, 40f, 35f, 40f, 26f, 4f, 20f, 92f, 122f, 80f, 128f),   // hand back low behind the hip
-            K(0.36f, 95f, 2f, -10f, 30f, 40f, 12f, 14f, 92f, 122f, 80f, 128f),   // driven forward low, stopped
-            K(0.66f, 92f, 4f, -10f, 30f, 40f, 12f, 14f, 92f, 122f, 80f, 128f),   // hold while it cracks
+            K(0.24f, 160f, 120f, 35f, 40f, 26f, 4f, 20f, 92f, 122f, 80f, 128f),  // hand back beside the head, the forearm laid back
+            K(0.36f, 115f, 2f, -10f, 30f, 40f, 12f, 14f, 92f, 122f, 80f, 128f),  // driven forward, stopped nearly level
+            K(0.66f, 113f, 4f, -10f, 30f, 40f, 12f, 14f, 92f, 122f, 80f, 128f),  // hold while it cracks
             K(0.84f, 60f, 20f, 15f, 45f, 34f, 10f, 18f, 92f, 122f, 80f, 128f),
             At(LowHold, 1f),
         };

@@ -139,7 +139,44 @@ namespace CrimsonVeil.Tests
                 standing = Mathf.Max(standing, HeroAttackChoreography.Sample(VeilForm.Sword, t).armR);
             }
             Assert.Greater(standing, 110f, "standing, the blade is raised high beside the head");
-            Assert.Less(raised, 60f, "crouched, only low in front (the 1.35 m roof: measured on the hero in HeroMoveSetPlayTests)");
+            Assert.Less(raised, 95f, "crouched, the arm only reaches out in front - over the bent trunk that is forward and down (the 1.35 m roof: measured on the hero in HeroMoveSetPlayTests)");
+        }
+
+        [Test]
+        public void TheLowSword_IsAThrust_DrawnBackToTheHipAndDrivenOut_NotAChopAtTheFloor()
+        {
+            // (it was a cut at the ankles: the blade dipped to the floor in front of him and came up again - he tapped
+            // the ground with it)
+            var drawn = HeroAttackChoreography.SampleLow(VeilForm.Sword, 0.26f);
+            var out1 = HeroAttackChoreography.SampleLow(VeilForm.Sword, 0.54f);   // (the forearm comes through last)
+            var held = HeroAttackChoreography.SampleLow(VeilForm.Sword, 0.62f);
+            Assert.Greater(drawn.elbowR, 80f, "drawn back: the elbow bent, the fist by the hip");
+            Assert.Less(drawn.armR, 20f);
+            Assert.Less(out1.elbowR, 15f, "driven out: the arm straight");
+            Assert.Greater(out1.armR, drawn.armR + 60f, "and forward");
+            Assert.AreEqual(out1.armR, held.armR, 10f, "held at full reach");
+            Assert.Greater(out1.spine, drawn.spine + 8f, "the body goes into it");
+            // the wrist lays the blade level along the thrust: all through it, then the blade comes back up into the guard
+            Assert.AreEqual(0f, VeilWeaponPose.LowThrust(-1f));
+            Assert.AreEqual(0f, VeilWeaponPose.LowThrust(0f), 1e-5f);
+            Assert.AreEqual(1f, VeilWeaponPose.LowThrust(0.26f), 1e-4f, "level from the draw-back");
+            Assert.AreEqual(1f, VeilWeaponPose.LowThrust(0.62f), 1e-4f, "to the end of the reach");
+            Assert.AreEqual(0f, VeilWeaponPose.LowThrust(0.95f), 1e-4f, "then back up into the guard");
+        }
+
+        [Test]
+        public void TheLowLash_IsTheStandingThrowMadeSmall_TheHandBackBesideTheHead_ThenOutNearlyLevel()
+        {
+            // (the hand used to be drawn back low behind the hip, the forearm hanging: the lash - which goes where the
+            // forearm points - flopped onto the floor in front of him, and was thrown along the ground)
+            var wound = HeroAttackChoreography.SampleLow(VeilForm.Whip, VeilWeaponPose.WhipWoundAt);
+            var thrown = HeroAttackChoreography.SampleLow(VeilForm.Whip, VeilWeaponPose.WhipCrackAt);   // (the forearm whips through last)
+            var held = HeroAttackChoreography.SampleLow(VeilForm.Whip, VeilWeaponPose.WhipHeldTo);
+            Assert.Greater(wound.armR, 120f, "wound up: the arm raised");
+            Assert.Greater(wound.elbowR, 60f, "the forearm laid back");
+            Assert.Less(thrown.elbowR, 10f, "thrown: the arm straight");
+            Assert.That(thrown.armR, Is.InRange(95f, 120f), "stopped nearly level over the bent trunk: the lash flies over the floor");
+            Assert.AreEqual(thrown.armR, held.armR, 6f, "and held there while it cracks");
         }
 
         [Test]

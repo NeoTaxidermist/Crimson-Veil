@@ -21,6 +21,33 @@ namespace CrimsonVeil.Tests
             Assert.That(top.Max(p => p.x), Is.GreaterThanOrEqualTo(w * 0.5f - 0.2f));
         }
 
+        [TestCase(6f, 2f, TerrainStyle.Rock, 1)]
+        [TestCase(3f, 0.8f, TerrainStyle.Rock, 9)]
+        [TestCase(1.4f, 8f, TerrainStyle.Ruin, 4)]
+        [TestCase(20f, 12f, TerrainStyle.Rock, 77)]
+        [TestCase(2f, 43f, TerrainStyle.Ruin, 12)]
+        public void Outline_TheSidesAreOnTheCollidersFaces_AndTheCornerIsThere(float w, float h, TerrainStyle style, int seed)
+        {
+            // The hero's hands, feet and body are set on the box collider: a hand braced on a wall or holding a lip is
+            // on the stone one sees only if the stone is drawn where the collider is. (The sides stood up to 18 cm
+            // behind its faces and 12 cm before them, with a 12 cm chip off the top corner.)
+            var o = ProceduralMeshes.TerrainOutline(w, h, style, 1f, seed);
+            float hw = w * 0.5f;
+            // (the underside keeps its character: its corners are drawn in, the lowest half metre of a side with them)
+            var sides = o.Where(p => p.y < -0.05f && p.y > -h + 0.3f && Mathf.Abs(p.x) > hw * 0.5f).ToList();
+            Assert.Greater(sides.Count, 0);
+            foreach (var p in sides)
+                Assert.AreEqual(hw, Mathf.Abs(p.x), ProceduralMeshes.SideRelief + 1e-4f, $"the side at height {p.y:F2} is on the collider's face");
+            // the top corners: the lip a hand holds
+            foreach (float sx in new[] { -1f, 1f })
+            {
+                float nearest = o.Min(p => Vector2.Distance(p, new Vector2(sx * hw, 0f)));
+                Assert.LessOrEqual(nearest, ProceduralMeshes.CornerChip * 1.5f, "the lip's corner is drawn where the collider's is");
+            }
+            Assert.LessOrEqual(ProceduralMeshes.SideRelief, 0.03f);
+            Assert.LessOrEqual(ProceduralMeshes.CornerChip, 0.04f);
+        }
+
         [Test]
         public void Triangulate_SimplePolygonGivesNMinus2Triangles()
         {

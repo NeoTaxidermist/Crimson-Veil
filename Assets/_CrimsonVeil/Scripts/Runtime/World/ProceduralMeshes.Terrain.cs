@@ -18,6 +18,14 @@ namespace CrimsonVeil.World
         /// spans x ∈ [-w/2, w/2] at y = 0 and which extends down to y = -h. The top stays almost flat
         /// (feet must match the box collider); sides, corners and the underside get the character.
         /// </summary>
+        /// <summary>
+        /// How far (m) a block's drawn side may stand in or out of its collider's face, and how much of its top corner is
+        /// chipped off. The hero's hands, feet and body are set on the collider: a side drawn up to 18 cm behind it
+        /// (and 12 cm before it, with an 8 cm overhang under the top and a 12 cm chip off the corner - as it was) left
+        /// a hand braced on a wall, or holding a lip, that far from the stone one sees.
+        /// </summary>
+        public const float SideRelief = 0.02f, CornerChip = 0.03f;
+
         public static List<Vector2> TerrainOutline(float width, float height, TerrainStyle style, float roughness, int seed)
         {
             var rnd = new System.Random(seed);
@@ -48,13 +56,12 @@ namespace CrimsonVeil.World
             {
                 float t = (float)i / sideSteps;
                 float y = Mathf.Lerp(-height, 0f, t);
-                float n = style == TerrainStyle.Rock ? R(-0.18f, 0.12f) : (i % 2 == 0 ? -0.06f : 0f);
-                float lip = t > 0.85f ? 0.08f * rough : 0f; // slight overhanging lip under the top
-                pts.Add(new Vector2(hw + (n * rough) + lip, y));
+                float n = style == TerrainStyle.Rock ? R(-SideRelief, SideRelief) : (i % 2 == 0 ? -SideRelief : 0f);
+                pts.Add(new Vector2(hw + n * rough, y));
             }
 
             // Top, right → left: nearly flat, with a chipped corner on each end.
-            float chip = 0.12f * rough;
+            float chip = CornerChip * rough;
             pts.Add(new Vector2(hw, -chip));
             for (int i = 0; i <= topSteps; i++)
             {
@@ -70,9 +77,8 @@ namespace CrimsonVeil.World
             {
                 float t = (float)i / sideSteps;
                 float y = Mathf.Lerp(-height, 0f, t);
-                float n = style == TerrainStyle.Rock ? R(-0.18f, 0.12f) : (i % 2 == 0 ? -0.06f : 0f);
-                float lip = t > 0.85f ? 0.08f * rough : 0f;
-                pts.Add(new Vector2(-hw - (n * rough) - lip, y));
+                float n = style == TerrainStyle.Rock ? R(-SideRelief, SideRelief) : (i % 2 == 0 ? -SideRelief : 0f);
+                pts.Add(new Vector2(-hw - n * rough, y));
             }
             return pts;
         }

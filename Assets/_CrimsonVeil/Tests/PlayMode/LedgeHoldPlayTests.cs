@@ -77,6 +77,8 @@ namespace CrimsonVeil.Tests
             skins = player.GetComponentsInChildren<SkinnedMeshRenderer>();
             boneOf.Clear();
             baked = new Mesh();
+            bodyInStone = 0f; hairInStone = 0f; bodyWorst = "-";
+            handsOff = 0f; leftOff = 0f; firstOff = -1f; unsupported = 0f; holdFrames = 0;
         }
 
         [TearDown]
@@ -233,41 +235,65 @@ namespace CrimsonVeil.Tests
             Assert.Greater(side * Pos.x, Face, "over the lip");
         }
 
-        [UnityTest] public IEnumerator HangingWithAWeaponCast_TheHandThatWieldsItStaysOutOfTheWall_Right() { side = 1; return HangingWithAWeaponCast_TheHandThatWieldsItStaysOutOfTheWall(); }
-        [UnityTest] public IEnumerator HangingWithAWeaponCast_TheHandThatWieldsItStaysOutOfTheWall_Left() { side = -1; return HangingWithAWeaponCast_TheHandThatWieldsItStaysOutOfTheWall(); }
-        IEnumerator HangingWithAWeaponCast_TheHandThatWieldsItStaysOutOfTheWall()
+        [UnityTest] public IEnumerator OnALip_NoWeaponIsCast_AndOneInHandMeltsAway_BothHandsHold_Right() { side = 1; return OnALip_NoWeaponIsCast_AndOneInHandMeltsAway_BothHandsHold(); }
+        [UnityTest] public IEnumerator OnALip_NoWeaponIsCast_AndOneInHandMeltsAway_BothHandsHold_Left() { side = -1; return OnALip_NoWeaponIsCast_AndOneInHandMeltsAway_BothHandsHold(); }
+        /// <summary>
+        /// Both hands are on the stone: hanging on a lip (and coming up over it) no weapon is cast, and one he had in his
+        /// hand when he caught it melts back into the scarf. (He could wield one hanging by one hand - at the wall he
+        /// hung on, in front of his face.)
+        /// </summary>
+        IEnumerator OnALip_NoWeaponIsCast_AndOneInHandMeltsAway_BothHandsHold()
         {
-            yield return CatchTheLip();
-            yield return Watch(0.5f, "hanging");
             var veil = player.GetComponent<VeilController>();
-            bool armed = false;
-            foreach (var form in new[] { VeilForm.Sword, VeilForm.Bow, VeilForm.Spear })
+            Box("block", new Vector3(X(Face + 2f), Top * 0.5f, 0f), new Vector3(4f, Top, 4f), true);
+            controller.Teleport(new Vector3(X(Face - 3.5f), 0.05f, 0f));
+            yield return Watch(0.5f, "settling");
+            bodyInStone = 0f; hairInStone = 0f; bodyWorst = "-";
+            // a sword in his hand as he runs up and jumps
+            input.cast = VeilForm.Sword;
+            input.moveX = X(0.6f);
+            yield return Watch(0.3f, "run-up");
+            Assert.AreEqual(VeilForm.Sword, veil.Form, "the sword is cast on the run");
+            input.jump = true; input.jumpHeld = true;
+            yield return Watch(2f, "jump", () => State == MotorState.LedgeHang);
+            input.jumpHeld = false; input.moveX = 0f;
+            Assert.AreEqual(MotorState.LedgeHang, State, "caught the lip");
+            yield return Watch(0.6f, "hanging");
+            Assert.AreEqual(VeilForm.Flow, veil.Form, "the sword melted back into the scarf as he caught the lip");
+            Assert.IsFalse(veil.IsAttacking, "and no blow is under way");
+            handsOff = 0f;
+            foreach (var form in new[] { VeilForm.Sword, VeilForm.Bow, VeilForm.Spear, VeilForm.Whip, VeilForm.Shield })
             {
                 input.cast = form;
-                float end = Time.time + 0.8f;
-                var probe = player.GetComponent<EndOfFrameProbe>();
-                probe.each = () => { MeasureStone("wielding the " + form); if (State == MotorState.LedgeHang) leftOff = Mathf.Max(leftOff, OffLip(handL)); };
-                while (Time.time < end) { armed |= veil.ShapeForm != VeilForm.Flow; yield return null; }
-                probe.each = null;
+                input.held = form;
+                yield return Watch(0.3f, "pressing " + form);
+                Assert.AreEqual(VeilForm.Flow, veil.Form, $"no {form} is cast hanging on a lip");
             }
-            Debug.Log($"[lip hold] side {side}, a weapon cast while hanging: body in the stone {bodyInStone:F3} m ({bodyWorst}); the other hand {leftOff:F3} m off the lip at worst");
-            Assert.IsTrue(armed, "a weapon was cast while he hung");
+            input.held = null;
+            Debug.Log($"[lip hold] side {side}, weapons pressed while hanging: none cast; hands {handsOff:F3} m off the lip at worst; body in the stone {bodyInStone:F3} m ({bodyWorst})");
             Assert.AreEqual(MotorState.LedgeHang, State, "still hanging");
-            Assert.Less(bodyInStone, Tolerance, $"the hand that wields the weapon stays this side of the wall ({bodyInStone:F2} m in it: {bodyWorst}; 0.19 m it was)");
-            Assert.Less(leftOff, 0.04f, $"and the other hand holds the lip all the while ({leftOff:F2} m off it)");
+            Assert.Less(handsOff, 0.04f, $"both hands hold the lip all the while ({handsOff:F2} m off it)");
+            Assert.Less(bodyInStone, Tolerance, $"and the body stays out of the stone ({bodyInStone:F2} m in it: {bodyWorst})");
+            // on the top again he is armed as ever
+            input.jump = true;
+            yield return Watch(3f, "climbing", () => State == MotorState.Normal && controller.Motor.IsGrounded);
+            yield return Watch(0.3f, "on the top", null, false);
+            input.cast = VeilForm.Sword;
+            yield return Watch(0.3f, "casting on the top", null, false);
+            Assert.AreEqual(VeilForm.Sword, veil.Form, "standing on the top the sword is cast again");
         }
 
         [UnityTest]
         public IEnumerator JumpingUnderALowRoof_TheHeadStaysUnderIt()
         {
-            // a roof 2 m over the floor: 0.2 m over his head, less than the stretch of his take-off
+            // a roof 2 m over the floor: a hand's breadth over his head (his capsule is 1.9 m, as tall as he is drawn),
+            // less than the stretch of his take-off
             Box("roof", new Vector3(0f, 2.5f, 0f), new Vector3(3f, 1f, 4f), true);
             controller.Teleport(new Vector3(0f, 0.05f, 0f));
             yield return Watch(0.5f, "settling", null, false);
-            // (he is drawn taller than his capsule: the top of his head is a few centimetres in a roof this low already)
             float standing = bodyInStone;
             string standingAt = bodyWorst;
-            Assert.Less(standing, 0.06f, "standing under it he all but fits");
+            Assert.Less(standing, 0.01f, "standing under it he is clear of it");
             bodyInStone = 0f; hairInStone = 0f; bodyWorst = "-";
             float top = 0f;
             for (int k = 0; k < 2; k++)
@@ -282,9 +308,12 @@ namespace CrimsonVeil.Tests
                 yield return null;
             }
             Debug.Log($"[roof] under a 2 m roof: standing, body in it {standing:F3} m ({standingAt}); jumping, {bodyInStone:F3} m ({bodyWorst}), hair {hairInStone:F3} m; he rose {top:F2} m");
-            Assert.Greater(top, 0.1f, "he jumped (and the roof stopped him)");
-            Assert.Less(bodyInStone, 0.08f, $"the head stays under the roof ({bodyInStone:F2} m in it: {bodyWorst}; with the take-off's stretch it went 0.37 m in)");
-            Assert.Less(hairInStone, 0.2f, $"and the hair near enough ({hairInStone:F2} m; 0.39 m it was)");
+            Assert.Greater(top, 0.03f, "he jumped (and the roof stopped him)");
+            Assert.Less(top, 0.2f, "the roof stopped him");
+            // (with a capsule of 1.8 m under the body drawn 1.9 m tall, and the take-off's stretch, the head went 0.37 m
+            // into it; with the stretch stopped at the roof 0.05 m, the hair 0.10 m)
+            Assert.Less(bodyInStone, 0.03f, $"the head stays under the roof ({bodyInStone:F2} m in it: {bodyWorst})");
+            Assert.Less(hairInStone, 0.08f, $"and the hair with it ({hairInStone:F2} m)");
         }
     }
 }

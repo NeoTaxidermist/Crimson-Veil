@@ -263,9 +263,17 @@ namespace CrimsonVeil.Veil
         /// the shield guards while its button is down, the bow stays drawn. The whip, cast at a lit ring, lashes
         /// round it. Costs scarf strength (<see cref="VeilCasting.Cost"/>).
         /// </summary>
+        /// <summary>
+        /// Hanging on a lip and coming up over it both his hands are on the stone: no weapon is cast there, and one in
+        /// his hand when he catches the lip melts back into the scarf. (He could wield one hanging by one hand: at the
+        /// wall he hung on, in front of his face.)
+        /// </summary>
+        public bool HandsOnALip => player != null && (player.Motor.State == MotorState.LedgeHang || player.Motor.State == MotorState.Climbing);
+
         public bool Cast(VeilForm form)
         {
             if (form == VeilForm.Flow || Disarmed) return false;
+            if (HandsOnALip) return false;   // both hands are on the stone
             if (!IsUnlocked(form)) { CastFizzled?.Invoke(form); return false; }
             if (Latched != null) return false;
             float cost = VeilCasting.Cost(form);
@@ -732,6 +740,11 @@ namespace CrimsonVeil.Veil
             time += dt;
 
             UpdateGrapple();
+            if (HandsOnALip && Latched == null && (Form != VeilForm.Flow || IsAttacking || pendingAttack.HasValue || buffered.HasValue))
+            {
+                Interrupt(0f);
+                SetForm(VeilForm.Flow);
+            }
             if (input != null)
             {
                 var cast = input.CastPressed;

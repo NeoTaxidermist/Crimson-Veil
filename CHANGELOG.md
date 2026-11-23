@@ -5,6 +5,32 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.82.0] – 2026-11-23
+### Opraveno
+- **Ve visu se nepoužívají zbraně.** Na hraně a při výlezu má postava obě ruce na kameni: stisk zbraně se tam neprovede a zbraň, kterou drží ve chvíli zachycení, se rozplyne zpět do šály (`VeilController.HandsOnALip`). Dřív pravá ruka pustila hranu a máchala zbraní do zdi před obličejem. Nahoře na hraně jde zbraň seslat hned znovu.
+- **Kolizní kapsle má výšku postavy.** Kapsle měřila 1,8 m, postava se kreslí 1,9 m vysoká, takže hlava čouhala nad kolizi. Kapsle má teď 1,9 m (`Player.prefab`); podřep zůstává 1,2 m.
+- **Kámen se kreslí tam, kde je jeho kolize.** Ruce, nohy i tělo se kladou na kolizní kvádr bloku, ale jeho boky se kreslily až 18 cm za stěnou kolize nebo 12 cm před ní, pod vrškem měly 8cm převis a roh hrany byl o 12 cm seříznutý. Ruka opřená o zeď nebo držící hranu tak byla o tolik vedle kamene, který je vidět. Boky se teď kreslí nejvýš 2 cm od stěny kolize a roh je seříznutý nejvýš o 3 cm (`ProceduralMeshes.SideRelief`, `CornerChip`). Shader ani textury v tom roli nehrály: povrch neposouvají, rozdíl byl v obrysu sítě.
+
+### Změřeno
+- Výskok pod stropem 2 m (test na skutečném hrdinovi): tělo i vlasy v kameni 0,00 m, výskok 7 cm. S kapslí 1,8 m to bylo 4,6 cm hlavy a 10 cm vlasů (a 37 cm před zastavením natažení ve verzi 0.81.0).
+- Vis se stisky všech pěti zbraní: žádná se nesešle, obě ruce jsou od svého místa na hraně 0,0 cm (po ustálení), tělo v kameni nejvýš 4,2 cm (konečky prstů ve snímku zachycení, beze změny).
+- Zachycení a výlez beze změny: ruce nejvýš 3,0 cm od hrany, bez opory 0,06 až 0,07 s.
+- Boky bloků: odchylku jsem změřil z obrysu, který síť staví, ne ze snímků hry.
+
+### Poctivě
+- **Stisk zbraně ve visu se zahodí bez odezvy** (žádný obláček inkoustu, žádné zapamatování na později). Je to moje volba; kdyby měl stisk počkat a provést se po výlezu, je to malá změna.
+- **Vyšší kapsle mění průchodnost:** kudy postava dřív prošla s 5 až 10 cm rezervou nad hlavou, tam teď může narazit. Testy úrovně prošly všechny, ale ručně jsem úroveň neprošel.
+- **Bloky vypadají rovněji.** Skály ztratily členitý obrys boků (zůstává 2 cm), zdivo má schody po 2 cm místo 6 cm; spodek bloků a čelní kameny jsou beze změny. Spodních zhruba 30 až 50 cm boku se dál zatahuje ke spodnímu rohu až o 25 cm.
+- Úroveň se přestaví sama při načtení (bloky se generují), scénu jsem neukládal.
+- Kód pro vis s jednou rukou (`HangFreeArm`, `OneHandedHang`, `KeepHandOffTheFace`) zůstal: uplatní se už jen ten zlomek sekundy, než se zbraň po zachycení rozplyne.
+- Otevřená dlaň na hraně z verze 0.81.0 zůstává; k té ses nevyjádřil.
+- Galerie tuto ani předchozí čtyři verze neukazuje a do main není nic sloučeno.
+
+### Testy
+- `TerrainMeshTests` (5 nových případů): boky obrysu leží na stěnách kolize a roh hrany je tam, kde roh kolize.
+- `LedgeHoldPlayTests` (2 přepsané, 1 upravený): na hraně se žádná zbraň nesešle, zbraň v ruce se po zachycení rozplyne, obě ruce drží a nahoře jde zbraň seslat znovu (zprava i zleva); test stropu čeká nulový průnik.
+- Puštěno: celý EditMode (618 testů) a celá sada PlayMode (135 testů). EditMode napoprvé 617 z 618 (nový test boků počítal i záměrně zatažený spodní roh bloku; po opravě výběru bodů prošel, znovu jsem pustil jen jeho sadu). PlayMode 134 ze 135: neprošel test stropu, protože čekal výskok přes 10 cm a s novou kapslí je to 7 cm; po úpravě testu jsem znovu pustil jen sadu `LedgeHoldPlayTests` (5 z 5).
+
 ## [0.81.0] – 2026-11-23
 ### Opraveno
 - **Ruce drží hranu od prvního snímku.** Zachycení hází koleny proti zdi a pravidlo, které drží tělo mimo zeď (`KeepOffWalls`), ho odtlačilo dál, než jsou paže dlouhé. První půl sekundy každého visu tak byly ruce 15 až 25 cm od kamene a až 18 cm pod hranou, tedy ve vzduchu. Teď je to obráceně: ruce drží hranu a tělo visí na nich. Tělo se vrátí ke zdi právě o tolik, kolik pažím chybí (`HeroPoseSolver.PullToReach`), a zdi pod hranou uhýbají nohy.

@@ -90,6 +90,7 @@ namespace CrimsonVeil.Player
             Motor.LedgeGrabbed += OnLedgeGrabbed;
             Motor.ClimbStarted += OnClimbStarted;
             Motor.ClimbFinished += OnClimbFinished;
+            if (GetComponent<HeroSounds>() == null) gameObject.AddComponent<HeroSounds>();
         }
 
         void Update() => Simulate(Time.deltaTime);

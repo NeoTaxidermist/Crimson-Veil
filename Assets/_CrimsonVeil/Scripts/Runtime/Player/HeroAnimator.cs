@@ -956,6 +956,9 @@ namespace CrimsonVeil.Player
         /// way - 0.25 m a step at a walk, 0.5 m at a jog. Planted, the step is as long as it needs to be, as far as
         /// the leg reaches; lifted, the foot catches up with the pose in a moment.
         /// </summary>
+        /// <summary>A foot (0 or 1) is set down on the floor, at this speed (m/s): a footstep.</summary>
+        public event System.Action<int, float> FootSetDown;
+
         void PlantFeet(in HeroState s, float dt)
         {
             if (footfalls[0] == null || footfalls[1] == null) return;
@@ -976,6 +979,7 @@ namespace CrimsonVeil.Player
                 if (carries && !f.down && !f.early)
                 {
                     f.down = true;
+                    FootSetDown?.Invoke(k, s.speed);
                     f.heldX = ballX + f.lag;
                     f.slipped = 0f;
                 }

@@ -134,7 +134,7 @@ namespace CrimsonVeil.Tests
             Assert.Greater(flashed, 0.5f, "the foe flashes");
             Assert.IsTrue(slash, "the cut is drawn through it");
             Assert.GreaterOrEqual(GameSound.Played - before, 2, "the swing and the hit are heard");
-            Assert.AreEqual(Cue.Hit, GameSound.Last);
+            Assert.That(GameSound.Count.TryGetValue(Cue.Hit, out int hits) ? hits : 0, Is.GreaterThanOrEqualTo(1), "the hit is heard (the last sound may be a step)");
         }
 
         [UnityTest]

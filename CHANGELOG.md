@@ -5,6 +5,36 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.91.0] – 2026-11-26
+### Přidáno
+- **Zvuky pohybu hrdiny** (`HeroSounds`, přidá se k hrdinovi sám): krok pokaždé, když noha dosedne na zem (běh hlasitější a těžší než chůze), odraz do skoku, švih vzduchu u salta, dopad (z větší výšky tvrdší a hlasitější, při kotoulu tlumený), úskok, kotoul, plácnutí ruky o římsu, vytažení přes hranu (škrábání, výdech, krok nahoře), odraz od zdi, zachycení biče, vrzání biče během houpání (silnější, čím rychleji se houpe), svist vzduchu v dolní části silného švihu a pustění.
+- **Smyčky, které hrají, dokud pohyb trvá**: škrábání skluzu po zemi a sjíždění po zdi (hlasitost i výška podle rychlosti), vrzání biče a vítr při plachtění šálou. Plynule se rozezní a dozní, nezačínají vždy na stejném místě a nemají slyšitelný šev.
+- Událost `HeroAnimator.FootSetDown`: kroky jsou svázané se skutečným došlapem nohy, ne s časovačem.
+
+### Změněno
+- **Zvuky jsou méně umělé** (`SoundSynth` přepsán): každý zvuk má několik variant (kroky 8, ostatní 4) a nikdy nezazní stejná dvakrát po sobě; liší se výškou, délkou, načasováním i poměrem vrstev. Zvuky jsou složené z vrstev jako skutečné: zásah = ostří (několik cvaknutí), tupý úder, šplouchnutí inkoustu a odlétající kapky; zranění = úder, praskání látky a vyražený dech; máchnutí = vzduch a třepetání látky zbraně; štít = neharmonické tóny kovu, každý s vlastním doznětím. Vše končí krátkým dozvukem kamenné ruiny.
+- Zásah a zranění mají základ o něco výš (zásah 190→70 Hz místo 150→46 Hz, zranění 170→85 Hz), aby je zahrál i malý reproduktor.
+- Všechny zvuky (124) se vyrobí předem po kouscích (asi 3 ms za snímek) hned po startu hry; dřív se zvuk vyráběl při prvním zaznění, uprostřed hry, se zádrhelem a smetím v paměti.
+
+### Změřeno
+- Na skutečném hrdinovi: 2 s běhu rychlostí 8 m/s = 8 kroků (jeden na každý došlap), ve stoje žádný; skok = jeden odraz a jeden dopad; skluz škrábe a po něm do 1,2 s utichne.
+- Výroba všech 124 zvuků trvá v editoru asi 1 s (rozložená do snímků); kolo pohybů hrdiny dál nealokuje žádnou paměť.
+- Spektra: kroky a dopady mají většinu energie pod 250 Hz s cvaknutím drti nahoře; máchnutí od štítu (~1 kHz) po bič (~3,6 kHz); škrábání skluzu kolem 1,9 kHz, po zdi 1,1 kHz; vrzání biče kolem 0,9 kHz.
+
+### Poctivě
+- **Zvuky jsem zase neslyšel, jen změřil.** Ukázky jsou ve složce `C:\_ClaudeAI\unity\zvuky` (smyčky jsou tam třikrát za sebou, aby byl slyšet případný šev). Jestli znějí přirozeně, posoudíš ty.
+- Zásahy a kroky mají i po posunu většinu energie pod 250 Hz; na sluchátkách budou plné, na reproduktoru notebooku mnohem tenčí. Pokud budou slabé, přidám střední pásmo.
+- Kroky zní jen tam, kde hra pokládá nohy pevně (běh a chůze po zemi); při plížení, ve skrčení a na laně kroky nejsou.
+- Zvuky lana (zachycení, vrzání, svist, pustění), plachtění, římsy a zdi jsem v testu na hrdinovi nezkoušel, jen jsou napojené na stejné události pohybu jako animace; ověřil jsem jen samotné zvuky.
+- Napoprvé dva testy neprošly: test paměti hrdiny (zvuky se vyráběly až při prvním zaznění, 278 kB) a test zásahu (poslední zvuk byl dopad, ne zásah); první jsem opravil výrobou zvuků předem, druhý test teď hlídá, že zásah zazněl.
+- Nástroj na spouštění PlayMode testů ztrácel jejich výsledky; dočasně jsem je zapisoval vlastním skriptem do souboru, skript jsem před commitem smazal.
+- Do main není nic sloučeno.
+
+### Testy
+- `MoveSoundTests` (EditMode, 6 nových, `Combat` a `Hero`): každá varianta každého zvuku vznikne, je stejně hlasitá a na konci neklapne; varianty se od sebe liší a každá je pokaždé stejná; smyčky nemají šev; běžecký krok je hlasitější než krok chůze; pád z výšky je tvrdší dopad; krok je tupější než úskok.
+- `HeroSoundsPlayTests` (PlayMode, 2 nové, `Hero` a `Motor`): kroky, skok a dopad, skluz a úskok na skutečném hrdinovi, viz Změřeno; zvuky jsou vyrobené předem.
+- Puštěno: EditMode kategorie `Combat` a `Hero` (230 testů), PlayMode kategorie `Hero`, `Motor` a `Combat` (137 testů; napoprvé 135, viz Poctivě), po opravě `HeroSoundsPlayTests`, `HitFeelPlayTests` a `HeroMoveSetPlayTests` (37 testů), všechny prošly.
+
 ## [0.90.0] – 2026-11-26
 ### Přidáno
 - **Zvuky boje, vyrobené v kódu** (`SoundSynth`, `GameSound`): máchnutí mečem, kopím, bičem a štítem (každé jinak vysoké), zásah, těžký zásah dokončujícího úderu, zranění hrdiny, blok a odražení štítem, šála, která vezme ránu za hrdinu, rozplynutí poraženého nepřítele, šleh biče, výstřel z luku a zásah šípem. Žádné nahrávky ani stažené soubory: šum a tóny tvarované filtry a obálkami, pokaždé s malou odchylkou výšky, aby nezněly strojově. Hlasitost řídí nastavení efektů. Ukázky jsou ve složce `C:\_ClaudeAI\unity\zvuky` (mimo projekt).

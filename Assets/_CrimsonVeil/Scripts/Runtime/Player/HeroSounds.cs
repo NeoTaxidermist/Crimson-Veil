@@ -16,6 +16,8 @@ namespace CrimsonVeil.Player
         public const float HardFall = 3f;
         /// <summary>From this speed (m/s) a step is a running one.</summary>
         public const float RunFrom = 4f;
+        /// <summary>How many times he has been heard passing under the ring (for tests).</summary>
+        public int BottomsHeard { get; private set; }
 
         PlayerController player;
         HeroAnimator animator;
@@ -110,17 +112,21 @@ namespace CrimsonVeil.Player
                 0.9f + 0.04f * Mathf.Abs(v.y));
             GameSound.SetLoop(Loop.Glide, motor.IsGliding ? 0.4f + 0.6f * Mathf.InverseLerp(1f, 8f, v.magnitude) : 0f,
                 0.9f + 0.02f * v.magnitude);
-            // On the whip: it creaks as hard as he swings, and the air rushes past at the bottom of a strong swing.
+            // On the whip, with the swing itself (a loop of its own beside it ran out of step with him): as he passes
+            // under the ring - where the whip pulls hardest and he is fastest - it groans and the air rushes past,
+            // both as strong as the swing.
             float w = Mathf.Abs(motor.SwingAngularVelocity);
-            GameSound.SetLoop(Loop.Rope, motor.IsSwinging ? 0.25f + 0.75f * Mathf.InverseLerp(0.3f, 3f, w) : 0f, 0.9f + 0.08f * w);
             swooshCooldown -= Time.deltaTime;
             if (motor.IsSwinging)
             {
                 float a = motor.SwingAngle;
-                if (Mathf.Sign(a) != Mathf.Sign(lastSwingAngle) && w > 1.5f && swooshCooldown <= 0f)
+                if (lastSwingAngle != 0f && Mathf.Sign(a) != Mathf.Sign(lastSwingAngle) && swooshCooldown <= 0f)
                 {
-                    GameSound.Play(Cue.RopeSwoosh, Mathf.InverseLerp(1.5f, 4f, w) * 0.7f + 0.3f);
-                    swooshCooldown = 0.4f;
+                    float strength = Mathf.InverseLerp(0.6f, 4f, w);
+                    if (w > 0.6f) GameSound.Play(Cue.RopeCreak, 0.35f + 0.65f * strength);
+                    if (w > 1.5f) GameSound.Play(Cue.RopeSwoosh, 0.3f + 0.7f * strength);
+                    BottomsHeard++;
+                    swooshCooldown = 0.25f;
                 }
                 lastSwingAngle = a;
             }

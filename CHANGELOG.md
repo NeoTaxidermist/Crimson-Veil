@@ -5,6 +5,36 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.93.0] – 2026-11-26
+### Opraveno
+- **Kroky už neťukají jako paličky.** Byly složené z tónů, které zvonily (kámen až 4 kHz, podrážka 260–900 Hz). Teď je to tupé ťuknutí měkké boty, které hned utichne: každý tón zanikne během pár vlastních kmitů. K tomu podrážka dosedne o chvilku později, kůže šoupne a občas křupne drobek kamene. Kroky jsou i tmavší.
+- **Kroky zní, když noha opravdu dosedne.** Dosud zněly 0,08–0,11 s dřív, protože se spouštěly, jakmile byla noha 7 cm nad zemí a začala nést váhu. Teď se ozvou, až kotník klesne tam, kde stojí (do 8 mm), nebo v nejnižším bodě došlapu. Kotník musí být předtím aspoň 0,1 s ve vzduchu a stejná noha nezazní dřív než po 0,25 s. Bez toho chvění podrážky u země dělalo až čtyři kroky na jeden došlap (`HeroAnimator.FootSetDown`, `FootTouch`, `AloftAtLeast`, `StepEvery`).
+- **Švih zbraně zazní se sekem, ne při stisku.** Čepel je z látky a zaostává za paží. Měřeno na hrdinovi: hrot meče je nejrychlejší 0,21 s po stisku, kdežto zvuk puštěný při stisku vrcholil už kolem 0,1 s, takže působil vloženě. Teď zazní ve chvíli, kdy jeho vrchol padne na viditelný sek: meč při 20 % úderu (0,092 s), kopí při 12 %, bič při 28 % (prásknutí přijde v 0,33 s), štít při 3 % (`GameSound.SwingSoundAt`).
+- **Zásah švih utne.** Čepel se v cíli zastaví, a tak její svist do 0,05 s utichne. Dosud hrál dál pod zásahem (`GameSound.Cut`).
+- **Houpání na laně je slyšet v rytmu houpání.** Vrzání byla samostatná smyčka o délce 1,4 s, která běžela nezávisle na tom, jak se hrdina houpe. Teď se ozve jedno zaskřípání (`Cue.RopeCreak`, 4 varianty) a svist vzduchu pokaždé, když hrdina prochází pod kruhem, kde bič táhne nejvíc a hrdina je nejrychlejší. Oboje sílí, čím víc se houpe. Smyčka `Loop.Rope` je pryč.
+
+### Změřeno
+- Chůze 3 s na skutečném hrdinovi: 9 kroků, každý po jednom na došlap. Před opravou zněly 80–110 ms před dosednutím; měřil jsem kotník proti času zvuku.
+- Švih meče zazní 0,092 s po začátku úderu, hrot je nejrychlejší v 0,21 s. Švih zazní ještě před zásahem a do 0,1 s po zásahu je pryč.
+- Bič: hrdina prošel pod kruhem třikrát a třikrát bylo slyšet zaskřípání i svist, nejvýš 1° od spodní polohy.
+- Model CLAP (zvuk přes podkres ruiny): krok chůze 0,87, krok běhu 0,89, osm kroků běhu za sebou 1,00, chůze 1,00 (předtím 0,41–0,81). Jedno zaskřípání lana 0,87. Průměr všech zvuků 0,82 (předtím 0,79).
+
+### Poctivě
+- Pořád jsem nic neslyšel; čísla jsou z modelu a měření pohybu.
+- **Sled zaskřípání v rytmu houpání model hodnotí 0,01 („syntezátor“).** Samotné zaskřípání vyšlo 0,87, ale osm za sebou v pravidelném rytmu kyvadla už ne. Jestli to zní uměle i tobě, předělám zaskřípání na tišší a méně tónové.
+- „vložené odpudivě“ jsem pochopil jako „působí vloženě, nesedí s pohybem“, proto jsem řešil hlavně načasování a utnutí švihu. Jestli jsi myslel, že zní ošklivě samy o sobě, napiš, který úder.
+- Při rozjezdu z místa první krok obvykle chybí, protože se kotník ještě nezvedl dost vysoko. Při zastavení naopak jeden krok dozní.
+- Test měří výšku kotníku uprostřed snímku, ještě než hra nohu přišpendlí k zemi. Proto mu krok vychází 2–3 cm nad nejnižší polohou, i když podle času sedí na dosednutí.
+- Výsledky PlayMode testů jsem zase zapisoval dočasným skriptem do souboru; dočasné měření i skript jsem smazal.
+- Ukázky jsou aktualizované ve složkách `C:\_ClaudeAI\unity\zvuky` a `zvuky_s_podkresem`; nový je tam `RopeSwingSeq` (houpání).
+- Do main není nic sloučeno.
+
+### Testy
+- `HeroSoundsPlayTests` (2 nové): krok zazní, když kotník dosedne, jednou za došlap; švih meče zazní se sekem (0,05–0,17 s po začátku), ne při stisku.
+- `WhipSwingSoundPlayTests` (nový, `Motor` a `Hero`): bič se ozve jednou při zachycení a pak při každém průchodu pod kruhem, a jen tam.
+- `HitFeelPlayTests`: do 0,1 s po zásahu švih utichne.
+- Puštěno: EditMode kategorie `Combat` a `Hero` (232 testů, prošly), PlayMode kategorie `Hero`, `Motor` a `Combat` (140 testů; napoprvé 139: krok zněl 3–4 cm nad zemí, zpřísnil jsem to). Pak znovu `HeroSoundsPlayTests`, `HeroMoveSetPlayTests` a `WhipSwingSoundPlayTests` (38 testů), všechny prošly, hrdina dál nealokuje paměť.
+
 ## [0.92.0] – 2026-11-26
 ### Změněno
 - **Zvuky jsou vyrobené jinak, aby nezněly uměle** (`SoundSynth` přepsán znovu). Úder už není klesající sinusový tón; ten zněl jako kopák bicího automatu. Teď vzniká jako ve světě: něco do něčeho narazí (krátký záblesk šumu, měkčí nebo ostřejší) a zasažená věc se rozezní svými vlastními tóny. Kámen zní krátce a vysoko, tělo tupě, dřevo dutě, kov dlouze. Vzduch je růžový šum v pohyblivém pásmu místo pravidelného třepetání. Nic se nepřebuzuje (zrušené zkreslení `tanh`). Každý zvuk dozní v ozvěně kamenné ruiny (síť zpožďovacích linek, tmavne, jak doznívá) a je celkově tmavší.

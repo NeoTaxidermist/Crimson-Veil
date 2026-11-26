@@ -92,6 +92,7 @@ namespace CrimsonVeil.Combat
                         Vector2 across = new Vector2(-along.y, along.x);
                         CombatFx.Slash(point, form == VeilForm.Spear ? new Vector2(veil.Facing, 0f) : across,
                                        blow.finisher ? 1.6f : 1.1f, blow.finisher ? 0.16f : 0.11f);
+                        GameSound.Cut(GameSound.SwingOf(form));   // (the blade stops in it: no more whoosh)
                         GameSound.Play(blow.finisher ? Cue.HitHeavy : Cue.Hit);
                     }
                 }

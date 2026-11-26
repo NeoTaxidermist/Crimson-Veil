@@ -870,6 +870,11 @@ namespace CrimsonVeil.Player
             public float lastRel;   // where the pose had it last frame, from the body (x)
             public float slipped;   // metres it has slipped since it was set down (the leg stretched out)
             public bool early;      // lifted because the leg could hold it no longer (until it has caught up with the pose)
+            public bool aloft;      // its sole is off the floor (for the footstep's sound)
+            public float stance = 0.08f; // how high its ankle is when it stands on the floor (learnt as he walks)
+            public float lastAnkle;  // how high its ankle was last frame
+            public float aloftFor;  // seconds it has been lifted
+            public float sinceStep; // seconds since its last step was heard
         }
 
         readonly Footfall[] footfalls = new Footfall[2];
@@ -956,8 +961,21 @@ namespace CrimsonVeil.Player
         /// way - 0.25 m a step at a walk, 0.5 m at a jog. Planted, the step is as long as it needs to be, as far as
         /// the leg reaches; lifted, the foot catches up with the pose in a moment.
         /// </summary>
-        /// <summary>A foot (0 or 1) is set down on the floor, at this speed (m/s): a footstep.</summary>
+        /// <summary>
+        /// A foot (0 or 1) meets the floor, at this speed (m/s): a footstep. When the ankle comes down to within
+        /// <see cref="FootTouch"/> of where it stands - not when the foot starts to carry him (from 7 cm up: the step was
+        /// heard 0.08-0.11 s before the foot was seen to land), nor by the skin of the sole (it trembles about the floor:
+        /// steps missed and doubled).
+        /// </summary>
         public event System.Action<int, float> FootSetDown;
+        /// <summary>The ankle this close (m) to its standing height touches down; this far above it, it has been lifted.</summary>
+        public const float FootTouch = 0.008f, FootLifted = 0.06f;
+        /// <summary>
+        /// A foot must have been lifted this long (s) for its touch to be a step, and a step of the same foot is never
+        /// heard again sooner than <see cref="StepEvery"/>: the planted sole trembles about the floor, and each tremble
+        /// was a step (four in a stride).
+        /// </summary>
+        public const float AloftAtLeast = 0.1f, StepEvery = 0.25f;
 
         void PlantFeet(in HeroState s, float dt)
         {
@@ -975,11 +993,29 @@ namespace CrimsonVeil.Player
                 float rel = ballX - bodyX;
                 float backward = dt > 0f ? -(rel - f.lastRel) / dt * going : 0f;   // (> 0: the foot goes back under him)
                 f.lastRel = rel;
-                bool carries = walking && Carries(f.down, Mathf.Min(LowestOf(f.footPoints), LowestOf(f.toePoints)) - floorY, backward, s.speed);
+                float sole = Mathf.Min(LowestOf(f.footPoints), LowestOf(f.toePoints)) - floorY;
+                bool carries = walking && Carries(f.down, sole, backward, s.speed);
+                f.sinceStep += dt;
+                if (f.aloft) f.aloftFor += dt;
+                float ankleUp = Mathf.Min(f.foot.position.y, f.ball.position.y) - floorY;
+                // (where it stands, learnt: the lowest it comes, creeping up slowly - a slope, a step)
+                f.stance = ankleUp < f.stance ? ankleUp : f.stance + 0.003f * dt;
+                float lift = ankleUp - f.stance;
+                // (down to where it stands, or as low as it comes this time: it has stopped going down)
+                if (f.aloft && (lift <= FootTouch || (lift < 0.03f && ankleUp > f.lastAnkle)))
+                {
+                    f.aloft = false;
+                    if (walking && f.aloftFor >= AloftAtLeast && f.sinceStep >= StepEvery)
+                    {
+                        f.sinceStep = 0f;
+                        FootSetDown?.Invoke(k, s.speed);
+                    }
+                }
+                else if (!f.aloft && lift > FootLifted) { f.aloft = true; f.aloftFor = 0f; }
+                f.lastAnkle = ankleUp;
                 if (carries && !f.down && !f.early)
                 {
                     f.down = true;
-                    FootSetDown?.Invoke(k, s.speed);
                     f.heldX = ballX + f.lag;
                     f.slipped = 0f;
                 }

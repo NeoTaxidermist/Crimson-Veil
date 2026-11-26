@@ -272,8 +272,9 @@ namespace CrimsonVeil.Core
         // ===================================================================================== moving
 
         /// <summary>
-        /// A footstep on stone: the heel striking (the shoe's dull knock ringing the stone briefly), the sole rolling
-        /// down a moment later, a little scuff and a crumb of grit. <paramref name="weight"/>: a walk ~0.6, a run 1.
+        /// A footstep on stone in soft boots: the heel's dull knock - damped at once, nothing in it rings (ringing modes
+        /// made it a tap of drumsticks) - the sole rolling down after it, the leather's scuff and a crumb of grit.
+        /// <paramref name="weight"/>: a walk ~0.6, a run 1.
         /// </summary>
         public static float[] Step(float weight, int seed, int variant = 0)
         {
@@ -281,16 +282,16 @@ namespace CrimsonVeil.Core
             float w = Mathf.Max(0.3f, weight);
             int n = Len(0.14f + 0.06f * w);
             var o = new float[n];
-            float bright = (2600f + 1600f * w) * Vary(r, 0.2f);
-            var stone = Stone(r);
-            var shoe = Body(r, 4, 260f, 900f, 0.008f, 0.004f, 1f);   // (leather and the heel block, not a drum)
-            Strike(o, 0.001f, r, shoe, 0.6f * w, bright * 0.8f, 0.001f, 0.002f, 0.3f);
-            Strike(o, 0.001f, r, stone, 0.8f * w, bright * 1.3f, 0.0005f, 0.001f, 0.2f);
-            float roll = (0.018f + 0.03f * (float)r.NextDouble()) / Mathf.Sqrt(w);   // (heel, then the sole)
-            Strike(o, roll, r, stone, 0.3f * w * Vary(r, 0.3f), bright * 0.8f, 0.001f, 0.002f, 0.15f);
-            Rustle(o, r, roll * 0.5f, 0.035f + 0.03f * w, 2800f * Vary(r, 0.25f), 0.2f + 0.12f * w);
-            Grit(o, r, 0.004f, 0.08f, 2 + r.Next(3), 0.05f);
-            return Finish(o, 0.1f, 0.55f, r, 160f, 12000f);
+            float bright = (1100f + 700f * w) * Vary(r, 0.25f);
+            // (damped: each mode dies within a couple of its own periods - a knock, not a note)
+            var heel = Body(r, 4, 110f * Vary(r, 0.15f), 650f, 0.006f, 0.0018f, 1f);
+            Strike(o, 0.001f, r, heel, w, bright, 0.002f + 0.002f * (float)r.NextDouble(), 0.004f, 0.6f);
+            float roll = (0.025f + 0.035f * (float)r.NextDouble()) / Mathf.Sqrt(w);   // (heel, then the sole)
+            var sole = Body(r, 3, 160f, 800f, 0.004f, 0.0015f, 1f);
+            Strike(o, roll, r, sole, 0.45f * w * Vary(r, 0.35f), bright * 1.2f, 0.003f, 0.005f, 0.6f);
+            Rustle(o, r, roll * 0.6f, 0.04f + 0.04f * w, 1700f * Vary(r, 0.3f), 0.12f + 0.08f * w);
+            Grit(o, r, 0.004f, 0.08f, 1 + r.Next(3), 0.035f);
+            return Finish(o, 0.09f, 0.55f, r, 70f, 8000f);
         }
 
         /// <summary>Coming down from a jump or a fall: both feet a moment apart, the body's weight in the knees, clothes settling.</summary>
@@ -416,44 +417,32 @@ namespace CrimsonVeil.Core
         }
 
         /// <summary>
-        /// The whip creaking under him as a seamless loop: stick-slip friction - soft ticks in an uneven rhythm
-        /// through the leather's and the beam's resonances - swelling twice a loop (the ends of a swing).
+        /// The whip groaning once under his weight (the bottom of a swing, where it pulls hardest): stick-slip catches
+        /// whose rate glides up and back, through the leather's and the beam's resonances.
         /// </summary>
-        public static float[] CreakLoop(float seconds, int seed)
+        public static float[] Creak(int seed, int variant = 0)
         {
-            var r = Rng(seed, 0);
-            int fade = Len(0.1f);
-            int n = Len(seconds);
-            int all = n + fade;
-            var o = new float[all];
-            // two groans a loop, one at each end of the swing, where the whip pulls hardest
-            for (int e = 0; e < 2; e++)
+            var r = Rng(seed, variant);
+            float len = 0.22f + 0.14f * (float)r.NextDouble();
+            var o = new float[Len(len + 0.08f)];
+            float f0 = 30f + 20f * (float)r.NextDouble(), f1 = f0 * (1.5f + 0.8f * (float)r.NextDouble());
+            var r1 = new Biquad(); r1.BandPass(330f * Vary(r, 0.12f), 7f);
+            var r2 = new Biquad(); r2.BandPass(760f * Vary(r, 0.12f), 6f);
+            var r3 = new Biquad(); r3.BandPass(1450f * Vary(r, 0.12f), 5f);
+            float phase = 0f;
+            int body = Len(len);
+            for (int i = 0; i < o.Length; i++)
             {
-                float at = seconds * (0.25f + 0.5f * e) + 0.05f * ((float)r.NextDouble() - 0.5f);
-                float len = 0.3f + 0.15f * (float)r.NextDouble();
-                float f0 = 35f + 20f * (float)r.NextDouble(), f1 = f0 * (1.6f + 0.8f * (float)r.NextDouble());
-                var r1 = new Biquad(); r1.BandPass(330f * Vary(r, 0.1f), 7f);
-                var r2 = new Biquad(); r2.BandPass(760f * Vary(r, 0.1f), 6f);
-                var r3 = new Biquad(); r3.BandPass(1450f * Vary(r, 0.1f), 5f);
-                int start = (int)(at * Rate), count = Len(len) + Len(0.08f);
-                float phase = 0f;
-                for (int i = 0; i < count; i++)
-                {
-                    float t = (float)i / Len(len);
-                    float env = t < 1f ? Bell(t, 0.35f) : 0f;
-                    // (the catch rate glides up as the pull builds, and wavers)
-                    float rate = Mathf.Lerp(f0, f1, Mathf.Sin(Mathf.PI * Mathf.Min(t, 1f))) * (0.9f + 0.2f * (float)r.NextDouble());
-                    phase += rate / Rate;
-                    float x = 0f;
-                    if (phase >= 1f) { phase -= 1f; x = env * (0.6f + 0.4f * (float)r.NextDouble()); }
-                    x += (float)(r.NextDouble() * 2.0 - 1.0) * env * 0.02f;
-                    float y = r1.Step(x) * 1.2f + r2.Step(x) + r3.Step(x) * 0.4f;
-                    o[(start + i) % n] += y;   // (round the loop: a groan past its end goes on at its start)
-                }
+                float t = (float)i / body;
+                float env = t < 1f ? Bell(t, 0.4f) : 0f;
+                float rate = Mathf.Lerp(f0, f1, Mathf.Sin(Mathf.PI * Mathf.Min(t, 1f))) * (0.9f + 0.2f * (float)r.NextDouble());
+                phase += rate / Rate;
+                float x = 0f;
+                if (phase >= 1f) { phase -= 1f; x = env * (0.6f + 0.4f * (float)r.NextDouble()); }
+                x += (float)(r.NextDouble() * 2.0 - 1.0) * env * 0.02f;
+                o[i] = r1.Step(x) * 1.2f + r2.Step(x) + r3.Step(x) * 0.4f;
             }
-            var c = new float[n];
-            Array.Copy(o, c, n);
-            return Normalise(c, false);
+            return Finish(o, 0.12f, 0.6f, r, 150f, 7000f);
         }
 
         /// <summary>Air streaming past (the scarf sail): soft, low pink noise, gusting slowly and unevenly, seamless.</summary>

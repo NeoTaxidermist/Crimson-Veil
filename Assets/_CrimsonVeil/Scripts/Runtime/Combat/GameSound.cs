@@ -13,11 +13,11 @@ namespace CrimsonVeil.Combat
         SwingSword, SwingSpear, SwingWhip, SwingShield, Hit, HitHeavy, Hurt, Block, Parry, Dissolve, WhipCrack, BowLoose,
         ArrowHit, Absorb,
         // moving
-        StepWalk, StepRun, Jump, AirJump, Land, LandHard, Dash, Roll, LedgeGrab, Mantle, WallJump, RopeLatch, RopeLetGo, RopeSwoosh,
+        StepWalk, StepRun, Jump, AirJump, Land, LandHard, Dash, Roll, LedgeGrab, Mantle, WallJump, RopeLatch, RopeLetGo, RopeSwoosh, RopeCreak,
     }
 
     /// <summary>Sounds that run on while something lasts.</summary>
-    public enum Loop { Slide, WallSlide, Rope, Glide, Ambience }
+    public enum Loop { Slide, WallSlide, Glide, Ambience }
 
     /// <summary>
     /// Plays the game's sounds: a few voices made on first use (kept across scenes). Each cue has several variants and
@@ -34,6 +34,8 @@ namespace CrimsonVeil.Combat
         static readonly Dictionary<Loop, float> loopGains = new Dictionary<Loop, float>();
         static readonly Dictionary<Cue, int> lastVariant = new Dictionary<Cue, int>();
         AudioSource[] voices;
+        Cue[] voiceCue;
+        float[] voiceFade;
         int nextVoice;
         readonly Dictionary<Loop, AudioSource> loops = new Dictionary<Loop, AudioSource>();
         readonly Dictionary<Loop, float> loopWanted = new Dictionary<Loop, float>();
@@ -79,13 +81,13 @@ namespace CrimsonVeil.Combat
                 case Cue.RopeLatch: return -32f;
                 case Cue.RopeLetGo: return -36f;
                 case Cue.RopeSwoosh: return -35f;
+                case Cue.RopeCreak: return -37f;
                 default: return -30f;
             }
         }
 
         /// <summary>How loud each loop is heard at its fullest (LUFS).</summary>
-        public static float Level(Loop loop) => loop == Loop.Slide ? -33f : loop == Loop.WallSlide ? -35f : loop == Loop.Glide ? -40f
-            : loop == Loop.Ambience ? -46f : -38f;
+        public static float Level(Loop loop) => loop == Loop.Slide ? -33f : loop == Loop.WallSlide ? -35f : loop == Loop.Glide ? -40f : -46f;
 
         /// <summary>The volume that plays <paramref name="samples"/> at <paramref name="lufs"/> (never past full scale).</summary>
         public static float GainFor(float[] samples, float lufs)
@@ -98,6 +100,23 @@ namespace CrimsonVeil.Combat
 
         /// <summary>How many variants a cue has (steps the most: they are heard the most).</summary>
         public static int Variants(Cue cue) => cue == Cue.StepWalk || cue == Cue.StepRun ? 8 : 4;
+
+        /// <summary>
+        /// When (attack progress 0..1) a weapon's swing is heard: so that the whoosh swells as the blade is SEEN to cut
+        /// the air. The blade is cloth and lags the arm - measured on the hero, the sword's tip is fastest 0.2 s after
+        /// the press, 0.1 s after the whoosh played from the press had peaked.
+        /// </summary>
+        public static float SwingSoundAt(VeilForm form)
+        {
+            switch (form)
+            {
+                case VeilForm.Sword: return 0.2f;
+                case VeilForm.Spear: return 0.12f;
+                case VeilForm.Whip: return 0.28f;
+                case VeilForm.Shield: return 0.03f;
+                default: return 0f;
+            }
+        }
 
         /// <summary>The swing of each weapon.</summary>
         public static Cue SwingOf(VeilForm form)
@@ -145,6 +164,7 @@ namespace CrimsonVeil.Combat
                 case Cue.RopeLatch: return SoundSynth.Latch(112, v);
                 case Cue.RopeLetGo: return SoundSynth.Rush(700f, 0.3f, 113, v);
                 case Cue.RopeSwoosh: return SoundSynth.Rush(550f, 0.45f, 114, v);
+                case Cue.RopeCreak: return SoundSynth.Creak(115, v);
                 default: return SoundSynth.Hit(1f, 1, v);
             }
         }
@@ -157,8 +177,7 @@ namespace CrimsonVeil.Combat
                 case Loop.Slide: return SoundSynth.ScrapeLoop(750f, 1.6f, 121, 0.9f);
                 case Loop.WallSlide: return SoundSynth.ScrapeLoop(600f, 1.6f, 122, 0.7f);
                 case Loop.Glide: return SoundSynth.WindLoop(420f, 2.5f, 124);
-                case Loop.Ambience: return SoundSynth.AmbienceLoop(12f, 125);
-                default: return SoundSynth.CreakLoop(1.4f, 123);
+                default: return SoundSynth.AmbienceLoop(12f, 125);
             }
         }
 
@@ -190,7 +209,7 @@ namespace CrimsonVeil.Combat
                 try
                 {
                     // (the ruin first: it is heard the moment he is in it; then what is heard most)
-                    foreach (Loop l in new[] { Loop.Ambience, Loop.Slide, Loop.WallSlide, Loop.Rope, Loop.Glide })
+                    foreach (Loop l in new[] { Loop.Ambience, Loop.Slide, Loop.WallSlide, Loop.Glide })
                     {
                         var x = Make(l);
                         made.Enqueue(new Made(true, default, 0, l, x, GainFor(x, Level(l))));
@@ -264,6 +283,8 @@ namespace CrimsonVeil.Combat
                 instance = go.AddComponent<GameSound>();
                 instance.voices = new AudioSource[Voices];
                 for (int i = 0; i < Voices; i++) instance.voices[i] = instance.NewSource(false);
+                instance.voiceCue = new Cue[Voices];
+                instance.voiceFade = new float[Voices];
                 instance.StartCoroutine(instance.MakeAhead());
                 return instance;
             }
@@ -302,6 +323,8 @@ namespace CrimsonVeil.Combat
             var src = self.voices[self.nextVoice];
             self.nextVoice = (self.nextVoice + 1) % Voices;
             int v = PickVariant(cue);
+            self.voiceCue[self.nextVoice == 0 ? Voices - 1 : self.nextVoice - 1] = cue;
+            self.voiceFade[self.nextVoice == 0 ? Voices - 1 : self.nextVoice - 1] = 0f;
             src.clip = Clip(cue, v);
             // (a little louder or softer each time, within 1.5 dB: no two steps alike)
             src.volume = Mathf.Min(1f, volume * gains[(cue, v)] * Random.Range(0.84f, 1f));
@@ -333,11 +356,40 @@ namespace CrimsonVeil.Combat
             }
         }
 
+        /// <summary>
+        /// Lets <paramref name="cue"/> die away within <paramref name="seconds"/> wherever it is playing: a blade that
+        /// strikes something stops cutting the air (its whoosh ran on under the blow, as if pasted on).
+        /// </summary>
+        public static void Cut(Cue cue, float seconds = 0.05f)
+        {
+            if (instance == null) return;
+            for (int i = 0; i < Voices; i++)
+                if (instance.voiceCue[i] == cue && instance.voices[i].isPlaying)
+                    instance.voiceFade[i] = instance.voices[i].volume / Mathf.Max(0.005f, seconds);
+        }
+
+        /// <summary>Is <paramref name="cue"/> sounding now, and how loud (for tests).</summary>
+        public static float Sounding(Cue cue)
+        {
+            if (instance == null) return 0f;
+            float v = 0f;
+            for (int i = 0; i < Voices; i++)
+                if (instance.voiceCue[i] == cue && instance.voices[i].isPlaying) v = Mathf.Max(v, instance.voices[i].volume);
+            return v;
+        }
+
         /// <summary>How loud a loop is now (for tests).</summary>
         public static float LoopLevel(Loop loop) => instance != null && instance.loops.TryGetValue(loop, out var s) && s.isPlaying ? s.volume : 0f;
 
         void Update()
         {
+            for (int i = 0; i < Voices; i++)
+            {
+                if (voiceFade[i] <= 0f) continue;
+                var s = voices[i];
+                s.volume = Mathf.MoveTowards(s.volume, 0f, voiceFade[i] * Time.unscaledDeltaTime);
+                if (s.volume <= 0.0005f) { s.Stop(); voiceFade[i] = 0f; }
+            }
             foreach (var kv in loops)
             {
                 loopWanted.TryGetValue(kv.Key, out float want);

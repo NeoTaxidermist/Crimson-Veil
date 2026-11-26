@@ -62,6 +62,67 @@ namespace CrimsonVeil.Tests
             while (Time.time < end) yield return null;
         }
 
+        static Transform Bone(Transform t, string n)
+        {
+            if (t.name == n) return t;
+            foreach (Transform c in t) { var r = Bone(c, n); if (r != null) return r; }
+            return null;
+        }
+
+        /// <summary>
+        /// A step is heard as the foot is seen to land: the ankle down where it stands, not on its way down (the step
+        /// was heard 0.08-0.11 s early, from 7 cm up), and once a footfall (the sole's tremble doubled them).
+        /// </summary>
+        [UnityTest]
+        public IEnumerator Walking_EachStepIsHeard_AsItsFootIsSeenToLand_OnceAFootfall()
+        {
+            var anim = player.GetComponentInChildren<HeroAnimator>();
+            var foot = new[] { Bone(player.transform, "Foot.L"), Bone(player.transform, "Foot.R") };
+            var toe = new[] { Bone(player.transform, "Toe.L"), Bone(player.transform, "Toe.R") };
+            float Ankle(int k) => Mathf.Min(foot[k].position.y, toe[k].position.y);
+            var heardAt = new System.Collections.Generic.List<(int foot, float ankle, float time)>();
+            anim.FootSetDown += (k, s) => heardAt.Add((k, Ankle(k), Time.time));
+            yield return Wait(0.5f);
+            input.moveX = 0.45f;
+            float[] lowest = { 9f, 9f };
+            float end = Time.time + 3f;
+            while (Time.time < end)
+            {
+                yield return null;
+                for (int k = 0; k < 2; k++) lowest[k] = Mathf.Min(lowest[k], Ankle(k));
+            }
+            Debug.Log($"[hero sounds] walking 3 s: {heardAt.Count} steps; ankle above where it stands when heard: " +
+                      string.Join(", ", heardAt.ConvertAll(h => $"{h.foot}:{(h.ankle - lowest[h.foot]) * 100f:F1} cm")));
+            Assert.That(heardAt.Count, Is.InRange(5, 11), "a step for each footfall of 3 s walking");
+            foreach (var h in heardAt)
+                Assert.Less(h.ankle - lowest[h.foot], 0.035f, "heard as the foot lands, not on its way down");
+            for (int i = 1; i < heardAt.Count; i++)
+                for (int j = 0; j < i; j++)
+                    if (heardAt[j].foot == heardAt[i].foot)
+                        Assert.Greater(heardAt[i].time - heardAt[j].time, 0.24f, "one step a footfall, never two");
+        }
+
+        /// <summary>The swing is heard as the blade is seen to cut (it lags the arm: cloth), not at the press.</summary>
+        [UnityTest]
+        public IEnumerator TheSwing_IsHeardAsTheBladeCuts_NotAtThePress()
+        {
+            var veil = player.GetComponent<CrimsonVeil.Veil.VeilController>();
+            veil.Unlock(CrimsonVeil.Veil.VeilForm.Sword);
+            yield return Wait(0.5f);
+            input.cast = CrimsonVeil.Veil.VeilForm.Sword;
+            float pressed = -1f, heard = -1f;
+            float end = Time.time + 1f;
+            while (Time.time < end && heard < 0f)
+            {
+                yield return null;
+                if (pressed < 0f && veil.IsAttacking) pressed = Time.time - Time.deltaTime;
+                if (Heard(Cue.SwingSword) > 0) heard = Time.time;
+            }
+            Debug.Log($"[hero sounds] the sword's swing heard {heard - pressed:F3} s after the blow began");
+            Assert.Greater(pressed, 0f, "he struck");
+            Assert.That(heard - pressed, Is.InRange(0.05f, 0.17f), "with the slash (the blade fastest ~0.2 s in), not at the press");
+        }
+
         [UnityTest]
         public IEnumerator Running_HisFeetAreHeard_AsTheyAreSetDown_AndAJumpAndItsLanding()
         {

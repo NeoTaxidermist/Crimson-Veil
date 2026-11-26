@@ -113,6 +113,7 @@ namespace CrimsonVeil.Tests
             input.cast = VeilForm.Sword;
             float flashed = 0f, stopped = 0f, longest = 0f;
             bool slash = false;
+            float hitAt = -1f, swingAfterHit = -1f;
             float end = Time.realtimeSinceStartup + 1f;
             float last = Time.realtimeSinceStartup;
             while (Time.realtimeSinceStartup < end)
@@ -125,6 +126,8 @@ namespace CrimsonVeil.Tests
                 var f = foe != null ? foe.GetComponent<HitFlash>() : null;
                 if (f != null) flashed = Mathf.Max(flashed, f.Now);
                 slash |= GameObject.Find("Slash") != null;
+                if (hitAt < 0f && GameSound.Count.ContainsKey(Cue.Hit)) hitAt = now;
+                if (hitAt > 0f && swingAfterHit < 0f && now - hitAt > 0.1f) swingAfterHit = GameSound.Sounding(Cue.SwingSword);
             }
             Debug.Log($"[hit feel] the world stood still {stopped:F3} s (set for {longest:F3} s), the foe flashed up to {flashed:F2}, the cut drawn {slash}; sounds {GameSound.Played - before}, last {GameSound.Last}");
             Assert.Less(foe.Health.Current, foe.Health.Max, "the sword struck it");
@@ -135,6 +138,7 @@ namespace CrimsonVeil.Tests
             Assert.IsTrue(slash, "the cut is drawn through it");
             Assert.GreaterOrEqual(GameSound.Played - before, 2, "the swing and the hit are heard");
             Assert.That(GameSound.Count.TryGetValue(Cue.Hit, out int hits) ? hits : 0, Is.GreaterThanOrEqualTo(1), "the hit is heard (the last sound may be a step)");
+            Assert.That(swingAfterHit, Is.InRange(0f, 0.001f), "the blade stops in it: its whoosh is gone within 0.1 s of the blow, not running on under it");
         }
 
         [UnityTest]

@@ -41,6 +41,8 @@ namespace CrimsonVeil.Veil
         float carry;
         bool morphFromCloth;
         bool lunged;
+        /// <summary>This blow's swing has been heard (it is heard as the blade cuts: <see cref="CrimsonVeil.Combat.GameSound.SwingSoundAt"/>).</summary>
+        bool swingHeard;
         float releaseTime = 99f;
 
         [Header("Whip")]
@@ -531,8 +533,7 @@ namespace CrimsonVeil.Veil
         void StartAttack()
         {
             var blow = Combo.Begin(ShapeForm);
-            // (the bow is heard when its string is let go, not when it is drawn)
-            if (ShapeForm != VeilForm.Bow) CrimsonVeil.Combat.GameSound.Play(CrimsonVeil.Combat.GameSound.SwingOf(ShapeForm));
+            swingHeard = ShapeForm == VeilForm.Bow;   // (the bow is heard when its string is let go, not when it is drawn)
             if (blow.morph)
             {
                 // the morph strike: the scarf flares where it pours into the new weapon
@@ -1296,6 +1297,11 @@ namespace CrimsonVeil.Veil
                         aimTiltTarget = AttackAim;
                     }
                     FireArrow(a, Facing);
+                }
+                if (!swingHeard && t >= CrimsonVeil.Combat.GameSound.SwingSoundAt(ShapeForm))
+                {
+                    swingHeard = true;
+                    CrimsonVeil.Combat.GameSound.Play(CrimsonVeil.Combat.GameSound.SwingOf(ShapeForm));
                 }
                 // Step into the blow (not when planted: Ctrl held, he strikes from the spot).
                 if (!lunged && player != null && player.Motor != null

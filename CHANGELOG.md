@@ -5,6 +5,36 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.85.0] – 2026-11-26
+### Přidáno
+- **Hlavní menu.** Hra startuje do úvodní obrazovky (nová scéna `MainMenu`, v seznamu pro sestavení jako první) s tlačítky Hrát, Nastavení a Konec. Ovládá se myší, klávesnicí (šipky nebo WASD, Enter) i ovladačem.
+- **Nastavení ovládání.** Každá akce má klávesu a tlačítko ovladače a obojí jde přemapovat: vybereš akci a stiskneš novou klávesu (Esc změnu zruší). Klávesa, kterou už má jiná akce, se mezi nimi vymění, takže žádná klávesa nedělá dvě věci a nic nezůstane bez klávesy. Tlačítko „Výchozí ovládání“ vrátí původní rozložení. Změny se ukládají mezi spuštěními hry.
+- **Pauza ve hře.** Esc (na ovladači Start) zastaví hru a otevře nabídku Pokračovat, Nastavení, Hlavní menu, Ukončit hru. Během pauzy hra stojí a postava nereaguje na ovládání.
+
+### Změněno
+- **Útoky jsou pod pravou rukou, v pořadí meč, kopí, bič, luk, štít.** Levá ruka: A/D pohyb, W/S míření, mezerník skok, Shift úskok, Ctrl postoj, Q/E pohled dolů a nahoru, Tab mapa. Pravá ruka na základní řadě, kde prsty leží: J meč, K kopí, L bič, Ů luk (na anglické klávesnici `;`) a štít, jediná držená zbraň, na U nad ukazovákem. Dřív byly zbraně na J, K, L, U, I a navíc na 1 až 5 a na myši, takže levá ruka musela přes klávesnici a pořadí nedávalo smysl.
+- Na ovladači zůstává rozložení stejné, jen bez zdvojení na křížovém ovladači a bez druhého úskoku na RB: X meč, Y kopí, RT bič, LB luk, LT štít, A skok, B úskok.
+- Pohled nahoru a dolů se přesunul z PgUp/PgDn na E/Q (levá ruka). Mapa je teď jedna z přemapovatelných akcí.
+
+### Opraveno (cestou)
+- Uložené ovládání by se po restartu hry ztratilo: vestavěné ukládání Input Systemu pojmenovává každou klávesu identifikátorem, který vzniká při každém spuštění znovu. Ukládá se proto po názvech akcí. Odhalil to test.
+
+### Poctivě
+- **Rozložení útoků je můj návrh, ne tvůj.** Navrhoval jsi U I O P a štít na J; zvolil jsem základní řadu (J K L Ů), protože tam prsty leží a nemusí ji při útocích opouštět. V nastavení si to přehodíš za chvíli.
+- **Myš už útoky nespouští** (dřív levé tlačítko meč, pravé štít). V menu myš funguje dál.
+- Čísla 1 až 5 už zbraně nesesílají.
+- Texty menu jsou česky a písmo je základní písmo Unity. Vlastní písmo, zvuky menu a animace přechodů nejsou.
+- Nastavení má zatím jen ovládání: žádnou hlasitost, rozlišení ani celou obrazovku.
+- Myš v menu může nechat zvýrazněné dvě položky najednou (jednu vybranou klávesnicí, jednu pod kurzorem).
+- Ověřil jsem ve hře: menu, nastavení (vejde se i do nízkého okna), skutečné přemapování meče z J na O simulovaným stiskem včetně uložení (potom jsem ti vrátil výchozí ovládání) a pauzu Escem. Menu pauzy mělo napoprvé tmavé pozadí jen jako malý čtvereček uprostřed; opraveno a hlídá to test. Na skutečném ovladači jsem nic nezkoušel.
+- Galerie tuto ani předchozí verze neukazuje a do main není nic sloučeno.
+
+### Testy
+- `InputBindingsTests` (EditMode, 5 nových): rozložení pro dvě ruce, žádná klávesa dvakrát, výměna obsazené klávesy (i na ovladači), uložení a návrat k výchozímu, české názvy kláves.
+- `MenuPlayTests` (PlayMode, 2 nové): úvodní obrazovka má Hrát, Nastavení a Konec, nastavení ukazuje klávesy a Hrát spustí hru s hrdinou a pauzou; pauza zastaví hru přes celou obrazovku a postava neslyší ovládání, dokud se nezavře.
+- Testy nesahají do tvého uloženého ovládání.
+- Puštěno: celý EditMode (623 testů) a celá sada PlayMode (139 testů); na konečném stavu prošly všechny. Cestou: jeden nový test EditMode napoprvé neprošel a odhalil ztrátu uloženého ovládání po restartu (viz Opraveno); první celá sada PlayMode dala jen 29 ze 139, protože nastavení v menu pauzy sahalo na ovládání dřív, než se poprvé sestavilo (`NullReferenceException` při každém spuštění herní scény). Po opravě prošlo všech 139.
+
 ## [0.84.0] – 2026-11-26
 ### Opraveno
 - **Kruh štítu se při otočce nerozpadá.** Měl tři příčiny a opravené jsou všechny:

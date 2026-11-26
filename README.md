@@ -39,24 +39,27 @@ Natočeno přímo ve hře (12 snímků za sekundu, převážně v šedé testova
 | ![Popelavá můra](Docs/enemies/AshMoth.jpg)<br>**Popelavá můra**: létá vysoko (na luk) a sype popel, který ztlumí šálu. | ![Bludička](Docs/enemies/LanternWisp.jpg)<br>**Bludička**: neškodná, ale láká k propastem. Zásah ji chytí a zůstane svítit na místě. | ![Papírový drak](Docs/enemies/PaperKite.jpg)<br>**Papírový drak**: létá na niti. Přestřel ji a z jeho látky se dá plachtit (drž skok). |
 
 ## Ovládání
+Hra startuje do hlavního menu (Hrát, Nastavení, Konec). V **Nastavení** jde každou klávesu i tlačítko ovladače přemapovat; ve hře otevře **Esc** (Start) pauzu s nastavením. Výchozí rozložení je pro dvě ruce: levá se pohybuje, pravá bojuje.
+
 | Akce | Klávesnice | Gamepad |
 |---|---|---|
-| Pohyb | A/D, šipky | levá páčka |
-| Skok (držet = výš, ve vzduchu druhý skok) | Mezerník | A / South |
-| Dash (ve vzduchu 1× za skok) | Levý Shift | B / East, RB |
-| Přikrčení a plížení | S / šipka dolů | páčka dolů |
-| Skluz | v běhu dolů + Shift | v běhu páčka dolů + B |
+| Pohyb | A / D | levá páčka |
+| Skok (držet = výš, ve vzduchu druhý skok; při pádu znovu a držet = plachtění šálou) | Mezerník | A / South |
+| Úskok (ve vzduchu 1× za skok) | Levý Shift | B / East |
+| Přikrčení a plížení | S | páčka dolů |
+| Skluz | v běhu S + Shift | v běhu páčka dolů + B |
 | Mířit nahoru / dolů (sek nahoru, úder pod nohy) | držet W / S při útoku | páčka nahoru / dolů |
 | Nízký úder z podřepu (hrdina zůstane dole) | držet S a útok | páčka dolů a útok |
 | Výskok s úderem z podřepu (meč, kopí, bič) | z podřepu pustit S, držet W a útok | z podřepu páčka nahoru a útok |
-| Stát na místě (míření bez pohybu) | Ctrl | stisk levé páčky |
-| Meč | J, levé tlačítko myši, 2 | X / West, D-pad ↑ |
-| Kopí | K, 3 | Y / North, D-pad → |
-| Bič (u kruhu se chytí a houpe) | L, 1 | RT, D-pad ← |
-| Štít (držet) | U, pravé tlačítko myši, 4 | LT, D-pad ↓ |
-| Luk | I, 5 | LB |
-| Rozhlédnout se nahoru / dolů | Page Up / Page Down | pravá páčka |
+| Stát na místě (míření bez pohybu) | Levý Ctrl | stisk levé páčky |
+| Rozhlédnout se nahoru / dolů | E / Q | pravá páčka |
 | Mapa úrovně | Tab | Select / View |
+| **Meč** | **J** | X / West |
+| **Kopí** | **K** | Y / North |
+| **Bič** (u kruhu se chytí a houpe) | **L** | RT |
+| **Luk** (držet a pustit) | **Ů** (anglická klávesnice `;`) | LB |
+| **Štít** (držet) | **U** | LT |
+| Pauza / menu | Esc | Start |
 
 Zbraň se seslá a rovnou udeří. Údery navazují do komba a mezi údery jde zbraň vyměnit: dokončující úder je tím silnější, čím víc zbraní kombo spojilo. Zbraně se hrdina učí od relikvií na podstavcích (v testovací místnosti vlevo od startu zná všechny). Zdraví ukazuje šála a ukazatel ve tvaru šály v levém horním rohu.
 
@@ -92,7 +95,7 @@ Docs/          obrázky a GIFy pro toto README
 ```
 
 ## Testy
-Unity → Window → General → Test Runner: **618 EditMode** a **137 PlayMode** testů. PlayMode testy ověřují každý pohyb a kombo na skutečném prefabu hrdiny (`HeroMoveSetPlayTests`).
+Unity → Window → General → Test Runner: **623 EditMode** a **139 PlayMode** testů. PlayMode testy ověřují každý pohyb a kombo na skutečném prefabu hrdiny (`HeroMoveSetPlayTests`).
 
 ## Verze a CHANGELOG
 Každý commit má vlastní verzi podle [SemVer](https://semver.org/lang/cs/): sekci `## [X.Y.Z] – RRRR-MM-DD` v [CHANGELOG.md](CHANGELOG.md) a tag `vX.Y.Z`. Hlídají to git hooky v `.githooks/`:

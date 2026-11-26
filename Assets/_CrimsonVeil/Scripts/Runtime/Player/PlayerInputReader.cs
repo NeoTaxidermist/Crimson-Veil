@@ -5,91 +5,47 @@ using UnityEngine.InputSystem;
 namespace CrimsonVeil.Player
 {
     /// <summary>
-    /// Keyboard + gamepad bindings built in code (no asset wiring needed). Every weapon button casts its
-    /// weapon: the veil forms it, strikes and melts back into cloth.
-    /// Keyboard: A/D or arrows move, W/S (+ A/D) aim in eight directions, PgUp/PgDn look, Space jump, Shift dash,
-    ///   Ctrl held: planted (the arrows only turn and aim, no running);
-    ///   J / LMB sword · K spear · L whip · U shield (hold) · I bow (hold to draw) — or 1-5.
-    /// Gamepad: left stick move/aim, right stick look, South jump, East/RB dash; West sword · North spear · RT whip · LT shield · LB bow (D-pad too).
+    /// The hero's controls, read from the game's shared, rebindable actions (<see cref="InputBindings"/>): the left hand
+    /// moves, the right fights. While a menu is open the hero hears nothing.
     /// </summary>
     public sealed class PlayerInputReader : MonoBehaviour, IPlayerInput
     {
-        InputAction move, aim, look, jump, dash, stand;
-        InputAction whip, sword, spear, shield, bow;
+        InputAction left, right, up, down, lookUp, lookDown, jump, dash, stand;
 
         void Awake()
         {
-            move = new InputAction("Move", InputActionType.Value, expectedControlType: "Axis");
-            move.AddCompositeBinding("1DAxis").With("Negative", "<Keyboard>/a").With("Positive", "<Keyboard>/d");
-            move.AddCompositeBinding("1DAxis").With("Negative", "<Keyboard>/leftArrow").With("Positive", "<Keyboard>/rightArrow");
-            move.AddBinding("<Gamepad>/leftStick/x").WithProcessor("axisDeadzone(min=0.2,max=0.95)");
-
-            aim = new InputAction("Aim", InputActionType.Value, expectedControlType: "Axis");
-            aim.AddCompositeBinding("1DAxis").With("Negative", "<Keyboard>/s").With("Positive", "<Keyboard>/w");
-            aim.AddCompositeBinding("1DAxis").With("Negative", "<Keyboard>/downArrow").With("Positive", "<Keyboard>/upArrow");
-            aim.AddBinding("<Gamepad>/leftStick/y").WithProcessor("axisDeadzone(min=0.3,max=0.95)");
-
-            look = new InputAction("Look", InputActionType.Value, expectedControlType: "Axis");
-            look.AddBinding("<Gamepad>/rightStick/y").WithProcessor("axisDeadzone(min=0.3,max=0.95)");
-            look.AddCompositeBinding("1DAxis").With("Negative", "<Keyboard>/pageDown").With("Positive", "<Keyboard>/pageUp");
-
-            jump = Button("Jump", "<Keyboard>/space", "<Gamepad>/buttonSouth");
-            dash = Button("Dash", "<Keyboard>/leftShift", "<Gamepad>/buttonEast", "<Gamepad>/rightShoulder");
-            stand = Button("Stand", "<Keyboard>/leftCtrl", "<Keyboard>/rightCtrl", "<Gamepad>/leftStickPress");
-
-            sword = Button("Sword", "<Keyboard>/j", "<Mouse>/leftButton", "<Keyboard>/2", "<Gamepad>/buttonWest", "<Gamepad>/dpad/up");
-            spear = Button("Spear", "<Keyboard>/k", "<Keyboard>/3", "<Gamepad>/buttonNorth", "<Gamepad>/dpad/right");
-            whip = Button("Whip", "<Keyboard>/l", "<Keyboard>/1", "<Gamepad>/rightTrigger", "<Gamepad>/dpad/left");
-            shield = Button("Shield", "<Keyboard>/u", "<Mouse>/rightButton", "<Keyboard>/4", "<Gamepad>/leftTrigger", "<Gamepad>/dpad/down");
-            bow = Button("Bow", "<Keyboard>/i", "<Keyboard>/5", "<Gamepad>/leftShoulder");
+            left = InputBindings.Action("MoveLeft");
+            right = InputBindings.Action("MoveRight");
+            up = InputBindings.Action("AimUp");
+            down = InputBindings.Action("AimDown");
+            lookUp = InputBindings.Action("LookUp");
+            lookDown = InputBindings.Action("LookDown");
+            jump = InputBindings.Action("Jump");
+            dash = InputBindings.Action("Dash");
+            stand = InputBindings.Action("Stand");
         }
 
-        static InputAction Button(string name, params string[] bindings)
-        {
-            var action = new InputAction(name, InputActionType.Button);
-            foreach (var b in bindings) action.AddBinding(b);
-            return action;
-        }
+        static bool Blocked => InputBindings.GameplayBlocked;
 
-        InputAction[] All => new[] { move, aim, look, jump, dash, stand, whip, sword, spear, shield, bow };
-
-        void OnEnable() { foreach (var a in All) a.Enable(); }
-        void OnDisable() { foreach (var a in All) a.Disable(); }
-        void OnDestroy() { foreach (var a in All) a.Dispose(); }
-
-        public float MoveX => move.ReadValue<float>();
-        public float AimY => aim.ReadValue<float>();
-        public float LookY => look.ReadValue<float>();
-        public bool JumpPressed => jump.WasPressedThisFrame();
-        public bool JumpHeld => jump.IsPressed();
-        public bool DashPressed => dash.WasPressedThisFrame();
-        public bool StandHeld => stand.IsPressed();
-
-        InputAction For(VeilForm form)
-        {
-            switch (form)
-            {
-                case VeilForm.Whip: return whip;
-                case VeilForm.Sword: return sword;
-                case VeilForm.Spear: return spear;
-                case VeilForm.Shield: return shield;
-                case VeilForm.Bow: return bow;
-                default: return null;
-            }
-        }
-
-        static readonly VeilForm[] Weapons = { VeilForm.Sword, VeilForm.Spear, VeilForm.Whip, VeilForm.Shield, VeilForm.Bow };
+        public float MoveX => Blocked ? 0f : InputBindings.Axis(left, right, InputBindings.MoveStick);
+        public float AimY => Blocked ? 0f : InputBindings.Axis(down, up, InputBindings.AimStick);
+        public float LookY => Blocked ? 0f : InputBindings.Axis(lookDown, lookUp, InputBindings.LookStick);
+        public bool JumpPressed => !Blocked && jump.WasPressedThisFrame();
+        public bool JumpHeld => !Blocked && jump.IsPressed();
+        public bool DashPressed => !Blocked && dash.WasPressedThisFrame();
+        public bool StandHeld => !Blocked && stand.IsPressed();
 
         public VeilForm? CastPressed
         {
             get
             {
-                foreach (var f in Weapons)   // (read every frame: a new array of them each time was garbage)
-                    if (For(f).WasPressedThisFrame()) return f;
+                if (Blocked) return null;
+                foreach (var f in InputBindings.Weapons)   // (read every frame: a new array of them each time was garbage)
+                    if (InputBindings.For(f).WasPressedThisFrame()) return f;
                 return null;
             }
         }
 
-        public bool CastHeld(VeilForm form) => For(form) is InputAction a && a.IsPressed();
+        public bool CastHeld(VeilForm form) => !Blocked && InputBindings.For(form) is InputAction a && a.IsPressed();
     }
 }

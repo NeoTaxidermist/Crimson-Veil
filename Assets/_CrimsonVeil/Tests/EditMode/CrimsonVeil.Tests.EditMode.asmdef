@@ -4,6 +4,7 @@
     "references": [
         "CrimsonVeil.Runtime",
         "CrimsonVeil.Editor",
+        "Unity.InputSystem",
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner"
     ],

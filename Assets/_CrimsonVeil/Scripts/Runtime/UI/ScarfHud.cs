@@ -44,6 +44,7 @@ namespace CrimsonVeil.UI
             hud.Bar.raycastTarget = false;
             Minimap.Create(go.transform);   // the map, on TAB
             PlaytestLog.Create(go);         // the playtest's times and deaths, written to Playtests/
+            PauseMenu.Create(go);           // Esc: the game stands still, the settings, back to the title
             return hud;
         }
 

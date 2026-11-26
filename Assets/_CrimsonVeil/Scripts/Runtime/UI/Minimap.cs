@@ -180,9 +180,8 @@ namespace CrimsonVeil.UI
 
         void Update()
         {
-            var kb = Keyboard.current;
-            var pad = Gamepad.current;
-            if ((kb != null && kb.tabKey.wasPressedThisFrame) || (pad != null && pad.selectButton.wasPressedThisFrame)) Toggle();
+            // (the map's key is one of the controls: Tab or Select, rebindable in the settings)
+            if (!InputBindings.GameplayBlocked && InputBindings.Action("Map").WasPressedThisFrame()) Toggle();
 
             if (player == null)
             {

@@ -5,6 +5,31 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.96.0] – 2026-11-26
+### Změněno
+- **Přízrak je postavený znovu, aby obstál vedle hrdiny** (`ArtSource/wraith_build.py`). Dřív to byl pytel z trubek pod prostěradlem, teď je to vyhublé tělo pod roztrhaným rubášem:
+  - **Lebka v kápi:** hluboké oční důlky, v nichž hoří rudé oči, ostré lícní kosti nad propadlými tvářemi, nosní dutina, pootevřená čelist se zuby a propadlé spánky. Kápě má skutečný otvor (dřív byl obličej uzavřená plocha) se zesíleným lemem a ve tvaru opravdu kryje hlavu a padá na ramena.
+  - **Tělo:** dlouhý krk s obratli, hrudník s jednotlivými žebry, která se svažují dopředu a pod hrudní kostí se rozevírají, klíční kosti s jamkami nad nimi, propadlé břicho, vystouplé kyčelní kosti, vzadu páteř a lopatky.
+  - **Paže:** od lokte holé kosti, ostrý loket, dvě kosti předloktí, kostnaté zápěstí. Rukávy jsou utržené nad loktem.
+  - **Ruce:** tři dlouhé drápy, každý ze tří článků se zesílenými klouby, a palec.
+  - **Oděv:** plášť přes ramena vpředu otevřený (hrudník je vidět), rubáš od pasu převázaný šňůrou, na ní uvázaný karmínový cár. Dole se trhá do čtrnácti nestejných cárů, další dva visí od ramen.
+- Látka má tloušťku, takže otevřená kápě ani rukáv nejsou průhledné. Záhyby jsou nepravidelné, ne vlnovka. Celý model je jednou vyhlazený a pak zředěný na rovných plochách.
+- Kostra a názvy kostí zůstaly, takže současná animace přízraku, drápy i vlající cáry fungují dál.
+
+### Změřeno
+- 49 834 vrcholů (hrdina má 41 770, starý přízrak 15 tisíc). Bez zředění by měl 124 tisíc, což by bylo při jedenácti přízracích ve hře moc.
+- Ve hře vedle hrdiny (snímky ve složce `C:\_ClaudeAI\unity`, soubory `prizrak_novy_model.jpg` a `prizrak_ve_hre.jpg`): animace funguje, lebka s očima je v kápi vidět, zblízka jsou vidět žebra.
+
+### Poctivě
+- Je to první z nepřátel. Ostatní (mnich se štítem, oběšenec, kořenový plaz, můra, lucerna, drak, vrány) přestavím stejně, po jednom, a každého ti ukážu.
+- Cestou jsem zkusil i slepené tváře z koulí a lem kápě z článků; obojí vypadalo hůř (jako kreslená postavička, jako korále), tak jsem je zahodil. Ztlušťování látky se stejnou tloušťkou všude vystřelovalo z ostrých rohů otvoru kápě tenkou čepel přes obličej; vypnul jsem ho.
+- Paže jsou záměrně velmi tenké (vyhublé), zblízka můžou působit až jako hůlky. Animace se nemění, přízrak se hýbe pořád procedurálně, ne podle mocapu jako hrdina.
+- Výsledky PlayMode testů jsem zase zapisoval dočasným skriptem do souboru. Do main není nic sloučeno.
+
+### Testy
+- `WraithModelTests` (1 nový, `Combat`): přízrak má aspoň 70 % hrdinových vrcholů, ale méně než 60 tisíc, a na šňůře visí karmínový cár.
+- Puštěno: EditMode kategorie `Combat` (89 testů) a PlayMode kategorie `Combat` (42 testů), všechny prošly.
+
 ## [0.95.0] – 2026-11-26
 ### Opraveno
 - **Pauza zastaví hru vždycky.** Menu pauzy i krátké zastavení při zásahu si každé samo nastavovaly rychlost času. Když jsi otevřel menu ve chvíli, kdy dopadal úder, menu si zapamatovalo zpomalení na 3 %. Konec zastavení pak hru uprostřed otevřeného menu znovu rozjel, takže nepřítel mohl hrdinu za menu zabít. Po zavření se navíc vrátila 3% rychlost a hra už tak zůstala, proto se na tvém videu všechno dělo zpomaleně. Teď čas nastavuje jediné místo (`GameClock`): v pauze stojí, ať chce cokoli jiného čas spustit. Po zavření menu doběhne zastavení zásahu, pokud ještě trvá, jinak jde hra plnou rychlostí.

@@ -34,6 +34,31 @@ namespace CrimsonVeil.Tests
             finally { Object.DestroyImmediate(w); }
         }
 
+        /// <summary>
+        /// Rebuilt to stand beside the hero (v0.96): as finely made as he is - a body under the shroud, a skull in the hood,
+        /// a crimson rag at the cord - yet light enough for eleven of them at once.
+        /// </summary>
+        [Test]
+        public void TheWraith_IsMadeAsFinelyAsTheHero_YetLightEnoughForEleven()
+        {
+            var w = Model();
+            var hero = Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_CrimsonVeil/Art/Hero/Hero.fbx"));
+            try
+            {
+                var mesh = w.GetComponentInChildren<SkinnedMeshRenderer>().sharedMesh;
+                int heroVerts = hero.GetComponentInChildren<SkinnedMeshRenderer>().sharedMesh.vertexCount;
+                Assert.Greater(mesh.vertexCount, heroVerts * 0.7f, "as finely made as the hero (it had a third of his detail)");
+                Assert.Less(mesh.vertexCount, 60000, "light enough for eleven at once");
+                // crimson below the chest: the rag at the cord (the eyes are the only other crimson, in the hood)
+                var tris = mesh.GetTriangles(1);
+                var v = mesh.vertices;
+                int low = 0;
+                foreach (int i in tris) if (v[i].z < 1.1f && v[i].z > 0.3f) low++;   // (the mesh is stored z up)
+                Assert.Greater(low, 30, "the crimson rag hangs from the cord");
+            }
+            finally { Object.DestroyImmediate(w); Object.DestroyImmediate(hero); }
+        }
+
         [Test]
         public void TheClaws_CurlAndSplay()
         {

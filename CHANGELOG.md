@@ -5,6 +5,33 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.94.0] – 2026-11-26
+### Změněno
+- **Zvuky jsou tišší.** Celý mix je o 4 dB níž (`GameSound.MixTrim`) a efekty mají ve výchozím nastavení 80 % místo 100 %. Na výchozí hodnotě tak hrají zhruba o 8 dB tišeji než ve v0.93.
+- **Posuvníky hlasitosti odpovídají sluchu.** Hlasitost je druhá mocnina polohy posuvníku (`GameSettings.Heard`), takže polovina je −12 dB. Dřív ubrala jen 6 dB a celý tichý konec se tlačil do poslední desetiny posuvníku. Platí to pro celkovou hlasitost, hudbu i efekty.
+- Hlasitosti uložené před touto změnou znamenaly něco jiného. Efekty a hudba se proto jednou vrátí na výchozí hodnoty (`GameSettings.VolumesVersion`). Celková hlasitost zůstává, jak byla.
+- **Rozplynutí nepřítele bublá:** třicet nízkých bublin, každá při prasknutí stoupne tónem, nejdřív hustě a pak řidčeji, nad tichým tmavým syčením. Syčení, které tmavlo, a praskání před tím zněly podle modelu jako zkreslený hluk.
+- **Vrzání biče je méně tónové.** Rezonance jsou širší, zachycení nepravidelná (některá vynechají, jiná přijdou dřív nebo později) a pod nimi se tře kůže. Vůči ostatním zvukům je o 5 dB tišší než ve v0.93 a schovává se pod svist.
+- **Kotoul:** víc váhy těla (záda se převalí), oblečení níž a měkčeji.
+
+### Změřeno
+- Model CLAP, zvuky přes podkres ruiny: průměr **0,85** (ve v0.93 0,82). Kotoul 0,50 → 0,87, skluz 0,46 → 0,59, rozplynutí 0,75 (ve v0.93 0,06, ale s jiným popisem, viz Poctivě), kroky 0,86–1,00, švihy 0,99–1,00.
+- Houpání (osm průchodů pod kruhem): model ho popíše jako „houpání sem a tam“ s jistotou 0,89 a jako „svist něčeho, co se houpe“ s 1,00. S tišším zaskřípáním vyšlo lépe než s hlasitějším (0,81).
+
+### Poctivě
+- Pořád jsem nic neslyšel; čísla jsou z modelu.
+- Rozplynutí jsem porovnával s jiným popisem než minule („umírající, rozpouštějící se netvor“ místo „tmavá tekutina syčí a bublá“), protože bublání tomu prvnímu odpovídá nejvíc. Skok z 0,06 na 0,75 proto není čisté srovnání.
+- Nízké číslo houpání ve v0.93 (0,01) způsobil hlavně můj popis („člověk se houpe na vrzajícím laně“): stejné číslo dostal i samotný svist bez vrzání. Samotné zaskřípání model v sekvenci jako lano nepozná (0,03).
+- Zkoušel jsem i hustší drť u skluzu a praskání u rozplynutí; obojí model hodnotil hůř, tak jsem je vrátil, respektive nahradil.
+- Tvoje uložená hlasitost efektů (100 %) se při příštím spuštění hry jednou vrátí na 80 %.
+- PlayMode testy jsem zase zapisoval dočasným skriptem do souboru a smazal ho.
+- Do main není nic sloučeno.
+
+### Testy
+- `GameSettingsTests` (1 nový, `UI`): posuvník v polovině dává čtvrtinu hlasitosti, plný dává plnou, výchozí efekty hrají aspoň 3 dB pod plnou hlasitostí. Upravené: celková hlasitost jde do posluchače přes `Heard`.
+- `HeroSoundsPlayTests`: skluz je slyšet i při tišším mixu.
+- Puštěno: EditMode kategorie `Combat`, `Hero` a `UI` (257 testů) a PlayMode kategorie `Hero`, `Motor`, `Combat` a `UI` (144 testů). Všechny prošly.
+
 ## [0.93.0] – 2026-11-26
 ### Opraveno
 - **Kroky už neťukají jako paličky.** Byly složené z tónů, které zvonily (kámen až 4 kHz, podrážka 260–900 Hz). Teď je to tupé ťuknutí měkké boty, které hned utichne: každý tón zanikne během pár vlastních kmitů. K tomu podrážka dosedne o chvilku později, kůže šoupne a občas křupne drobek kamene. Kroky jsou i tmavší.

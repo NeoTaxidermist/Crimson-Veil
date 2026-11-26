@@ -167,7 +167,7 @@ namespace CrimsonVeil.Tests
                 if (controller.Motor.IsSliding) loudest = Mathf.Max(loudest, GameSound.LoopLevel(Loop.Slide));
             }
             Assert.IsTrue(slid, "he slid");
-            if (GameSettings.EffectsLevel > 0f) Assert.Greater(loudest, 0.05f, "the slide scrapes");
+            if (GameSettings.EffectsLevel > 0f) Assert.Greater(loudest, 0.01f, "the slide scrapes");
             input.aimY = 0f;
             input.moveX = 0f;
             yield return Wait(1.2f);

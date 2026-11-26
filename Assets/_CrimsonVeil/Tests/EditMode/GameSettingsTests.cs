@@ -18,7 +18,7 @@ namespace CrimsonVeil.Tests
         {
             GameSettings.SetMaster(0.4f);
             Assert.AreEqual(0.4f, GameSettings.Master, 1e-5f);
-            Assert.AreEqual(0.4f, AudioListener.volume, 1e-5f, "the overall volume is the listener's");
+            Assert.AreEqual(GameSettings.Heard(0.4f), AudioListener.volume, 1e-5f, "the overall volume is the listener's (as the ear hears the slider)");
             GameSettings.SetMusic(1.7f);
             Assert.AreEqual(1f, GameSettings.Music, "no louder than full");
             GameSettings.SetEffects(-0.2f);
@@ -29,6 +29,21 @@ namespace CrimsonVeil.Tests
             Assert.AreEqual(GameSettings.DefaultMaster, GameSettings.Master);
             Assert.AreEqual(GameSettings.DefaultMusic, GameSettings.Music);
             Assert.AreEqual(GameSettings.DefaultEffects, GameSettings.Effects);
+        }
+
+        /// <summary>
+        /// The sliders follow the ear: half way is a quarter of the loudness (-12 dB, not -6), and the effects start
+        /// turned down (full, they were too loud).
+        /// </summary>
+        [Test]
+        public void TheSliders_FollowTheEar_AndTheEffectsStartTurnedDown()
+        {
+            Assert.AreEqual(0.25f, GameSettings.Heard(0.5f), 1e-5f);
+            Assert.AreEqual(1f, GameSettings.Heard(1f), 1e-5f);
+            Assert.AreEqual(0f, GameSettings.Heard(0f), 1e-5f);
+            Assert.Less(GameSettings.DefaultEffects, 1f, "the effects are not at full by default");
+            Assert.AreEqual(GameSettings.Heard(GameSettings.DefaultEffects), GameSettings.EffectsLevel, 1e-5f);
+            Assert.Less(20f * Mathf.Log10(GameSettings.EffectsLevel), -3f, "by default the effects play at least 3 dB under full");
         }
 
         [Test]
@@ -44,7 +59,7 @@ namespace CrimsonVeil.Tests
             Assert.AreEqual(opened.mode, GameSettings.Mode);
             Assert.AreEqual(opened.vsync, GameSettings.VSync);
             Assert.AreEqual(opened.resolution, GameSettings.Resolution);
-            Assert.AreEqual(opened.master, AudioListener.volume, 1e-5f, "and the volume is heard as it was");
+            Assert.AreEqual(GameSettings.Heard(opened.master), AudioListener.volume, 1e-5f, "and the volume is heard as it was");
         }
 
         [Test]

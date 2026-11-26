@@ -14,7 +14,17 @@ namespace CrimsonVeil.Core
     {
         public enum WindowMode { Window, Borderless, Fullscreen }
 
-        public const float DefaultMaster = 1f, DefaultMusic = 0.8f, DefaultEffects = 1f;
+        public const float DefaultMaster = 1f, DefaultMusic = 0.8f, DefaultEffects = 0.8f;
+
+        /// <summary>
+        /// How loud a slider at <paramref name="v"/> (0..1) is played: its square, as the ear hears - a slider
+        /// that scaled the sound straight took only 6 dB off at half way, and all the quiet end was crowded into its last
+        /// tenth.
+        /// </summary>
+        public static float Heard(float v) => v * v;
+
+        /// <summary>What the saved volumes mean: 2 since they are heard as <see cref="Heard"/>.</summary>
+        public const int VolumesVersion = 2;
         const string Prefix = "CrimsonVeil.Settings.";
 
         public static float Master { get; private set; } = DefaultMaster;
@@ -26,9 +36,9 @@ namespace CrimsonVeil.Core
         public static int Quality { get; private set; } = -1;
 
         /// <summary>Music's level with the overall volume in it (0..1), for whatever plays music.</summary>
-        public static float MusicLevel => Music;
+        public static float MusicLevel => Heard(Music);
         /// <summary>The effects' level (0..1); the overall volume is applied by the listener.</summary>
-        public static float EffectsLevel => Effects;
+        public static float EffectsLevel => Heard(Effects);
 
         /// <summary>Something was changed (the volumes, the picture).</summary>
         public static event Action Changed;
@@ -74,7 +84,7 @@ namespace CrimsonVeil.Core
         /// </summary>
         static void Commit()
         {
-            AudioListener.volume = Master;
+            AudioListener.volume = Heard(Master);
             Changed?.Invoke();
         }
 
@@ -112,7 +122,7 @@ namespace CrimsonVeil.Core
         /// <summary>Puts the settings into effect.</summary>
         public static void Apply()
         {
-            AudioListener.volume = Master;
+            AudioListener.volume = Heard(Master);
             // The picture only in the built game: in the editor the quality and vertical sync are the project's own
             // settings, and set from here they were written into it (ProjectSettings/QualitySettings.asset).
             if (!Persist || Application.isEditor) return;
@@ -171,6 +181,7 @@ namespace CrimsonVeil.Core
             PlayerPrefs.SetFloat(Prefix + "Master", Master);
             PlayerPrefs.SetFloat(Prefix + "Music", Music);
             PlayerPrefs.SetFloat(Prefix + "Effects", Effects);
+            PlayerPrefs.SetInt(Prefix + "Volumes", VolumesVersion);
             PlayerPrefs.SetInt(Prefix + "Mode", (int)Mode);
             PlayerPrefs.SetInt(Prefix + "Width", Resolution.x);
             PlayerPrefs.SetInt(Prefix + "Height", Resolution.y);
@@ -185,6 +196,9 @@ namespace CrimsonVeil.Core
             Master = Clamp01(PlayerPrefs.GetFloat(Prefix + "Master", DefaultMaster));
             Music = Clamp01(PlayerPrefs.GetFloat(Prefix + "Music", DefaultMusic));
             Effects = Clamp01(PlayerPrefs.GetFloat(Prefix + "Effects", DefaultEffects));
+            // (saved before the sliders followed the ear and the effects were turned down by default: those levels
+            // meant something else - full effects were too loud - so the effects and music start again from the defaults)
+            if (PlayerPrefs.GetInt(Prefix + "Volumes", 1) < VolumesVersion) { Effects = DefaultEffects; Music = DefaultMusic; }
             Mode = (WindowMode)Mathf.Clamp(PlayerPrefs.GetInt(Prefix + "Mode", (int)WindowMode.Borderless), 0, 2);
             var native = Native();
             Resolution = new Vector2Int(PlayerPrefs.GetInt(Prefix + "Width", native.x), PlayerPrefs.GetInt(Prefix + "Height", native.y));

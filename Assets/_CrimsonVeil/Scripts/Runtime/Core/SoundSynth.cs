@@ -186,30 +186,42 @@ namespace CrimsonVeil.Core
             return Finish(o, 0.18f, 1f, r);
         }
 
-        /// <summary>A foe undone: its ink bursts, drains away bright to dark over a low, soft rumble, a few drops after.</summary>
+        /// <summary>
+        /// A foe undone: its ink bubbling away - thirty-odd low bubbles, each rising in pitch as it bursts, thick at first
+        /// and thinning as the ink is spent - over a soft, dark seethe. (A hiss sinking from bright to dark, with or
+        /// without crackles, a listening model heard as harsh noise; bubbles it heard as a creature dissolving.)
+        /// </summary>
         public static float[] Dissolve(int seed, int variant = 0)
         {
             var r = Rng(seed, variant);
-            int n = Len(0.7f);
+            int n = Len(0.8f);
             var o = new float[n];
-            var noise = Pink(n, r);
-            var rumble = Brown(n, r);
-            var grain = Wobble(n, r, 40f);
-            var l1 = new Biquad(); var l2 = new Biquad(); var lr = new Biquad(); lr.LowPass(140f, 0.7f);
+            int bubbles = 26 + r.Next(10);
+            for (int k = 0; k < bubbles; k++)
+            {
+                int at = (int)(Rate * 0.6f * Mathf.Pow((float)r.NextDouble(), 1.5f));
+                float f = 200f + 500f * (float)r.NextDouble();
+                float a = (0.4f + 0.6f * (float)r.NextDouble()) * (1f - (float)at / n);
+                int len = Len(0.015f + 0.02f * (float)r.NextDouble());
+                for (int i = 0; i < len && at + i < n; i++)
+                {
+                    float t = (float)i / Rate;
+                    o[at + i] += Mathf.Sin(2f * Mathf.PI * f * (1f + 6f * t) * t) * Mathf.Exp(-t / 0.008f) * Mathf.Clamp01(t / 0.002f) * a;
+                }
+            }
+            var seethe = Pink(n, r);
+            var l1 = new Biquad(); var l2 = new Biquad(); l1.LowPass(900f, 0.7f); l2.LowPass(900f, 0.7f);
+            float sm = 0f;
+            var tmp = new float[n];
             for (int i = 0; i < n; i++)
             {
-                float s = (float)i / Rate;
-                float t = (float)i / n;
-                if ((i & 31) == 0) { float cut = Mathf.Lerp(2000f, 160f, Mathf.Pow(t, 0.6f)); l1.LowPass(cut, 0.7f); l2.LowPass(cut, 0.7f); }
-                float hiss = l2.Step(l1.Step(noise[i])) * Mathf.Exp(-s / 0.22f) * Mathf.Clamp01(s / 0.01f) * (0.7f + 0.4f * grain[i]);
-                o[i] = hiss * 1.6f + lr.Step(rumble[i]) * Bell(t, 0.3f) * 0.25f;
+                float t = (float)i / Rate;
+                tmp[i] = l2.Step(l1.Step(seethe[i])) * Mathf.Clamp01(t / 0.01f) * Mathf.Exp(-t / 0.28f);
+                sm = Mathf.Max(sm, Mathf.Abs(tmp[i]));
             }
-            for (int k = 0; k < 16; k++)
-            {
-                float at = 0.02f + 0.5f * Mathf.Pow((float)r.NextDouble(), 1.3f);
-                Strike(o, at, r, Skin(r), 0.12f * (0.4f + 0.6f * (float)r.NextDouble()), 3000f, 0.0008f, 0.0015f, 0.4f);   // (a bubble bursting)
-            }
-            return Finish(o, 0.2f, 1f, r, 80f, 9000f);
+            float om = PeakOf(o);
+            for (int i = 0; i < n; i++) o[i] = o[i] / Mathf.Max(om, 1e-6f) + tmp[i] / Mathf.Max(sm, 1e-6f) * 0.3f;
+            return Finish(o, 0.2f, 1f, r, 80f, 8000f);
         }
 
         /// <summary>The whip's crack: the tip outrunning sound - one sharp pressure wave (an N) - and the ruin echoing it.</summary>
@@ -330,9 +342,10 @@ namespace CrimsonVeil.Core
             Strike(o, 0.002f, r, Stone(r), 0.15f, 1400f, 0.002f, 0.003f, 0.1f);
             float second = 0.14f + 0.05f * (float)r.NextDouble();
             Strike(o, second, r, Flesh(r, 0.9f), 0.2f, 1700f, 0.004f, 0.008f, 0.15f);
-            Mix(o, Scrape(1100f, 0.42f, seed + 7, variant, 0.3f), Len(0.02f), 0.8f);
-            Rustle(o, r, 0.0f, 0.4f, 2200f, 0.45f);
-            return Finish(o, 0.1f, 0.6f, r, 180f, 10000f);
+            Strike(o, second * 0.5f, r, Flesh(r, 1.1f), 0.18f, 1500f, 0.006f, 0.012f, 0.2f);   // (the back rolling over)
+            Mix(o, Scrape(800f, 0.42f, seed + 7, variant, 0.3f), Len(0.02f), 0.6f);
+            Rustle(o, r, 0.0f, 0.4f, 1300f, 0.3f);
+            return Finish(o, 0.1f, 0.6f, r, 120f, 8000f);
         }
 
         /// <summary>A hand slapping onto a stone lip and taking the weight: a short skin smack, a crumb of grit.</summary>
@@ -426,9 +439,13 @@ namespace CrimsonVeil.Core
             float len = 0.22f + 0.14f * (float)r.NextDouble();
             var o = new float[Len(len + 0.08f)];
             float f0 = 30f + 20f * (float)r.NextDouble(), f1 = f0 * (1.5f + 0.8f * (float)r.NextDouble());
-            var r1 = new Biquad(); r1.BandPass(330f * Vary(r, 0.12f), 7f);
-            var r2 = new Biquad(); r2.BandPass(760f * Vary(r, 0.12f), 6f);
-            var r3 = new Biquad(); r3.BandPass(1450f * Vary(r, 0.12f), 5f);
+            var r1 = new Biquad(); r1.BandPass(330f * Vary(r, 0.12f), 2.5f);
+            var r2 = new Biquad(); r2.BandPass(760f * Vary(r, 0.12f), 2.2f);
+            var r3 = new Biquad(); r3.BandPass(1450f * Vary(r, 0.12f), 2f);
+            // (the leather rubbing between the catches: a soft band of friction)
+            var rub = Pink(o.Length, r);
+            var rb1 = new Biquad(); var rb2 = new Biquad(); rb1.BandPass(900f * Vary(r, 0.2f), 0.9f); rb2.BandPass(900f, 0.9f);
+            var rubGrain = Wobble(o.Length, r, 35f);
             float phase = 0f;
             int body = Len(len);
             for (int i = 0; i < o.Length; i++)
@@ -438,9 +455,11 @@ namespace CrimsonVeil.Core
                 float rate = Mathf.Lerp(f0, f1, Mathf.Sin(Mathf.PI * Mathf.Min(t, 1f))) * (0.9f + 0.2f * (float)r.NextDouble());
                 phase += rate / Rate;
                 float x = 0f;
-                if (phase >= 1f) { phase -= 1f; x = env * (0.6f + 0.4f * (float)r.NextDouble()); }
-                x += (float)(r.NextDouble() * 2.0 - 1.0) * env * 0.02f;
-                o[i] = r1.Step(x) * 1.2f + r2.Step(x) + r3.Step(x) * 0.4f;
+                // (uneven catches: some skipped, each a little early or late - a regular train of them was a tone)
+                if (phase >= 1f) { phase -= 0.6f + 0.8f * (float)r.NextDouble(); if (r.Next(4) != 0) x = env * (0.4f + 0.6f * (float)r.NextDouble()); }
+                x += (float)(r.NextDouble() * 2.0 - 1.0) * env * 0.04f;
+                float friction = rb2.Step(rb1.Step(rub[i])) * env * (0.6f + 0.4f * rubGrain[i]);
+                o[i] = (r1.Step(x) * 1.2f + r2.Step(x) + r3.Step(x) * 0.4f) * 0.7f + friction * 1.2f;
             }
             return Finish(o, 0.12f, 0.6f, r, 150f, 7000f);
         }

@@ -51,7 +51,15 @@ namespace CrimsonVeil.Combat
         /// as a blow. The fight sits around -23, the hero's moving well under it (steps -39 to -36, as in a film, where
         /// they are felt more than heard), nothing near the -14 the first sets were played at.
         /// </summary>
-        public static float Level(Cue cue)
+        public static float Level(Cue cue) => BaseLevel(cue) + MixTrim;
+
+        /// <summary>
+        /// The whole mix taken down by this (dB): at full volume it was too loud (the user, after v0.93). The balance
+        /// between the sounds is <see cref="BaseLevel"/>'s.
+        /// </summary>
+        public const float MixTrim = -4f;
+
+        static float BaseLevel(Cue cue)
         {
             switch (cue)
             {
@@ -81,13 +89,13 @@ namespace CrimsonVeil.Combat
                 case Cue.RopeLatch: return -32f;
                 case Cue.RopeLetGo: return -36f;
                 case Cue.RopeSwoosh: return -35f;
-                case Cue.RopeCreak: return -37f;
+                case Cue.RopeCreak: return -42f;   // (under the rush: louder, the swing read less as swinging)
                 default: return -30f;
             }
         }
 
         /// <summary>How loud each loop is heard at its fullest (LUFS).</summary>
-        public static float Level(Loop loop) => loop == Loop.Slide ? -33f : loop == Loop.WallSlide ? -35f : loop == Loop.Glide ? -40f : -46f;
+        public static float Level(Loop loop) => MixTrim + (loop == Loop.Slide ? -33f : loop == Loop.WallSlide ? -35f : loop == Loop.Glide ? -40f : -46f);
 
         /// <summary>The volume that plays <paramref name="samples"/> at <paramref name="lufs"/> (never past full scale).</summary>
         public static float GainFor(float[] samples, float lufs)

@@ -14,13 +14,14 @@ namespace CrimsonVeil.Tests
     [Category("UI")]
     public class MenuPlayTests
     {
-        [SetUp] public void SetUp() { Time.timeScale = 1f; InputBindings.BuildDefaultsForTests(); }
+        [SetUp] public void SetUp() { Time.timeScale = 1f; InputBindings.BuildDefaultsForTests(); CrimsonVeil.Core.GameSettings.BeginTests(); }
 
         [TearDown]
         public void TearDown()
         {
             Time.timeScale = 1f;
             InputBindings.EndTests();
+            CrimsonVeil.Core.GameSettings.EndTests();
         }
 
         [UnityTest]
@@ -42,6 +43,18 @@ namespace CrimsonVeil.Tests
             CollectionAssert.Contains(cells, "U", "the sword's key is listed");
             CollectionAssert.Contains(cells, "Mezerník");
             CollectionAssert.Contains(cells, "Výchozí ovládání");
+            // the sound and the picture: their own pages
+            menu.SettingsPanel.Show(SettingsPanel.Page.Sound);
+            yield return null;
+            var sliders = menu.SettingsPanel.GetComponentsInChildren<Slider>();
+            Assert.AreEqual(3, sliders.Length, "overall, music, effects");
+            menu.SettingsPanel.Show(SettingsPanel.Page.Picture);
+            yield return null;
+            var choices = menu.SettingsPanel.GetComponentsInChildren<OptionCycler>();
+            Assert.AreEqual(4, choices.Length, "resolution, window mode, vertical sync, quality");
+            bool vsync = CrimsonVeil.Core.GameSettings.VSync;
+            choices[2].GetComponent<Button>().onClick.Invoke();
+            Assert.AreNotEqual(vsync, CrimsonVeil.Core.GameSettings.VSync, "a click takes the next choice");
             menu.SettingsPanel.Back();
             Assert.IsFalse(menu.SettingsPanel.IsOpen);
 

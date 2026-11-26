@@ -133,6 +133,64 @@ namespace CrimsonVeil.UI
             return b;
         }
 
+        /// <summary>A volume slider 0..1: a dark track, the scarf's crimson filling it, a light handle. Left and right
+        /// (keys, the stick) move it when it is chosen; up and down move on to the next item.</summary>
+        public static Slider Slider(Transform parent, float value, Action<float> onChange, float width = 420f)
+        {
+            var rt = Rect("Slider", parent);
+            rt.sizeDelta = new Vector2(width, 36f);
+            var le = rt.gameObject.AddComponent<LayoutElement>();
+            le.preferredWidth = width; le.preferredHeight = 36f;
+            var bg = Rect("Track", rt);
+            bg.anchorMin = new Vector2(0f, 0.35f); bg.anchorMax = new Vector2(1f, 0.65f);
+            bg.offsetMin = bg.offsetMax = Vector2.zero;
+            bg.gameObject.AddComponent<Image>().color = Ink;
+            var fillArea = Rect("Fill Area", rt);
+            fillArea.anchorMin = new Vector2(0f, 0.35f); fillArea.anchorMax = new Vector2(1f, 0.65f);
+            fillArea.offsetMin = fillArea.offsetMax = Vector2.zero;
+            var fill = Rect("Fill", fillArea);
+            fill.anchorMin = Vector2.zero; fill.anchorMax = new Vector2(0f, 1f);
+            fill.offsetMin = fill.offsetMax = Vector2.zero;
+            fill.gameObject.AddComponent<Image>().color = Crimson;
+            var handleArea = Rect("Handle Area", rt);
+            Fill(handleArea);
+            var handle = Rect("Handle", handleArea);
+            handle.sizeDelta = new Vector2(18f, 0f);
+            handle.anchorMin = new Vector2(0f, 0f); handle.anchorMax = new Vector2(0f, 1f);
+            var hImg = handle.gameObject.AddComponent<Image>();
+            hImg.color = Color.white;
+            var s = rt.gameObject.AddComponent<Slider>();
+            s.fillRect = fill;
+            s.handleRect = handle;
+            s.targetGraphic = hImg;
+            s.direction = UnityEngine.UI.Slider.Direction.LeftToRight;
+            s.minValue = 0f; s.maxValue = 1f;
+            var colors = s.colors;
+            colors.normalColor = Dim; colors.highlightedColor = Paper; colors.selectedColor = Paper;
+            colors.pressedColor = Paper;
+            s.colors = colors;
+            s.navigation = new Navigation { mode = Navigation.Mode.Vertical };
+            s.SetValueWithoutNotify(value);
+            if (onChange != null) s.onValueChanged.AddListener(v => onChange(v));
+            return s;
+        }
+
+        /// <summary>
+        /// A choice among a few (a resolution, a window mode): shown as "‹ value ›"; a click, or right when it is
+        /// chosen, takes the next one, left the one before.
+        /// </summary>
+        public static Button Option(Transform parent, Func<string> shown, Action<int> step, float width = 420f)
+        {
+            var b = Button(parent, "", () => step(1), width, 44f, 24);
+            b.navigation = new Navigation { mode = Navigation.Mode.Vertical };
+            var cycler = b.gameObject.AddComponent<OptionCycler>();
+            cycler.shown = shown;
+            cycler.step = step;
+            cycler.Refresh();
+            b.onClick.AddListener(cycler.Refresh);
+            return b;
+        }
+
         public static void SetLabel(Button b, string text)
         {
             var t = b.GetComponentInChildren<Text>();

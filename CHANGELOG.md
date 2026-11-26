@@ -5,6 +5,25 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.88.0] – 2026-11-26
+### Přidáno
+- **Nastavení má tři záložky: Ovládání, Zvuk, Obraz.** Platí v hlavním menu i v pauze a všechno se ukládá mezi spuštěními hry (`GameSettings`).
+- **Zvuk:** celková hlasitost, hudba a zvukové efekty (posuvníky v procentech, ovládají se i šipkami nebo páčkou). Celková hlasitost řídí hlasitost celé hry.
+- **Obraz:** rozlišení (každé, které monitor nabízí, jednou), režim zobrazení (v okně, celá obrazovka bez okraje, celá obrazovka), svislá synchronizace a kvalita obrazu (nízká, vysoká). Volba se mění šipkami doleva a doprava nebo kliknutím.
+- Každá záložka má své tlačítko „Výchozí“ (ovládání, zvuk, obraz).
+
+### Poctivě
+- **Hra zatím nemá žádnou hudbu ani zvuky.** Posuvníky hudby a efektů se jen uloží a budoucí zvuky je budou číst (`GameSettings.MusicLevel`, `EffectsLevel`). Na stránce to je napsané.
+- **Rozlišení a režim okna se v editoru Unity neprojeví**, jen v sestavené hře, a tam jsem je nezkoušel. Svislá synchronizace a kvalita platí hned i v editoru.
+- Výchozí obraz je nejvyšší rozlišení monitoru, celá obrazovka bez okraje, synchronizace zapnutá a vysoká kvalita.
+- Záložka, na které stojí výběr z klávesnice, svítí jasně červeně, otevřená záložka tmavě červeně; když se přepíná jinak než klávesnicí, svítí dvě.
+
+### Testy
+- `GameSettingsTests` (EditMode, 4 nové, kategorie `UI`): hlasitosti zůstanou v rozsahu a celková řídí hru, volby se točí dokola oběma směry, české popisky, rozlišení bez opakování.
+- `MenuPlayTests` (rozšířený): stránka zvuku má tři posuvníky, stránka obrazu čtyři volby a kliknutí volbu změní.
+- Testy nesahají do tvého uloženého nastavení ani do obrazovky editoru.
+- Puštěno: kategorie `UI` v EditMode (23 testů) a v PlayMode (4 testy), všechny prošly napoprvé.
+
 ## [0.87.0] – 2026-11-26
 ### Přidáno
 - **Testy rozdělené do kategorií podle oblasti hry:** `Motor`, `Hero`, `Veil`, `Combat`, `World`, `UI`, `Camera`, `Tools`. Každá testovací třída má jednu nebo víc kategorií (`[Category]`). Soubor `Assets/_CrimsonVeil/Tests/KATEGORIE.md` říká, které kategorie pustit podle toho, na které soubory změna sáhla. Po malé změně se tak pouštějí jen testy dotčených oblastí, celá sada jen po velkých zásazích.

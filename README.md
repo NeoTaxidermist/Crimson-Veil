@@ -39,7 +39,7 @@ Natočeno přímo ve hře (12 snímků za sekundu, převážně v šedé testova
 | ![Popelavá můra](Docs/enemies/AshMoth.jpg)<br>**Popelavá můra**: létá vysoko (na luk) a sype popel, který ztlumí šálu. | ![Bludička](Docs/enemies/LanternWisp.jpg)<br>**Bludička**: neškodná, ale láká k propastem. Zásah ji chytí a zůstane svítit na místě. | ![Papírový drak](Docs/enemies/PaperKite.jpg)<br>**Papírový drak**: létá na niti. Přestřel ji a z jeho látky se dá plachtit (drž skok). |
 
 ## Ovládání
-Hra startuje do hlavního menu (Hrát, Nastavení, Konec). V **Nastavení** jde každou klávesu i tlačítko ovladače přemapovat; ve hře otevře **Esc** (Start) pauzu s nastavením. Výchozí rozložení je pro dvě ruce: levá se pohybuje, pravá bojuje.
+Hra startuje do hlavního menu (Hrát, Nastavení, Konec). V **Nastavení** (záložky Ovládání, Zvuk, Obraz) jde každou klávesu i tlačítko ovladače přemapovat a nastavit hlasitost, rozlišení, režim okna, VSync a kvalitu; ve hře otevře **Esc** (Start) pauzu s nastavením. Výchozí rozložení je pro dvě ruce: levá se pohybuje, pravá bojuje.
 
 | Akce | Klávesnice | Gamepad |
 |---|---|---|
@@ -95,7 +95,7 @@ Docs/          obrázky a GIFy pro toto README
 ```
 
 ## Testy
-Unity → Window → General → Test Runner: **623 EditMode** a **139 PlayMode** testů. PlayMode testy ověřují každý pohyb a kombo na skutečném prefabu hrdiny (`HeroMoveSetPlayTests`).
+Unity → Window → General → Test Runner: **627 EditMode** a **139 PlayMode** testů. PlayMode testy ověřují každý pohyb a kombo na skutečném prefabu hrdiny (`HeroMoveSetPlayTests`).
 
 ## Verze a CHANGELOG
 Každý commit má vlastní verzi podle [SemVer](https://semver.org/lang/cs/): sekci `## [X.Y.Z] – RRRR-MM-DD` v [CHANGELOG.md](CHANGELOG.md) a tag `vX.Y.Z`. Hlídají to git hooky v `.githooks/`:

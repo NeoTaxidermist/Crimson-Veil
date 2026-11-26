@@ -105,5 +105,40 @@ namespace CrimsonVeil.Tests
             Assert.IsFalse(InputBindings.GameplayBlocked);
             Object.Destroy(hud.gameObject);
         }
+
+        /// <summary>
+        /// Paused while a blow is landing, the game still stands - the hit-stop's end used to set it running again under
+        /// the open menu (a foe struck the hero dead behind it) - and closed, it runs at full speed, not at the crawl the
+        /// menu found it at (the game went on at 3 %).
+        /// </summary>
+        [UnityTest]
+        public IEnumerator PausedWhileABlowLands_TheGameStillStands_AndRunsAtFullSpeedAfter()
+        {
+            var fxHost = new GameObject("Fx");
+            fxHost.AddComponent<CrimsonVeil.Combat.CombatFx>();
+            var hud = ScarfHud.Ensure();
+            yield return null;
+            var pause = hud.GetComponentInChildren<PauseMenu>(true);
+            CrimsonVeil.Combat.CombatFx.HitStop(0.15f);
+            Assert.Less(Time.timeScale, 0.5f, "a blow lands: the world crawls");
+            pause.Open();
+            Assert.AreEqual(0f, Time.timeScale, "paused: it stands");
+            float end = Time.realtimeSinceStartup + 0.4f;
+            while (Time.realtimeSinceStartup < end)
+            {
+                yield return null;
+                Assert.AreEqual(0f, Time.timeScale, "and stands when the blow's moment is over");
+            }
+            pause.Close();
+            Assert.AreEqual(1f, Time.timeScale, "closed: full speed, not the crawl");
+            CrimsonVeil.Combat.CombatFx.HitStop(0.1f);
+            pause.Open();
+            pause.Close();
+            Assert.Less(Time.timeScale, 0.5f, "closed while a blow is still landing: it finishes landing");
+            yield return new WaitForSecondsRealtime(0.2f);
+            Assert.AreEqual(1f, Time.timeScale, "and then full speed");
+            Object.Destroy(hud.gameObject);
+            Object.Destroy(fxHost);
+        }
     }
 }

@@ -17,10 +17,6 @@ namespace CrimsonVeil.Veil
         public const float CastMorphTime = 0.14f;
         /// <summary>Raising the shield this long before a blow lands parries it.</summary>
         public const float ParryWindow = 0.2f;
-        /// <summary>How long the bow can be held drawn before it looses on its own.</summary>
-        public const float MaxDraw = 2.5f;
-        /// <summary>Attack progress at which a drawn bow holds (string at full draw).</summary>
-        public const float BowHoldAt = 0.27f;
         /// <summary>The spear thrust turned straight down (pogo), degrees.</summary>
         public const float DownThrustTilt = -82f;
         /// <summary>Furthest the bow aims up or down, degrees.</summary>

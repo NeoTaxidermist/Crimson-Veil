@@ -16,7 +16,6 @@ namespace CrimsonVeil.UI
         public SettingsPanel SettingsPanel { get; private set; }
         RectTransform panel;
         Button settingsButton;
-        float timeScaleBefore = 1f;
 
         /// <summary>Gives the HUD's canvas a pause menu.</summary>
         public static PauseMenu Create(GameObject hudCanvas)
@@ -57,8 +56,7 @@ namespace CrimsonVeil.UI
         {
             if (IsOpen) return;
             IsOpen = true;
-            timeScaleBefore = Time.timeScale > 0f ? Time.timeScale : 1f;
-            Time.timeScale = 0f;
+            CrimsonVeil.Core.GameClock.Pause();
             InputBindings.GameplayBlocked = true;
             panel.gameObject.SetActive(true);
             MenuKit.Select(Resume);
@@ -70,7 +68,7 @@ namespace CrimsonVeil.UI
             IsOpen = false;
             panel.gameObject.SetActive(false);
             if (SettingsPanel.IsOpen) SettingsPanel.gameObject.SetActive(false);
-            Time.timeScale = timeScaleBefore;
+            CrimsonVeil.Core.GameClock.Resume();   // (to a blow's hit-stop if one is still landing, else full speed)
             InputBindings.GameplayBlocked = false;
         }
 
@@ -82,14 +80,14 @@ namespace CrimsonVeil.UI
 
         void ToMainMenu()
         {
-            Time.timeScale = 1f;
+            CrimsonVeil.Core.GameClock.Reset();
             InputBindings.GameplayBlocked = false;
             SceneManager.LoadScene(MainMenu.MenuScene);
         }
 
         void OnDestroy()
         {
-            if (IsOpen) { Time.timeScale = 1f; InputBindings.GameplayBlocked = false; }
+            if (IsOpen) { CrimsonVeil.Core.GameClock.Resume(); InputBindings.GameplayBlocked = false; }
         }
     }
 }

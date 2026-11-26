@@ -197,7 +197,8 @@ namespace CrimsonVeil.Veil
         public VeilCharge Charge { get; } = new VeilCharge();
         /// <summary>True while the spear is thrust straight down from the air (it bounces the hero off what it hits).</summary>
         public bool ThrustingDown { get; private set; }
-        /// <summary>True while the bow is held drawn.</summary>
+        /// <summary>True while the bow is held drawn. (Never, since the bow looses on the press; the drawn poses wait
+        /// for a hold, should one come back.)</summary>
         public bool Drawing { get; private set; }
         /// <summary>The shield is raised and held (guarding, on the ground and in the air alike).</summary>
         public bool ShieldHeld { get; private set; }
@@ -224,7 +225,7 @@ namespace CrimsonVeil.Veil
         IPlayerInput input;
         bool castMode;
         VeilForm? pendingAttack, buffered;
-        float lingerTimer = -1f, sinceShieldRaised = 99f, drawTime, recoverTimer;
+        float lingerTimer = -1f, sinceShieldRaised = 99f, recoverTimer;
         /// <summary>True while the body recovers from a blow (no new blow can begin).</summary>
         public bool Recovering => recoverTimer > 0f;
 
@@ -280,13 +281,14 @@ namespace CrimsonVeil.Veil
             if (Latched != null) return false;
             float cost = VeilCasting.Cost(form);
 
-            // A blow is committed: nothing cuts it short (not even the whip's grapple). Every press counts: one that
-            // comes during a blow, while the weapon is still forming or while he recovers is remembered - the last one
-            // - and follows once the blow is spent. Mashing cannot make blows come faster nor pile them up: one follows.
-            // (Presses in the first 40 % of a blow used to be dropped. Of six bow presses 0.9 s apart one was lost, and
-            // a bow pressed 0.1 to 0.2 s after a sword cut or a spear thrust never came at all.)
+            // A blow is committed: nothing cuts it short (not even the whip's grapple), and a press during it - or
+            // while the weapon forms, or while he recovers - is let go: it neither breaks the blow off nor comes after
+            // it. Only one in the blow's last moments (FollowWindow) follows at once, or a quick chain would feel
+            // unheard. (Every press used to be remembered and follow the blow: a bow pressed during a shot loosed late,
+            // when it was no longer expected, and pressed again then loosed twice.)
             if (attackTime >= 0f || pendingAttack.HasValue || recoverTimer > 0f)
             {
+                if (pendingAttack.HasValue || FreeIn() > FollowWindow) return false;
                 buffered = form;
                 return true;
             }
@@ -313,6 +315,17 @@ namespace CrimsonVeil.Veil
             pendingAttack = form;
             if (form == VeilForm.Shield) sinceShieldRaised = 0f;
             return true;
+        }
+
+        /// <summary>A press this close (s) to the end of a blow and its recovery follows it at once; earlier ones are let go.</summary>
+        public const float FollowWindow = 0.15f;
+
+        /// <summary>Seconds until the blow under way and the body's recovery from it are over (0: free now).</summary>
+        public float FreeIn()
+        {
+            if (attackTime < 0f) return Mathf.Max(0f, recoverTimer);
+            float duration = VeilFormLibrary.AttackDuration(ShapeForm) / Mathf.Max(0.01f, Combo.Current.Speed);
+            return Mathf.Max(0f, duration - attackTime) + VeilCasting.Recovery(ShapeForm) + Combo.Current.ExtraRecovery;
         }
 
         /// <summary>
@@ -549,7 +562,6 @@ namespace CrimsonVeil.Veil
             // hung at the fist as a knot of loops before every lash)
             if (ShapeForm == VeilForm.Whip) whipOpen = 1f;
             Drawing = false;
-            drawTime = 0f;
             bool airborne = player != null && player.Motor != null && !player.IsGrounded;
             var motor = player != null ? player.Motor : null;
             // From the crouch: a low blow, played out in it. Just up out of it with up held: a rising strike.
@@ -675,23 +687,9 @@ namespace CrimsonVeil.Veil
                 bool guard = Form == VeilForm.Shield && input != null && input.CastHeld(VeilForm.Shield);
                 if (!guard) StartAttack();
             }
-            // Bow held: the string stays drawn at full draw and the bow follows the aim; letting go looses.
-            bool bowHeld = attackTime >= 0f && ShapeForm == VeilForm.Bow && castMode && input != null
-                           && input.CastHeld(VeilForm.Bow) && drawTime < VeilCasting.MaxDraw;
+            // (The bow looses on the press, held or not, aimed the way he holds as it looses - as every weapon strikes
+            // on the press. Held, it used to stay drawn until let go: a press held a moment too long did not shoot.)
             Drawing = false;
-            if (bowHeld)
-            {
-                float hold = VeilCasting.BowHoldAt * VeilFormLibrary.AttackDuration(VeilForm.Bow);
-                if (attackTime >= hold)
-                {
-                    attackTime = hold;
-                    Drawing = true;
-                    drawTime += dt;
-                    // drawn, the bow follows the eight-way aim (and settles on a target in the assist cone)
-                    AttackAim = AimNow(VeilForm.Bow, player != null && player.Motor != null && !player.IsGrounded);
-                    aimTiltTarget = AttackAim;
-                }
-            }
             // Shield held: it guards (and drains the scarf) - in the air too, where he falls as ever: only the scarf glides.
             bool shieldHeld = Form == VeilForm.Shield && castMode && input != null && input.CastHeld(VeilForm.Shield)
                               && Charge.Drain(VeilCasting.ShieldHoldDrain, dt);

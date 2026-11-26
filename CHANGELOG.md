@@ -5,6 +5,27 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.95.0] – 2026-11-26
+### Opraveno
+- **Pauza zastaví hru vždycky.** Menu pauzy i krátké zastavení při zásahu si každé samo nastavovaly rychlost času. Když jsi otevřel menu ve chvíli, kdy dopadal úder, menu si zapamatovalo zpomalení na 3 %. Konec zastavení pak hru uprostřed otevřeného menu znovu rozjel, takže nepřítel mohl hrdinu za menu zabít. Po zavření se navíc vrátila 3% rychlost a hra už tak zůstala, proto se na tvém videu všechno dělo zpomaleně. Teď čas nastavuje jediné místo (`GameClock`): v pauze stojí, ať chce cokoli jiného čas spustit. Po zavření menu doběhne zastavení zásahu, pokud ještě trvá, jinak jde hra plnou rychlostí.
+
+### Změněno
+- **Stisk během úderu se zahodí.** Úder ho nepřeruší a nepřijde ani po něm. Provede se jen stisk v posledních 0,15 s úderu a zotavení po něm, a to hned, jak je hrdina volný (`VeilController.FollowWindow`, `FreeIn`). Dřív si zbraně pamatovaly poslední stisk a provedly ho po úderu. U luku tak šíp vyletěl pozdě, až to nikdo nečekal, a po dalším stisku vyletěly dva.
+- **Luk střílí hned na stisk**, ať klávesu podržíš, nebo ne, a míří směrem, který držíš ve chvíli výstřelu. Dřív se při podržení natáhl a vystřelil až po puštění, takže trochu delší stisk nevystřelil.
+
+### Poctivě
+- Tím se ruší pravidlo „každý stisk se počítá“ z dřívější verze. To vzniklo proto, že se stisky ztrácely a luk někdy nevystřelil. Teď se stisk během úderu ztratí záměrně. Kdyby se ti zdálo, že kombo nereaguje, dá se okno 0,15 s prodloužit.
+- U oštěpu a luku je zotavení po úderu delší (0,22 s) než okno, takže stisk těsně před koncem samotného úderu se u nich ještě zahodí. Projde až stisk ve druhé polovině zotavení.
+- Natažený luk s mířením do osmi směrů během držení je pryč. Pózy natažení v animaci zůstaly, jen se nepoužívají.
+- Video jsem si prohlédl po snímcích (každou sekundu). Divné věci na něm odpovídají zaseknutému zpomalení: pomalý skok, salto se šálou, pozvolné padání. Žádnou jinou chybu jsem v něm nenašel.
+- Výsledky PlayMode testů jsem zase zapisoval dočasným skriptem do souboru a pak ho smazal. Do main není nic sloučeno.
+
+### Testy
+- `MenuPlayTests` (1 nový): pauza otevřená během zásahu stojí i po jeho konci a po zavření jde hra plnou rychlostí; zavřená uprostřed zásahu ho nechá doběhnout.
+- `CastingPlayTests`: luk vystřelí na stisk do 0,45 s, stisk během výstřelu se zahodí a nevystřelí později, čtyři dvojité ťuknutí dají čtyři šípy, ne osm (nový test); luk podržený i nepodržený vystřelí na stisk; stisky na začátku úderu se zahodí, stisk na jeho konci se provede (jednou, ať ťukneš kolikrát chceš). Testy komb mačkají na konci úderu.
+- `HeroMoveSetPlayTests`: komba mačkají na konci úderu; luk vystřelí na stisk, i nahoru.
+- Puštěno: EditMode kategorie `Combat`, `Hero`, `UI` a `Veil` (446 testů, prošly) a PlayMode kategorie `Veil`, `Combat`, `Hero`, `Motor` a `UI` (147 testů). Napoprvé 140 ze 147: testy komb mačkaly uprostřed úderu, kde se stisk teď zahodí, a jeden test luku čekal vyčerpanou šálu, ale ta mezi delšími rozestupy stihla dorůst. Po opravě testů prošly znovu `CastingPlayTests` a `HeroMoveSetPlayTests` (57, z toho 1 test s příliš krátkým čekáním) a pak celé `CastingPlayTests` (24), všechny.
+
 ## [0.94.0] – 2026-11-26
 ### Změněno
 - **Zvuky jsou tišší.** Celý mix je o 4 dB níž (`GameSound.MixTrim`) a efekty mají ve výchozím nastavení 80 % místo 100 %. Na výchozí hodnotě tak hrají zhruba o 8 dB tišeji než ve v0.93.

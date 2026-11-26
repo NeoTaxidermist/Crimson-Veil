@@ -147,7 +147,8 @@ namespace CrimsonVeil.Tests
             for (int i = 1; i < blows.Length; i++)
             {
                 int step = i - 1;
-                yield return Until(() => veil.Combo.Current.step == step && veil.AttackProgress >= 0.6f, 3f);
+                // (pressed in the blow's last moments: earlier presses are let go)
+                yield return Until(() => veil.Combo.Current.step == step && (veil.IsAttacking || veil.Recovering) && veil.FreeIn() <= VeilController.FollowWindow - 0.03f, 3f);
                 Assert.AreEqual(step, veil.Combo.Current.step, $"blow {step + 1} of the combo struck");
                 input.cast = blows[i];
             }
@@ -820,27 +821,24 @@ namespace CrimsonVeil.Tests
         }
 
         [UnityTest]
-        public IEnumerator Bow_DrawnAndLoosed_ThenOverheadFromTheSpot()
+        public IEnumerator Bow_LoosedOnThePress_ThenOverheadFromTheSpot()
         {
             yield return StartAt(new Vector3(-12f, 0.05f, 0f));
-            input.held = VeilForm.Bow; input.cast = VeilForm.Bow;
-            yield return Wait(1f);
-            Assert.IsTrue(veil.Drawing, "held: drawn");
+            input.held = VeilForm.Bow; input.cast = VeilForm.Bow;   // (held: it looses all the same)
+            yield return Wait(0.6f);
+            Assert.IsFalse(veil.Drawing, "not held drawn");
             Assert.Contains(HeroMocap.BowAim, new List<string>(playedUpper), "the string hand draws");
-            input.held = null;
-            yield return Wait(0.2f);
             var arrows = Object.FindObjectsByType<VeilArrow>(FindObjectsSortMode.None);
-            Assert.AreEqual(1, arrows.Length, "loosed on release");
+            Assert.AreEqual(1, arrows.Length, "loosed on the press, the key still held");
+            input.held = null;
             Assert.Greater(arrows[0].Velocity.x, 5f, "ahead");
             Object.Destroy(arrows[0].gameObject);
             yield return Wait(0.8f);
             input.stand = true; input.aimY = 1f;
             yield return Wait(0.1f);
-            input.held = VeilForm.Bow; input.cast = VeilForm.Bow;
-            yield return Wait(1f);
             float x = Pos.x;
-            input.held = null;
-            yield return Wait(0.2f);
+            input.cast = VeilForm.Bow;
+            yield return Wait(0.6f);
             arrows = Object.FindObjectsByType<VeilArrow>(FindObjectsSortMode.None);
             Assert.AreEqual(1, arrows.Length);
             Assert.Greater(arrows[0].Velocity.y, Mathf.Abs(arrows[0].Velocity.x), "overhead");
@@ -937,12 +935,21 @@ namespace CrimsonVeil.Tests
             // the bow drawn at the sky: he looks along the arrow, standing upright (an archer does not lean back)
             input.stand = true; input.aimY = 1f;
             yield return Wait(0.1f);
-            input.held = VeilForm.Bow; input.cast = VeilForm.Bow;
-            yield return Wait(1f);
-            Assert.IsTrue(veil.Drawing, "drawn");
-            Assert.Greater(anim.LookPitch, 35f, "the bow drawn overhead: he looks up along the arrow");
-            Assert.That(anim.TrunkLean, Is.InRange(-8f, 8f), "upright under the bow");
-            input.held = null;
+            input.cast = VeilForm.Bow;
+            float lookUp = -99f, leanMin = 99f, leanMax = -99f;
+            float shotEnd = Time.time + 0.6f;
+            while (Time.time < shotEnd)
+            {
+                yield return null;
+                if (veil.IsAttacking && veil.AttackProgress > 0.2f && veil.AttackProgress < 0.45f)
+                {
+                    lookUp = Mathf.Max(lookUp, anim.LookPitch);
+                    leanMin = Mathf.Min(leanMin, anim.TrunkLean); leanMax = Mathf.Max(leanMax, anim.TrunkLean);
+                }
+            }
+            Assert.Greater(lookUp, 35f, "the bow loosed overhead: he looks up along the arrow");
+            Assert.That(leanMin, Is.GreaterThan(-8f), "upright under the bow");
+            Assert.That(leanMax, Is.LessThan(8f), "upright under the bow");
             yield return Wait(0.3f);
             foreach (var a in Object.FindObjectsByType<VeilArrow>(FindObjectsSortMode.None)) Object.Destroy(a.gameObject);
             input.stand = false; input.aimY = 0f;

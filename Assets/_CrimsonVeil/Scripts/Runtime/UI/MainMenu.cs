@@ -22,7 +22,7 @@ namespace CrimsonVeil.UI
 
         void Start()
         {
-            Time.timeScale = 1f;
+            CrimsonVeil.Core.GameClock.Reset();
             InputBindings.GameplayBlocked = false;
             _ = InputBindings.Asset;
             Build();
@@ -66,7 +66,7 @@ namespace CrimsonVeil.UI
 
         public void StartGame()
         {
-            Time.timeScale = 1f;
+            CrimsonVeil.Core.GameClock.Reset();
             InputBindings.GameplayBlocked = false;
             SceneManager.LoadScene(GameScene);
         }

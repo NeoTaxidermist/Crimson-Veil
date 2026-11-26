@@ -121,11 +121,11 @@ namespace CrimsonVeil.Tests
             veil.Attacked += _ => blows++;
             yield return Wait(0.3f);
             input.cast = VeilForm.Sword;
-            yield return Wait(0.4f); // late in the blow: the follow-up
+            yield return NearItsEnd(); // in the blow's last moments: the follow-up
             input.cast = VeilForm.Sword;
             bool melted = false;
-            float end = Time.time + 0.9f;
-            while (Time.time < end)
+            float end = Time.time + 1.2f;
+            while (Time.time < end && !(blows == 2 && !veil.IsAttacking))   // (after the second blow it melts back, as it should)
             {
                 if (veil.Form == VeilForm.Flow) melted = true;
                 yield return null;
@@ -141,11 +141,11 @@ namespace CrimsonVeil.Tests
             veil.ComboBlow += b => blows.Add(b);
             yield return Wait(0.3f);
             input.cast = VeilForm.Sword;
-            yield return Wait(0.3f);
-            input.cast = VeilForm.Sword;          // late in the blow: the follow-up
+            yield return NearItsEnd();
+            input.cast = VeilForm.Sword;          // in the blow's last moments: the follow-up
             float end = Time.time + 1.2f;
             while (blows.Count < 2 && Time.time < end) yield return null;
-            yield return Wait(0.3f);
+            yield return NearItsEnd();
             input.cast = VeilForm.Whip;           // pours into the whip mid-chain
             end = Time.time + 1.2f;
             while (blows.Count < 3 && Time.time < end) yield return null;
@@ -172,13 +172,13 @@ namespace CrimsonVeil.Tests
             veil.Interrupted += () => broken++;
             yield return Wait(0.3f);
             input.cast = VeilForm.Sword;
-            yield return Wait(0.3f);
+            yield return NearItsEnd();
             input.cast = VeilForm.Sword;          // the second blow, queued
             float end = Time.time + 1.2f;
             while (blows.Count < 2 && Time.time < end) yield return null;
             while (veil.IsAttacking && veil.AttackProgress < 0.5f) yield return null;
             Assert.IsTrue(veil.IsAttacking);
-            input.cast = VeilForm.Sword;          // a third, late in the blow: waiting to follow
+            input.cast = VeilForm.Sword;          // a third, mid-blow: let go (it would not follow anyway)
             yield return null;
             var hit = new DamageInfo { amount = 1f, knockback = new Vector2(-3f, 2f), point = player.transform.position + Vector3.up };
             Assert.IsTrue(health.ReceiveHit(hit), "struck mid-combo");
@@ -265,10 +265,18 @@ namespace CrimsonVeil.Tests
             Assert.IsTrue(veil.DownStrike, "it bounces the hero off what it hits");
         }
 
-        [UnityTest]
-        public IEnumerator MashingInABlow_GivesOneFollowUp_NoSoonerAndNoMore()
+        /// <summary>Waits until the blow under way is in its last moments (a press there follows it).</summary>
+        IEnumerator NearItsEnd()
         {
-            // (presses early in a blow used to be dropped altogether: a press not heard, with nothing to tell why)
+            float end = Time.time + 2f;
+            while (Time.time < end && !((veil.IsAttacking || veil.Recovering) && veil.FreeIn() <= VeilController.FollowWindow - 0.03f)) yield return null;
+        }
+
+        [UnityTest]
+        public IEnumerator PressesEarlyInABlow_AreLetGo_OneInItsLastMoments_Follows()
+        {
+            // (every press used to be remembered and follow the blow: a bow pressed during a shot loosed late, when it
+            // was no longer expected, and pressed again loosed twice)
             int blows = 0;
             float second = -1f, started = -1f;
             veil.Attacked += _ => { blows++; if (blows == 1) started = Time.time; if (blows == 2) second = Time.time; };
@@ -276,14 +284,51 @@ namespace CrimsonVeil.Tests
             input.cast = VeilForm.Sword;
             yield return Wait(0.12f); // the blow has only just begun
             for (int k = 0; k < 4; k++) { input.cast = VeilForm.Sword; yield return null; yield return null; }
-            yield return Wait(1.6f);
-            Assert.AreEqual(2, blows, "mashing in a blow: one follows it - not none, not four");
-            float whole = VeilFormLibrary.AttackDuration(VeilForm.Sword) + VeilCasting.Recovery(VeilForm.Sword);
-            Assert.Greater(second - started, whole * 0.6f, "and no sooner than the blow and its recovery allow: mashing cannot hurry it");
+            Assert.IsTrue(veil.IsAttacking, "the blow goes on: the presses did not break it off");
+            yield return Wait(1.2f);
+            Assert.AreEqual(1, blows, "presses early in a blow are let go: nothing follows it");
+            input.cast = VeilForm.Sword;
+            yield return NearItsEnd();
+            input.cast = VeilForm.Sword;
+            for (int k = 0; k < 3; k++) { yield return null; input.cast = VeilForm.Sword; }
+            yield return Wait(1.2f);
+            Assert.AreEqual(3, blows, "a press in its last moments follows it - one, however many");
         }
 
         [UnityTest]
-        public IEnumerator EveryPressCounts_ABowPressedDuringAnotherBlow_LoosesItsArrowAfterIt()
+        public IEnumerator TheBow_LoosesOnThePress_APressDuringAShotIsLetGo_NeverLateNorTwice()
+        {
+            var seen = new HashSet<int>();
+            System.Func<int> arrows = () =>
+            {
+                foreach (var a in Object.FindObjectsByType<VeilArrow>(FindObjectsSortMode.None)) seen.Add(a.GetInstanceID());
+                return seen.Count;
+            };
+            yield return Wait(0.3f);
+            // pressed: an arrow, soon
+            float pressed = Time.time, loosed = -1f;
+            input.cast = VeilForm.Bow;
+            while (Time.time < pressed + 1f && loosed < 0f) { if (arrows() > 0) loosed = Time.time; yield return null; }
+            Assert.AreEqual(1, arrows(), "the press looses an arrow");
+            Assert.Less(loosed - pressed, 0.45f, "at once, as any weapon strikes");
+            // pressed again during the shot: let go - no arrow after it, late
+            while (!veil.IsAttacking) yield return null;
+            input.cast = VeilForm.Bow;
+            { float until = Time.time + 1.5f; while (Time.time < until) { arrows(); yield return null; } }
+            Assert.AreEqual(1, arrows(), "a press during the shot is let go, not loosed later");
+            // pressed each time he is free: one arrow a press, never two
+            for (int k = 0; k < 4; k++)
+            {
+                input.cast = VeilForm.Bow;
+                yield return null;
+                input.cast = VeilForm.Bow;   // (a double tap)
+                { float until = Time.time + 1.2f; while (Time.time < until) { arrows(); yield return null; } }
+            }
+            Assert.AreEqual(5, arrows(), "four presses (each a double tap), four arrows - not eight");
+        }
+
+        [UnityTest]
+        public IEnumerator ABowPressedInTheLastMomentsOfAnotherBlow_LoosesAfterIt()
         {
             // "The bow sometimes does not shoot": pressed in the first 40 % of another blow, the press was dropped - a bow
             // 0.12 s after a sword cut or 0.2 s after a spear thrust never came, and of six bow presses 0.9 s apart one
@@ -296,34 +341,32 @@ namespace CrimsonVeil.Tests
             };
             yield return Wait(0.3f);
             input.cast = VeilForm.Sword;
-            yield return Wait(0.12f);
-            Assert.IsTrue(veil.IsAttacking && veil.AttackProgress < 0.4f, "early in the sword's cut");
+            yield return NearItsEnd();
             input.cast = VeilForm.Bow;
             { float until1 = Time.time + 1.6f; while (Time.time < until1) { arrows(); yield return null; } }
-            Assert.AreEqual(1, arrows(), "the bow pressed early in a sword cut follows it and looses");
+            Assert.AreEqual(1, arrows(), "the bow pressed at the end of a sword cut follows it and looses");
             yield return Wait(2.5f);   // (the scarf grows back)
 
             input.cast = VeilForm.Spear;
-            yield return Wait(0.2f);
+            yield return NearItsEnd();
             input.cast = VeilForm.Bow;
             { float until2 = Time.time + 1.8f; while (Time.time < until2) { arrows(); yield return null; } }
             Assert.AreEqual(2, arrows(), "and after a spear thrust");
             yield return Wait(3f);
             Assert.AreEqual(1f, veil.Charge.Value, 0.02f, "(the scarf is whole again)");
 
-            // six presses 0.9 s apart - quicker than the bow can follow: every one of them looses an arrow
+            // six presses 1.2 s apart, each when he is free: every one of them looses an arrow
             int before = arrows();
             int fizzles = 0;
             veil.CastFizzled += _ => fizzles++;
             for (int k = 0; k < 6; k++)
             {
                 input.cast = VeilForm.Bow;
-                { float until3 = Time.time + 0.9f; while (Time.time < until3) { arrows(); yield return null; } }
+                { float until3 = Time.time + 1.2f; while (Time.time < until3) { arrows(); yield return null; } }
             }
             { float until4 = Time.time + 1.6f; while (Time.time < until4) { arrows(); yield return null; } }
             Assert.AreEqual(6, arrows() - before, "six presses, six arrows (the scarf had a stub left for the last: it took all of it)");
             Assert.AreEqual(0, fizzles);
-            Assert.Less(veil.Charge.Value, 0.6f, "the scarf is spent on them");
             // ...and with nothing left it says so
             veil.Charge.Drain(100f, 1f);
             input.cast = VeilForm.Bow;
@@ -357,7 +400,7 @@ namespace CrimsonVeil.Tests
         {
             yield return Wait(0.3f);
             input.cast = VeilForm.Sword;
-            yield return Wait(0.4f);
+            yield return NearItsEnd();
             input.cast = VeilForm.Spear;
             bool melted = false, spear = false;
             float end = Time.time + 1.5f;
@@ -373,20 +416,19 @@ namespace CrimsonVeil.Tests
         }
 
         [UnityTest]
-        public IEnumerator Bow_HeldStaysDrawn_AndLoosesOnRelease()
+        public IEnumerator Bow_HeldOrNot_LoosesOnThePress()
         {
+            // (held, it used to stay drawn until let go: a press held a moment too long did not shoot)
             yield return Wait(0.3f);
             input.held = VeilForm.Bow;
             input.cast = VeilForm.Bow;
-            yield return Wait(0.8f);
-            Assert.IsTrue(veil.Drawing, "held: the string stays at full draw");
-            Assert.AreEqual(0, Object.FindObjectsByType<VeilArrow>(FindObjectsSortMode.None).Length, "nothing loosed while drawn");
-            input.aimY = 1f;
-            yield return Wait(0.2f);
-            input.held = null;
-            yield return Wait(0.3f);
+            yield return Wait(0.6f);
+            Assert.IsFalse(veil.Drawing, "not held drawn");
             var arrows = Object.FindObjectsByType<VeilArrow>(FindObjectsSortMode.None);
-            Assert.AreEqual(1, arrows.Length, "released: one arrow");
+            Assert.AreEqual(1, arrows.Length, "loosed on the press, the key still held");
+            yield return Wait(1f);
+            Assert.AreEqual(1, Object.FindObjectsByType<VeilArrow>(FindObjectsSortMode.None).Length, "and only the one");
+            input.held = null;
         }
 
         [UnityTest]

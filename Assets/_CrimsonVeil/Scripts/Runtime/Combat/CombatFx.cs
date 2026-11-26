@@ -28,7 +28,7 @@ namespace CrimsonVeil.Combat
 
         void OnDisable()
         {
-            if (stopping) Time.timeScale = 1f;
+            if (stopping) CrimsonVeil.Core.GameClock.EndHitStop();
             stopping = false;
             if (Instance == this) Instance = null;
         }
@@ -38,7 +38,7 @@ namespace CrimsonVeil.Combat
             if (stopping && Time.unscaledTime >= hitStopUntil)
             {
                 stopping = false;
-                Time.timeScale = 1f;
+                CrimsonVeil.Core.GameClock.EndHitStop();
             }
         }
 
@@ -57,7 +57,7 @@ namespace CrimsonVeil.Combat
             if (fx == null || seconds <= 0f) return;
             fx.hitStopUntil = Mathf.Max(fx.hitStopUntil, Time.unscaledTime + seconds);
             fx.stopping = true;
-            Time.timeScale = fx.hitStopScale;
+            CrimsonVeil.Core.GameClock.SetHitStop(fx.hitStopScale);   // (paused, the clock stands all the same)
         }
 
         public static void Shake(float trauma) => CameraFollow25D.AddTrauma(trauma);

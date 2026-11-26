@@ -5,6 +5,35 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.99.0] – 2026-11-26
+### Změněno
+- **Hra pro Windows se sestavuje přes IL2CPP** (kód přeložený do C++) místo Mono, v konfiguraci Release.
+- **Grafické rozhraní je Direct3D 11, Direct3D 12 jen jako záloha.** Dřív si ho Unity volila sama a vybrala Direct3D 12. Hra je ale omezená procesorem a Direct3D 12 ji stálo 0,6 ms na snímek navíc.
+
+### Změřeno
+Sestavená hra, úroveň Prototype_Ruins, hrdina stojí, 1920×1080, i7-9750H + RTX 2060, spuštěná bez parametrů:
+
+| Verze | Medián | Nejhorší snímek |
+|---|---|---|
+| Mono, Direct3D 12 (dosud) | 6,3 ms (158 fps) | – |
+| Mono, Direct3D 11 | 6,2 ms (161 fps) | 11 ms |
+| IL2CPP, Direct3D 12 | 4,8 ms (209 fps) | – |
+| **IL2CPP, Direct3D 11 (teď)** | **4,15 ms (240 fps)** | **5,9 ms** |
+
+- Hrdina se šálou stojí v IL2CPP 0,14 ms (v Mono 2 ms). Úroveň bez něj běží na 249 fps. Zbývající 4 ms jsou základ úrovně: předávání vykreslování grafické kartě a uživatelské rozhraní, které se překresluje každý snímek.
+
+### Poctivě
+- K sestavení přes IL2CPP bylo potřeba doinstalovat modul Unity „Windows Build Support (IL2CPP)“ (přes Unity Hub, 252 MB) a Windows SDK 10.0.26100 (přes instalátor Visual Studia 2026). Obojí potvrzoval správce ve Windows.
+- Na macOS se IL2CPP z Windows sestavit nedá (potřebuje Mac a Xcode). Mac verze by se zatím sestavovala přes Mono. Linux IL2CPP z Windows jde, ale potřebuje další modul.
+- První sestavení přes IL2CPP trvá déle, další jsou rychlá (asi 15 s, když se nemění kód).
+- Unity při sestavení sama přidala do nastavení projektu vstupní akce mezi přednačítané soubory (`preloadedAssets`), to je běžné chování Input Systemu.
+- Editor dál běží v Direct3D 12, dokud se nerestartuje. Na hru to vliv nemá.
+- Do main není nic sloučeno.
+
+### Testy
+- `BuildSettingsTests` (EditMode, 2 nové, `Tools`): sestavení pro Windows je IL2CPP Release a kreslí nejdřív přes Direct3D 11, s Direct3D 12 jako zálohou.
+- Puštěno: celý EditMode (650 testů), prošly.
+
 ## [0.98.0] – 2026-11-26
 ### Přidáno
 - **Měřicí režim sestavené hry** (`Benchmark`). Spouští se z příkazové řádky: `CrimsonVeil.exe -cvbench vysledek.txt`. Načte úroveň, nechá ji 3 s ustálit, 8 s měří dobu každého snímku (bez svislé synchronizace a bez omezení snímků), zapíše medián a rozptyl a hru ukončí. Volby: `-cvres 960x540` jiné rozlišení, `-cvoff Jméno,Jméno` vypne objekty (co stojí ony), `-cvnoshadow` bez stínů. Ve vývojové verzi zapíše i rozpad po částech. Bez parametru nedělá nic.

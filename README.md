@@ -54,11 +54,11 @@ Hra startuje do hlavního menu (Hrát, Nastavení, Konec). V **Nastavení** jde 
 | Stát na místě (míření bez pohybu) | Levý Ctrl | stisk levé páčky |
 | Rozhlédnout se nahoru / dolů | E / Q | pravá páčka |
 | Mapa úrovně | Tab | Select / View |
-| **Meč** | **J** | X / West |
-| **Kopí** | **K** | Y / North |
-| **Bič** (u kruhu se chytí a houpe) | **L** | RT |
-| **Luk** (držet a pustit) | **Ů** (anglická klávesnice `;`) | LB |
-| **Štít** (držet) | **U** | LT |
+| **Meč** | **U** | X / West |
+| **Kopí** | **I** | Y / North |
+| **Bič** (u kruhu se chytí a houpe) | **O** | RT |
+| **Luk** (držet a pustit) | **P** | LB |
+| **Štít** (držet) | **J** | LT |
 | Pauza / menu | Esc | Start |
 
 Zbraň se seslá a rovnou udeří. Údery navazují do komba a mezi údery jde zbraň vyměnit: dokončující úder je tím silnější, čím víc zbraní kombo spojilo. Zbraně se hrdina učí od relikvií na podstavcích (v testovací místnosti vlevo od startu zná všechny). Zdraví ukazuje šála a ukazatel ve tvaru šály v levém horním rohu.

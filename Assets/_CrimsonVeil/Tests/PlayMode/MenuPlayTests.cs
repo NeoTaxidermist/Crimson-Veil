@@ -38,7 +38,7 @@ namespace CrimsonVeil.Tests
             yield return null;
             Assert.IsTrue(menu.SettingsPanel.IsOpen);
             var cells = menu.SettingsPanel.GetComponentsInChildren<Button>().Select(b => b.GetComponentInChildren<Text>().text).ToList();
-            CollectionAssert.Contains(cells, "J", "the sword's key is listed");
+            CollectionAssert.Contains(cells, "U", "the sword's key is listed");
             CollectionAssert.Contains(cells, "Mezerník");
             CollectionAssert.Contains(cells, "Výchozí ovládání");
             menu.SettingsPanel.Back();

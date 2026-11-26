@@ -5,6 +5,14 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.86.0] – 2026-11-26
+### Změněno
+- **Útoky na U I O P, štít na J** (tvoje volba): U meč, I kopí, O bič, P luk, J štít. Levá ruka beze změny. Kdo si ovládání už přemapoval, tomu zůstane jeho.
+
+### Testy
+- `InputBindingsTests` a `MenuPlayTests` upravené na nové klávesy.
+- Puštěno: celý EditMode (623 testů) a `MenuPlayTests` (2 testy), všechny prošly. Celou sadu PlayMode jsem nepouštěl (změna výchozích kláves).
+
 ## [0.85.0] – 2026-11-26
 ### Přidáno
 - **Hlavní menu.** Hra startuje do úvodní obrazovky (nová scéna `MainMenu`, v seznamu pro sestavení jako první) s tlačítky Hrát, Nastavení a Konec. Ovládá se myší, klávesnicí (šipky nebo WASD, Enter) i ovladačem.

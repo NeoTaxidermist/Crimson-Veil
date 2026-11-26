@@ -9,10 +9,10 @@ namespace CrimsonVeil.Player
     /// The game's controls: one set of actions shared by the hero, the menus and the settings, built in code, each with
     /// one key and one gamepad button the player can rebind; the changes are kept between sessions.
     /// <para>The keyboard is for two hands: the left moves (A/D, aims with W/S, Space jump, Shift dash, Ctrl planted,
-    /// Q/E look, Tab map), the right fights - on the home row where its fingers rest, in the order the weapons are
-    /// learned: J sword, K spear, L whip, ; bow (ů on a Czech keyboard); the shield, the one weapon that is held,
-    /// on U, over the index finger. (The weapons used to lie on J K L U I and on 1-5 and the mouse: the left hand had
-    /// to cross the keyboard, and the order followed nothing.)</para>
+    /// Q/E look, Tab map), the right fights - the attacks along the top row in the order the weapons are learned:
+    /// U sword, I spear, O whip, P bow; the shield, the one weapon that is held, under them on J (the player's own
+    /// choice). (The weapons used to lie on J K L U I and on 1-5 and the mouse: the left hand had to cross the
+    /// keyboard, and the order followed nothing.)</para>
     /// </summary>
     public static class InputBindings
     {
@@ -41,11 +41,11 @@ namespace CrimsonVeil.Player
             new Entry { id = "Stand", label = "Postoj na místě (držet)", key = "<Keyboard>/leftCtrl", pad = "<Gamepad>/leftStickPress" },
             new Entry { id = "LookUp", label = "Pohled nahoru", key = "<Keyboard>/e", padFixed = "Pravá páčka" },
             new Entry { id = "LookDown", label = "Pohled dolů", key = "<Keyboard>/q", padFixed = "Pravá páčka" },
-            new Entry { id = "Sword", label = "Meč", key = "<Keyboard>/j", pad = "<Gamepad>/buttonWest" },
-            new Entry { id = "Spear", label = "Kopí", key = "<Keyboard>/k", pad = "<Gamepad>/buttonNorth" },
-            new Entry { id = "Whip", label = "Bič", key = "<Keyboard>/l", pad = "<Gamepad>/rightTrigger" },
-            new Entry { id = "Bow", label = "Luk (držet a pustit)", key = "<Keyboard>/semicolon", pad = "<Gamepad>/leftShoulder" },
-            new Entry { id = "Shield", label = "Štít (držet)", key = "<Keyboard>/u", pad = "<Gamepad>/leftTrigger" },
+            new Entry { id = "Sword", label = "Meč", key = "<Keyboard>/u", pad = "<Gamepad>/buttonWest" },
+            new Entry { id = "Spear", label = "Kopí", key = "<Keyboard>/i", pad = "<Gamepad>/buttonNorth" },
+            new Entry { id = "Whip", label = "Bič", key = "<Keyboard>/o", pad = "<Gamepad>/rightTrigger" },
+            new Entry { id = "Bow", label = "Luk (držet a pustit)", key = "<Keyboard>/p", pad = "<Gamepad>/leftShoulder" },
+            new Entry { id = "Shield", label = "Štít (držet)", key = "<Keyboard>/j", pad = "<Gamepad>/leftTrigger" },
             new Entry { id = "Map", label = "Mapa", key = "<Keyboard>/tab", pad = "<Gamepad>/select" },
             new Entry { id = "Pause", label = "Pauza / menu", key = "<Keyboard>/escape", pad = "<Gamepad>/start" },
         };

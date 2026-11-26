@@ -5,6 +5,16 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.88.1] – 2026-11-26
+### Opraveno
+- **Nastavení obrazu přepisovalo nastavení projektu.** Když jsem nastavení zkoušel v editoru, zapnutí svislé synchronizace se zapsalo natrvalo do `ProjectSettings/QualitySettings.asset` (`vSyncCount` 0 → 1). Obraz (kvalita, svislá synchronizace, rozlišení, režim okna) se teď mění jen v sestavené hře a editor zůstává nedotčený. Soubor nastavení projektu jsem vrátil do původního stavu, necommitnutý nikdy nebyl.
+
+### Poctivě
+- V editoru se tím pádem neprojeví ani kvalita a synchronizace (ve verzi 0.88.0 jsem psal, že se projeví); zkusit se dají jen v sestavené hře.
+
+### Testy
+- Puštěno: kategorie `UI` v EditMode (23 testů), všechny prošly. PlayMode jsem nepouštěl.
+
 ## [0.88.0] – 2026-11-26
 ### Přidáno
 - **Nastavení má tři záložky: Ovládání, Zvuk, Obraz.** Platí v hlavním menu i v pauze a všechno se ukládá mezi spuštěními hry (`GameSettings`).

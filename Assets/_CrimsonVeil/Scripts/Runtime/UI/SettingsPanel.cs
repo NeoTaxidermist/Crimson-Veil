@@ -142,7 +142,7 @@ namespace CrimsonVeil.UI
 
         void BuildPicture(RectTransform list)
         {
-            var hint = MenuKit.Label(list, "Šipkami doleva a doprava (nebo kliknutím) měníš volbu.  V editoru Unity se rozlišení ani režim okna neprojeví.", 22, MenuKit.Dim);
+            var hint = MenuKit.Label(list, "Šipkami doleva a doprava (nebo kliknutím) měníš volbu.  V editoru Unity se obraz nemění, jen v sestavené hře.", 22, MenuKit.Dim);
             hint.rectTransform.sizeDelta = new Vector2(1180f, 60f);
             OptionRow(list, "Rozlišení", () => GameSettings.Label(GameSettings.Resolution), d =>
             {

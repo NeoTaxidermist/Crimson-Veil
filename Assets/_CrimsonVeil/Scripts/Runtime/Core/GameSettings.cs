@@ -79,11 +79,13 @@ namespace CrimsonVeil.Core
         public static void Apply()
         {
             AudioListener.volume = Master;
-            if (!Persist) return;   // (tests: the editor's own screen is left alone)
+            // The picture only in the built game: in the editor the quality and vertical sync are the project's own
+            // settings, and set from here they were written into it (ProjectSettings/QualitySettings.asset).
+            if (!Persist || Application.isEditor) return;
             if (Quality >= 0 && Quality < QualitySettings.names.Length && QualitySettings.GetQualityLevel() != Quality)
                 QualitySettings.SetQualityLevel(Quality, true);
             QualitySettings.vSyncCount = VSync ? 1 : 0;
-            if (!Application.isEditor && Resolution.x > 0 && Resolution.y > 0)
+            if (Resolution.x > 0 && Resolution.y > 0)
                 Screen.SetResolution(Resolution.x, Resolution.y, ToUnity(Mode));
         }
 

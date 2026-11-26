@@ -5,6 +5,40 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.98.0] – 2026-11-26
+### Přidáno
+- **Měřicí režim sestavené hry** (`Benchmark`). Spouští se z příkazové řádky: `CrimsonVeil.exe -cvbench vysledek.txt`. Načte úroveň, nechá ji 3 s ustálit, 8 s měří dobu každého snímku (bez svislé synchronizace a bez omezení snímků), zapíše medián a rozptyl a hru ukončí. Volby: `-cvres 960x540` jiné rozlišení, `-cvoff Jméno,Jméno` vypne objekty (co stojí ony), `-cvnoshadow` bez stínů. Ve vývojové verzi zapíše i rozpad po částech. Bez parametru nedělá nic.
+
+### Změřeno
+- **Sestavená hra, úroveň Prototype_Ruins, hrdina stojí, 1920×1080, i7-9750H + RTX 2060:** medián 6,0 ms (166 fps) v Direct3D 11, 6,3 ms (158 fps) v Direct3D 12. V editoru je to 10,6 ms (94 fps), zbytek je režie editoru.
+- **Brzdí procesor, ne grafika.** Ve čtvrtinovém rozlišení je to pořád 6,1 ms. Grafická karta má práci na 3,3 ms, stíny, postprocessing, atmosféra ani dekorace nestojí skoro nic.
+- **Hrdina se šálou stojí 2 ms.** Bez něj běží úroveň na 4,0 ms (248 fps).
+- Rozpad ve vývojové verzi (7,1 ms celkem):
+
+  | Část | Čas |
+  |---|---|
+  | stavba modelu šály | 2,42 ms (tělo pruhů 0,96, spirály na koncích 0,68, prostřední řada 0,19) |
+  | simulace šály | 0,96 ms (látka 0,42, vedlejší cípy 0,51) |
+  | animace hrdiny | 0,73 ms (z toho hlídání zdí 0,33) |
+  | pružné kosti | 0,49 ms |
+  | mocap | 0,31 ms |
+  | dotyk rukou se zdí | 0,16 ms |
+  | uživatelské rozhraní | 0,48 ms (překresluje se každý snímek) |
+  | předání vykreslování grafické kartě | 1,43 ms |
+  | ostatní skripty | 0,2 ms |
+
+- Šála skládá každý snímek 9 vrstev po asi 137 bodech, tedy přes 1 200 bodů, za zhruba 2 µs na bod. Hlídání podlahy a zdí z toho dělá jen 0,16 ms a zápis bodů 0,24 ms, zbytek jsou výpočty tvaru (plamenné vlnění, splétání, vedlejší cípy). Není to jedna chyba, ale tisíc drobných výpočtů.
+
+### Poctivě
+- Tahle verze nic neoptimalizuje, jen měří. Ke 250 fps chybí zhruba 2 ms a největší páky jsou dvě:
+  - přeložit hru přes IL2CPP místo Mono (potřebuje modul Unity, který v instalaci chybí);
+  - přepsat výpočet šály do Burstu.
+- Měřeno jen na tvém notebooku.
+
+### Testy
+- `BenchmarkTests` (EditMode, 1 nový, `Tools`): bez parametru měřicí režim nedělá nic; měří dost dlouho až po ustálení.
+- Puštěno: EditMode kategorie `Tools` (5 testů), prošly.
+
 ## [0.97.0] – 2026-11-26
 ### Přidáno
 - **Uspávání nepřátel mimo obraz** (`Dormancy`, `DormancyWatch`). Kapitola může mít stovky nepřátel a výkon stojí jen ti blízko záběru. Nepřítel víc než 12 m za okrajem obrazu usne: neběží mu mozek, animace ani vlající látka a nepočítá se do boje (hrdina u něj necítí souboj). Tělo i srážecí tvar zůstanou na místě. Probudí se, jakmile je blíž než 8 m od okraje, tedy dřív, než ho uvidíš. Mezera mezi 8 a 12 m brání tomu, aby nepřítel na hranici neustále usínal a probouzel se. Kontroluje se pětkrát za sekundu. Bez kamery (v testovacích místnostech) se místo záběru bere okolí hrdiny. Přidá se samo všem druhům nepřátel: přízraku, mnichovi, oběšenci, plazovi, můře, lucerně, drakovi, stínovému dvojníkovi i hejnu vran.

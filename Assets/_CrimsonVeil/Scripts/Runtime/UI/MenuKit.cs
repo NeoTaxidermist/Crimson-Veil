@@ -176,19 +176,93 @@ namespace CrimsonVeil.UI
         }
 
         /// <summary>
-        /// A choice among a few (a resolution, a window mode): shown as "‹ value ›"; a click, or right when it is
-        /// chosen, takes the next one, left the one before.
+        /// A drop-down list (for a choice among many: the resolutions): the chosen value with a mark ▾; opened (a
+        /// click, Enter, the gamepad's A) it lists all of them, scrolling when they are many, and one is picked with the
+        /// mouse or up / down and Enter.
         /// </summary>
-        public static Button Option(Transform parent, Func<string> shown, Action<int> step, float width = 420f)
+        public static Dropdown Dropdown(Transform parent, System.Collections.Generic.IList<string> items, int index, Action<int> onChange, float width = 560f)
         {
-            var b = Button(parent, "", () => step(1), width, 44f, 24);
-            b.navigation = new Navigation { mode = Navigation.Mode.Vertical };
-            var cycler = b.gameObject.AddComponent<OptionCycler>();
-            cycler.shown = shown;
-            cycler.step = step;
-            cycler.Refresh();
-            b.onClick.AddListener(cycler.Refresh);
-            return b;
+            var go = DefaultControls.CreateDropdown(new DefaultControls.Resources());
+            go.name = "Dropdown";
+            go.transform.SetParent(parent, false);
+            var rt = (RectTransform)go.transform;
+            rt.sizeDelta = new Vector2(width, 44f);
+            var le = go.AddComponent<LayoutElement>();
+            le.preferredWidth = width; le.preferredHeight = 44f;
+            var dd = go.GetComponent<Dropdown>();
+
+            // the look: dark, light type, the scarf's crimson for the chosen and the pointed-at
+            foreach (var t in go.GetComponentsInChildren<Text>(true)) { t.font = Font; t.color = Paper; t.fontSize = 24; }
+            dd.captionText.alignment = TextAnchor.MiddleCenter;
+            go.GetComponent<Image>().color = Color.white;
+            var colors = dd.colors;
+            colors.normalColor = Ink; colors.highlightedColor = Crimson; colors.selectedColor = Crimson;
+            colors.pressedColor = new Color(0.45f, 0.03f, 0.05f, 1f);
+            dd.colors = colors;
+            var arrow = go.transform.Find("Arrow");
+            if (arrow != null)
+            {
+                arrow.GetComponent<Image>().color = Color.clear;
+                var mark = Label(arrow, "▾", 26, Paper);
+                Fill(mark.rectTransform);
+            }
+            var template = (RectTransform)go.transform.Find("Template");
+            template.sizeDelta = new Vector2(template.sizeDelta.x, 420f);
+            template.GetComponent<Image>().color = new Color(0.05f, 0.05f, 0.06f, 1f);
+            foreach (var img in template.GetComponentsInChildren<Image>(true))
+            {
+                if (img.name == "Item Background") img.color = Ink;
+                else if (img.name == "Item Checkmark") img.color = Crimson;
+                else if (img.name == "Handle") img.color = Dim;
+                else if (img.name == "Scrollbar") img.color = new Color(0.12f, 0.12f, 0.13f, 1f);
+            }
+            var item = template.Find("Viewport/Content/Item");
+            if (item != null)
+            {
+                ((RectTransform)item).sizeDelta = new Vector2(0f, 40f);
+                var toggle = item.GetComponent<Toggle>();
+                var tc = toggle.colors;
+                tc.normalColor = Ink; tc.highlightedColor = Crimson; tc.selectedColor = Crimson;
+                toggle.colors = tc;
+                var content = (RectTransform)template.Find("Viewport/Content");
+                content.sizeDelta = new Vector2(0f, 44f);
+            }
+            dd.navigation = new Navigation { mode = Navigation.Mode.Vertical };
+
+            dd.options.Clear();
+            foreach (var s in items) dd.options.Add(new Dropdown.OptionData(s));
+            dd.SetValueWithoutNotify(Mathf.Clamp(index, 0, Mathf.Max(0, items.Count - 1)));
+            dd.RefreshShownValue();
+            if (onChange != null) dd.onValueChanged.AddListener(i => onChange(i));
+            return dd;
+        }
+
+        /// <summary>A tick box (on / off), the tick in the scarf's crimson.</summary>
+        public static Toggle Toggle(Transform parent, bool on, Action<bool> onChange)
+        {
+            var go = DefaultControls.CreateToggle(new DefaultControls.Resources());
+            go.name = "Toggle";
+            go.transform.SetParent(parent, false);
+            var rt = (RectTransform)go.transform;
+            rt.sizeDelta = new Vector2(44f, 44f);
+            var le = go.AddComponent<LayoutElement>();
+            le.preferredWidth = 44f; le.preferredHeight = 44f;
+            var tg = go.GetComponent<Toggle>();
+            var bg = (RectTransform)go.transform.Find("Background");
+            bg.anchorMin = Vector2.zero; bg.anchorMax = Vector2.one; bg.anchoredPosition = Vector2.zero; bg.sizeDelta = Vector2.zero;
+            var check = (RectTransform)bg.Find("Checkmark");
+            check.anchorMin = new Vector2(0.2f, 0.2f); check.anchorMax = new Vector2(0.8f, 0.8f);
+            check.offsetMin = check.offsetMax = Vector2.zero;
+            check.GetComponent<Image>().color = Crimson;
+            var label = go.transform.Find("Label");
+            if (label != null) UnityEngine.Object.Destroy(label.gameObject);
+            var colors = tg.colors;
+            colors.normalColor = Ink; colors.highlightedColor = Dim; colors.selectedColor = Dim;
+            tg.colors = colors;
+            tg.navigation = new Navigation { mode = Navigation.Mode.Vertical };
+            tg.SetIsOnWithoutNotify(on);
+            if (onChange != null) tg.onValueChanged.AddListener(v => onChange(v));
+            return tg;
         }
 
         public static void SetLabel(Button b, string text)

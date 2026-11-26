@@ -68,7 +68,41 @@ namespace CrimsonVeil.Core
 
         static float Clamp01(float v) => float.IsNaN(v) ? 0f : Mathf.Clamp01(v);
 
+        /// <summary>
+        /// A setting was changed in the settings: the sound is heard at once (the volume can be tried); the picture and
+        /// the saving wait for <see cref="Save"/> (the settings' Uložit), and <see cref="Restore"/> takes it all back.
+        /// </summary>
         static void Commit()
+        {
+            AudioListener.volume = Master;
+            Changed?.Invoke();
+        }
+
+        /// <summary>Every setting at one moment (what the settings are opened with, to go back to on Zrušit).</summary>
+        public struct Snapshot
+        {
+            public float master, music, effects;
+            public WindowMode mode;
+            public Vector2Int resolution;
+            public bool vsync;
+            public int quality;
+        }
+
+        public static Snapshot Capture() => new Snapshot
+        {
+            master = Master, music = Music, effects = Effects, mode = Mode, resolution = Resolution, vsync = VSync, quality = Quality,
+        };
+
+        /// <summary>Back to <paramref name="s"/> (nothing is saved).</summary>
+        public static void Restore(Snapshot s)
+        {
+            Master = s.master; Music = s.music; Effects = s.effects;
+            Mode = s.mode; Resolution = s.resolution; VSync = s.vsync; Quality = s.quality;
+            Commit();
+        }
+
+        /// <summary>Keeps the settings (Uložit): saved for the next time and the picture put into effect.</summary>
+        public static void Keep()
         {
             Save();
             Apply();

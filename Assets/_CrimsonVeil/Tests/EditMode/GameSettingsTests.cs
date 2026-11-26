@@ -32,6 +32,22 @@ namespace CrimsonVeil.Tests
         }
 
         [Test]
+        public void Zrusit_TakesEveryChangeBack()
+        {
+            var opened = GameSettings.Capture();
+            GameSettings.SetMaster(0.2f);
+            GameSettings.SetMode(GameSettings.WindowMode.Window);
+            GameSettings.SetVSync(!opened.vsync);
+            GameSettings.SetResolution(new Vector2Int(800, 600));
+            GameSettings.Restore(opened);
+            Assert.AreEqual(opened.master, GameSettings.Master);
+            Assert.AreEqual(opened.mode, GameSettings.Mode);
+            Assert.AreEqual(opened.vsync, GameSettings.VSync);
+            Assert.AreEqual(opened.resolution, GameSettings.Resolution);
+            Assert.AreEqual(opened.master, AudioListener.volume, 1e-5f, "and the volume is heard as it was");
+        }
+
+        [Test]
         public void TheChoices_GoRound_BothWays()
         {
             Assert.AreEqual(1, GameSettings.Cycle(0, 3, 1));

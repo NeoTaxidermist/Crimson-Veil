@@ -11,8 +11,9 @@ namespace CrimsonVeil.UI
     /// <summary>
     /// The settings, on three pages. Ovládání: every action with its key and its gamepad button - choose one and press
     /// the new key or button (Esc leaves it as it was); one that another action had swaps over to that one. Zvuk: the
-    /// overall volume, music, effects. Obraz: the resolution, the window mode, vertical sync, the quality. All kept
-    /// between sessions.
+    /// overall volume, music, effects. Obraz: the resolution, the window mode, the quality (drop-down lists), vertical
+    /// sync (a tick box). Changes take effect for trying (keys at once, the volume heard) but are kept only with Uložit;
+    /// Zrušit (or Esc) takes them all back; Výchozí puts the open page back to the defaults.
     /// </summary>
     public sealed class SettingsPanel : MonoBehaviour
     {
@@ -43,9 +44,18 @@ namespace CrimsonVeil.UI
         public Page Current { get; private set; }
         readonly RectTransform[] pages = new RectTransform[3];
         readonly Button[] tabs = new Button[3];
-        Button resetButton;
+        Button resetButton, cancelButton, saveButton;
         readonly List<Slider> sliders = new List<Slider>();
-        readonly List<OptionCycler> options = new List<OptionCycler>();
+        Dropdown resolution, mode, quality;
+        Toggle vsync;
+        List<Vector2Int> resolutions = new List<Vector2Int>();
+        string keysWhenOpened;
+        GameSettings.Snapshot settingsWhenOpened;
+
+        public Dropdown ResolutionList => resolution;
+        public Dropdown ModeList => mode;
+        public Dropdown QualityList => quality;
+        public Toggle VSyncBox => vsync;
 
         void Build(RectTransform root)
         {
@@ -85,9 +95,11 @@ namespace CrimsonVeil.UI
             var h = buttons.gameObject.AddComponent<HorizontalLayoutGroup>();
             h.spacing = 30f; h.childAlignment = TextAnchor.MiddleCenter;
             h.childControlWidth = false; h.childControlHeight = false;
-            buttons.sizeDelta = new Vector2(900f, 64f);
-            resetButton = MenuKit.Button(buttons, "Výchozí ovládání", ResetPage, 380f);
-            back = MenuKit.Button(buttons, "Zpět", Back, 380f);
+            buttons.sizeDelta = new Vector2(1100f, 64f);
+            resetButton = MenuKit.Button(buttons, "Výchozí ovládání", ResetPage, 340f);
+            cancelButton = MenuKit.Button(buttons, "Zrušit", Cancel, 300f);
+            saveButton = MenuKit.Button(buttons, "Uložit", Save, 300f);
+            back = cancelButton;
             Show(Page.Controls);
         }
 
@@ -142,21 +154,22 @@ namespace CrimsonVeil.UI
 
         void BuildPicture(RectTransform list)
         {
-            var hint = MenuKit.Label(list, "Šipkami doleva a doprava (nebo kliknutím) měníš volbu.  V editoru Unity se obraz nemění, jen v sestavené hře.", 22, MenuKit.Dim);
+            var hint = MenuKit.Label(list, "Obraz se změní po uložení, a jen v sestavené hře (v editoru Unity ne).", 22, MenuKit.Dim);
             hint.rectTransform.sizeDelta = new Vector2(1180f, 60f);
-            OptionRow(list, "Rozlišení", () => GameSettings.Label(GameSettings.Resolution), d =>
-            {
-                var all = GameSettings.Resolutions();
-                if (all.Count == 0) return;
-                int i = Mathf.Max(0, all.IndexOf(GameSettings.Resolution));
-                GameSettings.SetResolution(all[GameSettings.Cycle(i, all.Count, d)]);
-            });
-            OptionRow(list, "Režim zobrazení", () => GameSettings.Label(GameSettings.Mode),
-                d => GameSettings.SetMode((GameSettings.WindowMode)GameSettings.Cycle((int)GameSettings.Mode, 3, d)));
-            OptionRow(list, "Svislá synchronizace (VSync)", () => GameSettings.VSync ? "Zapnuto" : "Vypnuto",
-                d => GameSettings.SetVSync(!GameSettings.VSync));
-            OptionRow(list, "Kvalita obrazu", () => QualityName(GameSettings.Quality),
-                d => GameSettings.SetQuality(GameSettings.Cycle(Mathf.Max(0, GameSettings.Quality), QualitySettings.names.Length, d)));
+            resolutions = GameSettings.Resolutions();
+            var names = new List<string>();
+            foreach (var r in resolutions) names.Add(GameSettings.Label(r));
+            resolution = MenuKit.Dropdown(PictureRow(list, "Rozlišení"), names, resolutions.IndexOf(GameSettings.Resolution),
+                i => { if (i >= 0 && i < resolutions.Count) GameSettings.SetResolution(resolutions[i]); });
+            mode = MenuKit.Dropdown(PictureRow(list, "Režim zobrazení"),
+                new[] { GameSettings.Label(GameSettings.WindowMode.Window), GameSettings.Label(GameSettings.WindowMode.Borderless), GameSettings.Label(GameSettings.WindowMode.Fullscreen) },
+                (int)GameSettings.Mode, i => GameSettings.SetMode((GameSettings.WindowMode)i));
+            var qualities = new List<string>();
+            for (int q = 0; q < QualitySettings.names.Length; q++) qualities.Add(QualityName(q));
+            quality = MenuKit.Dropdown(PictureRow(list, "Kvalita obrazu"), qualities, GameSettings.Quality, GameSettings.SetQuality);
+            vsync = MenuKit.Toggle(PictureRow(list, "Svislá synchronizace (VSync)"), GameSettings.VSync, GameSettings.SetVSync);
+            var why = MenuKit.Label(list, "VSync: hra kreslí snímky v rytmu monitoru. Obraz se netrhá a karta se zbytečně nezahřívá; odezva je o chlup pomalejší.", 20, MenuKit.Dim);
+            why.rectTransform.sizeDelta = new Vector2(1180f, 50f);
         }
 
         static string QualityName(int q)
@@ -166,12 +179,11 @@ namespace CrimsonVeil.UI
             return names[q] == "PC" ? "Vysoká" : names[q] == "Mobile" ? "Nízká" : names[q];
         }
 
-        void OptionRow(RectTransform list, string label, Func<string> shown, Action<int> step)
+        RectTransform PictureRow(RectTransform list, string label)
         {
             var row = Row(list, label, null, null, header: false);
             row.sizeDelta = new Vector2(1180f, 60f);
-            var b = MenuKit.Option(row, shown, step, 560f);
-            options.Add(b.GetComponent<OptionCycler>());
+            return row;
         }
 
         /// <summary>Opens one of the pages.</summary>
@@ -186,6 +198,8 @@ namespace CrimsonVeil.UI
                 tabs[i].colors = c;
             }
             MenuKit.SetLabel(resetButton, page == Page.Controls ? "Výchozí ovládání" : page == Page.Sound ? "Výchozí zvuk" : "Výchozí obraz");
+            // (the page's own tab is the one chosen: two lit tabs read as two pages open)
+            if (gameObject.activeInHierarchy) MenuKit.Select(tabs[(int)page]);
             Refresh();
         }
 
@@ -228,13 +242,34 @@ namespace CrimsonVeil.UI
         {
             gameObject.SetActive(true);
             transform.SetAsLastSibling();
+            keysWhenOpened = InputBindings.ToJson();
+            settingsWhenOpened = GameSettings.Capture();
             Show(Page.Controls);
-            MenuKit.Select(tabs[0]);
         }
 
-        public void Back()
+        /// <summary>Keeps every change (the keys, the sound, the picture) and closes.</summary>
+        public void Save()
         {
             if (Rebinding) return;
+            InputBindings.Save();
+            GameSettings.Keep();
+            Close();
+        }
+
+        /// <summary>Takes every change back to how it was when the settings were opened, and closes.</summary>
+        public void Cancel()
+        {
+            if (Rebinding) return;
+            InputBindings.FromJson(keysWhenOpened);
+            GameSettings.Restore(settingsWhenOpened);
+            Close();
+        }
+
+        /// <summary>Esc: the same as Zrušit.</summary>
+        public void Back() => Cancel();
+
+        void Close()
+        {
             gameObject.SetActive(false);
             onBack?.Invoke();
         }
@@ -250,7 +285,13 @@ namespace CrimsonVeil.UI
                 sl.SetValueWithoutNotify(src.get());
                 if (src.label != null) src.label.text = GameSettings.Percent(src.get());
             }
-            foreach (var o in options) o.Refresh();
+            if (resolution != null)
+            {
+                resolution.SetValueWithoutNotify(Mathf.Max(0, resolutions.IndexOf(GameSettings.Resolution)));
+                mode.SetValueWithoutNotify((int)GameSettings.Mode);
+                quality.SetValueWithoutNotify(Mathf.Max(0, GameSettings.Quality));
+                vsync.SetIsOnWithoutNotify(GameSettings.VSync);
+            }
         }
 
         void StartRebind(InputBindings.Entry e, bool pad, Button b)
@@ -293,7 +334,8 @@ namespace CrimsonVeil.UI
 
         void Update()
         {
-            if (MenuEscPressed()) Back();
+            // (Esc with a drop-down list open closes the list, not the settings)
+            if (MenuEscPressed() && GameObject.Find("Dropdown List") == null) Back();
         }
 
         void OnDisable()

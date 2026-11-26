@@ -156,7 +156,8 @@ namespace CrimsonVeil.Player
         /// <summary>
         /// Puts <paramref name="path"/> on binding <paramref name="index"/> of <paramref name="e"/>. A key or button that
         /// another action already has goes over to this one, and that action takes this one's old key in exchange: no
-        /// key does two things, and nothing is left without one.
+        /// key does two things, and nothing is left without one. It works at once; it is kept by <see cref="Save"/>
+        /// (the settings' Uložit).
         /// </summary>
         public static void Rebind(Entry e, int index, string path)
         {
@@ -170,7 +171,6 @@ namespace CrimsonVeil.Player
                     other.action.ApplyBindingOverride(index, old);
             }
             e.action.ApplyBindingOverride(index, path);
-            Save();
         }
 
         /// <summary>Every key and button back to the defaults.</summary>
@@ -178,7 +178,6 @@ namespace CrimsonVeil.Player
         {
             _ = Asset;
             asset.RemoveAllBindingOverrides();
-            Save();
         }
 
         /// <summary>Whether changes are written to the player's settings (off in tests: they must not touch his bindings).</summary>

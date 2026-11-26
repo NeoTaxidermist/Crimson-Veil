@@ -5,6 +5,25 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.89.0] – 2026-11-26
+### Změněno
+- **Nastavení má tlačítka Výchozí, Zrušit a Uložit.** Změny se dají vyzkoušet (klávesy platí hned, hlasitost je slyšet), ale uloží se až tlačítkem Uložit. Zrušit (i Esc) vrátí všechno do stavu, ve kterém se nastavení otevřelo: klávesy, zvuk i obraz. Výchozí vrátí výchozí hodnoty otevřené záložky; i to se uloží až s Uložit.
+- **Rozlišení, režim zobrazení a kvalita jsou rozbalovací seznamy** místo přepínání šipkami. Dlouhý seznam rozlišení se posouvá. Ovládá se myší, šipkami s Enterem i ovladačem; Esc při otevřeném seznamu zavře jen seznam.
+- **VSync je zaškrtávací políčko** a pod ním je vysvětlení, k čemu je.
+- Obraz se změní až po uložení (dřív při každém kliknutí) a jen v sestavené hře.
+- Při přepnutí záložky se výběr přesune na ni, takže už nesvítí dvě záložky najednou.
+- Odstraněno přepínací tlačítko `OptionCycler`, které nahradily seznamy.
+
+### Poctivě
+- Rozbalovací seznamy jsou standardní prvky Unity přebarvené do stylu hry; jejich posuvník a zaškrtnutí vybrané položky jsou jednoduché.
+- V tvém uloženém nastavení zůstal režim „Celá obrazovka“ a rozlišení 3840 × 2160 z předchozí verze, kdy se každé kliknutí ukládalo hned. Nesahal jsem do toho; „Výchozí obraz“ a Uložit to vrátí.
+- V sestavené hře jsem nic nezkoušel.
+
+### Testy
+- `GameSettingsTests` (1 nový): Zrušit vrátí každou změnu, i slyšitelnou hlasitost.
+- `MenuPlayTests` (rozšířený): seznamy rozlišení, režimů a kvality; zaškrtnutí VSync se Zrušit vrátí a s Uložit zůstane.
+- Puštěno: kategorie `UI` v EditMode (24 testů) a v PlayMode (4 testy), všechny prošly napoprvé.
+
 ## [0.88.1] – 2026-11-26
 ### Opraveno
 - **Nastavení obrazu přepisovalo nastavení projektu.** Když jsem nastavení zkoušel v editoru, zapnutí svislé synchronizace se zapsalo natrvalo do `ProjectSettings/QualitySettings.asset` (`vSyncCount` 0 → 1). Obraz (kvalita, svislá synchronizace, rozlišení, režim okna) se teď mění jen v sestavené hře a editor zůstává nedotčený. Soubor nastavení projektu jsem vrátil do původního stavu, necommitnutý nikdy nebyl.

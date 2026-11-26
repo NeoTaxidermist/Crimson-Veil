@@ -50,13 +50,26 @@ namespace CrimsonVeil.Tests
             Assert.AreEqual(3, sliders.Length, "overall, music, effects");
             menu.SettingsPanel.Show(SettingsPanel.Page.Picture);
             yield return null;
-            var choices = menu.SettingsPanel.GetComponentsInChildren<OptionCycler>();
-            Assert.AreEqual(4, choices.Length, "resolution, window mode, vertical sync, quality");
+            var panel = menu.SettingsPanel;
+            Assert.Greater(panel.ResolutionList.options.Count, 0, "the resolutions in a drop-down list");
+            Assert.AreEqual(3, panel.ModeList.options.Count, "window, borderless, fullscreen");
+            Assert.AreEqual(QualitySettings.names.Length, panel.QualityList.options.Count);
+            // a change is tried, Zrušit takes it back...
             bool vsync = CrimsonVeil.Core.GameSettings.VSync;
-            choices[2].GetComponent<Button>().onClick.Invoke();
-            Assert.AreNotEqual(vsync, CrimsonVeil.Core.GameSettings.VSync, "a click takes the next choice");
-            menu.SettingsPanel.Back();
-            Assert.IsFalse(menu.SettingsPanel.IsOpen);
+            panel.VSyncBox.isOn = !vsync;
+            Assert.AreNotEqual(vsync, CrimsonVeil.Core.GameSettings.VSync, "ticked: changed");
+            panel.Cancel();
+            Assert.AreEqual(vsync, CrimsonVeil.Core.GameSettings.VSync, "Zrušit takes it back");
+            Assert.IsFalse(panel.IsOpen);
+            // ...and Uložit keeps it
+            menu.OpenSettings();
+            yield return null;
+            panel.Show(SettingsPanel.Page.Picture);
+            panel.VSyncBox.isOn = !vsync;
+            panel.Save();
+            Assert.AreEqual(!vsync, CrimsonVeil.Core.GameSettings.VSync, "Uložit keeps it");
+            Assert.IsFalse(panel.IsOpen);
+            Assert.IsFalse(menu.SettingsPanel.IsOpen, "closed");
 
             menu.Play.onClick.Invoke();
             float end = Time.realtimeSinceStartup + 30f;

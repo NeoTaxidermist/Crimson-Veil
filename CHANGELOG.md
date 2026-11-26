@@ -5,6 +5,32 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.84.0] – 2026-11-26
+### Opraveno
+- **Kruh štítu se při otočce nerozpadá.** Měl tři příčiny a opravené jsou všechny:
+  - Kruh se zrcadlil s postavou. Každý jeho bod přelétl při otočce na opačnou stranu těla (některé o 2,4 m za čtvrt sekundy) a uprostřed otočky kruh splaskl do dvou svislých čar. Teď si kruh drží stranu, na kterou ho postava hodila, dokud se nerozplyne; s postavou se otáčí jen kořen u ruky (`VeilController.ShieldRingMirror`).
+  - Kruh nebyl v simulaci pevně držený na své kružnici, byl to volný konec látky tažený k cílům. Při běhu 8 m/s a hlavně při obratu rychlosti nestíhal: konec se propadal k tělu a po každé otočce se v kruhu na půl sekundy otevřela mezera až 0,85 m. Teď ho simulace drží na kružnici stejně jako hotový bič (náběh 0,12 s, `ShieldHoldEase`).
+  - Náklon kruhu do hloubky (přední půlka před tělem, zadní za ním) se řídil tím, kam postava kouká, a při otočce se v jediném snímku prohodil: část kruhu skočila za tělo a vypadala uříznutá. Teď se řídí stranou kruhu (`ShieldRingSide`).
+- **Konec kruhu se nekreslí jako kouř.** Měl změklou špičku jako volná šála, takže se na konci rozpadal do jazyků kouře a spolu se zúženými konci dělal v kruhu viditelnou mezeru kolem 50°. Teď je kruh pevný po celé délce jako čepel meče.
+
+### Změřeno
+Test na skutečném hrdinovi (čtyři otočky v běhu se zvednutým štítem, měřeno na konci snímku):
+- Vzdálenost látky kruhu od středu těla: dřív 0,03 až 1,19 poloměru, teď 0,97 až 1,03.
+- Nejdelší mezera mezi sousedními uzly kruhu: dřív 0,85 m, teď 0,26 m (běžná rozteč).
+- V nahrávce snímek po snímku drží kruh tvar i ve skoku a saltu.
+
+### Poctivě
+- **Záměrná mezera v kruhu zůstala.** Kruh je navržený jako „otevřený malou mezerou“ (97 % kružnice) a ta mezera krouží kolem postavy. Na snímcích má i po zpevnění konce kolem 30 až 45° (zúžené konce), ve stoje stejně jako v běhu. Když bude pořád vypadat jako zlom, dá se kruh uzavřít.
+- Kruh hozený při pohledu doleva teď krouží po směru hodinových ručiček a doprava proti směru, a tak to zůstane až do rozplynutí, i když se postava otočí. Dřív se směr kroužení měnil s každou otočkou.
+- V prvních snímcích po seslání, kdy se kruh teprve obtáčí kolem těla, se tvar dál mění; to je hod kruhu, ne chyba.
+- **Udělal jsem chybu s tvou hrou:** během tvého hraní jsem spustil obnovení skriptů, Unity přeložila kód uprostřed hry a hra se rozbila (chyby `NullReferenceException`). Stalo se mi to během měření ještě jednou; od té doby kontroluji, že je překlad úplně hotový, než hru spustím.
+- Galerie tuto ani předchozí verze neukazuje a do main není nic sloučeno.
+
+### Testy
+- `ShieldRingMirrorTests` (EditMode, 1 nový): kruh si drží svou stranu, kořen u ruky se otáčí s postavou.
+- `ShieldRingPlayTests` (PlayMode, 1 nový): kruh zůstane kulatý a celý přes čtyři otočky v běhu.
+- Puštěno: celý EditMode (618 testů) a sady PlayMode `ShieldRingPlayTests`, `CastingPlayTests` a `HeroMoveSetPlayTests` (57 testů), všechny prošly. Nový test PlayMode na první verzi opravy neprošel (látka se pořád propadala k tělu až na 0,03 poloměru, cíle přitom byly kulaté); proto vznikla druhá a třetí část opravy. Celou sadu PlayMode jsem nepouštěl.
+
 ## [0.83.0] – 2026-11-26
 ### Změněno
 - **Zpomalený pád patří jen šále.** Štít držený ve vzduchu dosud zpomaloval pád stejně jako plachtění šálou (na 2,2 m/s, jako deštník), takže dvě různé věci dělaly totéž. Štít teď ve vzduchu jen kryje a postava padá jako bez něj. Šála plachtí beze změny: při pádu znovu stisknout a držet skok. Plachta z papírového draka zůstává také beze změny.

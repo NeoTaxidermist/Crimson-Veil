@@ -813,6 +813,20 @@ namespace CrimsonVeil.Veil
                              && (Latched != null || morph >= 1f || !(AttackProgress >= 0f && AttackProgress < VeilWeaponPose.WhipWoundAt * 0.5f));
             whipHold = onItsLine ? Mathf.MoveTowards(whipHold, 1f, dt / WhipHoldEase) : 0f;
             Simulation.HeldBeyond = Mathf.SmoothStep(0f, 1f, whipHold);
+            // The shield's ring, once it has been thrown round him, is held on its circle the same way. (Left to the
+            // cloth's springs its free end could not keep up with a body running at 8 m/s, and least of all with one
+            // turning round from it: it trailed in to the body - to a tenth of the ring's radius - and a gap of 0.8 m
+            // opened in the ring for half a second after every turn.)
+            bool ringFormed = ShapeForm == VeilForm.Shield && Form == VeilForm.Shield && morph >= 1f;
+            shieldHold = ringFormed ? Mathf.MoveTowards(shieldHold, 1f, dt / ShieldHoldEase) : 0f;
+            if (shieldHold > 0f)
+            {
+                float hold = Mathf.SmoothStep(0f, 1f, shieldHold);
+                Simulation.HeldFrom = HandFraction;
+                Simulation.HeldTo = HandFraction;
+                Simulation.HeldWeight = hold;
+                Simulation.HeldBeyond = 1f;
+            }
             Simulation.DriftDirection = -Facing;
             // The animation sheet's S-shape (VeilRestShape): held firmly at rest, eased off at a run, while turning
             // round, in a somersault, when it senses a secret or bristles at danger.
@@ -1112,7 +1126,7 @@ namespace CrimsonVeil.Veil
             for (int i = 0; i < n; i++)
             {
                 float f = (float)i / (n - 1);
-                nh[i] = h * VeilTransform.Wave(TransformProgress, f) * (ShapeForm == VeilForm.Bow || ShapeForm == VeilForm.Sword || ShapeForm == VeilForm.Spear ? 1f : VeilTransform.TipSoftness(f)); // bows end in a limb, blades and spears in a firm point
+                nh[i] = h * VeilTransform.Wave(TransformProgress, f) * (ShapeForm == VeilForm.Bow || ShapeForm == VeilForm.Sword || ShapeForm == VeilForm.Spear || ShapeForm == VeilForm.Shield ? 1f : VeilTransform.TipSoftness(f)); // bows end in a limb, blades and spears in a firm point, the shield's ring runs firm all round (its soft end, drawn as loose smoke, opened a gap of some 50 degrees in it)
             }
         }
 
@@ -1343,6 +1357,8 @@ namespace CrimsonVeil.Veil
             var targets = Simulation.Targets;
             int n = Simulation.Count;
             if (restBuf == null || restBuf.Length != n) { restBuf = new Vector2[n]; whipBuf = new Vector2[n]; }
+            // The shield's ring keeps the side it was thrown round on until it melts (see ShieldRingMirror).
+            if (ShapeForm != VeilForm.Shield || TransformProgress < 0.01f) shieldRingSide = Facing >= 0 ? 1f : -1f;
             // From the crouch the sword is thrust: the wrist lays the blade level along the thrust all through it,
             // whatever arc the arm itself makes. (Gripped, the blade stands some 50 degrees up off the forearm: going
             // with the arm its point rose to 1.1 m and came down onto the floor - a chop, a tap on the ground.)
@@ -1499,7 +1515,10 @@ namespace CrimsonVeil.Veil
                 if (Form == VeilForm.Flow && weapon)
                     l = VeilWeaponPose.Rotate(l, grip, -0.6f * VeilTransform.SpiralIn(1f - TransformProgress) * spiralDirection);
                 current[i] = l;
-                targets[i] = a + new Vector3(l.x * facingScale, l.y, 0f);
+                float mirror = facingScale;
+                if (weapon && ShapeForm == VeilForm.Shield && Form == VeilForm.Shield)
+                    mirror = ShieldRingMirror(facingScale, shieldRingSide, VeilFormLibrary.BubbleWeight(shape[i]));
+                targets[i] = a + new Vector3(l.x * mirror, l.y, 0f);
                 if (Latched != null && ropeWorld != null && ropeWorld.Length == n && f >= ropeFromAt)
                 {
                     // (the rope: as it forms out of the scarf it comes onto its line in the world)
@@ -1509,6 +1528,23 @@ namespace CrimsonVeil.Veil
             }
             Simulation.RecomputeTargetRest();
         }
+
+        float shieldRingSide = 1f, shieldHold;
+        /// <summary>The side (+1 / -1) the shield's ring was thrown round on: it keeps it, tilt and all, while he turns
+        /// round inside it.</summary>
+        public float ShieldRingSide => shieldRingSide;
+        /// <summary>Seconds over which the formed shield's ring comes onto its circle (nothing jumps onto it).</summary>
+        public const float ShieldHoldEase = 0.12f;
+
+        /// <summary>
+        /// How a node of the shield is mirrored to the side he faces: the root at the hand goes round with him, the
+        /// ring (<paramref name="bubble"/> 1) keeps the side it was thrown round on (<paramref name="ringSide"/>) until
+        /// it melts. A ring round the whole body looks the same from either side; mirrored with him as he turned, every
+        /// node of it crossed to the far side of the circle - up to 2.4 m in a quarter of a second - and halfway
+        /// through it was squashed into two upright bars, then trailed back together with a gap and a loose end.
+        /// </summary>
+        public static float ShieldRingMirror(float facingScale, float ringSide, float bubble)
+            => Mathf.Lerp(facingScale, ringSide, Mathf.Clamp01(bubble));
 
         /// <summary>Current cloth positions in the local (facing-normalised) shape space.</summary>
         void CaptureClothAsShape(Vector2[] into)

@@ -849,7 +849,9 @@ namespace CrimsonVeil.Veil
                             c += outward.normalized * (lick * (main ? 0.05f : ShieldLickReach) + (main ? 0f : 0.04f * set));
                         // ... and it circles the body in three dimensions: tilted, its forward half comes round in
                         // front of the hero and its rear half passes behind him (its outline in the picture unchanged).
-                        c.z += ShieldRingDepth(c.x - shieldCentre.x, facing, set);
+                        // (tilted the way it was thrown round, not the way he faces now: flipped as he turned, its front
+                        // half went behind his body in a frame and the ring seemed to fall apart)
+                        c.z += ShieldRingDepth(c.x - shieldCentre.x, veil.ShieldRingSide, set);
                     }
 
                     // Tendrils emerge from the ribbon: thin where they split, then full.

@@ -408,6 +408,38 @@ namespace CrimsonVeil.Tests
         }
 
         [UnityTest]
+        public IEnumerator TheShieldHeldInTheAir_Guards_ButDoesNotSlowTheFall_OnlyTheScarfGlides()
+        {
+            // a fall from 8 m: with the shield held up, and with nothing in hand
+            veil.SetUnlocked(VeilForm.Shield);
+            yield return Wait(0.3f);
+            float[] took = new float[2];
+            for (int k = 0; k < 2; k++)
+            {
+                bool shield = k == 0;
+                controller.Teleport(new Vector3(-10f + 8f * k, 8f, 0f));
+                input.held = shield ? VeilForm.Shield : (VeilForm?)null;
+                if (shield) input.cast = VeilForm.Shield;
+                float start = Time.time;
+                bool guarded = false;
+                yield return null;
+                while (player.transform.position.y > 0.1f && Time.time - start < 6f)
+                {
+                    guarded |= veil.ShieldHeld;
+                    Assert.IsFalse(controller.Motor.IsGliding, "only the scarf glides");
+                    yield return null;
+                }
+                took[k] = Time.time - start;
+                if (shield) Assert.IsTrue(guarded, "the shield was held up all the way down");
+                input.held = null;
+                yield return Wait(0.6f);
+            }
+            Debug.Log($"[shield] an 8 m fall: {took[0]:F2} s with the shield held up, {took[1]:F2} s without it");
+            Assert.AreEqual(took[1], took[0], 0.1f, "with the shield up he falls as fast as without it (gliding, 8 m took over 3 s)");
+            Assert.Less(took[0], 2f);
+        }
+
+        [UnityTest]
         public IEnumerator FullScarf_TakesAHitForTheHero_ThenIsTornShort()
         {
             yield return Wait(0.3f);

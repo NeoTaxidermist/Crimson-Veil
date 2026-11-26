@@ -5,6 +5,23 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.83.0] – 2026-11-26
+### Změněno
+- **Zpomalený pád patří jen šále.** Štít držený ve vzduchu dosud zpomaloval pád stejně jako plachtění šálou (na 2,2 m/s, jako deštník), takže dvě různé věci dělaly totéž. Štít teď ve vzduchu jen kryje a postava padá jako bez něj. Šála plachtí beze změny: při pádu znovu stisknout a držet skok. Plachta z papírového draka zůstává také beze změny.
+
+### Změřeno
+- Pád z 8 m (test na skutečném ovladači postavy): se zvednutým štítem 0,55 s, bez štítu 0,54 s. S původním deštníkem by trval přes 3 s.
+
+### Poctivě
+- Animace postavy se štítem ve vzduchu se nemění; byla stejná i dřív, zpomalení se v ní neprojevovalo.
+- Plachtění šálou jsem nechal přesně jak bylo, včetně toho, že první stisk skoku ve vzduchu je dvojskok a plachtí až další, a prudkého nástupu zpomalení. Obojí jsem zmínil jako možné vylepšení; bez tvého slova to neměním.
+- Galerie tuto ani předchozí verze neukazuje a do main není nic sloučeno.
+
+### Testy
+- `VeilCastingTests`: zrušen test, že štít nad hlavou zpomaluje pád.
+- `CastingPlayTests` (1 nový): štít držený ve vzduchu kryje, ale pád nezpomaluje, a plachtění se při něm nezapne.
+- Puštěno: celý EditMode (617 testů, všechny prošly) a sada `CastingPlayTests` (23 testů). Napoprvé neprošel nový test: končil hned po prvním snímku, protože čekal na příznak „na zemi“, který po přenesení postavy ještě platil; po změně podmínky na výšku nad zemí prošel. Celou sadu PlayMode jsem nepouštěl (malá změna jednoho pravidla).
+
 ## [0.82.0] – 2026-11-23
 ### Opraveno
 - **Ve visu se nepoužívají zbraně.** Na hraně a při výlezu má postava obě ruce na kameni: stisk zbraně se tam neprovede a zbraň, kterou drží ve chvíli zachycení, se rozplyne zpět do šály (`VeilController.HandsOnALip`). Dřív pravá ruka pustila hranu a máchala zbraní do zdi před obličejem. Nahoře na hraně jde zbraň seslat hned znovu.

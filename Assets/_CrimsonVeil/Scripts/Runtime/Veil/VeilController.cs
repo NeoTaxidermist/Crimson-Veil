@@ -197,7 +197,7 @@ namespace CrimsonVeil.Veil
         public bool ThrustingDown { get; private set; }
         /// <summary>True while the bow is held drawn.</summary>
         public bool Drawing { get; private set; }
-        /// <summary>The shield is raised and held (guarding; overhead in the air).</summary>
+        /// <summary>The shield is raised and held (guarding, on the ground and in the air alike).</summary>
         public bool ShieldHeld { get; private set; }
         /// <summary>The shield was raised a moment ago: a blow landing now is parried.</summary>
         public bool InParryWindow => Form == VeilForm.Shield && sinceShieldRaised < VeilCasting.ParryWindow;
@@ -689,7 +689,7 @@ namespace CrimsonVeil.Veil
                     aimTiltTarget = AttackAim;
                 }
             }
-            // Shield held: it guards (and drains the scarf); in the air it is held overhead and slows the fall.
+            // Shield held: it guards (and drains the scarf) - in the air too, where he falls as ever: only the scarf glides.
             bool shieldHeld = Form == VeilForm.Shield && castMode && input != null && input.CastHeld(VeilForm.Shield)
                               && Charge.Drain(VeilCasting.ShieldHoldDrain, dt);
             ShieldHeld = shieldHeld;
@@ -697,7 +697,6 @@ namespace CrimsonVeil.Veil
             {
                 var m = player.Motor;
                 m.ScarfGlide = Form == VeilForm.Flow && Charge.Value > 0.02f;
-                m.Umbrella = shieldHeld && !player.IsGrounded;
                 if (m.IsGliding && m.GlideTime <= 0f && Form == VeilForm.Flow) Charge.Drain(VeilCasting.GlideDrain, dt);
                 bool low = VeilAim.LowBlow(m.IsGrounded, m.IsCrouching, m.IsSliding);
                 sinceCrouched = low ? 0f : sinceCrouched + dt;

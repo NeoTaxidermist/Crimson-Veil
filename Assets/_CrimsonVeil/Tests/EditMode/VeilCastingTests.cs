@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace CrimsonVeil.Tests
 {
-    /// <summary>The scarf's strength, cast costs, and the motor's scarf glide / umbrella / pogo bounce.</summary>
+    /// <summary>The scarf's strength, cast costs, and the motor's scarf glide / pogo bounce.</summary>
     public class VeilCastingTests
     {
         [Test]
@@ -166,17 +166,6 @@ namespace CrimsonVeil.Tests
 
             m.Tick(1f / 60f, new MotorInput(), new MotorContacts { grounded = true });
             Assert.AreEqual(1, m.AirJumpsLeft, "landing gives it back");
-        }
-
-        [Test]
-        public void ShieldOverhead_SlowsTheFall_WithoutJump()
-        {
-            var m = Airborne(out var air);
-            m.ScarfGlide = false;
-            m.Umbrella = true;
-            for (int i = 0; i < 80; i++) m.Tick(1f / 60f, new MotorInput(), air);
-            Assert.IsTrue(m.IsGliding);
-            Assert.AreEqual(-MotorLogic.GlideFallSpeed, m.Velocity.y, 0.3f);
         }
 
         [Test]

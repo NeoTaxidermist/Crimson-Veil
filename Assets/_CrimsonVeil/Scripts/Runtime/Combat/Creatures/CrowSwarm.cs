@@ -33,6 +33,7 @@ namespace CrimsonVeil.Combat
 
         void Awake()
         {
+            Dormancy.Track(gameObject);   // (asleep far out of the picture: a chapter holds hundreds)
             home = centre = transform.position;
             foreach (var c in GetComponentsInChildren<Crow>())
             {

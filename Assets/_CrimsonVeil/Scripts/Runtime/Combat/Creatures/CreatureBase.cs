@@ -25,7 +25,11 @@ namespace CrimsonVeil.Combat
         protected CombatTarget target;
         float contactCooldown;
 
-        protected virtual void Awake() => Health = new HealthModel(maxHealth, 0.12f);
+        protected virtual void Awake()
+        {
+            Health = new HealthModel(maxHealth, 0.12f);
+            Dormancy.Track(gameObject);   // (asleep far out of the picture: a chapter holds hundreds)
+        }
 
         /// <summary>Does it fight the hero at all? (A harmless lure does not: it never makes a fight.)</summary>
         public virtual bool Fights => true;

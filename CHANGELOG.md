@@ -5,6 +5,35 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.97.0] – 2026-11-26
+### Přidáno
+- **Uspávání nepřátel mimo obraz** (`Dormancy`, `DormancyWatch`). Kapitola může mít stovky nepřátel a výkon stojí jen ti blízko záběru. Nepřítel víc než 12 m za okrajem obrazu usne: neběží mu mozek, animace ani vlající látka a nepočítá se do boje (hrdina u něj necítí souboj). Tělo i srážecí tvar zůstanou na místě. Probudí se, jakmile je blíž než 8 m od okraje, tedy dřív, než ho uvidíš. Mezera mezi 8 a 12 m brání tomu, aby nepřítel na hranici neustále usínal a probouzel se. Kontroluje se pětkrát za sekundu. Bez kamery (v testovacích místnostech) se místo záběru bere okolí hrdiny. Přidá se samo všem druhům nepřátel: přízraku, mnichovi, oběšenci, plazovi, můře, lucerně, drakovi, stínovému dvojníkovi i hejnu vran.
+
+### Opraveno
+- **Nepřátelé už každý snímek nepřepočítávají celý model na procesoru.** Měli zapnuté přepočítávání hranic podle aktuální pózy. Unity proto každý snímek na procesoru přepočítalo celé tělo podle kostry, a to u každého nepřítele, i mimo obraz. U nového přízraka s 50 tisíci vrcholy to stálo zhruba 1,2 ms na kus v záběru. Teď mají pevné hranice: tělo v klidu a kolem něj 0,8 m na pózy (`Dormancy.FixBounds`).
+
+### Změřeno
+- Zátěžový test (editor, i7-9750H, RTX 2060, medián doby snímku):
+  - hrdina sám: 9,5 ms (105 fps);
+  - 100 přízraků, z toho 30 v záběru: před opravou 51 ms (20 fps), po opravě hranic bez uspávání 24 ms (41 fps), s uspáváním 13,9 ms (72 fps);
+  - 80 přízraků, 10 v záběru: 11,1 ms (90 fps);
+  - 300 nepřátel všech druhů, 10 v záběru: všichni vzhůru 32 ms (31 fps), s uspáváním 10,8 ms (93 fps);
+  - 30 nepřátel všech druhů v záběru najednou: 11,6 ms (86 fps).
+- Grafická karta měla v nejhorším případě práci na 4–7 ms. Brzdou byl procesor, ne vykreslování; stíny nehrály roli (nepřátelé je nevrhají).
+
+### Poctivě
+- Měřeno v editoru, ne v sestavené hře: editor sám přidává režii, takže sestavená hra bude spíš rychlejší. Na slabším počítači to bude pomalejší; jiný stroj jsem neměřil.
+- Uspávání neřeší nepřátele v záběru. 30 přízraků najednou na obrazovce je pořád znát (14 ms místo 9,5). Kdyby jich v nějaké scéně bylo v záběru víc, pomohl by jednodušší model v dálce (úrovně detailu); ty zatím nejsou.
+- Spící nepřítel zůstane přesně tam, kde usnul, i uprostřed útoku. Když hrdina odběhne a nepřítel ho pronásleduje, zastaví se 12 m za okrajem obrazu.
+- Hranice se nastavují za běhu hry. V prefabech je volba přepočítávání pořád zapnutá a vypíná se při startu.
+- Zátěžový test je dočasný (výsledky ve složce scratchpad, do projektu nejde): výkonový test v sadě by byl nespolehlivý. V sadě jsou testy, že uspávání funguje.
+- Výsledky PlayMode testů jsem zase zapisoval dočasným skriptem do souboru a smazal ho. Do main není nic sloučeno.
+
+### Testy
+- `DormancyTests` (EditMode, 3 nové, `Combat`): vzdálenost od záběru, mezera mezi probuzením a usnutím (žádné blikání na hranici), záběr kamery v rovině hry.
+- `DormancyPlayTests` (PlayMode, 1 nový, `Combat`): přízrak 60 m daleko spí, mozek ani animace mu neběží, není v boji a nepřepočítává si tělo; 7 m za okrajem obrazu je už vzhůru a zase v boji.
+- Puštěno: celý EditMode (647 testů) a celý PlayMode (149 testů), všechny prošly.
+
 ## [0.96.0] – 2026-11-26
 ### Změněno
 - **Přízrak je postavený znovu, aby obstál vedle hrdiny** (`ArtSource/wraith_build.py`). Dřív to byl pytel z trubek pod prostěradlem, teď je to vyhublé tělo pod roztrhaným rubášem:

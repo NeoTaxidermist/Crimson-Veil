@@ -39,6 +39,7 @@ namespace CrimsonVeil.Combat
         {
             body = GetComponent<CapsuleCollider>();
             body.isTrigger = true;
+            Dormancy.Track(gameObject);   // (asleep far out of the picture: a chapter holds hundreds)
             Brain = new EnemyBrain(brain, transform.position.x);
             Health = new HealthModel(maxHealth, 0.1f);
             Brain.StateChanged += s => { if (s == EnemyState.Strike) strikeLanded = false; };

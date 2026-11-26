@@ -7,6 +7,7 @@ using UnityEngine;
 namespace CrimsonVeil.Tests
 {
     /// <summary>Motion capture over the hero: what plays when, in step with the game, and the baked clips in git.</summary>
+    [Category("Hero")]
     public class HeroMocapTests
     {
         const string LibraryPath = "Assets/_CrimsonVeil/Animations/Hero/HeroMocapLibrary.asset";

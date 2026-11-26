@@ -5,6 +5,7 @@ using UnityEngine;
 namespace CrimsonVeil.Tests
 {
     /// <summary>The camera frames the floor the hero stands on and leads where he is going — calm, not jittery.</summary>
+    [Category("Camera")]
     public class CameraFocusTests
     {
         const float Dt = 1f / 60f, Run = 8f;

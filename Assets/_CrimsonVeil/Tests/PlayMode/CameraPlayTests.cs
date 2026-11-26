@@ -8,6 +8,7 @@ using UnityEngine.TestTools;
 namespace CrimsonVeil.Tests
 {
     /// <summary>The follow camera in a running scene: camera zones and arriving somewhere new.</summary>
+    [Category("Camera")]
     public class CameraPlayTests
     {
         GameObject root, player, cam;

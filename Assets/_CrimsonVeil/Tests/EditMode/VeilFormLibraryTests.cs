@@ -5,6 +5,7 @@ using UnityEngine;
 
 namespace CrimsonVeil.Tests
 {
+    [Category("Veil")]
     public class VeilFormLibraryTests
     {
         static readonly VeilForm[] Weapons = { VeilForm.Whip, VeilForm.Sword, VeilForm.Spear, VeilForm.Shield, VeilForm.Bow };

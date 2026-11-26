@@ -5,6 +5,7 @@ using UnityEngine;
 
 namespace CrimsonVeil.Tests
 {
+    [Category("World")]
     public class WorldLogicTests
     {
         [Test]

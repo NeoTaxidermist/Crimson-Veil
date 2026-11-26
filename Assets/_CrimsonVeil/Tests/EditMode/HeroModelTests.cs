@@ -7,6 +7,7 @@ using UnityEngine;
 namespace CrimsonVeil.Tests
 {
     /// <summary>The hero model (ArtSource/hero_build.py): the rig the game poses, the crimson trim, the hair.</summary>
+    [Category("Hero")]
     public class HeroModelTests
     {
         const string HeroPath = "Assets/_CrimsonVeil/Art/Hero/Hero.fbx";

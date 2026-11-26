@@ -7,6 +7,7 @@ using UnityEngine;
 namespace CrimsonVeil.Tests
 {
     /// <summary>Weapon relics and secrets in the level kit; the hero starts with the sword only.</summary>
+    [Category("World")]
     public class RelicLevelKitTests
     {
         [Test]

@@ -8,6 +8,7 @@ using UnityEngine.SceneManagement;
 namespace CrimsonVeil.Tests
 {
     /// <summary>Every piece in the Level Editor palette must place cleanly.</summary>
+    [Category("World")]
     public class LevelKitTests
     {
         Scene scene;

@@ -5,6 +5,7 @@ using UnityEngine;
 namespace CrimsonVeil.Tests
 {
     /// <summary>Wings beat with the flight, bodies pitch into it, a carried lantern swings behind.</summary>
+    [Category("Combat")]
     public class FlyerAnimationTests
     {
         [Test]

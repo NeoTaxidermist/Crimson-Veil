@@ -11,6 +11,7 @@ using UnityEngine.UI;
 namespace CrimsonVeil.Tests
 {
     /// <summary>The title screen, the settings and the pause menu, in the game itself.</summary>
+    [Category("UI")]
     public class MenuPlayTests
     {
         [SetUp] public void SetUp() { Time.timeScale = 1f; InputBindings.BuildDefaultsForTests(); }

@@ -4,6 +4,7 @@ using UnityEngine;
 
 namespace CrimsonVeil.Tests
 {
+    [Category("Motor")]
     public class WallLedgeMotorTests
     {
         const float Dt = 1f / 60f;

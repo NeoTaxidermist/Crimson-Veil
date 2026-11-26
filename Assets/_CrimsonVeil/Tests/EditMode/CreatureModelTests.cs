@@ -8,6 +8,7 @@ using UnityEngine;
 namespace CrimsonVeil.Tests
 {
     /// <summary>Creatures placed from the Level Kit wear their detailed Blender models, with the parts the game animates.</summary>
+    [Category("Combat")]
     public class CreatureModelTests
     {
         [SetUp]

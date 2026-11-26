@@ -5,6 +5,7 @@ using UnityEngine;
 namespace CrimsonVeil.Tests
 {
     /// <summary>The landing roll: a hard landing at a run carries him on, rolling.</summary>
+    [Category("Motor")]
     public class LandingRollMotorTests
     {
         static readonly MotorContacts Air = new MotorContacts();
@@ -82,6 +83,7 @@ namespace CrimsonVeil.Tests
     }
 
     /// <summary>Crouching (down on the ground), crawling, sliding (down + dash), and the low ceiling.</summary>
+    [Category("Motor")]
     public class CrouchSlideMotorTests
     {
         const float Dt = 1f / 60f;

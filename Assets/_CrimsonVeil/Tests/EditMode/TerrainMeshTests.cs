@@ -5,6 +5,7 @@ using UnityEngine;
 
 namespace CrimsonVeil.Tests
 {
+    [Category("World")]
     public class TerrainMeshTests
     {
         [TestCase(6f, 2f, TerrainStyle.Rock, 1)]

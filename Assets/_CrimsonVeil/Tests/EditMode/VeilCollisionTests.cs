@@ -5,6 +5,7 @@ using UnityEngine;
 namespace CrimsonVeil.Tests
 {
     /// <summary>The scarf drapes against walls instead of passing through them.</summary>
+    [Category("Veil")]
     public class VeilCollisionTests
     {
         static VeilSimulation Scarf(Vector3 neck)

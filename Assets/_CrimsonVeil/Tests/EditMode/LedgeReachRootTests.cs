@@ -7,6 +7,8 @@ using UnityEngine;
 namespace CrimsonVeil.Tests
 {
     /// <summary>The hands hang on the real lip (not in the air beside a rounded rock), and the root crawler's roots stay out of the stone.</summary>
+    [Category("Hero")]
+    [Category("Motor")]
     public class LedgeReachRootTests
     {
         [Test]

@@ -8,6 +8,7 @@ namespace CrimsonVeil.Tests
     /// The body goes with the blow: he looks where he strikes, and striking upwards the trunk goes back into it. (The
     /// rules; on the hero himself: HeroMoveSetPlayTests.StrikingUp_HeLooksAlongTheBlow_AndLeansBackIntoIt.)
     /// </summary>
+    [Category("Hero")]
     public class HeroBlowBearingTests
     {
         [Test]

@@ -10,6 +10,7 @@ namespace CrimsonVeil.Tests
     /// a strand's tip, the cloth folds in curves instead of crumpling node by node when he turns round, its tongues stay
     /// with the band, the fold back behind the chest comes in gently, and nothing flies off it like broken pieces.
     /// </summary>
+    [Category("Veil")]
     public class VeilMotionTests
     {
         const float Dt = 1f / 60f;

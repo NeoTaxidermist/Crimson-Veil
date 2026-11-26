@@ -5,6 +5,7 @@ using UnityEngine;
 namespace CrimsonVeil.Tests
 {
     /// <summary>Creatures turn round in 3D (through facing the camera), never as a mirrored sprite flip.</summary>
+    [Category("Combat")]
     public class CreatureTurnTests
     {
         [Test]

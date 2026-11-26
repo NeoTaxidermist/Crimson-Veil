@@ -8,6 +8,7 @@ using UnityEngine;
 namespace CrimsonVeil.Tests
 {
     /// <summary>Arches, columns and walls in the backdrop stand on the ground or on stone of their own layer.</summary>
+    [Category("World")]
     public class GroundedPropsTests
     {
         const string ScenePath = "Assets/_CrimsonVeil/Scenes/Prototype_Ruins.unity";

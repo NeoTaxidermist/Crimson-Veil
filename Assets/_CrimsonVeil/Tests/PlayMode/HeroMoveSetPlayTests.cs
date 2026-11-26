@@ -19,6 +19,9 @@ namespace CrimsonVeil.Tests
     /// tunnel, the slide, the dash, the combo on a wraith, the whip, the bow, the shield, blows aimed up and down, the
     /// swing on the whip, and a wraith's blow. Each checks what the game does and what the body plays.
     /// </summary>
+    [Category("Hero")]
+    [Category("Veil")]
+    [Category("Motor")]
     public class HeroMoveSetPlayTests
     {
         const string Prefabs = "Assets/_CrimsonVeil/LevelKit/Prefabs/";

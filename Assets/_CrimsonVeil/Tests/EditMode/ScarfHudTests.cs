@@ -4,6 +4,7 @@ using NUnit.Framework;
 namespace CrimsonVeil.Tests
 {
     /// <summary>The scarf-shaped life gauge: one torn piece per point of life, lost ones left as ash.</summary>
+    [Category("UI")]
     public class ScarfHudTests
     {
         [Test]

@@ -10,6 +10,8 @@ namespace CrimsonVeil.Tests
     /// The ledge hang and the mantle, the planted stance (Ctrl: attack from the spot), the bow aimed overhead, and the
     /// shield monk turning his shield with him.
     /// </summary>
+    [Category("Hero")]
+    [Category("Motor")]
     public class LedgeStanceBowTests
     {
         const float Dt = 1f / 60f;

@@ -6,6 +6,8 @@ using UnityEngine;
 namespace CrimsonVeil.Tests
 {
     /// <summary>The double jump's somersault and the scarf winding round the body.</summary>
+    [Category("Motor")]
+    [Category("Hero")]
     public class SomersaultTests
     {
         [Test]

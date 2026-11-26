@@ -7,6 +7,7 @@ using UnityEngine;
 
 namespace CrimsonVeil.Tests
 {
+    [Category("Camera")]
     public class CameraTests
     {
         static float Bias(bool grounded, float vy, float drop, float look) =>

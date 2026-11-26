@@ -8,6 +8,7 @@ using UnityEngine.TestTools;
 namespace CrimsonVeil.Tests
 {
     /// <summary>The face on the real model: the jaw drops, the lids shut, the brows rise, the eyes follow a point.</summary>
+    [Category("Hero")]
     public class HeroFacePlayTests
     {
         GameObject hero;

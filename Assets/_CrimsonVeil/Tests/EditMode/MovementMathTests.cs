@@ -3,6 +3,7 @@ using NUnit.Framework;
 
 namespace CrimsonVeil.Tests
 {
+    [Category("Motor")]
     public class MovementMathTests
     {
         [Test]

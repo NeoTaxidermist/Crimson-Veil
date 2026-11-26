@@ -4,6 +4,8 @@ using NUnit.Framework;
 namespace CrimsonVeil.Tests
 {
     /// <summary>The chain of blows: positions across weapons, the reset after a pause, the finisher, variety, the morph strike.</summary>
+    [Category("Veil")]
+    [Category("Combat")]
     public class VeilComboTests
     {
         static VeilCombo.Blow Strike(VeilCombo c, VeilForm form, float pauseAfter = 0.1f)

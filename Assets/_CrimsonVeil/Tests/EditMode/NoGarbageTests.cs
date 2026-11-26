@@ -12,6 +12,8 @@ namespace CrimsonVeil.Tests
     /// The hero's frame-by-frame code reuses what it used to make anew (the garbage is measured on the hero in
     /// HeroMoveSetPlayTests.TheHero_AllocatesNoGarbage_FrameByFrame): what is reused must give what was made anew.
     /// </summary>
+    [Category("Hero")]
+    [Category("Veil")]
     public class NoGarbageTests
     {
         [Test]

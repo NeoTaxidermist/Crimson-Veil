@@ -12,6 +12,8 @@ namespace CrimsonVeil.Tests
 {
     /// <summary>Weapons cast like spells: one press forms, strikes and melts back; combos, chains, held weapons,
     /// parry, the scarf's strength and guard, the pogo, the glide, relics and the scarf's senses.</summary>
+    [Category("Veil")]
+    [Category("Combat")]
     public class CastingPlayTests
     {
         GameObject root, player;

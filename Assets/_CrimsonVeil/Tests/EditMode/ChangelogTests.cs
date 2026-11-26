@@ -9,6 +9,7 @@ namespace CrimsonVeil.Tests
 {
     /// Pravidlo projektu: každý commit má vlastní verzi a sekci v CHANGELOG.md.
     /// Hlídají to git hooky v .githooks; tady se hlídá, že je CHANGELOG v pořádku a hooky jsou na místě.
+    [Category("Tools")]
     public class ChangelogTests
     {
         static readonly Regex Heading = new Regex(@"^## \[(.+?)\](.*)$");

@@ -7,6 +7,7 @@ using UnityEngine.TestTools;
 namespace CrimsonVeil.Tests
 {
     /// <summary>The bestiary in a live scene: blocks, cut ropes and threads, a swarm shot down.</summary>
+    [Category("Combat")]
     public class CreaturePlayTests
     {
         GameObject ground, attacker;

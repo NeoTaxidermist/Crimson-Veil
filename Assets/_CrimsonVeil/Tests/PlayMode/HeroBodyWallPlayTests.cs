@@ -25,6 +25,7 @@ namespace CrimsonVeil.Tests
         void LateUpdate() => each?.Invoke();
     }
 
+    [Category("Hero")]
     public class HeroBodyWallPlayTests
     {
         const string Prefabs = "Assets/_CrimsonVeil/LevelKit/Prefabs/";

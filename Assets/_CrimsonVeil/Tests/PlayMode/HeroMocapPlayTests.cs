@@ -8,6 +8,7 @@ using UnityEngine.TestTools;
 namespace CrimsonVeil.Tests
 {
     /// <summary>The captured motion on the real model: it turns his bones towards the clip by its weight, and lets go.</summary>
+    [Category("Hero")]
     public class HeroMocapPlayTests
     {
         GameObject hero;

@@ -11,6 +11,7 @@ using UnityEngine.TestTools;
 namespace CrimsonVeil.Tests
 {
     /// <summary>The map in the real level: it opens and closes, shows the whole level and the hero where he is.</summary>
+    [Category("UI")]
     public class MinimapPlayTests
     {
         [TearDown]

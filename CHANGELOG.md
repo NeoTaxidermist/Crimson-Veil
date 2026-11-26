@@ -5,6 +5,17 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.87.0] – 2026-11-26
+### Přidáno
+- **Testy rozdělené do kategorií podle oblasti hry:** `Motor`, `Hero`, `Veil`, `Combat`, `World`, `UI`, `Camera`, `Tools`. Každá testovací třída má jednu nebo víc kategorií (`[Category]`). Soubor `Assets/_CrimsonVeil/Tests/KATEGORIE.md` říká, které kategorie pustit podle toho, na které soubory změna sáhla. Po malé změně se tak pouštějí jen testy dotčených oblastí, celá sada jen po velkých zásazích.
+
+### Poctivě
+- Zařazení testů je moje. Některé testy hlídají víc oblastí (třeba sada pohybů hrdiny má `Hero`, `Veil` i `Motor`), takže se pustí častěji.
+- Test bez kategorie by se při výběru nepustil nikdy. Nové testy proto musí kategorii dostat; žádná automatická kontrola, která by to vynutila, zatím není.
+
+### Testy
+- Puštěno: EditMode přes všech osm kategorií najednou, 623 testů. Je to stejný počet jako celý EditMode, takže žádný test nezůstal bez kategorie, a všechny prošly. Kód hry se nezměnil, PlayMode jsem nepouštěl.
+
 ## [0.86.0] – 2026-11-26
 ### Změněno
 - **Útoky na U I O P, štít na J** (tvoje volba): U meč, I kopí, O bič, P luk, J štít. Levá ruka beze změny. Kdo si ovládání už přemapoval, tomu zůstane jeho.

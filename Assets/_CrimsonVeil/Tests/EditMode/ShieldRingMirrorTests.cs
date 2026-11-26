@@ -4,6 +4,7 @@ using NUnit.Framework;
 namespace CrimsonVeil.Tests
 {
     /// <summary>The shield's ring keeps its side through a turn; only the root at the hand goes round with him.</summary>
+    [Category("Veil")]
     public class ShieldRingMirrorTests
     {
         [Test]

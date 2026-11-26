@@ -11,6 +11,7 @@ using UnityEngine.TestTools;
 namespace CrimsonVeil.Tests
 {
     /// <summary>The playtest measurement in the real level: sections as the hero gets on, falls counted, shown on the map.</summary>
+    [Category("UI")]
     public class PlaytestLogPlayTests
     {
         [TearDown]

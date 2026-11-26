@@ -6,6 +6,7 @@ using UnityEngine;
 namespace CrimsonVeil.Tests
 {
     /// <summary>The motor's whip swing: a pendulum that keeps momentum and launches the hero when he lets go.</summary>
+    [Category("Motor")]
     public class GrappleSwingLogicTests
     {
         static readonly Vector2 Anchor = new Vector2(0f, 6f);

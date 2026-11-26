@@ -5,6 +5,7 @@ using UnityEngine;
 namespace CrimsonVeil.Tests
 {
     /// <summary>The hero stays ink-black, but the moon lifts his form just enough to read as 3D.</summary>
+    [Category("Hero")]
     public class HeroLookTests
     {
         [Test]

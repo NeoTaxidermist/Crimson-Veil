@@ -4,6 +4,7 @@ using NUnit.Framework;
 namespace CrimsonVeil.Tests
 {
     /// <summary>The hero's sense of a fight: a hostile after him in sight, blows exchanged, and how it ends.</summary>
+    [Category("Combat")]
     public class CombatStateTests
     {
         [Test]

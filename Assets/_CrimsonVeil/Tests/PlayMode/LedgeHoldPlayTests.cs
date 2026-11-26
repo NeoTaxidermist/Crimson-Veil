@@ -18,6 +18,8 @@ namespace CrimsonVeil.Tests
     /// over the lip (he rose the last 0.85 m with his hands off it and nothing under his feet), the hand that wields a
     /// weapon while he hangs stays out of the wall, and a jump's stretch stops at a roof.
     /// </summary>
+    [Category("Hero")]
+    [Category("Motor")]
     public class LedgeHoldPlayTests
     {
         const string Prefabs = "Assets/_CrimsonVeil/LevelKit/Prefabs/";

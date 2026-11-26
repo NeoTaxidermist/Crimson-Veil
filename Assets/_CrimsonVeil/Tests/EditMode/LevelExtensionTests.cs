@@ -11,6 +11,7 @@ namespace CrimsonVeil.Tests
     /// the main way is within the hero's reach (a jump is 3.4 m, a grabbed lip up to 2.1 m over the feet, a double
     /// jump and a dash carry ~6 m), and there is room to stand everywhere on it.
     /// </summary>
+    [Category("World")]
     public class LevelExtensionTests
     {
         static B Get(string name)

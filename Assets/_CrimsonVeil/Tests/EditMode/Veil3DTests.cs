@@ -8,6 +8,7 @@ namespace CrimsonVeil.Tests
     /// The scarf as cloth in three dimensions: wound round the neck, free to swing in depth (pulled back towards its
     /// place behind the hero, within reach of it), falling against the body instead of through it.
     /// </summary>
+    [Category("Veil")]
     public class Veil3DTests
     {
         const float Dt = 1f / 60f;

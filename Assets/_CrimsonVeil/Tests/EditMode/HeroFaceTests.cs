@@ -7,6 +7,7 @@ using UnityEngine;
 namespace CrimsonVeil.Tests
 {
     /// <summary>The hero's face rig (cutscenes): the bones, their skin, the expressions, blinking, talking.</summary>
+    [Category("Hero")]
     public class HeroFaceTests
     {
         const string HeroPath = "Assets/_CrimsonVeil/Art/Hero/Hero.fbx";

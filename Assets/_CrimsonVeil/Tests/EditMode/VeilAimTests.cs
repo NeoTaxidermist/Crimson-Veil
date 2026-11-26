@@ -7,6 +7,7 @@ using UnityEngine;
 namespace CrimsonVeil.Tests
 {
     /// <summary>Aiming without a mouse: eight directions from the keys / stick and a gentle aim assist.</summary>
+    [Category("Veil")]
     public class VeilAimTests
     {
         [Test]

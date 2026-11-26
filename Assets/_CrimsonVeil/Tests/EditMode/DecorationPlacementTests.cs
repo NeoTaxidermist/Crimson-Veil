@@ -7,6 +7,7 @@ using UnityEngine;
 namespace CrimsonVeil.Tests
 {
     /// <summary>Foreground grass must grow on the ground, never hang in the air over a pit.</summary>
+    [Category("World")]
     public class DecorationPlacementTests
     {
         [SetUp]

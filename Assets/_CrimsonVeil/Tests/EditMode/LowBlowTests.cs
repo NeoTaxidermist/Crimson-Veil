@@ -9,6 +9,8 @@ namespace CrimsonVeil.Tests
     /// Blows from the crouch: a low blow played out in the crouch (the aim, the motor keeping him down, the pose, the
     /// clip), and the rising strike up out of it.
     /// </summary>
+    [Category("Hero")]
+    [Category("Veil")]
     public class LowBlowTests
     {
         static readonly MotorContacts Floor = new MotorContacts { grounded = true };

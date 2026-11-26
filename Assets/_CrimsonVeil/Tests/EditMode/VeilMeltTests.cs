@@ -5,6 +5,7 @@ using UnityEngine;
 namespace CrimsonVeil.Tests
 {
     /// <summary>The transformations between the scarf and the big weapons (shield, bow) are continuous.</summary>
+    [Category("Veil")]
     public class VeilMeltTests
     {
         const int N = 40;

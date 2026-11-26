@@ -7,6 +7,7 @@ using UnityEngine;
 namespace CrimsonVeil.Tests
 {
     /// <summary>The rules of the bestiary, engine independent.</summary>
+    [Category("Combat")]
     public class CreatureLogicTests
     {
         // ---- shield monk

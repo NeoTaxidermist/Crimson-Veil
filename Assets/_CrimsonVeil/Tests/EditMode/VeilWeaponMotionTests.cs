@@ -6,6 +6,7 @@ using UnityEngine;
 namespace CrimsonVeil.Tests
 {
     /// <summary>How each weapon is held and moves: level spear, visible bow, a whip that really lashes.</summary>
+    [Category("Veil")]
     public class VeilWeaponMotionTests
     {
         static Vector2[] StraightWhip(int n, int handIndex)

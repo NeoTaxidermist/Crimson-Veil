@@ -5,6 +5,7 @@ using UnityEngine;
 namespace CrimsonVeil.Tests
 {
     /// <summary>The minimap's model: the level's ground on a grid, and fog over what the hero hasn't explored.</summary>
+    [Category("UI")]
     public class MinimapModelTests
     {
         static MinimapModel Level() => new MinimapModel(new[]

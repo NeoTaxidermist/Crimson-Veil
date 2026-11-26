@@ -5,6 +5,7 @@ using UnityEngine;
 
 namespace CrimsonVeil.Tests
 {
+    [Category("Veil")]
     public class VeilSimulationTests
     {
         const float Dt = 1f / 60f;

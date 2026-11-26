@@ -6,6 +6,7 @@ using UnityEngine;
 namespace CrimsonVeil.Tests
 {
     /// <summary>Weapons are made of the same flame as the scarf; the transformation is a vortex into the palm.</summary>
+    [Category("Veil")]
     public class VeilWeaponLookTests
     {
         [Test]

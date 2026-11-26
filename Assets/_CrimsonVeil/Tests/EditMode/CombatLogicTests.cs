@@ -6,6 +6,7 @@ using UnityEngine;
 
 namespace CrimsonVeil.Tests
 {
+    [Category("Combat")]
     public class HealthModelTests
     {
         static DamageInfo Hit(float amount) => new DamageInfo { amount = amount };
@@ -62,6 +63,7 @@ namespace CrimsonVeil.Tests
         }
     }
 
+    [Category("Combat")]
     public class EnemyBrainTests
     {
         const float Dt = 1f / 60f;
@@ -163,6 +165,8 @@ namespace CrimsonVeil.Tests
         }
     }
 
+    [Category("Combat")]
+    [Category("Veil")]
     public class VeilCombatProfileTests
     {
         [Test]
@@ -208,6 +212,8 @@ namespace CrimsonVeil.Tests
         }
     }
 
+    [Category("Motor")]
+    [Category("Combat")]
     public class MotorKnockbackTests
     {
         [Test]

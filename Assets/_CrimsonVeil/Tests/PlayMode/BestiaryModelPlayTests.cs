@@ -10,6 +10,7 @@ using UnityEngine.TestTools;
 namespace CrimsonVeil.Tests
 {
     /// <summary>The rigged bestiary models alive in a scene: the monk's shield and the hanged man's loose limbs.</summary>
+    [Category("Combat")]
     public class BestiaryModelPlayTests
     {
         GameObject floor, creature;

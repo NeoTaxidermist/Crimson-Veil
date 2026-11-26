@@ -5,6 +5,7 @@ using UnityEngine;
 namespace CrimsonVeil.Tests
 {
     /// <summary>Creatures are shaded grey with a pale rim so they read on dark backgrounds; the hero's shadow stays pure ink.</summary>
+    [Category("Combat")]
     public class CreatureShadingTests
     {
         [Test]

@@ -8,6 +8,7 @@ using UnityEngine;
 namespace CrimsonVeil.Tests
 {
     /// <summary>The ink wraith's model: a rigged spectre with claws and a torn shroud that swings.</summary>
+    [Category("Combat")]
     public class WraithModelTests
     {
         static GameObject Model() => Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_CrimsonVeil/Art/Enemy/Wraith.fbx"));

@@ -4,6 +4,7 @@ using UnityEngine;
 
 namespace CrimsonVeil.Tests
 {
+    [Category("Hero")]
     public class SpringChainSolverTests
     {
         static Vector3[] Rest(Vector3 root) => new[] { root, root + new Vector3(0f, -0.1f, 0.0f), root + new Vector3(0f, -0.2f, 0f), root + new Vector3(0f, -0.3f, 0f) };

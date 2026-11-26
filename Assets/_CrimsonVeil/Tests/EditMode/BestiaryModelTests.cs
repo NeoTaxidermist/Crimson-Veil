@@ -11,6 +11,7 @@ namespace CrimsonVeil.Tests
     /// The bestiary's 3D models: the shield monk and the hanged man are rigged like the wraith (loose chains swing on
     /// SpringBones); the crawler, moth, kite, crow and lantern are detailed kit models whose named parts the scripts drive.
     /// </summary>
+    [Category("Combat")]
     public class BestiaryModelTests
     {
         const string Art = "Assets/_CrimsonVeil/Art/Enemy/";

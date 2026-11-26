@@ -5,6 +5,7 @@ using UnityEngine;
 namespace CrimsonVeil.Tests
 {
     /// <summary>The two-bone reach that keeps the hands on the lip while hanging and mantling.</summary>
+    [Category("Hero")]
     public class LimbReachTests
     {
         [Test]

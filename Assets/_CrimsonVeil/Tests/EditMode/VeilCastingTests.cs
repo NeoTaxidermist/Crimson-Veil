@@ -7,6 +7,8 @@ using UnityEngine;
 namespace CrimsonVeil.Tests
 {
     /// <summary>The scarf's strength, cast costs, and the motor's scarf glide / pogo bounce.</summary>
+    [Category("Veil")]
+    [Category("Motor")]
     public class VeilCastingTests
     {
         [Test]

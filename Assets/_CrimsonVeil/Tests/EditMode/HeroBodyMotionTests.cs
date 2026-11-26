@@ -7,6 +7,7 @@ using UnityEngine;
 namespace CrimsonVeil.Tests
 {
     /// <summary>The rest of the body on top of the key poses: pelvis, chest, collarbones, arms, neck, wrists, toes.</summary>
+    [Category("Hero")]
     public class HeroBodyMotionTests
     {
         static HeroState Running => new HeroState { grounded = true, speed = 6f, maxSpeed = 6f };

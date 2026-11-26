@@ -9,6 +9,7 @@ using UnityEngine.TestTools;
 
 namespace CrimsonVeil.Tests
 {
+    [Category("Combat")]
     public class CombatPlayTests
     {
         GameObject ground, player;

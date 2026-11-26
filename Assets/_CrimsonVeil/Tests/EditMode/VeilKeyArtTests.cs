@@ -10,6 +10,7 @@ namespace CrimsonVeil.Tests
     /// The scarf after the new key art: deep crimson ink (measured from the picture), solid cloth whose crossing strands
     /// hide each other cleanly, the under-layer well behind the band, fine threads and drops of ink round the tail.
     /// </summary>
+    [Category("Veil")]
     public class VeilKeyArtTests
     {
         [Test]

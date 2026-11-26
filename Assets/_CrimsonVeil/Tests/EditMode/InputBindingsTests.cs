@@ -6,6 +6,7 @@ using NUnit.Framework;
 namespace CrimsonVeil.Tests
 {
     /// <summary>The game's controls: the two-handed defaults, rebinding with a swap, and keeping it between sessions.</summary>
+    [Category("UI")]
     public class InputBindingsTests
     {
         [SetUp] public void SetUp() => InputBindings.BuildDefaultsForTests();

@@ -15,6 +15,7 @@ namespace CrimsonVeil.Tests
     /// round and runs the other way. (Mirrored with him, every node of it crossed to the far side of the circle: halfway
     /// through the turn it was squashed into two upright bars, then trailed back together with a gap and a loose end.)
     /// </summary>
+    [Category("Veil")]
     public class ShieldRingPlayTests
     {
         const string Prefabs = "Assets/_CrimsonVeil/LevelKit/Prefabs/";

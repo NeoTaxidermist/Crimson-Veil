@@ -9,6 +9,7 @@ using UnityEngine;
 namespace CrimsonVeil.Tests
 {
     /// <summary>The test room left of the start: grey blocks to look at the hero's movement, every weapon, no enemies.</summary>
+    [Category("World")]
     public class TestRoomTests
     {
         static PrototypeSceneBuilder.BlockDef B(string name) => PrototypeSceneBuilder.TestRoomBlocks.First(b => b.name == name);

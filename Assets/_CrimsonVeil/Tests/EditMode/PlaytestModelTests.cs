@@ -4,6 +4,7 @@ using NUnit.Framework;
 namespace CrimsonVeil.Tests
 {
     /// <summary>The playtest measurement: time into each section, deaths in each, the whole run.</summary>
+    [Category("UI")]
     public class PlaytestModelTests
     {
         static PlaytestModel Run() => new PlaytestModel(new[]

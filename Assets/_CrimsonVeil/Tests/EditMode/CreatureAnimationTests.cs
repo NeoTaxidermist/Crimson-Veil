@@ -5,6 +5,7 @@ using UnityEngine;
 namespace CrimsonVeil.Tests
 {
     /// <summary>Enemies move with their gait and stage their blows: anticipation, action, follow-through.</summary>
+    [Category("Combat")]
     public class CreatureAnimationTests
     {
         [Test]

@@ -9,6 +9,8 @@ using UnityEngine.TestTools;
 namespace CrimsonVeil.Tests
 {
     /// <summary>Whip swing on a grapple ring against real colliders: a gap too wide to jump is crossed by swinging.</summary>
+    [Category("Motor")]
+    [Category("Veil")]
     public class GrappleSwingPlayTests
     {
         GameObject root, player;

@@ -8,6 +8,8 @@ namespace CrimsonVeil.Tests
     /// Holding a lip: the hands hold it and the body hangs from them; coming over it he is carried all the way (the hands
     /// on it until a foot is down on the top); and the stretch of a jump stops at a roof.
     /// </summary>
+    [Category("Hero")]
+    [Category("Motor")]
     public class LedgeHoldTests
     {
         [Test]

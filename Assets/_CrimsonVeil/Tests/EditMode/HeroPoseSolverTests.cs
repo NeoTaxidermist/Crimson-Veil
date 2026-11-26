@@ -4,6 +4,7 @@ using UnityEngine;
 
 namespace CrimsonVeil.Tests
 {
+    [Category("Hero")]
     public class HeroPoseSolverTests
     {
         const float Dt = 1f / 60f;

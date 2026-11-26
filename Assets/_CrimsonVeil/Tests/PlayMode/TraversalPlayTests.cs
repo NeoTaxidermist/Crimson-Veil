@@ -7,6 +7,7 @@ using UnityEngine.TestTools;
 namespace CrimsonVeil.Tests
 {
     /// <summary>Wall slide / wall jump / ledge climb against real colliders.</summary>
+    [Category("Motor")]
     public class TraversalPlayTests
     {
         GameObject root, player;

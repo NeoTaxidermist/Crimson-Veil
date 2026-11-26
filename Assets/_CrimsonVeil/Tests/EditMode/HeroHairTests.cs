@@ -9,6 +9,7 @@ namespace CrimsonVeil.Tests
     /// The hero's hair in motion (<see cref="SpringBones"/> with its styling on): each lock keeps its place in the
     /// hairstyle, leans with the wind of his motion and flutters at the tip.
     /// </summary>
+    [Category("Hero")]
     public class HeroHairTests
     {
         [Test]

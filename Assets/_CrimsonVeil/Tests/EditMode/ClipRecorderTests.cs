@@ -6,6 +6,7 @@ using UnityEngine;
 namespace CrimsonVeil.Tests
 {
     /// <summary>The clip recorder plays the hero by its script of inputs (for review clips).</summary>
+    [Category("Tools")]
     public class ClipRecorderTests
     {
         [Test]

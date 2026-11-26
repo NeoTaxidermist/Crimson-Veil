@@ -4,6 +4,7 @@ using UnityEngine;
 
 namespace CrimsonVeil.Tests
 {
+    [Category("Veil")]
     public class VeilRendererTests
     {
         [Test]

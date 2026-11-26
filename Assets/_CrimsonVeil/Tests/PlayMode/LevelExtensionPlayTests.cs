@@ -14,6 +14,8 @@ namespace CrimsonVeil.Tests
     /// The hard parts of the level's extension, played in the real scene with steered input: into the tower under its
     /// wall, up the wall-jump shaft, over the widest rampart gap, and up the steps out of the well.
     /// </summary>
+    [Category("World")]
+    [Category("Motor")]
     public class LevelExtensionPlayTests
     {
         const string ScenePath = "Assets/_CrimsonVeil/Scenes/Prototype_Ruins.unity";

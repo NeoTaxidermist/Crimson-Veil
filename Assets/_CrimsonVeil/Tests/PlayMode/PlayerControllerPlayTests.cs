@@ -7,6 +7,7 @@ using UnityEngine.TestTools;
 
 namespace CrimsonVeil.Tests
 {
+    [Category("Motor")]
     public class PlayerControllerPlayTests
     {
         GameObject ground, player;

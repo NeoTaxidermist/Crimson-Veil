@@ -11,6 +11,7 @@ namespace CrimsonVeil.Tests
     /// The environment matches the key art: lighter grey layers and many modelled set pieces
     /// (aqueduct, castle, cliff village, brambles, weeds, chains, fallen leaves).
     /// </summary>
+    [Category("World")]
     public class EnvironmentDetailTests
     {
         [Test]

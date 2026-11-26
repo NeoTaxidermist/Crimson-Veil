@@ -7,6 +7,7 @@ using UnityEngine;
 namespace CrimsonVeil.Tests
 {
     /// <summary>The hero's fingers: both hands have finger bones and close round what they hold.</summary>
+    [Category("Hero")]
     public class HeroHandsTests
     {
         [Test]

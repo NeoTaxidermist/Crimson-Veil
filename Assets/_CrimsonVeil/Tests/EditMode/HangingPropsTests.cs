@@ -7,6 +7,7 @@ using UnityEngine;
 namespace CrimsonVeil.Tests
 {
     /// <summary>Chains, cages and banners in the backdrop hang from stone in their own layer, not from thin air.</summary>
+    [Category("World")]
     public class HangingPropsTests
     {
         const string ScenePath = "Assets/_CrimsonVeil/Scenes/Prototype_Ruins.unity";

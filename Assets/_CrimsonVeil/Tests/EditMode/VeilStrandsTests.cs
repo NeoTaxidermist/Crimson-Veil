@@ -9,6 +9,7 @@ namespace CrimsonVeil.Tests
     /// winding round it (over and under each other: in depth), rubbing instead of passing through each other, off the
     /// body, and laid back on their places as the scarf hardens into a weapon.
     /// </summary>
+    [Category("Veil")]
     public class VeilStrandsTests
     {
         const float Dt = 1f / 60f;

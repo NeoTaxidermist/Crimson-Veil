@@ -5,6 +5,36 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.90.0] – 2026-11-26
+### Přidáno
+- **Zvuky boje, vyrobené v kódu** (`SoundSynth`, `GameSound`): máchnutí mečem, kopím, bičem a štítem (každé jinak vysoké), zásah, těžký zásah dokončujícího úderu, zranění hrdiny, blok a odražení štítem, šála, která vezme ránu za hrdinu, rozplynutí poraženého nepřítele, šleh biče, výstřel z luku a zásah šípem. Žádné nahrávky ani stažené soubory: šum a tóny tvarované filtry a obálkami, pokaždé s malou odchylkou výšky, aby nezněly strojově. Hlasitost řídí nastavení efektů. Ukázky jsou ve složce `C:\_ClaudeAI\unity\zvuky` (mimo projekt).
+- **Bliknutí zasaženého** (`HitFlash`, vlastnost `_HitFlash` ve shaderu siluet): nepřítel na okamžik zbělá, hrdina při zranění zrudne.
+- **Řez v místě zásahu**: krátká jasně karmínová čára ve směru úderu, zmizí za 0,14 s (`CombatFx.Slash`); i u zásahu šípem.
+- **Rudé okraje obrazovky při zranění** (`HurtVignette`), které do půl sekundy odezní; slabší, když ránu vezme šála.
+
+### Změněno
+- **Zastavení času při zásahu je delší**, aby ho bylo vidět. Meč 0,085 s, bič 0,07 s, kopí a štít 0,11 s, dokončující úder 1,7× déle (dřív 0,055 s, tři snímky, které nebyly poznat). Zranění hrdiny 0,13 s (dřív 0,09 s), blok 0,07 s, šála 0,08 s, šíp 0,06 s.
+- Větší stříkanec při zásahu (34 kapek místo 22, dokončující úder 56) a výraznější inkoust u zasaženého nepřítele.
+
+### Změřeno
+- Zásah mečem do přízraku (test na skutečném hrdinovi): svět stál 0,087 s, přízrak blikl naplno, řez se nakreslil, zazněl švih i zásah.
+- Zranění hrdiny: svět stojí 0,13 s, hrdina blikne naplno, okraje zrudnou naplno a do 0,6 s zmizí.
+- Zvuky: těžiště spektra zásahu 470 Hz, těžkého zásahu 290 Hz, zranění 465 Hz; máchnutí od štítu 1,6 kHz po bič 4,4 kHz.
+
+### Poctivě
+- **Zvuky jsem neslyšel, jen změřil.** Napoprvé měly zásahy těžiště kolem 5 kHz, tedy syčení místo úderu; opravil jsem filtry. Zranění pak vyšlo jen na 137 Hz, což reproduktor notebooku skoro nezahraje; posunul jsem ho výš. Jak zvuky skutečně zní, posoudíš ty.
+- **Přízrak po zásahu dál skoro neodletí** (posun pod 1 cm); jeho odhození jsem nezkoumal. Pocit zásahu teď nese bliknutí, zastavení, řez a zvuk.
+- Rudý okraj byl v první verzi moc silný a sahal daleko do obrazu; zúžil jsem ho a ztlumil.
+- Bliknutí vypnutí dávkování vykreslování (SRP batcher) pro zasaženého, ale jen na tu chvíli a jen pro jeho tělo.
+- V nahrávce ani testu jsem neviděl odražení štítem ani blok naostro, jen jsem k nim přidal zvuk.
+- Při měření se Unity dvakrát přeložila uprostřed hry a hra se rozbila; měřil jsem znovu po čistém spuštění.
+- Galerie tuto ani předchozí verze neukazuje a do main není nic sloučeno.
+
+### Testy
+- `HitFeelTests` (EditMode, 6 nových, `Combat`): každý zvuk vznikne, má správnou hlasitost, nepřebudí se a na konci nekřápne; je pokaždé stejný; úder je tupší než máchnutí a máchnutí jsou odstupňovaná podle zbraně; bliknutí; délky zastavení času.
+- `HitFeelPlayTests` (PlayMode, 2 nové, `Combat` a `Veil`): úder do nepřítele a zranění hrdiny, viz Změřeno.
+- Puštěno: celý EditMode (634 testů; napoprvé 633, neprošel nový test výšky zranění, viz Poctivě) a PlayMode kategorie `Combat`, `Veil` a `UI` (88 testů). Napoprvé 87 z 88: neprošel nový test zranění, protože zůstalo herní rozhraní z předchozího testu a snímky v testu jsou delší než celé zastavení; test jsem opravil a znovu pustil `HitFeelPlayTests`, `CastingPlayTests` a `MenuPlayTests` (27 testů), všechny prošly.
+
 ## [0.89.0] – 2026-11-26
 ### Změněno
 - **Nastavení má tlačítka Výchozí, Zrušit a Uložit.** Změny se dají vyzkoušet (klávesy platí hned, hlasitost je slyšet), ale uloží se až tlačítkem Uložit. Zrušit (i Esc) vrátí všechno do stavu, ve kterém se nastavení otevřelo: klávesy, zvuk i obraz. Výchozí vrátí výchozí hodnoty otevřené záložky; i to se uloží až s Uložit.

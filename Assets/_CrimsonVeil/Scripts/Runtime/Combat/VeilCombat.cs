@@ -80,13 +80,19 @@ namespace CrimsonVeil.Combat
                         veil.NotifyHitLanded(); // feeds the scarf; a downward spear bounces the hero up
                         if (col.GetComponentInParent<IHostile>() != null) Hostiles.NoteExchange();
                         Hit?.Invoke(target, info);
-                        // the finisher lands heavier: a longer stop, a harder shake, a bigger spray
+                        // the finisher lands heavier: a longer stop, a harder shake, a bigger spray, a deeper sound
                         float heavy = blow.finisher ? 1.6f : 1f;
-                        CombatFx.HitStop((form == VeilForm.Spear || form == VeilForm.Shield ? 0.08f : 0.055f) * heavy);
-                        CombatFx.Shake((form == VeilForm.Shield ? 0.45f : 0.3f) * heavy);
+                        CombatFx.HitStop(CombatFx.HitStopFor(form, blow.finisher));
+                        CombatFx.Shake((form == VeilForm.Shield ? 0.45f : 0.32f) * heavy);
                         // (the spray flies on with the blade, through depth too)
-                        CombatFx.Burst(point, new Vector2(veil.Facing, 0.4f), CombatFx.Crimson, blow.finisher ? 40 : 22, 6f,
+                        CombatFx.Burst(point, new Vector2(veil.Facing, 0.4f), CombatFx.Crimson, blow.finisher ? 56 : 34, 8f,
                                        VeilWeaponPose.SweepDirection(form, veil.AttackProgress));
+                        // the cut: a stroke through the point struck, along the blade's way
+                        Vector2 along = new Vector2(b.x - a.x, b.y - a.y);
+                        Vector2 across = new Vector2(-along.y, along.x);
+                        CombatFx.Slash(point, form == VeilForm.Spear ? new Vector2(veil.Facing, 0f) : across,
+                                       blow.finisher ? 1.6f : 1.1f, blow.finisher ? 0.16f : 0.11f);
+                        GameSound.Play(blow.finisher ? Cue.HitHeavy : Cue.Hit);
                     }
                 }
             }

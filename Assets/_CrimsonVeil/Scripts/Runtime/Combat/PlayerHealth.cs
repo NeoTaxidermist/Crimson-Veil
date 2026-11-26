@@ -92,6 +92,7 @@ namespace CrimsonVeil.Combat
                 CombatFx.HitStop(0.14f);
                 CombatFx.Shake(0.35f);
                 CombatFx.Burst(transform.position + new Vector3(facing * 0.7f, 1.2f, 0f), new Vector2(facing, 0.6f), CombatFx.Crimson, 30, 6f);
+                GameSound.Play(Cue.Parry);
                 Parried?.Invoke();
                 return false;
             }
@@ -100,9 +101,10 @@ namespace CrimsonVeil.Combat
                 BlockCount++;
                 player.Motor.ApplyKnockback(new Vector2(-facing * 3.5f, 0f), 0.12f);
                 if (info.source != null && info.source.TryGetComponent<IStaggerable>(out var s)) s.Stagger();
-                CombatFx.HitStop(0.05f);
+                CombatFx.HitStop(0.07f);
                 CombatFx.Shake(0.25f);
                 CombatFx.Burst(transform.position + new Vector3(facing * 0.6f, 1.1f, 0f), new Vector2(facing, 0.3f), CombatFx.Crimson, 12, 4f);
+                GameSound.Play(Cue.Block);
                 Blocked?.Invoke();
                 return false;
             }
@@ -114,9 +116,11 @@ namespace CrimsonVeil.Combat
                 veil.Interrupt(0.12f);   // the chain is broken all the same
                 Model.GrantInvulnerability(0.6f);
                 player.Motor.ApplyKnockback(info.knockback * 0.5f, 0.12f);
-                CombatFx.HitStop(0.06f);
-                CombatFx.Shake(0.3f);
+                CombatFx.HitStop(0.08f);
+                CombatFx.Shake(0.35f);
                 CombatFx.Burst(transform.position + Vector3.up * 1.4f, info.knockback, CombatFx.Crimson, 26, 5f);
+                GameSound.Play(Cue.Absorb);
+                CrimsonVeil.UI.HurtVignette.Pulse(0.45f);
                 Absorbed?.Invoke();
                 return false;
             }
@@ -128,9 +132,14 @@ namespace CrimsonVeil.Combat
             // driven down onto an enemy: bumping its body there is the point of it
             if (veil != null && !(info.kind == DamageKind.Contact && (veil.DownStrike || veil.ThrustingDown)))
                 veil.Interrupt(stunTime);
-            CombatFx.HitStop(0.09f);
+            // struck: the world stops a moment longer than for a blow he lands, his body flashes crimson, the edges
+            // of the picture run red, and he is heard to be hit
+            CombatFx.HitStop(0.13f);
             CombatFx.Shake(0.6f);
-            CombatFx.Burst(transform.position + Vector3.up * 1.1f, info.knockback, CombatFx.Ink, 16);
+            CombatFx.Burst(transform.position + Vector3.up * 1.1f, info.knockback, CombatFx.Crimson, 30, 6f);
+            HitFlash.Flash(visualRoot != null ? visualRoot.gameObject : gameObject, HitFlash.Wound, HitFlash.HeroSeconds);
+            CrimsonVeil.UI.HurtVignette.Pulse(1f);
+            GameSound.Play(Cue.Hurt);
 
             if (Model.IsDead) StartCoroutine(DieAndRespawn());
             return true;

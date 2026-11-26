@@ -68,7 +68,8 @@ namespace CrimsonVeil.Combat
             SinceHurt = 0f;
             OnHurt(info);
             Hurt?.Invoke(info);
-            CombatFx.Burst(info.point, info.knockback.normalized, CombatFx.Ink, 14, 4f);
+            CombatFx.Burst(info.point, info.knockback.normalized, CombatFx.Ink, 20, 5f);
+            HitFlash.Flash(gameObject, HitFlash.Pale, HitFlash.FoeSeconds);
             if (Health.IsDead) Kill();
             return true;
         }
@@ -107,6 +108,7 @@ namespace CrimsonVeil.Combat
             diedFired = true;
             Died?.Invoke();
             CombatFx.Burst(transform.position + Vector3.up * 0.6f, Vector2.up, CombatFx.Ink, 32, 4.5f);
+            GameSound.Play(Cue.Dissolve);
             OnDeath();
         }
 

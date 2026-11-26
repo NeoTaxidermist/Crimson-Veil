@@ -30,6 +30,8 @@ Shader "CrimsonVeil/Silhouette"
         _StreakDeep ("Streak Deep", Color) = (0.17, 0.02, 0.02, 1)
         _StreakLight ("Streak Light", Color) = (0.55, 0.07, 0.06, 1)
         [Enum(UnityEngine.Rendering.CullMode)] _Cull ("Cull", Float) = 2
+        [HideInInspector] _HitFlash ("Hit Flash (set by HitFlash)", Range(0, 1)) = 0
+        [HideInInspector] _FlashColor ("Hit Flash Color", Color) = (1, 1, 1, 1)
     }
     SubShader
     {
@@ -69,6 +71,8 @@ Shader "CrimsonVeil/Silhouette"
             float _InkStreaks;
             half4 _StreakDeep;
             half4 _StreakLight;
+            float _HitFlash;
+            half4 _FlashColor;
         CBUFFER_END
 
         struct Attributes
@@ -213,6 +217,9 @@ Shader "CrimsonVeil/Silhouette"
                 col = lerp(MixFog(col, i.fogFactor), col, step(0.5, _InkStreaks));
                 float mist = CV_GroundMist(i.positionWS, _MistStrength);
                 col = lerp(col, _CV_MistColor.rgb, mist);
+                // struck: the whole body flashes for a moment (pale for a foe, crimson for the hero) - over the mist,
+                // so a hit far off still reads
+                col = lerp(col, _FlashColor.rgb, saturate(_HitFlash));
                 return half4(col, 1);
             }
             ENDHLSL

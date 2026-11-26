@@ -149,6 +149,8 @@ namespace CrimsonVeil.Combat
             knockX = info.knockback.x;
             Brain.OnHurt(Health.IsDead);
             Hurt?.Invoke(info);
+            HitFlash.Flash(gameObject, HitFlash.Pale, HitFlash.FoeSeconds);
+            CombatFx.Burst(info.point, info.knockback.normalized, CombatFx.Ink, 20, 5f);
             if (Health.IsDead) Kill();
             return true;
         }
@@ -167,6 +169,7 @@ namespace CrimsonVeil.Combat
             body.enabled = false;
             Died?.Invoke();
             CombatFx.Burst(transform.position + Vector3.up * 1.1f, Vector2.up, CombatFx.Ink, 40, 5f);
+            GameSound.Play(Cue.Dissolve);
             Destroy(gameObject, 1.6f);
         }
     }

@@ -42,6 +42,7 @@ Material:
     - _FormShade: 0
     - _GrainScale: 0.6
     - _GrainStrength: 0.2
+    - _HitFlash: 0
     - _InkStreaks: 0
     - _MistStrength: 0.4
     - _PinTop: 0
@@ -53,6 +54,7 @@ Material:
     - _WindWeight: 1
     m_Colors:
     - _BaseColor: {r: 0.02, g: 0.02, b: 0.022, a: 1}
+    - _FlashColor: {r: 1, g: 1, b: 1, a: 1}
     - _RimColor: {r: 0.62, g: 0.62, b: 0.65999997, a: 1}
     - _StreakDeep: {r: 0.16999996, g: 0.02, b: 0.02, a: 1}
     - _StreakLight: {r: 0.54999995, g: 0.06999998, b: 0.059999965, a: 1}

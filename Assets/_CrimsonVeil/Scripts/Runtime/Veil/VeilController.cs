@@ -531,6 +531,8 @@ namespace CrimsonVeil.Veil
         void StartAttack()
         {
             var blow = Combo.Begin(ShapeForm);
+            // (the bow is heard when its string is let go, not when it is drawn)
+            if (ShapeForm != VeilForm.Bow) CrimsonVeil.Combat.GameSound.Play(CrimsonVeil.Combat.GameSound.SwingOf(ShapeForm));
             if (blow.morph)
             {
                 // the morph strike: the scarf flares where it pours into the new weapon
@@ -1466,6 +1468,7 @@ namespace CrimsonVeil.Veil
                 {
                     whipCracked = true;
                     WhipCracked?.Invoke();
+                    CrimsonVeil.Combat.GameSound.Play(CrimsonVeil.Combat.Cue.WhipCrack);
                 }
             }
 
@@ -1575,6 +1578,7 @@ namespace CrimsonVeil.Veil
             float aim = Mathf.Abs(aimTiltTarget) > 1f ? aimTiltTarget * Mathf.Deg2Rad : 0.06f;
             Vector3 dir = new Vector3(facing * Mathf.Cos(aim), Mathf.Sin(aim), 0f);
             VeilArrow.Spawn(pos, dir.normalized * arrowSpeed, arrowMaterial, gameObject);
+            CrimsonVeil.Combat.GameSound.Play(CrimsonVeil.Combat.Cue.BowLoose);
         }
 
         void OnDrawGizmosSelected()

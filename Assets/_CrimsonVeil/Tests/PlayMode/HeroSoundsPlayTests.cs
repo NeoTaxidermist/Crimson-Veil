@@ -73,6 +73,7 @@ namespace CrimsonVeil.Tests
             int steps = Heard(Cue.StepWalk) + Heard(Cue.StepRun) - still;
             Debug.Log($"[hero sounds] 2 s of running: {steps} steps heard ({Heard(Cue.StepRun)} running), speed {controller.Motor.Velocity.x:F1} m/s");
             Assert.AreEqual(0, still, "standing still, no steps");
+            if (GameSettings.EffectsLevel > 0f) Assert.Greater(GameSound.LoopLevel(Loop.Ambience), 0f, "the ruin's air is heard under him");
             Assert.That(steps, Is.InRange(3, 12), "a step for each foot set down - not one a frame, not none");
             Assert.Greater(Heard(Cue.StepRun), 0, "at a run they are running steps");
             input.jump = true;

@@ -26,7 +26,7 @@ namespace CrimsonVeil.Tests
             {
                 var x = GameSound.Make(cue);
                 Assert.Greater(x.Length, SoundSynth.Rate / 20, $"{cue}: long enough to hear");
-                Assert.Less(x.Length, SoundSynth.Rate * 1.2f, $"{cue}: short");
+                Assert.Less(x.Length, SoundSynth.Rate * 2f, $"{cue}: short");
                 float peak = 0f;
                 foreach (var v in x) peak = Mathf.Max(peak, Mathf.Abs(v));
                 Assert.AreEqual(SoundSynth.Peak, peak, 0.01f, $"{cue}: as loud as the rest, never clipping");

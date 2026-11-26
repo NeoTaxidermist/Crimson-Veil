@@ -5,6 +5,39 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.92.0] – 2026-11-26
+### Změněno
+- **Zvuky jsou vyrobené jinak, aby nezněly uměle** (`SoundSynth` přepsán znovu). Úder už není klesající sinusový tón; ten zněl jako kopák bicího automatu. Teď vzniká jako ve světě: něco do něčeho narazí (krátký záblesk šumu, měkčí nebo ostřejší) a zasažená věc se rozezní svými vlastními tóny. Kámen zní krátce a vysoko, tělo tupě, dřevo dutě, kov dlouze. Vzduch je růžový šum v pohyblivém pásmu místo pravidelného třepetání. Nic se nepřebuzuje (zrušené zkreslení `tanh`). Každý zvuk dozní v ozvěně kamenné ruiny (síť zpožďovacích linek, tmavne, jak doznívá) a je celkově tmavší.
+- **Mix podle skutečné hlasitosti (LUFS), ne podle špičky.** Dřív byl každý zvuk dorovnaný na plnou špičku a hrál kolem −14 LUFS, proto byl hlasitý a rušivý. Teď: boj kolem −23 LUFS, máchnutí −30, kroky −39 (chůze) a −36 (běh), dopady −34 až −30, skluz −33, lano −38. Každé zaznění je navíc náhodně o 0 až 1,5 dB tišší, takže žádné dva kroky nejsou stejně hlasité (`GameSound.Level`, `GameSound.GainFor`, `SoundSynth.Loudness` podle ITU-R BS.1770).
+- Kroky jsou jasnější klapnutí podpatku a šoupnutí podrážky, bez basového dunění. Zásah je mokré plácnutí, zranění úder, šustění oblečení a vyražený dech. Výstřel z luku je krátké brnknutí a let šípu. Zachycení biče je pár rychlých plácnutí koženého konce o trám (dřív kovové cinknutí). Vrzání lana jsou dvě zaskřípání za houpnutí, na obou koncích švihu. Rozplynutí nepřítele syčí a bublá.
+- Všechny zvuky se vyrábějí ve vedlejším vlákně, takže hra při startu nezaškobrtne; hlavní vlákno z nich jen sestaví klipy, pár za snímek.
+
+### Přidáno
+- **Podkres ruiny** (`Loop.Ambience`, `SoundSynth.AmbienceLoop`): pořád a velmi potichu (−46 LUFS) hraje vzduch, který se v nárazech prohání ruinou, slabý dech větru v otvorech a občas daleko usazený kámen nebo pár sesypaných oblázků, celé v dlouhé ozvěně. Hraje, kdykoli je hrdina ve hře. Bez něj každý zvuk zazněl z naprostého digitálního ticha, jaké ve světě není.
+
+### Změřeno
+- **Posuzoval jsem modelem CLAP (LAION), ne sluchem.** Model porovná zvuk s popisem (třeba „běžecký krok na kameni“) a s šesti umělými (syntezátor, pípnutí, bílý šum, osmibitová hra, zkreslený hluk, kopák bicího automatu). Číslo říká, jak moc zvuk odpovídá popisu oproti umělým.
+- Verze 0.91: průměr **0,13**. Kroky, dopady, kotoul a vytažení na římsu model slyšel jako „kopák bicího automatu“ s jistotou 0,89 až 0,99.
+- Po přepsání syntézy: průměr 0,38 (švihy 0,83 až 0,93). Údery ale pořád zněly jako kopák.
+- Rozhodující zkouška: tentýž zásah s přidaným šumem prostoru 40 dB pod špičkou vyšel 0,01 → 0,49, kotoul 0,00 → 0,75, zranění 0,02 → 0,93. Proto vznikl podkres ruiny.
+- Posouzeno tak, jak se zvuky hrají ve hře (každý ve své hlasitosti přes podkres): průměr **0,79**. Máchnutí 0,92 až 1,00, zásah 0,72, těžký zásah 0,94, zranění 0,90, odražení 0,80, blok 0,89, šleh biče 0,99, luk 0,81, šíp 0,90; běh (8 kroků) 0,81, chůze 0,74, dopad 0,84, tvrdý dopad 0,89, římsa 0,97, vytažení 1,00, odraz od zdi 0,97, úskok 0,98, zachycení biče 1,00, sjíždění po zdi 0,83.
+- Hlasitost, jak se zvuky hrají (testem): každý v rozmezí 3 dB pod až 0,5 dB nad cílem mixu, žádný hlasitější než −20 LUFS, krok nejméně o 8 dB tišší než zásah.
+
+### Poctivě
+- **Pořád jsem nic neslyšel.** Model není ucho a čísla nejsou kalibrovaná na skutečné nahrávky; žádnou nemám, se kterou bych je porovnal. Pomohl najít, co zní uměle (kopák v každém úderu, digitální ticho), ale jestli zvuky sedí do atmosféry hry, posoudíš jen ty.
+- Slabá místa podle modelu: rozplynutí nepřítele 0,06, skluz 0,18, vrzání lana 0,37, kotoul 0,49. Samotný podkres vychází 0,20, ale model každý samotný šum označí za šum (zkoušel jsem sedm podob, všechny pod 0,4).
+- Čísla kolísají o desetiny podle toho, do kterého místa podkresu zvuk padne; kroky vyšly mezi koly jednou 0,79 a podruhé 0,41.
+- Model (asi 0,6 GB) a PyTorch jsem s tvým svolením stáhl do mezipaměti mimo projekt (`C:\Users\vasek\.cache\huggingface`, mezipaměť `uv`); do hry ani do repozitáře se nic nedostalo.
+- Ukázky: `C:\_ClaudeAI\unity\zvuky` (každý zvuk v hlasitosti, jakou má ve hře, takže kroky jsou opravdu tiché), `C:\_ClaudeAI\unity\zvuky_s_podkresem` (každý zvuk přes podkres ruiny, jak zazní ve hře), `C:\_ClaudeAI\unity\zvuky_v091` (předchozí verze na porovnání). Šleh biče je v ukázkách ještě o 3 dB hlasitější, než nakonec hraje.
+- Napoprvé tři testy neprošly. Test měřiče hlasitosti počítal s doznívajícím zásahem, jehož konec měřič správně vynechá jako ticho; teď měří stálý skluz. Šleh biče byl kvůli stropu špičky tišší, než mix chtěl; cíl je teď −30. Rozdíl variant biče vycházel malý, protože je zvuk skoro celý ticho; teď se porovnává vůči jeho hlasitosti.
+- PlayMode testy jsem zase zapisoval dočasným skriptem do souboru (nástroj jejich výsledek ztrácí); skript jsem smazal.
+- Do main není nic sloučeno.
+
+### Testy
+- `MoveSoundTests` (EditMode, 2 nové): každý zvuk hraje v hlasitosti, jakou mu dává mix, nic nehraje přes −20 LUFS, krok je o 8 dB pod zásahem a podkres pod krokem; měřič hlasitosti čte desetkrát tišší zvuk o 20 dB tišeji. Upravené: zvuky smějí být kvůli ozvěně ruiny dlouhé až 2 s; rozdíl variant se měří vůči hlasitosti.
+- `HeroSoundsPlayTests`: pod během hraje podkres ruiny.
+- Puštěno: EditMode kategorie `Combat` a `Hero` (232 testů; napoprvé 229, viz Poctivě), PlayMode kategorie `Hero`, `Motor` a `Combat` (137 testů, všechny prošly, včetně testu, že hrdina nealokuje paměť).
+
 ## [0.91.0] – 2026-11-26
 ### Přidáno
 - **Zvuky pohybu hrdiny** (`HeroSounds`, přidá se k hrdinovi sám): krok pokaždé, když noha dosedne na zem (běh hlasitější a těžší než chůze), odraz do skoku, švih vzduchu u salta, dopad (z větší výšky tvrdší a hlasitější, při kotoulu tlumený), úskok, kotoul, plácnutí ruky o římsu, vytažení přes hranu (škrábání, výdech, krok nahoře), odraz od zdi, zachycení biče, vrzání biče během houpání (silnější, čím rychleji se houpe), svist vzduchu v dolní části silného švihu a pustění.

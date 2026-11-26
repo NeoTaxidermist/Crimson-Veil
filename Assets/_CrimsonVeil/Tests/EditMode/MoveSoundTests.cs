@@ -37,7 +37,7 @@ namespace CrimsonVeil.Tests
                 {
                     var x = GameSound.Make(cue, v);
                     Assert.Greater(x.Length, SoundSynth.Rate / 20, $"{cue} {v}: long enough to hear");
-                    Assert.Less(x.Length, SoundSynth.Rate * 1.2f, $"{cue} {v}: short");
+                    Assert.Less(x.Length, SoundSynth.Rate * 2f, $"{cue} {v}: short (with the room)");
                     Assert.AreEqual(SoundSynth.Peak, Peak(x), 0.01f, $"{cue} {v}: as loud as the rest, never clipping");
                     Assert.Less(Mathf.Abs(x[x.Length - 1]), 1e-3f, $"{cue} {v}: it fades out (no click)");
                 }
@@ -51,9 +51,10 @@ namespace CrimsonVeil.Tests
                 var a = GameSound.Make(cue, 0);
                 var b = GameSound.Make(cue, 1);
                 int n = Mathf.Min(a.Length, b.Length);
-                double diff = 0;
-                for (int i = 0; i < n; i++) diff += Math.Abs(a[i] - b[i]);
-                Assert.Greater(diff / n, 0.005, $"{cue}: its second variant is another sound, not the first again");
+                double diff = 0, level = 0;
+                for (int i = 0; i < n; i++) { diff += Math.Abs(a[i] - b[i]); level += Math.Abs(a[i]); }
+                // (relative to how loud it is: a crack is nearly all silence)
+                Assert.Greater(diff / level, 0.3, $"{cue}: its second variant is another sound, not the first again");
                 CollectionAssert.AreEqual(a, GameSound.Make(cue, 0), $"{cue}: and each variant is the same every time");
             }
         }
@@ -100,6 +101,38 @@ namespace CrimsonVeil.Tests
             Assert.AreEqual(Cue.Land, hop.cue);
             Assert.AreEqual(Cue.LandHard, drop.cue);
             Assert.Greater(drop.loudness, hop.loudness);
+        }
+
+        /// <summary>
+        /// The mix: each sound is played at its measured loudness, the fight around -23 LUFS, the moving well under it,
+        /// the ruin's air under all (the first sets were played at about -14, every one at its full peak: loud, harsh).
+        /// </summary>
+        [Test]
+        public void AsPlayed_TheFightIsModerate_TheMovingQuieter_TheRuinQuietest()
+        {
+            float Played(Cue c, int v)
+            {
+                var x = GameSound.Make(c, v);
+                float g = GameSound.GainFor(x, GameSound.Level(c));
+                return SoundSynth.Loudness(x) + 20f * Mathf.Log10(Mathf.Min(1f, g));
+            }
+            foreach (Cue c in Enum.GetValues(typeof(Cue)))
+            {
+                float l = Played(c, 0);
+                Assert.That(l, Is.InRange(GameSound.Level(c) - 3f, GameSound.Level(c) + 0.5f), $"{c}: played as loud as the mix sets it");
+                Assert.Less(l, -20f, $"{c}: nothing blares");
+            }
+            Assert.Less(Played(Cue.StepRun, 0), Played(Cue.Hit, 0) - 8f, "a step is felt more than heard, well under a blow");
+            Assert.Less(GameSound.Level(Loop.Ambience), GameSound.Level(Cue.StepWalk) - 4f, "the ruin's air is under even a step");
+        }
+
+        [Test]
+        public void TheLoudnessMeasure_ReadsALouderSoundLouder_By20dBForTenTimes()
+        {
+            var x = GameSound.Make(Loop.Slide);   // (steady: a fading sound drops under the gate when ten times quieter)
+            var quiet = new float[x.Length];
+            for (int i = 0; i < x.Length; i++) quiet[i] = x[i] * 0.1f;
+            Assert.AreEqual(SoundSynth.Loudness(x) - 20f, SoundSynth.Loudness(quiet), 0.1f);
         }
 
         [Test]

@@ -17,7 +17,7 @@ namespace CrimsonVeil.Combat
     }
 
     /// <summary>Sounds that run on while something lasts.</summary>
-    public enum Loop { Slide, WallSlide, Rope, Glide }
+    public enum Loop { Slide, WallSlide, Rope, Glide, Ambience }
 
     /// <summary>
     /// Plays the game's sounds: a few voices made on first use (kept across scenes). Each cue has several variants and
@@ -30,6 +30,8 @@ namespace CrimsonVeil.Combat
         const int Voices = 14;
         static GameSound instance;
         static readonly Dictionary<(Cue, int), AudioClip> clips = new Dictionary<(Cue, int), AudioClip>();
+        static readonly Dictionary<(Cue, int), float> gains = new Dictionary<(Cue, int), float>();
+        static readonly Dictionary<Loop, float> loopGains = new Dictionary<Loop, float>();
         static readonly Dictionary<Cue, int> lastVariant = new Dictionary<Cue, int>();
         AudioSource[] voices;
         int nextVoice;
@@ -42,41 +44,57 @@ namespace CrimsonVeil.Combat
         /// <summary>How many times each cue was played (for tests).</summary>
         public static readonly Dictionary<Cue, int> Count = new Dictionary<Cue, int>();
 
-        /// <summary>How loud each cue is relative to the others.</summary>
+        /// <summary>
+        /// How loud each cue is heard (LUFS at full volume): the mix. Measured loudness, not peak - a step peaks as high
+        /// as a blow. The fight sits around -23, the hero's moving well under it (steps -39 to -36, as in a film, where
+        /// they are felt more than heard), nothing near the -14 the first sets were played at.
+        /// </summary>
         public static float Level(Cue cue)
         {
             switch (cue)
             {
-                case Cue.SwingSword: case Cue.SwingSpear: case Cue.SwingWhip: case Cue.SwingShield: return 0.4f;
-                case Cue.Hit: return 0.85f;
-                case Cue.HitHeavy: return 1f;
-                case Cue.Hurt: return 1f;
-                case Cue.Block: return 0.7f;
-                case Cue.Parry: return 0.85f;
-                case Cue.Dissolve: return 0.7f;
-                case Cue.WhipCrack: return 0.6f;
-                case Cue.BowLoose: return 0.5f;
-                case Cue.ArrowHit: return 0.7f;
-                case Cue.Absorb: return 0.6f;
-                case Cue.StepWalk: return 0.22f;
-                case Cue.StepRun: return 0.32f;
-                case Cue.Jump: return 0.35f;
-                case Cue.AirJump: return 0.35f;
-                case Cue.Land: return 0.45f;
-                case Cue.LandHard: return 0.7f;
-                case Cue.Dash: return 0.45f;
-                case Cue.Roll: return 0.5f;
-                case Cue.LedgeGrab: return 0.5f;
-                case Cue.Mantle: return 0.45f;
-                case Cue.WallJump: return 0.4f;
-                case Cue.RopeLatch: return 0.55f;
-                case Cue.RopeLetGo: return 0.35f;
-                case Cue.RopeSwoosh: return 0.3f;
-                default: return 0.6f;
+                case Cue.SwingSword: case Cue.SwingSpear: case Cue.SwingShield: return -30f;
+                case Cue.SwingWhip: return -31f;
+                case Cue.Hit: return -24f;
+                case Cue.HitHeavy: return -22f;
+                case Cue.Hurt: return -22f;
+                case Cue.Block: return -25f;
+                case Cue.Parry: return -24f;
+                case Cue.Dissolve: return -27f;
+                case Cue.WhipCrack: return -30f;   // (a crack is all peak: heard well at this)
+                case Cue.BowLoose: return -29f;
+                case Cue.ArrowHit: return -27f;
+                case Cue.Absorb: return -29f;
+                case Cue.StepWalk: return -39f;
+                case Cue.StepRun: return -36f;
+                case Cue.Jump: return -37f;
+                case Cue.AirJump: return -34f;
+                case Cue.Land: return -34f;
+                case Cue.LandHard: return -30f;
+                case Cue.Dash: return -32f;
+                case Cue.Roll: return -33f;
+                case Cue.LedgeGrab: return -34f;
+                case Cue.Mantle: return -35f;
+                case Cue.WallJump: return -35f;
+                case Cue.RopeLatch: return -32f;
+                case Cue.RopeLetGo: return -36f;
+                case Cue.RopeSwoosh: return -35f;
+                default: return -30f;
             }
         }
 
-        public static float Level(Loop loop) => loop == Loop.Slide ? 0.35f : loop == Loop.WallSlide ? 0.3f : loop == Loop.Glide ? 0.18f : 0.35f;
+        /// <summary>How loud each loop is heard at its fullest (LUFS).</summary>
+        public static float Level(Loop loop) => loop == Loop.Slide ? -33f : loop == Loop.WallSlide ? -35f : loop == Loop.Glide ? -40f
+            : loop == Loop.Ambience ? -46f : -38f;
+
+        /// <summary>The volume that plays <paramref name="samples"/> at <paramref name="lufs"/> (never past full scale).</summary>
+        public static float GainFor(float[] samples, float lufs)
+        {
+            float g = Mathf.Pow(10f, (lufs - SoundSynth.Loudness(samples)) / 20f);
+            float peak = 0f;
+            foreach (var v in samples) peak = Mathf.Max(peak, Mathf.Abs(v));
+            return peak > 0f ? Mathf.Min(g, 0.9f / peak) : g;
+        }
 
         /// <summary>How many variants a cue has (steps the most: they are heard the most).</summary>
         public static int Variants(Cue cue) => cue == Cue.StepWalk || cue == Cue.StepRun ? 8 : 4;
@@ -124,7 +142,7 @@ namespace CrimsonVeil.Combat
                 case Cue.LedgeGrab: return SoundSynth.Grab(109, v);
                 case Cue.Mantle: return SoundSynth.Mantle(110, v);
                 case Cue.WallJump: return SoundSynth.PushOff(111, v);
-                case Cue.RopeLatch: return SoundSynth.Clank(1400f, 0.5f, 112, v);
+                case Cue.RopeLatch: return SoundSynth.Latch(112, v);
                 case Cue.RopeLetGo: return SoundSynth.Rush(700f, 0.3f, 113, v);
                 case Cue.RopeSwoosh: return SoundSynth.Rush(550f, 0.45f, 114, v);
                 default: return SoundSynth.Hit(1f, 1, v);
@@ -136,9 +154,10 @@ namespace CrimsonVeil.Combat
         {
             switch (loop)
             {
-                case Loop.Slide: return SoundSynth.ScrapeLoop(1400f, 1.2f, 121, 0.8f);
-                case Loop.WallSlide: return SoundSynth.ScrapeLoop(800f, 1.2f, 122, 0.6f);
+                case Loop.Slide: return SoundSynth.ScrapeLoop(750f, 1.6f, 121, 0.9f);
+                case Loop.WallSlide: return SoundSynth.ScrapeLoop(600f, 1.6f, 122, 0.7f);
                 case Loop.Glide: return SoundSynth.WindLoop(420f, 2.5f, 124);
+                case Loop.Ambience: return SoundSynth.AmbienceLoop(12f, 125);
                 default: return SoundSynth.CreakLoop(1.4f, 123);
             }
         }
@@ -149,42 +168,82 @@ namespace CrimsonVeil.Combat
         public static bool Warm { get; private set; }
 
         /// <summary>
-        /// Makes every sound ahead, a few each frame (about 3 ms of a frame) from the moment the sounds are first
-        /// needed: made on first use, a sound cost a frame's hitch and the garbage of its samples in the middle of play.
+        /// Makes every sound ahead, from the moment the sounds are first needed: the samples on a worker thread (the
+        /// synthesis is plain arithmetic; the ruin's 12 s alone take over half a second), the clips from them on the
+        /// main thread, a few a frame. Made on first use, a sound cost a hitch and its garbage in the middle of play.
         /// </summary>
         public static void WarmUp() { var _ = Instance; }
 
+        readonly struct Made
+        {
+            public readonly bool isLoop; public readonly Cue cue; public readonly int variant; public readonly Loop loop;
+            public readonly float[] samples; public readonly float gain;
+            public Made(bool isLoop, Cue cue, int variant, Loop loop, float[] samples, float gain)
+            { this.isLoop = isLoop; this.cue = cue; this.variant = variant; this.loop = loop; this.samples = samples; this.gain = gain; }
+        }
+
         IEnumerator MakeAhead()
         {
-            var clock = new System.Diagnostics.Stopwatch();
-            clock.Start();
-            foreach (Loop l in System.Enum.GetValues(typeof(Loop)))
+            var made = new System.Collections.Concurrent.ConcurrentQueue<Made>();
+            var work = System.Threading.Tasks.Task.Run(() =>
             {
-                LoopClip(l);
-                if (clock.ElapsedMilliseconds > 3) { yield return null; clock.Restart(); }
-            }
-            foreach (Cue c in System.Enum.GetValues(typeof(Cue)))
-                for (int v = 0; v < Variants(c); v++)
+                try
                 {
-                    Clip(c, v);
-                    if (clock.ElapsedMilliseconds > 3) { yield return null; clock.Restart(); }
+                    // (the ruin first: it is heard the moment he is in it; then what is heard most)
+                    foreach (Loop l in new[] { Loop.Ambience, Loop.Slide, Loop.WallSlide, Loop.Rope, Loop.Glide })
+                    {
+                        var x = Make(l);
+                        made.Enqueue(new Made(true, default, 0, l, x, GainFor(x, Level(l))));
+                    }
+                    foreach (Cue c in System.Enum.GetValues(typeof(Cue)))
+                        for (int v = 0; v < Variants(c); v++)
+                        {
+                            var x = Make(c, v);
+                            made.Enqueue(new Made(false, c, v, default, x, GainFor(x, Level(c))));
+                        }
                 }
+                catch (System.Exception e) { Debug.LogException(e); }
+            });
+            var clock = new System.Diagnostics.Stopwatch();
+            while (true)
+            {
+                clock.Restart();
+                while (clock.ElapsedMilliseconds < 2 && made.TryDequeue(out var m))
+                {
+                    if (m.isLoop)
+                    {
+                        if (!loopClips.ContainsKey(m.loop)) { loopClips[m.loop] = ToClip("cv_loop_" + m.loop, m.samples); loopGains[m.loop] = m.gain; }
+                    }
+                    else if (!clips.ContainsKey((m.cue, m.variant)))
+                    {
+                        clips[(m.cue, m.variant)] = ToClip("cv_" + m.cue + "_" + m.variant, m.samples);
+                        gains[(m.cue, m.variant)] = m.gain;
+                    }
+                }
+                if (work.IsCompleted && made.IsEmpty) break;
+                yield return null;
+            }
+            if (work.IsFaulted) Debug.LogException(work.Exception);
             Warm = true;
         }
 
         static AudioClip LoopClip(Loop loop)
         {
             if (loopClips.TryGetValue(loop, out var c) && c != null) return c;
-            c = ToClip("cv_loop_" + loop, Make(loop));
+            var x = Make(loop);   // (not made ahead yet: made now)
+            c = ToClip("cv_loop_" + loop, x);
             loopClips[loop] = c;
+            loopGains[loop] = GainFor(x, Level(loop));
             return c;
         }
 
         static AudioClip Clip(Cue cue, int variant)
         {
             if (clips.TryGetValue((cue, variant), out var c) && c != null) return c;
-            c = ToClip("cv_" + cue + "_" + variant, Make(cue, variant));
+            var x = Make(cue, variant);   // (not made ahead yet: made now)
+            c = ToClip("cv_" + cue + "_" + variant, x);
             clips[(cue, variant)] = c;
+            gains[(cue, variant)] = GainFor(x, Level(cue));
             return c;
         }
 
@@ -237,13 +296,15 @@ namespace CrimsonVeil.Combat
             Played++;
             Count.TryGetValue(cue, out int k);
             Count[cue] = k + 1;
-            float volume = GameSettings.EffectsLevel * Level(cue) * Mathf.Clamp01(loudness);
+            float volume = GameSettings.EffectsLevel * Mathf.Clamp01(loudness);
             if (volume <= 0.001f) return;
             var self = Instance;
             var src = self.voices[self.nextVoice];
             self.nextVoice = (self.nextVoice + 1) % Voices;
-            src.clip = Clip(cue, PickVariant(cue));
-            src.volume = volume;
+            int v = PickVariant(cue);
+            src.clip = Clip(cue, v);
+            // (a little louder or softer each time, within 1.5 dB: no two steps alike)
+            src.volume = Mathf.Min(1f, volume * gains[(cue, v)] * Random.Range(0.84f, 1f));
             src.pitch = Random.Range(0.95f, 1.05f);
             src.Play();
         }
@@ -263,7 +324,7 @@ namespace CrimsonVeil.Combat
                 src.volume = 0f;
                 self.loops[loop] = src;
             }
-            self.loopWanted[loop] = Mathf.Clamp01(loudness) * Level(loop) * GameSettings.EffectsLevel;
+            self.loopWanted[loop] = Mathf.Min(1f, Mathf.Clamp01(loudness) * loopGains[loop] * GameSettings.EffectsLevel);
             src.pitch = Mathf.Clamp(pitch, 0.5f, 2f);
             if (loudness > 0f && !src.isPlaying)
             {

@@ -100,6 +100,8 @@ namespace CrimsonVeil.Player
         void Update()
         {
             if (motor == null) return;
+            // The ruin, under everything while he is in it: no sound breaks out of a digital silence.
+            GameSound.SetLoop(Loop.Ambience, 1f);
             var v = motor.Velocity;
             // The slide along the floor and down a wall scrape as fast as he goes; the scarf sail hums in the air.
             GameSound.SetLoop(Loop.Slide, motor.IsSliding && motor.IsGrounded ? Mathf.InverseLerp(0.5f, 8f, Mathf.Abs(v.x)) : 0f,

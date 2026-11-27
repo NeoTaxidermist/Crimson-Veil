@@ -15,10 +15,12 @@ $branch = (git rev-parse --abbrev-ref HEAD 2>$null)
 $problems = @()
 $unpushed = @(git log --oneline "origin/$branch..HEAD" 2>$null)
 if ($unpushed.Count -gt 0) { $problems += "$($unpushed.Count) commit(s) not pushed to origin/$branch" }
-if (git status --porcelain -- Docs/Rozpracovano.md 2>$null) { $problems += 'Docs/Rozpracovano.md has uncommitted edits' }
+foreach ($f in 'Docs/Rozpracovano.md', 'Docs/Backlog.md') {
+    if (git status --porcelain -- $f 2>$null) { $problems += "$f has uncommitted edits" }
+}
 
 if ($problems.Count -gt 0) {
-    $reason = 'Hand-over not finished: ' + ($problems -join '; ') + '. Update your computer''s section in Docs/Rozpracovano.md (the "last session" heading: discussed, done, not done, in progress, decisions, next step), commit with a version per CLAUDE.md and push. If that cannot be done now, say why in your reply.'
+    $reason = 'Hand-over not finished: ' + ($problems -join '; ') + '. Update your computer''s section in Docs/Rozpracovano.md (the "last session" heading: discussed, done, not done, in progress, decisions, next step), put anything discussed but postponed into Docs/Backlog.md, commit with a version per CLAUDE.md and push. If that cannot be done now, say why in your reply.'
     @{ decision = 'block'; reason = $reason } | ConvertTo-Json -Compress
 }
 exit 0

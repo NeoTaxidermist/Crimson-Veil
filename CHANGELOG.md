@@ -5,6 +5,14 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.100.10] – 2026-11-27
+### Přidáno
+- **`Docs/Backlog.md`:** společný seznam pro oba počítače. Obsahuje, co se musí, co čeká na rozhodnutí, co by se mělo a mohlo udělat, a u každé položky proč, dopady, stav a odkazy. Naplněno z otevřených bodů v `Docs/claude/` (přestavba nepřátel, benchmark na DELLu, úchop na hraně, klávesy zbraní, šála do Burstu, LOD a další). Pravidlo v `CLAUDE.md`: co probereme a odložíme, se zapíše ještě v téže odpovědi.
+- Hook SessionStart předává Claudovi i backlog, hook Stop hlídá i jeho necommitnuté úpravy. „Další na řadě“ v `Docs/Rozpracovano.md` odkazuje na backlog.
+
+### Testy
+- Jen dokumentace a nástroje mimo hru, testy se nespouštěly. Hooky ověřené ručním spuštěním skriptů.
+
 ## [0.100.9] – 2026-11-27
 ### Přidáno
 - **Plná předávka mezi sessions:** `Docs/Rozpracovano.md` má sekci „Poslední session“ pro každý počítač (o čem jsme mluvili, hotovo, nehotovo, rozdělané, rozhodnutí, další krok) a pravidlo aktualizovat ji po každém dokončeném kroku. Hook SessionStart předává Claudovi celý soubor, ne jen hlavičku.

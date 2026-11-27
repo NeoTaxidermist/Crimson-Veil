@@ -4,7 +4,8 @@
 
 ## Nejdřív
 - Hook SessionStart (`.claude/settings.json` → `Tools/session-start.ps1`) na začátku každé session sám udělá `git fetch` a `git pull --ff-only` a předá ti celý `Docs/Rozpracovano.md`. Když hlásí chybu (pull selhal, offline), vyřeš to dřív, než začneš pracovat.
-- **Předávka průběžně:** uživatel může kdykoli přejít na druhý počítač a ta session nevidí naši konverzaci. Po každém dokončeném kroku proto aktualizuj svou sekci „Poslední session“ v `Docs/Rozpracovano.md` (o čem jsme mluvili, hotovo, nehotovo, rozdělané, rozhodnutí, další krok), commitni a pushni. Hook Stop (`Tools/session-stop.ps1`) tě vrátí, když zůstanou nepushnuté commity nebo necommitnutá předávka.
+- **Předávka průběžně:** uživatel může kdykoli přejít na druhý počítač a ta session nevidí naši konverzaci. Po každém dokončeném kroku proto aktualizuj svou sekci „Poslední session“ v `Docs/Rozpracovano.md` (o čem jsme mluvili, hotovo, nehotovo, rozdělané, rozhodnutí, další krok), commitni a pushni. Hook Stop (`Tools/session-stop.ps1`) tě vrátí, když zůstanou nepushnuté commity nebo necommitnutá předávka či backlog.
+- **Backlog (`Docs/Backlog.md`):** všechno, co s uživatelem probereme a nedělá se hned (nápad, „uděláme později“, otevřená otázka, chyba mimo úkol), zapiš tam ještě v téže odpovědi: co, proč, dopady, stav, odkazy. Nic takového nesmí zůstat jen v konverzaci. O pořadí v sekci „Musí se“ rozhoduje uživatel.
 - **`git pull`, pak přečti `Docs/Rozpracovano.md`** (kdo kde pracuje, co je rozdělané a co je na řadě) a v `Docs/claude/README.md` poznámky k úkolu. Vývoj běží na dvou počítačích (Lenovo, DELL) a jediné, co sdílejí, je tento repozitář.
 - **Na konci úkolu** aktualizuj `Docs/Rozpracovano.md`, commitni a pushni. Nové poznatky o projektu zapisuj do `Docs/claude/`, ne do místní paměti Claude.
 

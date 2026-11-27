@@ -46,6 +46,10 @@ if ($dirty.Count -gt 0) { $lines += "Uncommitted changes in working tree: $($dir
 $handover = '(Docs/Rozpracovano.md not found)'
 $doc = Join-Path $repo 'Docs/Rozpracovano.md'
 if (Test-Path $doc) { $handover = Get-Content $doc -Raw -Encoding UTF8 }
+# Backlog: everything discussed but not done yet (must / waiting for the user / could), with impacts.
+$backlog = '(Docs/Backlog.md not found)'
+$bl = Join-Path $repo 'Docs/Backlog.md'
+if (Test-Path $bl) { $backlog = Get-Content $bl -Raw -Encoding UTF8 }
 
 $context = @(
     "[session-start] $status (branch $branch)."
@@ -54,6 +58,10 @@ $context = @(
     'This is the hand-over from previous sessions on both computers (Docs/Rozpracovano.md). Continue from it; the user may have just switched computers. Keep your computer''s section under the "last session" heading current after every finished step, then commit and push.'
     '----- Docs/Rozpracovano.md -----'
     $handover
+    ''
+    'Backlog of everything discussed but not done yet. Anything newly discussed and postponed goes there in the same reply (commit + push).'
+    '----- Docs/Backlog.md -----'
+    $backlog
 ) -join "`n"
 
 @{

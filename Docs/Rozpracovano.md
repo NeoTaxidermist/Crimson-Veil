@@ -10,7 +10,7 @@ Vývoj běží na dvou počítačích (**Lenovo** = hlavní, RTX 2060; **DELL** 
 - Nepracuj, pokud tu stojí, že druhý počítač má rozdělanou necommitnutou práci. Zeptej se uživatele.
 
 ## Teď pracuje
-Nikdo. DELL dokončil benchmark (vše commitnuté a pushnuté, v0.100.20). Lenovo volno.
+Nikdo. DELL dokončil benchmark (vše commitnuté a pushnuté, v0.100.21). Lenovo volno.
 
 ## Poslední session
 
@@ -27,7 +27,7 @@ Nikdo. DELL dokončil benchmark (vše commitnuté a pushnuté, v0.100.20). Lenov
 - **Nehotovo:** rozdělení zbylých ~4 ms pevných průchodů (InkGrade, kopie obrazu a hloubky, HDR). Je potřeba přepínač renderer features v `Benchmark.cs`, nebo dočasné buildy.
 - **Rozdělané:** nic. Necommitnuté jsou jen soubory, které vygenerovalo Unity (`Assets/Settings/Mobile_RPAsset.asset`, `.vsconfig`, `CrimsonVeil.slnx`), ty se necommitují.
 - **Rozhodnutí uživatele:** Smart App Control na DELLu je vypnuté. Stačí dvě stálé sessions (DELL, Lenovo), nové se zakládat nemusí.
-- **Další krok:** uživatel rozhodne o cíli výkonu pro slabou grafiku (backlog, „Čeká na rozhodnutí“). Jinak nahoře v `Docs/Backlog.md` je přestavba nepřátel (ShieldMonk).
+- **Další krok:** podle uživatele. Cíl výkonu pro slabou grafiku podle něj „zatím nech být“ (2026-11-27). Nahoře v `Docs/Backlog.md` je přestavba nepřátel (ShieldMonk).
 
 ### Lenovo – 2026-11-27 (session „Crimson Veil – Lenovo“)
 - **O čem jsme mluvili:** výkon (v0.100.0: zrno tuše zapečené do textury, ~350 fps), příprava DELLu a předávka mezi počítači (v0.100.1–v0.100.5: `CLAUDE.md`, `Docs/NovyPocitac.md`, poznámky v `Docs/claude/`, napojení Blenderu).

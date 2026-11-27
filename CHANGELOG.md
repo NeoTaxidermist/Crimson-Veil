@@ -5,6 +5,13 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.100.21] – 2026-11-27
+### Změněno
+- `Docs/Backlog.md`: o cíli výkonu pro slabou grafiku uživatel rozhodl „Zatím nech být“. Položka zůstává v backlogu a nic se nedělá.
+
+### Testy
+- Jen dokumentace, testy se nespouštěly.
+
 ## [0.100.20] – 2026-11-27
 ### Přidáno
 - **Výkon na DELLu (i5-11500H + Intel UHD), build IL2CPP + D3D11, scéna Prototype_Ruins v okně:** 1080p 17,1 ms (58 fps), 720p 9,0 ms (111 fps), 540p 6,4 ms (156 fps). Hru tu omezuje počet pixelů. Rozpad pro 1080p:

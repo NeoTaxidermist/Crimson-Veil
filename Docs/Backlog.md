@@ -36,6 +36,7 @@ Značky: **[rozhodnuto]** uživatel výslovně chce · **[návrh]** můj návrh,
   - volba v nastavení hry,
   - nebo nechat, pokud cíl 250 fps platí jen pro výkonnou grafiku.
 - **Rozhodnout:** jaký cíl platí pro slabé počítače (např. stabilních 60 fps v 1080p?) a jestli smí být na nich méně efektů.
+- **Stav:** uživatel 2026-11-27: „Zatím nech být.“ Nic nedělat, dokud to sám neotevře.
 - **Dopady:** vzhled (SSAO a mlha jsou součást nálady), nastavení hry a menu, testy kvality, CHANGELOG. Na Lenovu se nic nezhorší.
 - **Odkazy:** `Docs/claude/crimson-veil-performance.md` (sekce DELL).
 

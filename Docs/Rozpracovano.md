@@ -10,7 +10,7 @@ Vývoj běží na dvou počítačích (**Lenovo** = hlavní, RTX 2060; **DELL** 
 - Nepracuj, pokud tu stojí, že druhý počítač má rozdělanou necommitnutou práci. Zeptej se uživatele.
 
 ## Teď pracuje
-DELL – volno (vše commitnuté a pushnuté, v0.100.10). Lenovo volno.
+DELL – volno (vše commitnuté a pushnuté, v0.100.11). Lenovo volno.
 
 ## Poslední session
 
@@ -24,7 +24,8 @@ DELL – volno (vše commitnuté a pushnuté, v0.100.10). Lenovo volno.
 - **Nehotovo:** benchmark sestavené hry na Intel UHD (`Tools/bench.ps1`), zatím se nestavělo.
 - **Rozdělané:** nic. Necommitnuté jsou jen soubory, které vygenerovalo Unity (`Assets/Settings/Mobile_RPAsset.asset`, `.vsconfig`, `CrimsonVeil.slnx`), ty se necommitují.
 - **Rozhodnutí uživatele:** Smart App Control na DELLu je vypnuté.
-- **Další krok:** ověřit hooky v nové session (spustí se při jejím startu). Pak podle uživatele, nahoře v `Docs/Backlog.md` je přestavba nepřátel (ShieldMonk).
+  - Test v nové session: hook SessionStart běží, ale výstup přes 10 KB se zobrazil jen jako náhled. Opraveno ve v0.100.11 (předávka bez úvodních pravidel, backlog jako přehled, ~4,7 KB).
+- **Další krok:** ještě jednou ověřit hooky v nové session po v0.100.11. Pak podle uživatele, nahoře v `Docs/Backlog.md` je přestavba nepřátel (ShieldMonk).
 
 ### Lenovo
 - v0.100.5: doplnil do `Docs/NovyPocitac.md` přesný postup napojení Blenderu. Jinak volno.

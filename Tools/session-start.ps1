@@ -43,13 +43,23 @@ $dirty = @(git status --porcelain 2>$null)
 if ($dirty.Count -gt 0) { $lines += "Uncommitted changes in working tree: $($dirty.Count) file(s)" }
 
 # Hand-over: the whole Docs/Rozpracovano.md (who works where, last session on each computer, what is done/open).
+# Claude Code shows hook context over ~10 KB only as a preview (the rest goes to a file), so the
+# context is kept under $maxChars: the hand-over without its rules intro (CLAUDE.md has the rules)
+# and the backlog as an index (sections, items, their state); the full backlog is read from the file.
+$maxChars = 9500
 $handover = '(Docs/Rozpracovano.md not found)'
 $doc = Join-Path $repo 'Docs/Rozpracovano.md'
-if (Test-Path $doc) { $handover = Get-Content $doc -Raw -Encoding UTF8 }
-# Backlog: everything discussed but not done yet (must / waiting for the user / could), with impacts.
+if (Test-Path $doc) {
+    $text = Get-Content $doc -Raw -Encoding UTF8
+    $cut = $text.IndexOf("`n## ")
+    $handover = if ($cut -ge 0) { $text.Substring($cut + 1) } else { $text }
+}
+# Backlog index: "## section", "### item" and its "Stav:" line.
 $backlog = '(Docs/Backlog.md not found)'
 $bl = Join-Path $repo 'Docs/Backlog.md'
-if (Test-Path $bl) { $backlog = Get-Content $bl -Raw -Encoding UTF8 }
+if (Test-Path $bl) {
+    $backlog = (Get-Content $bl -Encoding UTF8 | Where-Object { $_ -match '^##' -or $_ -match '^\s*- \*\*Stav:\*\*' }) -join "`n"
+}
 
 $context = @(
     "[session-start] $status (branch $branch)."
@@ -59,10 +69,13 @@ $context = @(
     '----- Docs/Rozpracovano.md -----'
     $handover
     ''
-    'Backlog of everything discussed but not done yet. Anything newly discussed and postponed goes there in the same reply (commit + push).'
-    '----- Docs/Backlog.md -----'
+    'Backlog index (Docs/Backlog.md: everything discussed but not done yet). READ THE FULL FILE before planning or starting any item: it holds the reasons, impacts and links. Anything newly discussed and postponed goes there in the same reply (commit + push).'
+    '----- Docs/Backlog.md (index) -----'
     $backlog
 ) -join "`n"
+if ($context.Length -gt $maxChars) {
+    $context = $context.Substring(0, $maxChars) + "`n[cut to stay under the hook size limit - read Docs/Rozpracovano.md and Docs/Backlog.md in full]"
+}
 
 @{
     systemMessage      = "Git: $status"

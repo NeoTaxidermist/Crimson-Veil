@@ -5,6 +5,13 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.100.11] – 2026-11-27
+### Opraveno
+- **Předávka na začátku session se celá vejde do kontextu.** Test v nové session ukázal, že výstup hooku měl přes 10 KB, a Claude Code z něj proto ukázal jen náhled (zbytek uložil do souboru). Hook teď posílá předávku bez úvodních pravidel (ta jsou v `CLAUDE.md`) a z backlogu přehled sekcí, položek a jejich stavu, s pokynem přečíst celý soubor před plánováním. Výstup má ~4,7 KB, pojistka ho drží pod 9 500 znaky.
+
+### Testy
+- Jen nástroje mimo hru, testy se nespouštěly. Hook ověřen v nové session (před opravou) a ručním spuštěním (po opravě).
+
 ## [0.100.10] – 2026-11-27
 ### Přidáno
 - **`Docs/Backlog.md`:** společný seznam pro oba počítače. Obsahuje, co se musí, co čeká na rozhodnutí, co by se mělo a mohlo udělat, a u každé položky proč, dopady, stav a odkazy. Naplněno z otevřených bodů v `Docs/claude/` (přestavba nepřátel, benchmark na DELLu, úchop na hraně, klávesy zbraní, šála do Burstu, LOD a další). Pravidlo v `CLAUDE.md`: co probereme a odložíme, se zapíše ještě v téže odpovědi.

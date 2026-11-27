@@ -5,6 +5,13 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.100.12] – 2026-11-27
+### Změněno
+- `Docs/Rozpracovano.md`: předávka mezi sessions ověřená v nové session po v0.100.11 (celý kontext dorazil, odpovědi z předávky a backlogu správné). Další krok podle uživatele.
+
+### Testy
+- Jen dokumentace, testy se nespouštěly.
+
 ## [0.100.11] – 2026-11-27
 ### Opraveno
 - **Předávka na začátku session se celá vejde do kontextu.** Test v nové session ukázal, že výstup hooku měl přes 10 KB, a Claude Code z něj proto ukázal jen náhled (zbytek uložil do souboru). Hook teď posílá předávku bez úvodních pravidel (ta jsou v `CLAUDE.md`) a z backlogu přehled sekcí, položek a jejich stavu, s pokynem přečíst celý soubor před plánováním. Výstup má ~4,7 KB, pojistka ho drží pod 9 500 znaky.

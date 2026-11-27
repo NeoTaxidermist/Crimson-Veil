@@ -3,14 +3,14 @@
 Vývoj běží na dvou počítačích (**Lenovo** = hlavní, RTX 2060; **DELL** = Latitude 5421, Intel UHD). Na každém je stálá session „Crimson Veil – Lenovo“ / „Crimson Veil – DELL“. Uživatel z telefonu vybírá, kde se pracuje, a **musí jít kdykoli pokračovat na druhém počítači**. Druhá session nevidí naši konverzaci, zná jen tento soubor a git.
 
 **Pravidla předávky (pro Claude):**
-- **Na začátku session** hook `Tools/session-start.ps1` sám stáhne změny a předá ti celý tento soubor. Přečti i poznámky v `Docs/claude/`, které se týkají úkolu. Zapiš do „Teď pracuje“, že pracuješ na tomto počítači.
+- **Na začátku session** hook `Tools/session-start.ps1` sám stáhne změny a předá ti tento soubor (bez těchto pravidel) a přehled backlogu. **Při každé zprávě uživatele** udělá totéž, ale jen když druhý počítač mezitím něco pushnul (`-OnPrompt`). Přečti i poznámky v `Docs/claude/`, které se týkají úkolu. Zapiš do „Teď pracuje“, že pracuješ na tomto počítači.
 - **Průběžně, po každém dokončeném kroku** (ne až na konci dne): aktualizuj svou sekci v „Poslední session“, commitni s verzí a pushni. Uživatel může přejít na druhý počítač kdykoli, i bez ohlášení.
 - Do „Poslední session“ piš konkrétně, aby druhá session mohla rovnou navázat: o čem jsme mluvili, co uživatel chtěl, co je hotové, co ne a proč, co je rozdělané (soubory, stav), rozhodnutí uživatele a přesný další krok. Starší body, které už neplatí, mazej. Trvalé poznatky patří do `Docs/claude/`.
 - Necommitnutou práci na konci odpovědi nenechávej. Pokud to opravdu nejde (testy neprošly, čeká se na uživatele), napiš do své sekce, co je rozdělané a v jakém stavu.
 - Nepracuj, pokud tu stojí, že druhý počítač má rozdělanou necommitnutou práci. Zeptej se uživatele.
 
 ## Teď pracuje
-DELL – volno (vše commitnuté a pushnuté, v0.100.12). Lenovo volno.
+DELL – volno (vše commitnuté a pushnuté, v0.100.13). Lenovo volno.
 
 ## Poslední session
 
@@ -20,13 +20,13 @@ DELL – volno (vše commitnuté a pushnuté, v0.100.12). Lenovo volno.
   - Celá instalace: Git, Unity 6000.3.28f1 s IL2CPP, Visual Studio 2026 s C++ a SDK, Blender 5.3, uv a Python. MCP for Unity se automatickým startem, Blender MCP. EditMode 655/655 prošlo. Detaily jsou v sekci Stav.
   - Rozmazaná hra na DELLu: v okně Game bylo zapnuté „Low Resolution Aspect Ratios“ a Windows má zvětšení 150 %. Vypnuto (v0.100.7).
   - Automatická předávka: hook SessionStart (v0.100.8) a tato struktura souboru s pojistkou Stop hook (v0.100.9).
-  - `Docs/Backlog.md` (v0.100.10): uživatel chce v gitu seznam nápadů, toho, co se musí a co by se mohlo udělat, včetně dopadů, protože o věcech mluvíme a dělat je jde až za pár dní. Naplněno z otevřených bodů v `Docs/claude/`. Hook ho předává na začátku session.
+  - `Docs/Backlog.md` (v0.100.10): uživatel chce v gitu seznam nápadů, toho, co se musí a co by se mohlo udělat, včetně dopadů, protože o věcech mluvíme a dělat je jde až za pár dní. Naplněno z otevřených bodů v `Docs/claude/`.
+  - Předávka ověřená ve dvou nových sessions. První ukázala, že výstup hooku přes 10 KB se zobrazí jen jako náhled; opraveno ve v0.100.11 (~4,7 KB). Druhá dostala všechno a odpověděla správně.
+  - Hook při každé zprávě (v0.100.13): otevřená session si stáhne změny z druhého počítače, jakmile jí uživatel napíše. Pokud se nic nezměnilo, je tichý (~1 s). Ověřeno v dočasném klonu.
 - **Nehotovo:** benchmark sestavené hry na Intel UHD (`Tools/bench.ps1`), zatím se nestavělo.
 - **Rozdělané:** nic. Necommitnuté jsou jen soubory, které vygenerovalo Unity (`Assets/Settings/Mobile_RPAsset.asset`, `.vsconfig`, `CrimsonVeil.slnx`), ty se necommitují.
-- **Rozhodnutí uživatele:** Smart App Control na DELLu je vypnuté.
-  - Test v nové session: hook SessionStart běží, ale výstup přes 10 KB se zobrazil jen jako náhled. Opraveno ve v0.100.11 (předávka bez úvodních pravidel, backlog jako přehled, ~4,7 KB).
-  - Druhý test po v0.100.11: nová session dostala celou předávku i přehled backlogu přímo v kontextu a správně odpověděla, kdo pracuje, jaký je další krok a co je v „Musí se“. **Předávka ověřená.**
-- **Další krok:** podle uživatele. Nahoře v `Docs/Backlog.md` je přestavba nepřátel (ShieldMonk) a benchmark na DELLu. Pak podle uživatele, nahoře v `Docs/Backlog.md` je přestavba nepřátel (ShieldMonk).
+- **Rozhodnutí uživatele:** Smart App Control na DELLu je vypnuté. Stačí dvě stálé sessions (DELL, Lenovo), nové se zakládat nemusí.
+- **Další krok:** uživatel jednou restartuje aplikaci Claude na DELLu i na Lenovu (na Lenovu po `git pull`), aby stálé sessions načetly hooky. Pak podle uživatele, nahoře v `Docs/Backlog.md` je přestavba nepřátel (ShieldMonk) a benchmark na DELLu.
 
 ### Lenovo
 - v0.100.5: doplnil do `Docs/NovyPocitac.md` přesný postup napojení Blenderu. Jinak volno.

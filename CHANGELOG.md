@@ -5,6 +5,16 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.100.13] – 2026-11-27
+### Přidáno
+- **Stažení změn při každé zprávě:** hook UserPromptSubmit spouští `Tools/session-start.ps1 -OnPrompt`. Session, která je otevřená celý den, si tak stáhne práci z druhého počítače, jakmile jí uživatel napíše, a dostane novou předávku. Když se nic nezměnilo nebo je počítač offline, hook nic nevypíše (zdržení ~1 s). Git se nikdy neptá na přihlášení (`GIT_TERMINAL_PROMPT=0`).
+
+### Změněno
+- `Docs/Rozpracovano.md`: uklizená sekce DELL (zdvojená věta, body o testech byly pod „Rozhodnutí uživatele“), pravidla zmiňují nový hook. Totéž v `CLAUDE.md`.
+
+### Testy
+- Jen nástroje mimo hru, testy se nespouštěly. Hook ověřen v dočasném klonu: beze změn tichý (1,2 s), o commit pozadu stáhne a předá předávku (2 s), poté znovu tichý.
+
 ## [0.100.12] – 2026-11-27
 ### Změněno
 - `Docs/Rozpracovano.md`: předávka mezi sessions ověřená v nové session po v0.100.11 (celý kontext dorazil, odpovědi z předávky a backlogu správné). Další krok podle uživatele.

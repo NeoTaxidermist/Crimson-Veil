@@ -5,6 +5,13 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.100.8] – 2026-11-27
+### Přidáno
+- **Automatická předávka mezi počítači:** hook SessionStart v `.claude/settings.json` spouští `Tools/session-start.ps1`. Na začátku každé session Claude na Lenovu i DELLu stáhne změny z druhého počítače (`git fetch` + `git pull --ff-only`) a dostane přehled: nové commity, nepushnuté commity, necommitnuté soubory a sekci „Teď pracuje“ z `Docs/Rozpracovano.md`. Když se změnily soubory Unity, připomene kontrolu Play módu. `CLAUDE.md` to zmiňuje.
+
+### Testy
+- Jen nástroje mimo hru, testy se nespouštěly. Skript ověřen ručním spuštěním.
+
 ## [0.100.7] – 2026-11-27
 ### Přidáno
 - `Docs/claude/dell-setup-pitfalls.md`: proč byla hra v editoru na DELLu rozmazaná (zvětšení Windows 150 % a v Game view zapnuté „Low Resolution Aspect Ratios“) a jak to vypnout.

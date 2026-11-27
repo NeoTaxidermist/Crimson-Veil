@@ -8,7 +8,7 @@ Vývoj běží na dvou počítačích (**Lenovo** = hlavní, RTX 2060; **DELL** 
 - Nepracuj, pokud tu stojí, že druhý počítač má rozdělanou necommitnutou práci. Zeptej se uživatele.
 
 ## Teď pracuje
-DELL – volno, připravený k vývoji (vše commitnuté a pushnuté, v0.100.4). Lenovo volno.
+DELL – volno, připravený k vývoji (vše commitnuté a pushnuté, v0.100.8). Lenovo volno.
 
 ## Stav
 - Větev `newFeatures`, do `main` se slučuje jen na pokyn uživatele.

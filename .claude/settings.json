@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "powershell",
+            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File \"$env:CLAUDE_PROJECT_DIR\\Tools\\session-start.ps1\"",
+            "timeout": 60,
+            "statusMessage": "Stahuji změny z druhého počítače..."
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -58,6 +58,7 @@ Nikdo. DELL dokončil přestavbu celého bestiáře (vše commitnuté a pushnut�
     - První spuštění vybere úroveň podle grafiky a v menu je u ní „(doporučeno)“. Volba se ukládá podle jména.
     - Praskliny v kamenech jsou předpečené (−2 ms na všech úrovních).
     - DELL Full HD, start / u nepřátel: Vysoká 82/70 fps, Střední 96/81 fps, Nízká 130/106 fps.
+    - **v0.106.2:** u ShieldMonka už prsty nevyčnívají ze štítu, záběr z pěti stran je ověřený. Úkol s HUD byl hotový už ve v0.100.0.
     - **Na Lenovu:** hra si uložila starou kvalitu jako index, takže se načte jako Vysoká. Automatický výběr se projeví jen bez uloženého nastavení.
 - **Nehotovo:** rozdělení zbylých ~4 ms pevných průchodů (InkGrade, kopie obrazu a hloubky, HDR). Je potřeba přepínač renderer features v `Benchmark.cs`, nebo dočasné buildy.
 - **Rozdělané:** nic. Necommitnuté jsou jen soubory, které vygenerovalo Unity (`Assets/Settings/Mobile_RPAsset.asset`, `.vsconfig`, `CrimsonVeil.slnx`), ty se necommitují.
@@ -65,7 +66,6 @@ Nikdo. DELL dokončil přestavbu celého bestiáře (vše commitnuté a pushnut�
 - **Další krok:**
   - Uživatel posoudí nové tvory.
   - Uživatel vyzkouší úrovně kvality ve hře (menu → Nastavení → Obraz → Kvalita obrazu).
-  - U ShieldMonka zůstalo z pohledu ze tří čtvrtin: prsty prosvítají štítem.
   - Cíl výkonu pro slabou grafiku podle uživatele „zatím nech být“.
 
 ### Lenovo – 2026-11-27 (session „Crimson Veil – Lenovo“)

@@ -5,6 +5,16 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.106.2] – 2026-11-27
+### Opraveno
+- **ShieldMonk:** prsty a klouby pěsti už nevyčnívají ze štítu při pohledu ze tří čtvrtin. Štít je od pěsti odsazený po své kolmici (`GripOffset`, 0,19 m), ne rovně ke kameře, takže pěst zůstává za středem natočeného štítu. Ověřeno na záběrech z pěti stran.
+
+### Změněno
+- `Docs/Backlog.md`: položka „UI plátna se přestavují každý snímek“ byla už hotová ve v0.100.0 (vlastní plátno šály, třepotání 30 Hz). UI dnes stojí ~0,24 ms. Smazána.
+
+### Testy
+- EditMode 685/685 (nový `TheMonksShield_StandsOffItsFist_AlongItsOwnFace`), PlayMode Combat 45/45.
+
 ## [0.106.1] – 2026-11-27
 ### Změněno
 - `Docs/Backlog.md`: vlastní nastavení kvality („Vlastní“) má odhad 1,5–2 h a uživatel ho odložil („Teď ne“).

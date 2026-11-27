@@ -121,5 +121,21 @@ namespace CrimsonVeil.Tests
             ShieldMonk.ShieldHold(new Vector3(0.55f, 1.05f, -0.15f), 0f, rest, out var mid, out _);
             Assert.Less(mid.z, -0.3f, "turning round, it swings wide in front of him, not through him");
         }
+
+        [Test]
+        public void TheMonksShield_StandsOffItsFist_AlongItsOwnFace()
+        {
+            // offset straight towards the camera, the slab (turned 40 deg) cut through the fist seen three-quarters on:
+            // the fist sits behind the middle of the face, whichever way he faces
+            foreach (int f in new[] { 1, -1 })
+            {
+                ShieldMonk.ShieldHold(Vector3.zero, f, Quaternion.identity, out _, out var rot);
+                var face = rot * Vector3.back;
+                var grip = ShieldMonk.GripOffset(f);
+                var flat = new Vector3(grip.x, 0f, grip.z);
+                Assert.Greater(Vector3.Dot(flat.normalized, face), 0.99f, "along the shield's face normal");
+                Assert.That(flat.magnitude, Is.InRange(0.15f, 0.3f), "clear of the knuckles, still in the hand");
+            }
+        }
     }
 }

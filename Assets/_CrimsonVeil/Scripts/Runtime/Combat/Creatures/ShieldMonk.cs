@@ -198,6 +198,14 @@ namespace CrimsonVeil.Combat
             rotation = Quaternion.Euler(0f, -ShieldTurn * fx, 0f) * rest;
         }
 
+        /// <summary>How far the shield's face stands off the fist that holds it (the fist's depth and the grip).</summary>
+        public const float GripStandOff = 0.19f;
+
+        /// <summary>From the shield fist to the shield's middle, for a body turned <paramref name="fx"/>: along the
+        /// shield's normal (towards the camera, turned <see cref="ShieldTurn"/> towards his front), a little up.</summary>
+        public static Vector3 GripOffset(float fx)
+            => Quaternion.Euler(0f, -ShieldTurn * fx, 0f) * Vector3.back * GripStandOff + Vector3.up * 0.02f;
+
         protected override void Tick(float dt)
         {
             if (IsDead) return;
@@ -339,9 +347,11 @@ namespace CrimsonVeil.Combat
             float tilt = ShieldUp ? 0f : 70f;
             var wantRot = Quaternion.Euler(0f, 0f, tilt * (fx >= 0f ? 1f : -1f)) * hold;
             Vector3 at = transform.position + (visual != null ? visual.localPosition : Vector3.zero) + offset;
-            // Up, it is in the shield arm's fist (its grip behind its face: the face before the fist, towards the camera)
+            // Up, it is in the shield arm's fist: the grip behind the middle of its face, the face standing off the fist
+            // along the shield's own normal (turned with it), so the knuckles stay behind the slab from every side
+            // (offset straight towards the camera, the turned slab cut through the fist seen three-quarters on)
             var shieldHand = side >= 0f ? handR : handL;
-            if (ShieldUp && shieldHand != null) at = shieldHand.position + new Vector3(Facing * 0.04f, 0.02f, -0.16f);
+            if (ShieldUp && shieldHand != null) at = shieldHand.position + GripOffset(fx);
             shield.position = Vector3.Lerp(shield.position, at, 1f - Mathf.Exp(-16f * dt));
             shield.rotation = Quaternion.Slerp(shield.rotation, wantRot, 1f - Mathf.Exp(-10f * dt));
         }

@@ -96,9 +96,6 @@ Značky: **[rozhodnuto]** uživatel výslovně chce · **[návrh]** můj návrh,
 - **Co:** úrovně detailu pro přestavěné nepřátele, až jich bude hodně na obrazovce najednou. Ve v0.104.0 stojí skupina 4–6 nepřátel v záběru na DELLu jen 0,45–1,0 ms, takže to zatím nespěchá.
 - **Dopady:** souvisí s položkou 1 (přestavba nepřátel), Blender skripty v `ArtSource/`.
 
-### UI plátna se přestavují každý snímek (0,48 ms) · S  [návrh]
-- **Co:** rozdělit HUD na statické a měnící se plátno.
-- **Dopady:** výkon, testy HUD a menu.
 
 ### Starší nápady (2026-11-13, ověřit, jestli ještě platí) · ?
 - Ladění obtížnosti při skutečném hraní.
@@ -107,6 +104,7 @@ Značky: **[rozhodnuto]** uživatel výslovně chce · **[návrh]** můj návrh,
 ---
 
 ## Hotovo (posledních pár, pak smazat)
+- v0.106.2 – ShieldMonk: prsty už nevyčnívají ze štítu při pohledu ze tří čtvrtin (štít odsazený od pěsti po své kolmici). Položka „UI plátna se přestavují každý snímek“ byla už hotová ve v0.100.0 (vlastní plátno šály, třepotání 30 Hz), dnes UI ~0,24 ms. Smazána.
 - v0.106.0 – tři úrovně kvality s automatickým výběrem podle grafiky, praskliny předpečené.
 - v0.105.0 – optimalizace pro slabou grafiku beze změny vzhledu (DELL Full HD 58 → 72 fps).
 - v0.104.0 – výkon nového bestiáře na DELLu ve Full HD (`-cvat`), rozpad CPU a GPU.

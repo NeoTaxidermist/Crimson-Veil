@@ -5,6 +5,19 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.100.20] – 2026-11-27
+### Přidáno
+- **Výkon na DELLu (i5-11500H + Intel UHD), build IL2CPP + D3D11, scéna Prototype_Ruins v okně:** 1080p 17,1 ms (58 fps), 720p 9,0 ms (111 fps), 540p 6,4 ms (156 fps). Hru tu omezuje počet pixelů. Rozpad pro 1080p:
+  - asi 7 ms tvoří pevné celoobrazovkové průchody rendereru, z toho SSAO 2,8 ms (dočasný build bez něj: 14,3 ms),
+  - asi 6 ms vrstvy pozadí v Dekoracích, které se kreslí přes sebe,
+  - hrdina asi 1,6 ms.
+  
+  Zapsáno v `Docs/claude/crimson-veil-performance.md`. Volba cíle pro slabou grafiku je v backlogu.
+- `Tools/bench.ps1 -Res 960x540`: jiné rozlišení. Dřív se `-cvres` v `-Extra` tiše ignorovalo, protože hra bere první výskyt.
+
+### Testy
+- Hra se neměnila, testy se nespouštěly. Benchmark proběhl na sestavené hře, `bench.ps1 -Res` ověřen (960×540 změřeno správně).
+
 ## [0.100.19] – 2026-11-27
 ### Změněno
 - `Docs/Rozpracovano.md`: DELL převzal práci od Lenova a začíná benchmark sestavené hry na Intel UHD.

@@ -10,23 +10,24 @@ Vývoj běží na dvou počítačích (**Lenovo** = hlavní, RTX 2060; **DELL** 
 - Nepracuj, pokud tu stojí, že druhý počítač má rozdělanou necommitnutou práci. Zeptej se uživatele.
 
 ## Teď pracuje
-**DELL** – benchmark sestavené hry na Intel UHD (převzato od Lenova 2026-11-27, v0.100.19). Lenovo volno.
+Nikdo. DELL dokončil benchmark (vše commitnuté a pushnuté, v0.100.20). Lenovo volno.
 
 ## Poslední session
 
 ### DELL – 2026-11-27 (session „Crimson Veil – DELL“)
-- **O čem jsme mluvili:** příprava DELLu na vývoj podle `Docs/NovyPocitac.md`. Pak proč je hra v editoru rozmazaná a jak zajistit, aby se práce automaticky předávala mezi počítači.
+- **O čem jsme mluvili:** příprava DELLu na vývoj podle `Docs/NovyPocitac.md`. Pak proč je hra v editoru rozmazaná a jak zajistit, aby se práce automaticky předávala mezi počítači. Pak převzetí práce od Lenova (hook SessionStart stáhl v0.100.14–18) a měření výkonu na DELLu.
 - **Hotovo:**
+  - **Benchmark na DELLu (v0.100.20):** build IL2CPP + D3D11 funguje. 1080p **17,1 ms (58 fps)**, 720p 9,0 ms, 540p 6,4 ms. Omezují to pixely na Intel UHD. Asi 7 ms jsou pevné průchody rendereru (z toho SSAO 2,8 ms), asi 6 ms vrstvy pozadí v `Dekorace` (overdraw). Podrobnosti jsou v `Docs/claude/crimson-veil-performance.md`. Volba cíle pro slabé počítače čeká na uživatele (backlog). `bench.ps1` má nově `-Res`. Build zůstal v `C:\Dev\CrimsonVeil-build`, dočasný build bez SSAO v `C:\Dev\CrimsonVeil-build-nossao` (mimo repozitář).
   - Celá instalace: Git, Unity 6000.3.28f1 s IL2CPP, Visual Studio 2026 s C++ a SDK, Blender 5.3, uv a Python. MCP for Unity se automatickým startem, Blender MCP. EditMode 655/655 prošlo. Detaily jsou v sekci Stav.
   - Rozmazaná hra na DELLu: v okně Game bylo zapnuté „Low Resolution Aspect Ratios“ a Windows má zvětšení 150 %. Vypnuto (v0.100.7).
   - Automatická předávka: hook SessionStart (v0.100.8) a tato struktura souboru s pojistkou Stop hook (v0.100.9).
   - `Docs/Backlog.md` (v0.100.10): uživatel chce v gitu seznam nápadů, toho, co se musí a co by se mohlo udělat, včetně dopadů, protože o věcech mluvíme a dělat je jde až za pár dní. Naplněno z otevřených bodů v `Docs/claude/`.
   - Předávka ověřená ve dvou nových sessions. První ukázala, že výstup hooku přes 10 KB se zobrazí jen jako náhled; opraveno ve v0.100.11 (~4,7 KB). Druhá dostala všechno a odpověděla správně.
   - Hook při každé zprávě (v0.100.13): otevřená session si stáhne změny z druhého počítače, jakmile jí uživatel napíše. Pokud se nic nezměnilo, je tichý (~1 s). Ověřeno v dočasném klonu.
-- **Nehotovo:** benchmark sestavené hry na Intel UHD (`Tools/bench.ps1`), zatím se nestavělo.
+- **Nehotovo:** rozdělení zbylých ~4 ms pevných průchodů (InkGrade, kopie obrazu a hloubky, HDR). Je potřeba přepínač renderer features v `Benchmark.cs`, nebo dočasné buildy.
 - **Rozdělané:** nic. Necommitnuté jsou jen soubory, které vygenerovalo Unity (`Assets/Settings/Mobile_RPAsset.asset`, `.vsconfig`, `CrimsonVeil.slnx`), ty se necommitují.
 - **Rozhodnutí uživatele:** Smart App Control na DELLu je vypnuté. Stačí dvě stálé sessions (DELL, Lenovo), nové se zakládat nemusí.
-- **Další krok:** uživatel jednou restartuje aplikaci Claude na DELLu i na Lenovu (na Lenovu po `git pull`), aby stálé sessions načetly hooky. Pak podle uživatele, nahoře v `Docs/Backlog.md` je přestavba nepřátel (ShieldMonk) a benchmark na DELLu.
+- **Další krok:** uživatel rozhodne o cíli výkonu pro slabou grafiku (backlog, „Čeká na rozhodnutí“). Jinak nahoře v `Docs/Backlog.md` je přestavba nepřátel (ShieldMonk).
 
 ### Lenovo – 2026-11-27 (session „Crimson Veil – Lenovo“)
 - **O čem jsme mluvili:** výkon (v0.100.0: zrno tuše zapečené do textury, ~350 fps), příprava DELLu a předávka mezi počítači (v0.100.1–v0.100.5: `CLAUDE.md`, `Docs/NovyPocitac.md`, poznámky v `Docs/claude/`, napojení Blenderu).
@@ -39,7 +40,7 @@ Vývoj běží na dvou počítačích (**Lenovo** = hlavní, RTX 2060; **DELL** 
 
 ## Stav
 - Větev `newFeatures`, do `main` se slučuje jen na pokyn uživatele.
-- Výkon vyřešen ve v0.100.0: ~350 fps v okně 1080p na Lenovu. Na DELLu (Intel UHD) se zatím neměřilo.
+- Výkon: ~350 fps v okně 1080p na Lenovu (v0.100.0). Na DELLu (Intel UHD) 58 fps v 1080p, 111 v 720p (v0.100.20).
 - **DELL je připravený k vývoji (2026-11-27):** Git 2.56.1, Unity 6000.3.28f1 + IL2CPP (navíc je tam 6000.6.11f1, projekt ho nepoužívá), Visual Studio 2026 s C++ a Windows SDK 10.0.26100, Blender 5.3 s doplňkem MCP od Blender Lab, uv 0.13.10 a Python 3.12.16, Smart App Control vypnuté. MCP for Unity a Blender MCP fungují, keep-awake běží, Remote Control pro nové sessions zapnutý. Úskalí jsou v `Docs/claude/dell-setup-pitfalls.md`.
 
 ## Další na řadě

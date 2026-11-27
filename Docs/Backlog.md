@@ -21,16 +21,23 @@ Značky: **[rozhodnuto]** uživatel výslovně chce · **[návrh]** můj návrh,
 - **Stav:** hotový je přízrak (Wraith, v0.96). Ostatní nezačaté.
 - **Odkazy:** `Docs/claude/crimson-veil-enemy-rebuild.md`, `crimson-veil-no-stock-art.md`, `crimson-veil-cutscenes.md`.
 
-### 2. Benchmark na DELLu (Intel UHD)  [rozhodnuto] · S
-- **Co:** sestavit hru (IL2CPP + D3D11) na DELLu a změřit `Tools/bench.ps1` v okně 1920×1080.
-- **Proč:** ověřit, že sestavení přes IL2CPP na DELLu funguje, a zjistit výkon na slabém hardwaru. Cíl je ~250 fps; na Lenovu je ~350 fps.
-- **Dopady:** může ukázat, co je drahé na integrované grafice (pixely vs. CPU) a změnit priority optimalizace.
-- **Stav:** DELL je připravený (v0.100.4), zatím se nestavělo.
-- **Odkazy:** `Docs/claude/crimson-veil-performance.md`.
-
 ---
 
 ## Čeká na rozhodnutí uživatele
+
+### Výkon na slabé grafice (Intel UHD: 58 fps v 1080p)  [návrh] · M
+- **Co:** změřeno na DELLu ve v0.100.20. Hra je tam omezená pixely: 1080p 17,1 ms (58 fps), 720p 9,0 ms (111), 540p 6,4 ms (156). Na Lenovu (RTX 2060) je to ~350 fps.
+- **Kde je čas (1080p):**
+  - ~7 ms pevné celoobrazovkové průchody rendereru, z toho **SSAO 2,8 ms** (bez něj 14,3 ms = 70 fps). Zbytek, tedy InkGrade, kopie obrazu a hloubky a HDR 32bit, se zatím nerozdělil.
+  - ~6 ms vrstvy pozadí v `Dekorace` (prostřední a vzdálené vrstvy, mlha, paprsky, vodopády), které se kreslí přes sebe (overdraw).
+  - Hrdina ~1,6 ms.
+- **Možnosti:**
+  - úroveň kvality „Nízká“ pro integrovanou grafiku (bez SSAO, nižší render scale nebo dynamické rozlišení, méně vrstev mlhy),
+  - volba v nastavení hry,
+  - nebo nechat, pokud cíl 250 fps platí jen pro výkonnou grafiku.
+- **Rozhodnout:** jaký cíl platí pro slabé počítače (např. stabilních 60 fps v 1080p?) a jestli smí být na nich méně efektů.
+- **Dopady:** vzhled (SSAO a mlha jsou součást nálady), nastavení hry a menu, testy kvality, CHANGELOG. Na Lenovu se nic nezhorší.
+- **Odkazy:** `Docs/claude/crimson-veil-performance.md` (sekce DELL).
 
 ### Úchop na hraně: otevřená dlaň místo pěsti  [návrh] · S
 - **Co:** hrdina se na hraně drží otevřenou dlaní na horní ploše; je to moje rozhodnutí z v0.81.
@@ -89,5 +96,6 @@ Značky: **[rozhodnuto]** uživatel výslovně chce · **[návrh]** můj návrh,
 ---
 
 ## Hotovo (posledních pár, pak smazat)
+- v0.100.20 – benchmark na DELLu (Intel UHD): 58 fps v 1080p, rozpad nákladů, `bench.ps1 -Res`.
 - v0.100.9 – předávka mezi sessions a počítači (`Docs/Rozpracovano.md`, hooky).
 - v0.100.4 – DELL připravený k vývoji.

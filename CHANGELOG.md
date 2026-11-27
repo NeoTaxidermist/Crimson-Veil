@@ -5,6 +5,13 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.100.6] – 2026-11-27
+### Přidáno
+- **DELL: Blender napojený na Claude** (doplněk MCP od Blender Lab + rozšíření „Blender“ v aplikaci Claude) a ověřený. Hra jde na DELLu spustit přes MCP for Unity. Stav je v `Docs/Rozpracovano.md`.
+
+### Testy
+- Jen dokumentace, testy se nespouštěly.
+
 ## [0.100.5] – 2026-11-27
 ### Změněno
 - `Docs/NovyPocitac.md`: přesný postup napojení Blenderu. Blender 5.3 nebo novější, doplněk MCP od Blender Lab v Blenderu, rozšíření „Blender“ v aplikaci Claude (spouští se přes `uv`), ověření a upozornění, že se Blender Bridge v MCP for Unity nepoužívá.

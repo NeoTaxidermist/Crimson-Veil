@@ -17,7 +17,8 @@ DELL – volno, připravený k vývoji (vše commitnuté a pushnuté, v0.100.4).
   - Hotovo: Git 2.56.1, klon `newFeatures` v `C:\Dev\CrimsonVeil` (hooky, followTags, identita jako na Lenovu), Unity Hub 4.0.2 (balíček z Microsoft Store), **Unity 6000.3.28f1 + Windows Build Support (IL2CPP)**, Visual Studio Community 2026 (18.12.1) s C++ a Windows SDK 10.0.26100, Blender 5.3, uv 0.13.10 a Python 3.12.16 (spustil uživatel ve vlastním PowerShellu). Session „Crimson Veil – DELL“, Remote Control pro nové sessions zapnutý, keep-awake běží.
   - Na DELLu je navíc Unity 6000.6.11f1, projekt ho nepoužívá.
   - Po restartu: **Smart App Control vypnuté** (blokovalo Python z uv), Python 3.12.16 jede, projekt otevřený přes Hub (první import proběhl), **MCP for Unity připojené, automatický start zapnutý**, konzole bez chyb (jen varování o samoprotínajících se polygonech v modelech ruin), **EditMode 655/655 prošlo**.
-  - Zbývá: benchmark sestavené hry na Intel UHD (`Tools/bench.ps1`) a ověření Blender MCP (doplněk v Blenderu nainstaluje uživatel).
+  - **Blender MCP napojený** podle `Docs/NovyPocitac.md` (doplněk Blender Lab v Blenderu 5.3 + rozšíření „Blender“ v aplikaci Claude): nástroje `mcp__Blender__*` fungují (`get_objects_summary`, `execute_blender_code`). Hra v Unity jde spustit přes MCP (MainMenu v Play módu bez chyb).
+  - Zbývá: benchmark sestavené hry na Intel UHD (`Tools/bench.ps1`).
   - Úskalí jsou v `Docs/claude/dell-setup-pitfalls.md`.
 
 ## Další na řadě

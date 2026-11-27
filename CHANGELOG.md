@@ -5,6 +5,13 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.100.23] – 2026-11-27
+### Změněno
+- `Docs/Backlog.md`: rozhodnutí uživatele pro ShieldMonka: zbraní bude řemdih (místo růžence v pravé ruce) a dostane s ním nový útok vedle nárazu štítem.
+
+### Testy
+- Jen dokumentace, testy se nespouštěly.
+
 ## [0.100.22] – 2026-11-27
 ### Změněno
 - `Docs/Rozpracovano.md`, `Docs/Backlog.md`: DELL začíná přestavbu ShieldMonka. Zapsané zadání uživatele: místo hůlky adekvátnější zbraň.

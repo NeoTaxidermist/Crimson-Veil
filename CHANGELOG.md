@@ -5,6 +5,13 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.103.1] – 2026-11-27
+### Změněno
+- `Docs/Backlog.md`: měření výkonu s novými modely bestiáře uživatel odložil („Zatím ne“).
+
+### Testy
+- Jen dokumentace, testy se nespouštěly.
+
 ## [0.103.0] – 2026-11-27
 ### Změněno
 - **Zbylí tvorové bestiáře přestavění na úroveň hrdiny** (uživatel: „Předělej všechny ostatní modely“). Jména a osy dílů, se kterými hýbe kód, zůstala.

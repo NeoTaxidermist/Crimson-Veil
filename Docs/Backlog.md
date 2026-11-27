@@ -24,7 +24,7 @@ Značky: **[rozhodnuto]** uživatel výslovně chce · **[návrh]** můj návrh,
   - **HangedMan (v0.102.0):** uživatel ho přijal pokynem „Předělej všechny ostatní modely“.
   - **RootCrawler, AshMoth, LanternWisp, PaperKite, Crow (v0.103.0):** čekají na posouzení uživatelem.
   - Zbývá ShadowDouble, který používá síť hrdiny, takže je hotový s ním.
-- **Navazuje:** změřit výkon nových modelů na DELLu. Těžší jsou RootCrawler (59 tisíc trojúhelníků, 5× ve scéně) a hejno vran (8 × 21 tisíc). Viz „LOD pro nepřátele“.
+- **Navazuje:** změřit výkon nových modelů na DELLu. Těžší jsou RootCrawler (59 tisíc trojúhelníků, 5× ve scéně) a hejno vran (8 × 21 tisíc). Viz „LOD pro nepřátele“. Uživatel 2026-11-27: „Zatím ne“, takže měření zatím nedělat.
 - **Odkazy:** `Docs/claude/crimson-veil-enemy-rebuild.md`, `crimson-veil-no-stock-art.md`, `crimson-veil-cutscenes.md`.
 
 ---

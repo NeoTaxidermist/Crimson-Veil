@@ -10,7 +10,7 @@ Vývoj běží na dvou počítačích (**Lenovo** = hlavní, RTX 2060; **DELL** 
 - Nepracuj, pokud tu stojí, že druhý počítač má rozdělanou necommitnutou práci. Zeptej se uživatele.
 
 ## Teď pracuje
-DELL – volno (vše commitnuté a pushnuté, v0.100.13). Lenovo volno.
+Nikdo. Lenovo práci předalo (vše commitnuté a pushnuté, v0.100.18). DELL volno.
 
 ## Poslední session
 
@@ -33,8 +33,9 @@ DELL – volno (vše commitnuté a pushnuté, v0.100.13). Lenovo volno.
 - **Hotovo:** `git pull` na v0.100.13, hooky předávky na Lenovu (v0.100.15–16).
 - **Hooky na Lenovu:** stálá session běží ve složce `C:\_ClaudeAI\unity` (je tam `.mcp.json` pro Unity a buildy). Na pokyn uživatele jsou proto hooky zkopírované do `C:\_ClaudeAI\unity\.claude\settings.json` s pevnými cestami `C:\Dev\CrimsonVeil\Tools\session-start.ps1` / `session-stop.ps1`. `C:\_ClaudeAI\unity\CLAUDE.md` načítá repozitářový `CLAUDE.md`. **Ověřeno po restartu aplikace Claude:** hook SessionStart proběhl a předal předávku i backlog. **Když se změní `.claude/settings.json` v repozitáři, je potřeba změnu přenést i sem.**
 - **Unity po restartu:** editor neběžel (běžel jen pomocný proces Unity Hubu `resources\unity.exe serve`, nezaměňovat) a server MCP for Unity na 8080 taky ne. Spuštěno ručně: server `uvx --from "mcpforunityserver==10.3.0" mcp-for-unity --transport http --http-url http://127.0.0.1:8080 --project-scoped-tools` a editor `Unity.exe -projectPath C:\Dev\CrimsonVeil`. Unity se připojilo samo za 20 s.
-- **Rozdělané:** nic.
-- **Další krok:** podle uživatele. Nahoře v `Docs/Backlog.md` je ShieldMonk.
+- **Neověřeno:** hook při každé zprávě (`-OnPrompt`) na Lenovu se ještě neozval, protože od restartu DELL nic nepushnul. Stop hook se ještě sám nespustil, ručně funguje. Jestli uživatel vidí v telefonu obě sessions, ví jen on. Navržený test: na DELLu něco commitnout a pushnout, pak napsat Lenovu. Má se objevit blok `[git-sync: ...]`.
+- **Rozdělané:** nic. Uživatel řekl „předej práci“ (2026-11-27).
+- **Další krok:** podle uživatele. Nahoře v `Docs/Backlog.md` je ShieldMonk a benchmark na DELLu.
 
 ## Stav
 - Větev `newFeatures`, do `main` se slučuje jen na pokyn uživatele.

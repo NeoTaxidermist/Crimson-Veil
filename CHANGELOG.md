@@ -5,6 +5,13 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.100.18] – 2026-11-27
+### Změněno
+- `Docs/Rozpracovano.md`: Lenovo předalo práci. Je tam zapsané, co je ještě neověřené (hook při každé zprávě a Stop hook na Lenovu, obě sessions v telefonu), a navržený test.
+
+### Testy
+- Jen dokumentace, testy se nespouštěly.
+
 ## [0.100.17] – 2026-11-27
 ### Změněno
 - `Docs/claude/README.md`: v rejstříku je nová poznámka `unity-mcp-restart.md`.

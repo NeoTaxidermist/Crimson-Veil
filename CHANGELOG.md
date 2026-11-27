@@ -5,6 +5,13 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.106.3] – 2026-11-27
+### Změněno
+- `Docs/Rozpracovano.md`: DELL předal práci, nikdo teď nepracuje.
+
+### Testy
+- Jen dokumentace, testy se nespouštěly.
+
 ## [0.106.2] – 2026-11-27
 ### Opraveno
 - **ShieldMonk:** prsty a klouby pěsti už nevyčnívají ze štítu při pohledu ze tří čtvrtin. Štít je od pěsti odsazený po své kolmici (`GripOffset`, 0,19 m), ne rovně ke kameře, takže pěst zůstává za středem natočeného štítu. Ověřeno na záběrech z pěti stran.

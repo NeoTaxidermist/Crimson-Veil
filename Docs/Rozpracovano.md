@@ -10,7 +10,7 @@ Vývoj běží na dvou počítačích (**Lenovo** = hlavní, RTX 2060; **DELL** 
 - Nepracuj, pokud tu stojí, že druhý počítač má rozdělanou necommitnutou práci. Zeptej se uživatele.
 
 ## Teď pracuje
-Nikdo. DELL dokončil přestavbu celého bestiáře (vše commitnuté a pushnuté, v0.103.0), čeká se na posouzení uživatelem. Lenovo volno.
+Nikdo. DELL předal práci (uživatel 2026-11-27: „díky, předej práci“), vše je commitnuté a pushnuté, poslední verze v0.106.3. Lenovo i DELL volné.
 
 ## Poslední session
 
@@ -61,7 +61,7 @@ Nikdo. DELL dokončil přestavbu celého bestiáře (vše commitnuté a pushnut�
     - **v0.106.2:** u ShieldMonka už prsty nevyčnívají ze štítu, záběr z pěti stran je ověřený. Úkol s HUD byl hotový už ve v0.100.0.
     - **Na Lenovu:** hra si uložila starou kvalitu jako index, takže se načte jako Vysoká. Automatický výběr se projeví jen bez uloženého nastavení.
 - **Nehotovo:** rozdělení zbylých ~4 ms pevných průchodů (InkGrade, kopie obrazu a hloubky, HDR). Je potřeba přepínač renderer features v `Benchmark.cs`, nebo dočasné buildy.
-- **Rozdělané:** nic. Necommitnuté jsou jen soubory, které vygenerovalo Unity (`Assets/Settings/Mobile_RPAsset.asset`, `.vsconfig`, `CrimsonVeil.slnx`), ty se necommitují.
+- **Rozdělané:** nic, práce je předaná. Odložené („Vlastní“ nastavení kvality, odhad 1,5–2 h) je v backlogu. Necommitnuté jsou jen soubory, které vygenerovalo Unity (`Assets/Settings/Mobile_RPAsset.asset`, `.vsconfig`, `CrimsonVeil.slnx`), ty se necommitují.
 - **Rozhodnutí uživatele:** Smart App Control na DELLu je vypnuté. Stačí dvě stálé sessions (DELL, Lenovo), nové se zakládat nemusí.
 - **Další krok:**
   - Uživatel posoudí nové tvory.

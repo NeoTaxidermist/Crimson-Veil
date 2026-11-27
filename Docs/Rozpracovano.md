@@ -31,9 +31,9 @@ DELL – volno (vše commitnuté a pushnuté, v0.100.13). Lenovo volno.
 ### Lenovo – 2026-11-27 (session „Crimson Veil – Lenovo“)
 - **O čem jsme mluvili:** výkon (v0.100.0: zrno tuše zapečené do textury, ~350 fps), příprava DELLu a předávka mezi počítači (v0.100.1–v0.100.5: `CLAUDE.md`, `Docs/NovyPocitac.md`, poznámky v `Docs/claude/`, napojení Blenderu).
 - **Hotovo:** `git pull` na v0.100.13.
-- **Nehotovo:** hooky DELLu se ve stávající session na Lenovu nenačtou. Běží ve složce `C:\_ClaudeAI\unity`, ne v repozitáři, a zapsat hooky do `C:\_ClaudeAI\unity\.claude\settings.json` mi bezpečnostní kontrola nepovolila. Řešení je na uživateli: buď nová stálá session na Lenovu přímo ve složce `C:\Dev\CrimsonVeil` (tam se hooky, `.mcp.json` i `CLAUDE.md` načtou samy, doporučeno), nebo si uživatel hooky zkopíruje do `C:\_ClaudeAI\unity\.claude\settings.json` sám, s cestami `C:\Dev\CrimsonVeil\Tools\...` místo `$env:CLAUDE_PROJECT_DIR`.
-- **Rozdělané:** nic. (`C:\_ClaudeAI\unity\CLAUDE.md` mimo repozitář odkazuje na repozitářový `CLAUDE.md`.)
-- **Další krok:** podle volby uživatele. Pak `Docs/Backlog.md` (ShieldMonk).
+- **Hooky na Lenovu:** stálá session běží ve složce `C:\_ClaudeAI\unity` (je tam `.mcp.json` pro Unity a buildy). Na pokyn uživatele jsou proto hooky zkopírované do `C:\_ClaudeAI\unity\.claude\settings.json` s pevnými cestami `C:\Dev\CrimsonVeil\Tools\session-start.ps1` / `session-stop.ps1`. `C:\_ClaudeAI\unity\CLAUDE.md` načítá repozitářový `CLAUDE.md`. Ručně ověřeno, že oba skripty fungují. Načtou se po restartu aplikace Claude. **Když se změní `.claude/settings.json` v repozitáři, je potřeba změnu přenést i sem.**
+- **Rozdělané:** nic.
+- **Další krok:** uživatel restartuje aplikaci Claude na Lenovu. Pak `Docs/Backlog.md` (ShieldMonk).
 
 ## Stav
 - Větev `newFeatures`, do `main` se slučuje jen na pokyn uživatele.

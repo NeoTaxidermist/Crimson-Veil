@@ -5,6 +5,13 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.100.15] – 2026-11-27
+### Změněno
+- `Docs/Rozpracovano.md`: hooky předávky platí i na Lenovu. Stálá session tam běží ve složce `C:\_ClaudeAI\unity`, proto jsou hooky zkopírované do jejího `.claude/settings.json` s pevnými cestami do `C:\Dev\CrimsonVeil\Tools`. Ručně ověřeno, že oba skripty fungují, načtou se po restartu aplikace Claude.
+
+### Testy
+- Jen dokumentace, testy se nespouštěly.
+
 ## [0.100.14] – 2026-11-27
 ### Změněno
 - `Docs/Rozpracovano.md`: sekce Lenovo. Stávající session na Lenovu běží mimo repozitář, takže hooky předávky nenačte. Jsou popsané dvě cesty, jak to vyřešit.

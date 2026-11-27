@@ -5,6 +5,14 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.100.3] – 2026-11-27
+### Přidáno
+- **DELL připravený k vývoji (zatím bez MCP):** Git, Unity 6000.3.28f1 s IL2CPP, Visual Studio 2026 s C++ a Windows SDK 26100, Blender 5.3, uv a Python 3.12. Stav a co zbývá je v `Docs/Rozpracovano.md`.
+- **`Docs/claude/dell-setup-pitfalls.md`**: Unity Hub 4 nemá headless instalaci (editor přes odkaz `unityhub://`, modul IL2CPP přes podepsaný instalátor od Unity) a Smart App Control blokuje Python z uv. Odkaz je i v `Docs/NovyPocitac.md`.
+
+### Testy
+- Jen dokumentace, testy se nespouštěly (projekt na DELLu ještě nebyl otevřený).
+
 ## [0.100.2] – 2026-11-27
 ### Přidáno
 - **`Docs/claude/`**: všech 24 poznámek, které si Claude vedl o projektu (pravidla od uživatele, rozhodnutí, postupy a úskalí: šála, animace, nepřátelé, zvuk, výkon, testy, prostředí). Dosud byly jen v místní paměti Claude na Lenovu, teď je má každá session na každém počítači. Rejstřík je v `Docs/claude/README.md`.

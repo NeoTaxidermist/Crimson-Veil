@@ -20,7 +20,7 @@ Každou instalaci nejdřív ohlas uživateli: co, odkud a kolik zabere. Stahuj j
    Pro push na GitHub se uživatel přihlásí sám (Git Credential Manager otevře prohlížeč).
 2. **uv a Python:** `winget install --id astral-sh.uv -e`, potom `uv python install 3.12`. MCP for Unity spouští svůj server přes `uvx`.
 3. **Unity Hub:** `winget install --id Unity.UnityHub -e`. **[uživatel]** se v Hubu přihlásí k účtu Unity (licence Personal).
-4. **Unity 6000.3.28f1 s IL2CPP:**
+4. **Unity 6000.3.28f1 s IL2CPP** (Unity Hub 4 headless režim nemá, postup, který fungoval na DELLu, je v `Docs/claude/dell-setup-pitfalls.md`; tamtéž je Smart App Control, které blokuje Python z uv):
    ```powershell
    & "C:\Program Files\Unity Hub\Unity Hub.exe" -- --headless install --version 6000.3.28f1
    & "C:\Program Files\Unity Hub\Unity Hub.exe" -- --headless install-modules --version 6000.3.28f1 -m windows-il2cpp

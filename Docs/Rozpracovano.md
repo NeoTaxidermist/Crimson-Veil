@@ -53,12 +53,18 @@ Nikdo. DELL dokončil přestavbu celého bestiáře (vše commitnuté a pushnut�
     - Mlha a papír v InkGrade se čtou z předpečených textur, SSAO běží v polovičním rozlišení a nepoužívaná kopie obrazu je vypnutá.
     - Vzhled jsem kontroloval na snímcích starého a nového buildu.
     - Postup, měření a zamítnuté varianty jsou v `Docs/claude/crimson-veil-performance.md`.
+  - **Úrovně kvality (v0.106.0):** uživatel řekl „vyhledej si na netu, jak se tyhle nastavení kvality obecně řeší, a vyřeš to“ (volba v menu existovala, ale jen s jednou úrovní).
+    - Úrovně: Nízká, Střední a Vysoká. Každá má vlastní URP asset, vyhlazování nastavuje `QualityPresets.cs`.
+    - První spuštění vybere úroveň podle grafiky a v menu je u ní „(doporučeno)“. Volba se ukládá podle jména.
+    - Praskliny v kamenech jsou předpečené (−2 ms na všech úrovních).
+    - DELL Full HD, start / u nepřátel: Vysoká 82/70 fps, Střední 96/81 fps, Nízká 130/106 fps.
+    - **Na Lenovu:** hra si uložila starou kvalitu jako index, takže se načte jako Vysoká. Automatický výběr se projeví jen bez uloženého nastavení.
 - **Nehotovo:** rozdělení zbylých ~4 ms pevných průchodů (InkGrade, kopie obrazu a hloubky, HDR). Je potřeba přepínač renderer features v `Benchmark.cs`, nebo dočasné buildy.
 - **Rozdělané:** nic. Necommitnuté jsou jen soubory, které vygenerovalo Unity (`Assets/Settings/Mobile_RPAsset.asset`, `.vsconfig`, `CrimsonVeil.slnx`), ty se necommitují.
 - **Rozhodnutí uživatele:** Smart App Control na DELLu je vypnuté. Stačí dvě stálé sessions (DELL, Lenovo), nové se zakládat nemusí.
 - **Další krok:**
   - Uživatel posoudí nové tvory.
-  - Uživatel posoudí optimalizaci ve hře. Další zrychlení by už sahalo do vzhledu vrstev pozadí (backlog „Výkon na slabé grafice“).
+  - Uživatel vyzkouší úrovně kvality ve hře (menu → Nastavení → Obraz → Kvalita obrazu).
   - U ShieldMonka zůstalo z pohledu ze tří čtvrtin: prsty prosvítají štítem.
   - Cíl výkonu pro slabou grafiku podle uživatele „zatím nech být“.
 
@@ -73,7 +79,7 @@ Nikdo. DELL dokončil přestavbu celého bestiáře (vše commitnuté a pushnut�
 
 ## Stav
 - Větev `newFeatures`, do `main` se slučuje jen na pokyn uživatele.
-- Výkon: ~350 fps v okně 1080p na Lenovu (v0.100.0). Na DELLu (Intel UHD) 58 fps v 1080p, 111 v 720p (v0.100.20); ve Full HD po optimalizaci 72 fps na startu, 62–64 mezi nepřáteli, omezuje to GPU (v0.105.0).
+- Výkon: ~350 fps v okně 1080p na Lenovu (v0.100.0). Na DELLu (Intel UHD) 58 fps v 1080p, 111 v 720p (v0.100.20); ve Full HD na Střední (automaticky) 96 fps na startu a 81 mezi nepřáteli, na Vysoké 82/70 (v0.106.0).
 - **DELL je připravený k vývoji (2026-11-27):** Git 2.56.1, Unity 6000.3.28f1 + IL2CPP (navíc je tam 6000.6.11f1, projekt ho nepoužívá), Visual Studio 2026 s C++ a Windows SDK 10.0.26100, Blender 5.3 s doplňkem MCP od Blender Lab, uv 0.13.10 a Python 3.12.16, Smart App Control vypnuté. MCP for Unity a Blender MCP fungují, keep-awake běží, Remote Control pro nové sessions zapnutý. Úskalí jsou v `Docs/claude/dell-setup-pitfalls.md`.
 
 ## Další na řadě

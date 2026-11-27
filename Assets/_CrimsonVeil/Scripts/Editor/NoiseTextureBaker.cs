@@ -29,6 +29,18 @@ namespace CrimsonVeil.EditorTools
         /// shader's 0.13 rounded to 1/8 so it wraps too).</summary>
         public const int PaperSize = 1024, PaperPeriod = 256, PaperCoarsePeriod = 32;
 
+        /// <summary>
+        /// The stone cracks: the distance to the nearest Voronoi cell border (CV_VoronoiEdge on a warped lattice), worked
+        /// out per pixel it cost 3.3 ms of a 16.6 ms frame on an Intel UHD at 1080p. A distance field stays sharp when
+        /// magnified (bilinear between texels follows the line). <see cref="CrackPeriod"/> cells across, 32 texels each;
+        /// the warp reads the grain at half the crack scale (was 0.7) so it wraps with the tile.
+        /// </summary>
+        public const string CracksPath = "Assets/_CrimsonVeil/Shaders/CVCracks.png";
+        public const string CracksProperty = "_CVCracks";
+        public const int CracksSize = 2048, CrackPeriod = 64;
+        /// <summary>Distances are stored up to this (cracks only use the first 0.06), for 8-bit precision near the line.</summary>
+        public const float CrackRange = 0.5f;
+
         /// <summary>Texels a side, and lattice cells of the first octave the texture spans (the shader's period).</summary>
         public const int Size = 2048, Period = 32;
         public const int Octaves = 5;
@@ -47,7 +59,65 @@ namespace CrimsonVeil.EditorTools
             Object.DestroyImmediate(tex);
             AssetDatabase.ImportAsset(TexturePath, ImportAssetOptions.ForceUpdate);
             BakePaper();
+            BakeCracks();
             Configure();
+        }
+
+        /// <summary>The crack distance field (see <see cref="CracksPath"/>).</summary>
+        public static void BakeCracks()
+        {
+            var px = new byte[CracksSize * CracksSize];
+            float k = (float)CrackPeriod / CracksSize;
+            System.Threading.Tasks.Parallel.For(0, CracksSize, y =>
+            {
+                for (int x = 0; x < CracksSize; x++)
+                {
+                    float e = CrackEdge((x + 0.5f) * k, (y + 0.5f) * k);
+                    px[y * CracksSize + x] = (byte)Mathf.Clamp(Mathf.RoundToInt(Mathf.Min(e, CrackRange) / CrackRange * 255f), 0, 255);
+                }
+            });
+            var tex = new Texture2D(CracksSize, CracksSize, TextureFormat.R8, false, true);
+            tex.SetPixelData(px, 0);
+            tex.Apply();
+            File.WriteAllBytes(CracksPath, tex.EncodeToPNG());
+            Object.DestroyImmediate(tex);
+            AssetDatabase.ImportAsset(CracksPath, ImportAssetOptions.ForceUpdate);
+        }
+
+        /// <summary>The crack distance at <paramref name="cx"/>,<paramref name="cy"/> (crack cells), wrapping every <see cref="CrackPeriod"/>.</summary>
+        public static float CrackEdge(float cx, float cy)
+        {
+            // warp: the grain at half scale (period 32 there = 64 cells here), shifted by 0.6 as in the shader
+            float w = Fbm(cx * 0.5f, cy * 0.5f) * 0.6f;
+            return VoronoiEdge(cx + w, cy + w, CrackPeriod);
+        }
+
+        /// <summary>CV_VoronoiEdge on a lattice wrapped at <paramref name="period"/>.</summary>
+        static float VoronoiEdge(float px, float py, int period)
+        {
+            int gx = Mathf.FloorToInt(px), gy = Mathf.FloorToInt(py);
+            float fx = px - gx, fy = py - gy;
+            float d1 = 8f, d2 = 8f;
+            for (int oy = -1; oy <= 1; oy++)
+                for (int ox = -1; ox <= 1; ox++)
+                {
+                    int cx = (((gx + ox) % period) + period) % period, cy = (((gy + oy) % period) + period) % period;
+                    float rx = ox + Hash21(cx, cy) - fx;
+                    float ry = oy + Hash21(cx + 17.3f, cy + 17.3f) - fy;
+                    float d = rx * rx + ry * ry;
+                    if (d < d1) { d2 = d1; d1 = d; }
+                    else if (d < d2) d2 = d;
+                }
+            return Mathf.Sqrt(d2) - Mathf.Sqrt(d1);
+        }
+
+        /// <summary>CV_Hash21.</summary>
+        static float Hash21(float x, float y)
+        {
+            x = Frac(x * 123.34f); y = Frac(y * 456.21f);
+            float d = x * (x + 45.32f) + y * (y + 45.32f);
+            x += d; y += d;
+            return Frac(x * y);
         }
 
         /// <summary>The paper fibres: 0.6 of value noise at the fibre scale + 0.4 at an eighth of it, both wrapping.</summary>
@@ -87,10 +157,14 @@ namespace CrimsonVeil.EditorTools
             ti.SaveAndReimport();
         }
 
-        static void Bind(string shaderPath, string property, string texturePath)
+        static void Bind(string shaderPath, string property, string texturePath) => Bind(shaderPath, new[] { property }, new[] { texturePath });
+
+        static void Bind(string shaderPath, string[] properties, string[] texturePaths)
         {
             var si = (ShaderImporter)AssetImporter.GetAtPath(shaderPath);
-            si.SetNonModifiableTextures(new[] { property }, new Texture[] { AssetDatabase.LoadAssetAtPath<Texture2D>(texturePath) });
+            var tex = new Texture[texturePaths.Length];
+            for (int i = 0; i < tex.Length; i++) tex[i] = AssetDatabase.LoadAssetAtPath<Texture2D>(texturePaths[i]);
+            si.SetNonModifiableTextures(properties, tex);
             si.SaveAndReimport();
         }
 
@@ -99,7 +173,8 @@ namespace CrimsonVeil.EditorTools
         {
             ConfigureTexture(TexturePath, Size);
             ConfigureTexture(PaperPath, PaperSize);
-            Bind(ShaderPath, Property, TexturePath);
+            ConfigureTexture(CracksPath, CracksSize);
+            Bind(ShaderPath, new[] { Property, CracksProperty }, new[] { TexturePath, CracksPath });
             Bind(MistShaderPath, Property, TexturePath);
             Bind(GradeShaderPath, PaperProperty, PaperPath);
         }

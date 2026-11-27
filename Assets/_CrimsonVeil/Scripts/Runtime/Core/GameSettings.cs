@@ -72,8 +72,34 @@ namespace CrimsonVeil.Core
             Mode = WindowMode.Borderless;
             Resolution = Native();
             VSync = true;
-            Quality = Mathf.Max(0, QualitySettings.names.Length - 1);
+            Quality = RecommendedIndex();
             Commit();
+        }
+
+        /// <summary>The index of the level this computer is offered first (<see cref="QualityPresets.Recommended"/>).</summary>
+        public static int RecommendedIndex()
+        {
+            int i = QualityPresets.IndexOf(QualityPresets.Recommended);
+            return i >= 0 ? i : Mathf.Max(0, QualitySettings.names.Length - 1);
+        }
+
+        /// <summary>
+        /// The saved level, by name (the levels' order may change): a save from before v0.106 held only an index into a
+        /// single level, the high one; nothing saved yet - the level this computer is recommended.
+        /// </summary>
+        public static int SavedQuality(string savedName, bool oldIndexSaved)
+        {
+            if (!string.IsNullOrEmpty(savedName))
+            {
+                int i = QualityPresets.IndexOf(savedName);
+                if (i >= 0) return i;
+            }
+            if (oldIndexSaved)
+            {
+                int high = QualityPresets.IndexOf(QualityPresets.High);
+                if (high >= 0) return high;
+            }
+            return RecommendedIndex();
         }
 
         static float Clamp01(float v) => float.IsNaN(v) ? 0f : Mathf.Clamp01(v);
@@ -128,6 +154,7 @@ namespace CrimsonVeil.Core
             if (!Persist || Application.isEditor) return;
             if (Quality >= 0 && Quality < QualitySettings.names.Length && QualitySettings.GetQualityLevel() != Quality)
                 QualitySettings.SetQualityLevel(Quality, true);
+            QualityPresets.ApplyToCameras();
             QualitySettings.vSyncCount = VSync ? 1 : 0;
             if (Resolution.x > 0 && Resolution.y > 0)
                 Screen.SetResolution(Resolution.x, Resolution.y, ToUnity(Mode));
@@ -186,7 +213,8 @@ namespace CrimsonVeil.Core
             PlayerPrefs.SetInt(Prefix + "Width", Resolution.x);
             PlayerPrefs.SetInt(Prefix + "Height", Resolution.y);
             PlayerPrefs.SetInt(Prefix + "VSync", VSync ? 1 : 0);
-            PlayerPrefs.SetInt(Prefix + "Quality", Quality);
+            var names = QualitySettings.names;
+            if (Quality >= 0 && Quality < names.Length) PlayerPrefs.SetString(Prefix + "QualityName", QualityPresets.Label(names[Quality]));
             PlayerPrefs.Save();
         }
 
@@ -203,7 +231,7 @@ namespace CrimsonVeil.Core
             var native = Native();
             Resolution = new Vector2Int(PlayerPrefs.GetInt(Prefix + "Width", native.x), PlayerPrefs.GetInt(Prefix + "Height", native.y));
             VSync = PlayerPrefs.GetInt(Prefix + "VSync", 1) == 1;
-            Quality = PlayerPrefs.GetInt(Prefix + "Quality", QualitySettings.GetQualityLevel());
+            Quality = SavedQuality(PlayerPrefs.GetString(Prefix + "QualityName", ""), PlayerPrefs.HasKey(Prefix + "Quality"));
         }
 
         static void Defaults()

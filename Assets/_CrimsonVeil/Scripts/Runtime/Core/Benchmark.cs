@@ -97,6 +97,29 @@ namespace CrimsonVeil.Core
                         data.SetDirty();
                     }
             }
+            // -cvscale 0.8: render scale; -cvhdr 0/1; -cvpp 0: no post-processing; -cvvol Bloom,FilmGrain: those volume
+            // effects off; -cvmatf _Cracks=0: that float on every material in the scene
+            var scale = Argument("-cvscale");
+            if (scale != null && float.TryParse(scale, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float sc)) asset.renderScale = sc;
+            var hdr = Argument("-cvhdr");
+            if (hdr != null) asset.supportsHDR = hdr == "1";
+            var vol = Argument("-cvvol");
+            if (vol != null)
+                foreach (var v in Object.FindObjectsByType<UnityEngine.Rendering.Volume>(FindObjectsSortMode.None))
+                    if (v.profile != null)
+                        foreach (var c in v.profile.components)
+                            if (System.Array.IndexOf(vol.Split(','), c.GetType().Name) >= 0) c.active = false;
+            var matf = Argument("-cvmatf");
+            if (matf != null)
+            {
+                var seen = new HashSet<Material>();
+                foreach (var r in Object.FindObjectsByType<Renderer>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+                    foreach (var m in r.sharedMaterials)
+                        if (m != null && seen.Add(m))
+                            foreach (var kv in matf.Split(','))
+                                if (kv.Split('=') is var p && p.Length == 2 && m.HasFloat(p[0]))
+                                    m.SetFloat(p[0], float.Parse(p[1], System.Globalization.CultureInfo.InvariantCulture));
+            }
             var aa = Argument("-cvaa");
             if (aa != null)
                 foreach (var cam in Object.FindObjectsByType<Camera>(FindObjectsSortMode.None))
@@ -108,6 +131,9 @@ namespace CrimsonVeil.Core
                         : UnityEngine.Rendering.Universal.AntialiasingMode.SubpixelMorphologicalAntiAliasing;
                     if (aa.StartsWith("smaa") && aa.Length == 5) d.antialiasingQuality = (UnityEngine.Rendering.Universal.AntialiasingQuality)(aa[4] - '0');
                 }
+            if (Argument("-cvpp") == "0")
+                foreach (var cam in Object.FindObjectsByType<Camera>(FindObjectsSortMode.None))
+                    if (cam.GetComponent<UnityEngine.Rendering.Universal.UniversalAdditionalCameraData>() is var d && d != null) d.renderPostProcessing = false;
         }
 
         IEnumerator Run(string file)
@@ -149,6 +175,13 @@ namespace CrimsonVeil.Core
             // -cvnoshadow: no light casts shadows (what the shadow maps cost)
             if (Argument("-cvnoshadow") != null || System.Array.IndexOf(System.Environment.GetCommandLineArgs(), "-cvnoshadow") >= 0)
                 foreach (var l in Object.FindObjectsByType<Light>(FindObjectsSortMode.None)) l.shadows = LightShadows.None;
+            // -cvquality Střední: that quality level (else the player's saved one)
+            var quality = Argument("-cvquality");
+            if (quality != null && QualityPresets.IndexOf(quality) is int qi && qi >= 0)
+            {
+                QualitySettings.SetQualityLevel(qi, true);
+                QualityPresets.ApplyToCameras();
+            }
             ApplyRenderOptions();
             // -cvat X,Y: the hero stands there (next to a group of enemies) and cannot be hurt, so the enemies attack
             // for the whole run instead of killing him and sending him back to the start

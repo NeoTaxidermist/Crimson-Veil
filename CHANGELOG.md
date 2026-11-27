@@ -5,6 +5,28 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.106.0] – 2026-11-27
+### Přidáno
+- **Tři úrovně kvality obrazu** v menu „Kvalita obrazu“, jak je běžné u PC her (uživatel: „vyhledej si na netu, jak se tyhle nastavení kvality obecně řeší, a vyřeš to“): pár předvoleb, při prvním spuštění se vybere podle grafické karty a hráč může zvolit jinou.
+  - **Vysoká:** vše, tedy SSAO v polovičním rozlišení, SMAA a čtyři kaskády stínů. Výchozí pro grafické karty s vlastní pamětí.
+  - **Střední:** bez SSAO, FXAA místo SMAA, dvě kaskády. Plné rozlišení. Pro integrovanou grafiku (Intel UHD/Iris, AMD Radeon Graphics, Vega, 680M–890M).
+  - **Nízká:** jako Střední, ale vykresluje se v 80 % a roztáhne se na obrazovku. Jedna kaskáda. Pro staré Intel HD a karty pod shader model 4.5.
+  - V menu je u úrovně, kterou stroj dostal, „(doporučeno)“. „Obnovit výchozí“ vrátí doporučenou úroveň.
+  - Tušový vzhled (zrno, praskliny, mlha, papír, karmín) je na všech úrovních stejný.
+- Benchmark: `-cvquality Úroveň`, `-cvscale`, `-cvhdr`, `-cvpp 0`, `-cvvol Bloom,FilmGrain`, `-cvmatf _Cracks=0`.
+
+### Změněno
+- **Praskliny v kamenech** jsou předpečené do textury `CVCracks.png` (vzdálenost od praskliny, opakuje se po 64 buňkách). Dřív se pro každý pixel počítal Voronoi z 9 buněk a stálo to 3,3 ms. Vzor je náhodně jiný, charakter stejný.
+- Uložená kvalita se pamatuje podle jména, ne podle pořadí. Starší uložení, kdy byla jen jedna úroveň, se přečte jako Vysoká.
+- DELL (Intel UHD), Full HD, start / u nepřátel (x112):
+  - Vysoká 72/62 → **82/70 fps**,
+  - Střední **96/81 fps** (DELL ji dostane automaticky),
+  - Nízká **130/106 fps**.
+- **Zamítnuto:** FSR pro Nízkou. Doostření stálo víc, než menší obraz ušetřil (88 fps proti 130).
+
+### Testy
+- EditMode 684/684 (nové `QualityPresetTests`: doporučení podle karty, pořadí úrovní a jejich assety, výchozí Vysoká, uložení podle jména; praskliny v `InkGrainTextureTests`). PlayMode UI a World 19/19, Motor, Hero a Veil 126/126.
+
 ## [0.105.2] – 2026-11-27
 ### Změněno
 - `Docs/Backlog.md`: volba kvality v menu už existuje, pro Windows má zatím jen úroveň „Vysoká“. Další úroveň stačí přidat do nastavení kvality.

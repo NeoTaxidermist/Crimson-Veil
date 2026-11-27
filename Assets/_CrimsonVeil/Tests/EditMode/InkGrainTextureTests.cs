@@ -19,6 +19,23 @@ namespace CrimsonVeil.Tests
             var tex = si.GetNonModifiableTexture(NoiseTextureBaker.Property) as Texture2D;
             Assert.IsNotNull(tex, "Silhouette.shader has no baked grain texture: every material would read flat grey");
             Assert.AreEqual(AssetDatabase.LoadAssetAtPath<Texture2D>(NoiseTextureBaker.TexturePath), tex);
+            Assert.AreEqual(AssetDatabase.LoadAssetAtPath<Texture2D>(NoiseTextureBaker.CracksPath), si.GetNonModifiableTexture(NoiseTextureBaker.CracksProperty),
+                "Silhouette.shader has no baked cracks: the stone would show none (white = far from any crack)");
+            StringAssert.DoesNotContain("CV_VoronoiEdge(", System.IO.File.ReadAllText(NoiseTextureBaker.ShaderPath), "the cracks are worked out per pixel again (3.3 ms on an Intel UHD)");
+        }
+
+        [Test]
+        public void TheBakedCracksTileAndAreThinLines()
+        {
+            // the distance field wraps with the tile, and most of the stone is far from a crack (lines, not a web)
+            const int p = NoiseTextureBaker.CrackPeriod;
+            Assert.AreEqual(NoiseTextureBaker.CrackEdge(3.3f, 7.1f), NoiseTextureBaker.CrackEdge(3.3f + p, 7.1f), 1e-3f);
+            Assert.AreEqual(NoiseTextureBaker.CrackEdge(3.3f, 7.1f), NoiseTextureBaker.CrackEdge(3.3f, 7.1f + p), 1e-3f);
+            var rng = new System.Random(3);
+            int onCrack = 0; const int k = 4000;
+            for (int i = 0; i < k; i++)
+                if (NoiseTextureBaker.CrackEdge((float)rng.NextDouble() * p, (float)rng.NextDouble() * p) < 0.06f) onCrack++;
+            Assert.That(onCrack > k / 50 && onCrack < k / 5, "share of the stone on a crack: " + onCrack * 100 / k + " %");
         }
 
         [Test]

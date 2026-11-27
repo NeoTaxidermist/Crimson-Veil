@@ -176,7 +176,8 @@ namespace CrimsonVeil.UI
         {
             var names = QualitySettings.names;
             if (q < 0 || q >= names.Length) return "—";
-            return names[q] == "PC" ? "Vysoká" : names[q] == "Mobile" ? "Nízká" : names[q];
+            string label = QualityPresets.Label(names[q]);
+            return label == QualityPresets.Recommended ? label + " (doporučeno)" : label;
         }
 
         RectTransform PictureRow(RectTransform list, string label)

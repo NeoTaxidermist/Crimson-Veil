@@ -5,6 +5,7 @@ ShaderImporter:
   defaultTextures: []
   nonModifiableTextures:
   - _CVNoise: {fileID: 2800000, guid: d3f7d76e714b5ce46aca04814373759c, type: 3}
+  - _CVCracks: {fileID: 2800000, guid: 50e87e6131ede3d478af294c71caa639, type: 3}
   userData: 
   assetBundleName: 
   assetBundleVariant: 

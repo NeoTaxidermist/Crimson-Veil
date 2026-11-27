@@ -5,6 +5,13 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.105.2] – 2026-11-27
+### Změněno
+- `Docs/Backlog.md`: volba kvality v menu už existuje, pro Windows má zatím jen úroveň „Vysoká“. Další úroveň stačí přidat do nastavení kvality.
+
+### Testy
+- Jen dokumentace, testy se nespouštěly.
+
 ## [0.105.1] – 2026-11-27
 ### Změněno
 - Materiály mlhy (MistBand, MistLow, LightShaft, Waterfall) mají uložený odkaz na předpečený šum `CVNoise`, stejně jako InkGrade. Unity ho zapsalo po navázání textury na shader.

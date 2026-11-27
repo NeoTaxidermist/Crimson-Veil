@@ -27,7 +27,11 @@ Každou instalaci nejdřív ohlas uživateli: co, odkud a kolik zabere. Stahuj j
    ```
 5. **Visual Studio Community s C++ a Windows SDK** (pro IL2CPP):
    `winget install --id Microsoft.VisualStudio.Community -e --override "--add Microsoft.VisualStudio.Workload.NativeDesktop --add Microsoft.VisualStudio.Component.Windows11SDK.26100 --passive --norestart"`
-6. **Blender** (modely se staví skripty v `ArtSource/`): `winget install --id BlenderFoundation.Blender -e`. Doplněk Blender MCP (oficiální) nainstaluje **[uživatel]** v Blenderu, Claude mu poradí postup.
+6. **Blender** (modely se staví skripty v `ArtSource/*_build.py`). Na Lenovu běží **Blender 5.3**, použij stejnou nebo novější verzi: `winget install --id BlenderFoundation.Blender -e`. Napojení na Claude má dvě části, obě je potřeba mít:
+   - **Doplněk v Blenderu (MCP add-on od Blender Lab).** **[uživatel]** ho nainstaluje podle https://lab.blender.org/mcp-server/#addon. Instaluje se jako rozšíření (Edit → Preferences → Get Extensions, nebo přetažením staženého .zip do okna Blenderu). Na Lenovu je v `%APPDATA%\Blender Foundation\Blender\5.3\extensions\user_default\mcp`. Po instalaci v něm spusť server, jak popisuje stránka. Blender musí být při práci otevřený.
+   - **Rozšíření „Blender“ v aplikaci Claude** (autor Blender Lab, https://www.blender.org/lab/mcp-server/). **[uživatel]** ho přidá v aplikaci Claude: Settings → Extensions → Browse extensions → Blender → Install. Rozšíření se spouští přes `uv` (`uv run blender-mcp`), proto musí být nainstalované `uv` (krok 2). Pak restartuj aplikaci Claude.
+   - **Ověření:** v nové session jsou nástroje `mcp__Blender__*`, např. `get_objects_summary` při otevřeném Blenderu. Na Lenovu ho používá i session ve složce `C:\_ClaudeAI\blender`.
+   - Blender Bridge v menu MCP for Unity se **nepoužívá** (potřebuje jiný doplněk na portu 9876). Modely se exportují z Blenderu jako FBX přímo do `Assets/_CrimsonVeil/Art`.
 7. **První otevření projektu:** v Hubu Add → `C:\Dev\CrimsonVeil`, nebo
    `& "C:\Program Files\Unity\Hub\Editor\6000.3.28f1\Editor\Unity.exe" -projectPath C:\Dev\CrimsonVeil`.
    První import trvá dlouho, desítky minut, protože se staví složka `Library`. **Nespouštěj Unity s `-createProjectPath`**, otevírá jiný projekt.

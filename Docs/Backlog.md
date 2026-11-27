@@ -24,7 +24,7 @@ Značky: **[rozhodnuto]** uživatel výslovně chce · **[návrh]** můj návrh,
   - **HangedMan (v0.102.0):** uživatel ho přijal pokynem „Předělej všechny ostatní modely“.
   - **RootCrawler, AshMoth, LanternWisp, PaperKite, Crow (v0.103.0):** čekají na posouzení uživatelem.
   - Zbývá ShadowDouble, který používá síť hrdiny, takže je hotový s ním.
-- **Navazuje:** změřit výkon nových modelů na DELLu. Těžší jsou RootCrawler (59 tisíc trojúhelníků, 5× ve scéně) a hejno vran (8 × 21 tisíc). Viz „LOD pro nepřátele“. Uživatel 2026-11-27: „Zatím ne“, takže měření zatím nedělat.
+- **Výkon nových modelů (změřeno ve v0.104.0, DELL, 1080p):** nepřátelé v záběru stojí 0,45–1,0 ms. U skupin nepřátel je to 50–54 fps, na startu 58 fps; rozdíl dělá hlavně pozadí. LOD zatím není potřeba.
 - **Odkazy:** `Docs/claude/crimson-veil-enemy-rebuild.md`, `crimson-veil-no-stock-art.md`, `crimson-veil-cutscenes.md`.
 
 ---
@@ -33,6 +33,7 @@ Značky: **[rozhodnuto]** uživatel výslovně chce · **[návrh]** můj návrh,
 
 ### Výkon na slabé grafice (Intel UHD: 58 fps v 1080p)  [návrh] · M
 - **Co:** změřeno na DELLu ve v0.100.20. Hra je tam omezená pixely: 1080p 17,1 ms (58 fps), 720p 9,0 ms (111), 540p 6,4 ms (156). Na Lenovu (RTX 2060) je to ~350 fps.
+- **v0.104.0:** ve Full HD mezi nepřáteli 50–54 fps. Grafika potřebuje 17,5–20 ms na snímek, procesor ~5 ms, takže brzdí jen GPU. Uživatel: „hlavně na DELLu změř i Full HD, 540p je brutální nouzovka“, tedy cílem je Full HD, ne nižší rozlišení.
 - **Kde je čas (1080p):**
   - ~7 ms pevné celoobrazovkové průchody rendereru, z toho **SSAO 2,8 ms** (bez něj 14,3 ms = 70 fps). Zbytek, tedy InkGrade, kopie obrazu a hloubky a HDR 32bit, se zatím nerozdělil.
   - ~6 ms vrstvy pozadí v `Dekorace` (prostřední a vzdálené vrstvy, mlha, paprsky, vodopády), které se kreslí přes sebe (overdraw).
@@ -89,7 +90,7 @@ Značky: **[rozhodnuto]** uživatel výslovně chce · **[návrh]** můj návrh,
 - **Odkazy:** `Docs/claude/crimson-veil-performance.md`.
 
 ### LOD pro nepřátele · M  [návrh]
-- **Co:** úrovně detailu pro přestavěné nepřátele, až jich bude hodně na obrazovce najednou.
+- **Co:** úrovně detailu pro přestavěné nepřátele, až jich bude hodně na obrazovce najednou. Ve v0.104.0 stojí skupina 4–6 nepřátel v záběru na DELLu jen 0,45–1,0 ms, takže to zatím nespěchá.
 - **Dopady:** souvisí s položkou 1 (přestavba nepřátel), Blender skripty v `ArtSource/`.
 
 ### UI plátna se přestavují každý snímek (0,48 ms) · S  [návrh]
@@ -103,6 +104,7 @@ Značky: **[rozhodnuto]** uživatel výslovně chce · **[návrh]** můj návrh,
 ---
 
 ## Hotovo (posledních pár, pak smazat)
+- v0.104.0 – výkon nového bestiáře na DELLu ve Full HD (`-cvat`), rozpad CPU a GPU.
 - v0.103.0 – zbylí tvorové bestiáře přestavění (RootCrawler, AshMoth, LanternWisp, PaperKite, Crow), řetěz řemdihu jako tlumené kyvadlo.
 - v0.102.0 – HangedMan přestavěný.
 - v0.101.0 – ShieldMonk přestavěný, s řemdihem.

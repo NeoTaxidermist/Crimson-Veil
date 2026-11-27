@@ -88,17 +88,33 @@ namespace CrimsonVeil.Core
             // -cvnoshadow: no light casts shadows (what the shadow maps cost)
             if (Argument("-cvnoshadow") != null || System.Array.IndexOf(System.Environment.GetCommandLineArgs(), "-cvnoshadow") >= 0)
                 foreach (var l in Object.FindObjectsByType<Light>(FindObjectsSortMode.None)) l.shadows = LightShadows.None;
+            // -cvat X,Y: the hero stands there (next to a group of enemies) and cannot be hurt, so the enemies attack
+            // for the whole run instead of killing him and sending him back to the start
+            CrimsonVeil.Combat.PlayerHealth guard = null;
+            var at = Argument("-cvat");
+            if (at != null && at.Split(',') is var xy && xy.Length == 2
+                && float.TryParse(xy[0], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float ax)
+                && float.TryParse(xy[1], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float ay))
+            {
+                var hero = Object.FindAnyObjectByType<CrimsonVeil.Player.PlayerController>();
+                if (hero != null)
+                {
+                    hero.Teleport(new Vector3(ax, ay, hero.transform.position.z));
+                    guard = hero.GetComponent<CrimsonVeil.Combat.PlayerHealth>();
+                }
+            }
             // in a development build: what each part costs (the profiler's markers)
             var recs = new List<(string name, Unity.Profiling.ProfilerRecorder rec)>();
             if (Debug.isDebugBuild)
                 foreach (var m in Markers) recs.Add((m, Unity.Profiling.ProfilerRecorder.StartNew(new Unity.Profiling.ProfilerCategory("Any"), m, 4)));
             var sums = new double[recs.Count];
             float settle = Time.realtimeSinceStartup + Settle;
-            while (Time.realtimeSinceStartup < settle) { QualitySettings.vSyncCount = 0; yield return null; }
+            while (Time.realtimeSinceStartup < settle) { QualitySettings.vSyncCount = 0; guard?.Model?.GrantInvulnerability(1f); yield return null; }
             var dts = new List<float>();
             float end = Time.realtimeSinceStartup + Measure;
             while (Time.realtimeSinceStartup < end)
             {
+                guard?.Model?.GrantInvulnerability(1f);
                 yield return null;
                 dts.Add(Time.unscaledDeltaTime);
                 for (int i = 0; i < recs.Count; i++) if (recs[i].rec.Valid && recs[i].rec.Count > 0) sums[i] += recs[i].rec.LastValue * 1e-6;
@@ -114,6 +130,7 @@ namespace CrimsonVeil.Core
             dts.Sort();
             float At(float q) => dts[Mathf.Clamp(Mathf.RoundToInt(q * (dts.Count - 1)), 0, dts.Count - 1)] * 1000f;
             var sb = new StringBuilder();
+            if (at != null) sb.AppendLine($"hero at {at}");
             sb.AppendLine($"scene {scene}, {dts.Count} frames in {Measure} s, {Screen.width}x{Screen.height}, quality {QualitySettings.names[QualitySettings.GetQualityLevel()]}");
             sb.AppendLine($"median {At(0.5f):F2} ms ({1000f / At(0.5f):F0} fps), p10 {At(0.1f):F2}, p90 {At(0.9f):F2}, p99 {At(0.99f):F2}, worst {At(1f):F2}, frames a second on average {dts.Count / Measure:F0}");
             sb.AppendLine($"display {Screen.currentResolution.width}x{Screen.currentResolution.height} at {Screen.currentResolution.refreshRateRatio.value:F0} Hz, {Screen.fullScreenMode}");

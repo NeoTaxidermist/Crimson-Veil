@@ -5,6 +5,20 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.104.0] – 2026-11-27
+### Přidáno
+- Benchmark: volba `-cvat X,Y` postaví hrdinu na dané místo (ke skupině nepřátel) a po dobu měření ho drží nezranitelného, takže nepřátelé útočí celou dobu a hrdina se nevrátí na start.
+
+### Změněno
+- `Docs/claude/crimson-veil-performance.md`: měření na DELLu po přestavbě bestiáře, Full HD v okně, release IL2CPP.
+  - **Start:** beze změny, 17,1 ms (58 fps).
+  - **U nepřátel:** 52 fps u hejna vran a oběšence, 50 fps u můr a kořenových plazů.
+  - **Samotní nepřátelé:** 0,45–1,0 ms, zbytek dělá pozadí na daném místě.
+  - **Vývojový build:** grafika 17,5–19,9 ms na snímek, procesor ~5 ms. Na DELLu hru brzdí grafická karta (~3,5 : 1).
+
+### Testy
+- EditMode 665/665. Hra se spustila v release i vývojovém buildu ve Full HD na DELLu.
+
 ## [0.103.1] – 2026-11-27
 ### Změněno
 - `Docs/Backlog.md`: měření výkonu s novými modely bestiáře uživatel odložil („Zatím ne“).

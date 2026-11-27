@@ -49,6 +49,67 @@ namespace CrimsonVeil.Core
             return null;
         }
 
+        /// <summary>
+        /// Renderer options tried in a build without building it again:
+        /// <c>-cvfeat Name=0,Name=1</c> switches renderer features off/on, <c>-cvssao Field=value,...</c> sets the SSAO
+        /// feature's settings (Downsample, Source, Samples, BlurQuality, NormalSamples, Radius, Intensity...; enums by number),
+        /// <c>-cvopaque 0/1</c> the opaque texture, <c>-cvaa off|fxaa|smaa0|smaa1|smaa2</c> the camera's anti-aliasing.
+        /// </summary>
+        static void ApplyRenderOptions()
+        {
+            const System.Reflection.BindingFlags Any = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic;
+            var asset = UnityEngine.Rendering.GraphicsSettings.currentRenderPipeline as UnityEngine.Rendering.Universal.UniversalRenderPipelineAsset;
+            if (asset == null) return;
+            var opaque = Argument("-cvopaque");
+            if (opaque != null) asset.supportsCameraOpaqueTexture = opaque == "1";
+            var feat = Argument("-cvfeat");
+            var ssao = Argument("-cvssao");
+            if (feat != null || ssao != null)
+            {
+                var list = typeof(UnityEngine.Rendering.Universal.UniversalRenderPipelineAsset).GetField("m_RendererDataList", Any)?.GetValue(asset) as UnityEngine.Rendering.Universal.ScriptableRendererData[];
+                if (list != null)
+                    foreach (var data in list)
+                    {
+                        if (data == null) continue;
+                        foreach (var f in data.rendererFeatures)
+                        {
+                            if (f == null) continue;
+                            if (feat != null)
+                                foreach (var kv in feat.Split(','))
+                                    if (kv.Split('=') is var p && p.Length == 2 && p[0] == f.name) f.SetActive(p[1] == "1");
+                            if (ssao != null && f.GetType().Name == "ScreenSpaceAmbientOcclusion")
+                            {
+                                var settings = f.GetType().GetField("m_Settings", Any)?.GetValue(f);
+                                if (settings == null) continue;
+                                foreach (var kv in ssao.Split(','))
+                                {
+                                    if (!(kv.Split('=') is var p) || p.Length != 2) continue;
+                                    var field = settings.GetType().GetField(p[0], Any);
+                                    if (field == null) continue;
+                                    var inv = System.Globalization.CultureInfo.InvariantCulture;
+                                    object v = field.FieldType.IsEnum ? System.Enum.ToObject(field.FieldType, int.Parse(p[1], inv))
+                                        : field.FieldType == typeof(bool) ? p[1] == "1"
+                                        : System.Convert.ChangeType(p[1], field.FieldType, inv);
+                                    field.SetValue(settings, v);
+                                }
+                            }
+                        }
+                        data.SetDirty();
+                    }
+            }
+            var aa = Argument("-cvaa");
+            if (aa != null)
+                foreach (var cam in Object.FindObjectsByType<Camera>(FindObjectsSortMode.None))
+                {
+                    var d = cam.GetComponent<UnityEngine.Rendering.Universal.UniversalAdditionalCameraData>();
+                    if (d == null) continue;
+                    d.antialiasing = aa == "off" ? UnityEngine.Rendering.Universal.AntialiasingMode.None
+                        : aa == "fxaa" ? UnityEngine.Rendering.Universal.AntialiasingMode.FastApproximateAntialiasing
+                        : UnityEngine.Rendering.Universal.AntialiasingMode.SubpixelMorphologicalAntiAliasing;
+                    if (aa.StartsWith("smaa") && aa.Length == 5) d.antialiasingQuality = (UnityEngine.Rendering.Universal.AntialiasingQuality)(aa[4] - '0');
+                }
+        }
+
         IEnumerator Run(string file)
         {
             string scene = Argument("-cvscene") ?? "Prototype_Ruins";
@@ -88,6 +149,7 @@ namespace CrimsonVeil.Core
             // -cvnoshadow: no light casts shadows (what the shadow maps cost)
             if (Argument("-cvnoshadow") != null || System.Array.IndexOf(System.Environment.GetCommandLineArgs(), "-cvnoshadow") >= 0)
                 foreach (var l in Object.FindObjectsByType<Light>(FindObjectsSortMode.None)) l.shadows = LightShadows.None;
+            ApplyRenderOptions();
             // -cvat X,Y: the hero stands there (next to a group of enemies) and cannot be hurt, so the enemies attack
             // for the whole run instead of killing him and sending him back to the start
             CrimsonVeil.Combat.PlayerHealth guard = null;

@@ -5,6 +5,26 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.105.0] – 2026-11-27
+### Změněno
+- **Optimalizace pro slabou grafiku bez změny vzhledu** (uživatel: „optimalizuj, ale elegantně, ať to nevypadá hnusně“). DELL (Intel UHD), Full HD v okně:
+  - start 58 → **72 fps**,
+  - u hejna vran a oběšence 52 → **64 fps**,
+  - u můr a kořenových plazů 50 → **62 fps**.
+- **Mlha, paprsky a vodopády** čtou šum z předpečené textury (`CVNoise`, stejně jako `Silhouette` od v0.100). Dřív počítaly dvě Fbm na pixel v osmi pásech přes celou obrazovku.
+- **InkGrade** čte papírovou strukturu z nové předpečené textury `CVPaper.png` (`NoiseTextureBaker.BakePaper`). Hrubší oktáva má měřítko 1/8 místo 0,13, aby textura navazovala.
+- **SSAO** se počítá v polovičním rozlišení (−1,4 ms). Při přiblížení je stínování spár stejné.
+- **Kopie neprůhledného obrazu** (Opaque Texture) vypnutá, žádný shader ji nečte (−0,3 ms).
+- Benchmark umí za běhu přepnout renderer features (`-cvfeat`), nastavení SSAO (`-cvssao`), kopii obrazu (`-cvopaque`) a vyhlazování (`-cvaa`), takže varianty není potřeba stavět znovu. `CrimsonVeil.Runtime` a EditMode testy mají referenci na URP.
+- **Zamítnuté varianty:**
+  - SSAO z hloubky místo normál je o 5 ms pomalejší.
+  - FXAA rozmazává.
+  - SMAA Medium ušetří jen 0,2 ms.
+  - Vypnuté SSAO zploští spáry.
+
+### Testy
+- EditMode 668/668 (nové: mlha a InkGrade mají navázané textury, papírová textura, renderer bez kopie obrazu a s polovičním SSAO). PlayMode World 12/12. Build změřený na DELLu a porovnaný na snímcích.
+
 ## [0.104.0] – 2026-11-27
 ### Přidáno
 - Benchmark: volba `-cvat X,Y` postaví hrdinu na dané místo (ke skupině nepřátel) a po dobu měření ho drží nezranitelného, takže nepřátelé útočí celou dobu a hrdina se nevrátí na start.

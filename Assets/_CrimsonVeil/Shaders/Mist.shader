@@ -11,6 +11,7 @@ Shader "CrimsonVeil/Mist"
         _EdgeSoftness ("Edge Softness (x,y)", Vector) = (0.25, 0.45, 0, 0)
         [Enum(UnityEngine.Rendering.BlendMode)] _SrcBlend ("Src Blend", Float) = 5
         [Enum(UnityEngine.Rendering.BlendMode)] _DstBlend ("Dst Blend", Float) = 10
+        [HideInInspector][NoScaleOffset] _CVNoise ("Ink Grain (baked, set on the shader)", 2D) = "gray" {}
     }
     SubShader
     {
@@ -40,6 +41,12 @@ Shader "CrimsonVeil/Mist"
                 float _SrcBlend;
                 float _DstBlend;
             CBUFFER_END
+
+            // CV_Fbm read from the baked grain (NoiseTextureBaker) instead of worked out: eight bands and a dozen
+            // shafts each cover much of the screen, and two fbm a pixel were ~1.9 ms a frame on an integrated GPU.
+            TEXTURE2D(_CVNoise);
+            SAMPLER(sampler_CVNoise);
+            float FbmT(float2 p) { return SAMPLE_TEXTURE2D_LOD(_CVNoise, sampler_CVNoise, p * (1.0 / 32.0), 0).r; }
 
             struct Attributes { float4 positionOS : POSITION; float2 uv : TEXCOORD0; };
             struct Varyings { float4 positionCS : SV_POSITION; float2 uv : TEXCOORD0; float3 positionWS : TEXCOORD1; };
@@ -71,18 +78,18 @@ Shader "CrimsonVeil/Mist"
             #if defined(_MODE_WATERFALL)
                 // Vertical streaks rushing down, foam at the bottom.
                 float2 p = float2(uv.x * _NoiseScale.x, uv.y * _NoiseScale.y + _Time.y * _Scroll.y) + offset;
-                float streak = CV_Fbm(float2(p.x, p.y * 0.15)) * 0.6 + CV_ValueNoise(float2(p.x * 3.0, p.y)) * 0.4;
-                float foam = smoothstep(0.25, 0.0, uv.y) * CV_Fbm(uv * 8.0 + _Time.y * 0.4);
+                float streak = FbmT(float2(p.x, p.y * 0.15)) * 0.6 + CV_ValueNoise(float2(p.x * 3.0, p.y)) * 0.4;
+                float foam = smoothstep(0.25, 0.0, uv.y) * FbmT(uv * 8.0 + _Time.y * 0.4);
                 a = saturate(smoothstep(0.35, 0.75, streak) + foam) * EdgeMask(float2(uv.x, max(uv.y, 0.5)));
                 col *= 0.85 + 0.3 * streak;
             #elif defined(_MODE_SHAFT)
                 // Light shaft: bright at the top, dusty and fading downwards.
-                float dust = CV_Fbm(uv * _NoiseScale.xy + _Time.y * _Scroll.xy + offset);
+                float dust = FbmT(uv * _NoiseScale.xy + _Time.y * _Scroll.xy + offset);
                 a = EdgeMask(uv) * pow(saturate(uv.y), 0.7) * (0.6 + 0.6 * dust);
             #else
                 // Drifting mist band.
                 float2 p = uv * _NoiseScale.xy + _Time.y * _Scroll.xy + offset;
-                float n = CV_Fbm(p + CV_Fbm(p * 0.7 + _Time.y * 0.02) * 0.8);
+                float n = FbmT(p + FbmT(p * 0.7 + _Time.y * 0.02) * 0.8);
                 a = smoothstep(0.25, 0.85, n) * EdgeMask(uv);
             #endif
 

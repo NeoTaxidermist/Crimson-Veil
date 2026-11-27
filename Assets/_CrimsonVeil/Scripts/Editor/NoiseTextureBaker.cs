@@ -16,7 +16,18 @@ namespace CrimsonVeil.EditorTools
     {
         public const string TexturePath = "Assets/_CrimsonVeil/Shaders/CVNoise.png";
         public const string ShaderPath = "Assets/_CrimsonVeil/Shaders/Silhouette.shader";
+        /// <summary>The mist bands, light shafts and waterfalls read the same grain (they worked out two fbm a pixel
+        /// over eight screen-wide bands: ~1.9 ms of a 20 ms frame on an Intel UHD at 1080p).</summary>
+        public const string MistShaderPath = "Assets/_CrimsonVeil/Shaders/Mist.shader";
         public const string Property = "_CVNoise";
+
+        /// <summary>The final grade's paper fibres (two octaves of value noise per screen pixel), baked the same way.</summary>
+        public const string PaperPath = "Assets/_CrimsonVeil/Shaders/CVPaper.png";
+        public const string GradeShaderPath = "Assets/_CrimsonVeil/Shaders/InkGrade.shader";
+        public const string PaperProperty = "_CVPaper";
+        /// <summary>Paper texture: texels a side, cells of the fine octave it spans, the coarse octave's period (the
+        /// shader's 0.13 rounded to 1/8 so it wraps too).</summary>
+        public const int PaperSize = 1024, PaperPeriod = 256, PaperCoarsePeriod = 32;
 
         /// <summary>Texels a side, and lattice cells of the first octave the texture spans (the shader's period).</summary>
         public const int Size = 2048, Period = 32;
@@ -35,13 +46,33 @@ namespace CrimsonVeil.EditorTools
             File.WriteAllBytes(TexturePath, tex.EncodeToPNG());
             Object.DestroyImmediate(tex);
             AssetDatabase.ImportAsset(TexturePath, ImportAssetOptions.ForceUpdate);
+            BakePaper();
             Configure();
         }
 
-        /// <summary>Import settings (linear, one channel, no mips, tiling, bilinear) and the shader's binding.</summary>
-        public static void Configure()
+        /// <summary>The paper fibres: 0.6 of value noise at the fibre scale + 0.4 at an eighth of it, both wrapping.</summary>
+        public static void BakePaper()
         {
-            var ti = (TextureImporter)AssetImporter.GetAtPath(TexturePath);
+            var px = new byte[PaperSize * PaperSize];
+            float k = (float)PaperPeriod / PaperSize;
+            for (int y = 0; y < PaperSize; y++)
+                for (int x = 0; x < PaperSize; x++)
+                {
+                    float u = (x + 0.5f) * k, v = (y + 0.5f) * k;
+                    float p = ValueNoise(u, v, PaperPeriod, 0) * 0.6f + ValueNoise(u * 0.125f, v * 0.125f, PaperCoarsePeriod, 1) * 0.4f;
+                    px[y * PaperSize + x] = (byte)Mathf.Clamp(Mathf.RoundToInt(p * 255f), 0, 255);
+                }
+            var tex = new Texture2D(PaperSize, PaperSize, TextureFormat.R8, false, true);
+            tex.SetPixelData(px, 0);
+            tex.Apply();
+            File.WriteAllBytes(PaperPath, tex.EncodeToPNG());
+            Object.DestroyImmediate(tex);
+            AssetDatabase.ImportAsset(PaperPath, ImportAssetOptions.ForceUpdate);
+        }
+
+        static void ConfigureTexture(string path, int size)
+        {
+            var ti = (TextureImporter)AssetImporter.GetAtPath(path);
             ti.textureType = TextureImporterType.SingleChannel;
             var s = new TextureImporterSettings();
             ti.ReadTextureSettings(s);
@@ -52,12 +83,25 @@ namespace CrimsonVeil.EditorTools
             ti.wrapMode = TextureWrapMode.Repeat;
             ti.filterMode = FilterMode.Bilinear;
             ti.textureCompression = TextureImporterCompression.Uncompressed;
-            ti.maxTextureSize = Size;
+            ti.maxTextureSize = size;
             ti.SaveAndReimport();
+        }
 
-            var si = (ShaderImporter)AssetImporter.GetAtPath(ShaderPath);
-            si.SetNonModifiableTextures(new[] { Property }, new Texture[] { AssetDatabase.LoadAssetAtPath<Texture2D>(TexturePath) });
+        static void Bind(string shaderPath, string property, string texturePath)
+        {
+            var si = (ShaderImporter)AssetImporter.GetAtPath(shaderPath);
+            si.SetNonModifiableTextures(new[] { property }, new Texture[] { AssetDatabase.LoadAssetAtPath<Texture2D>(texturePath) });
             si.SaveAndReimport();
+        }
+
+        /// <summary>Import settings (linear, one channel, no mips, tiling, bilinear) and the shader's binding.</summary>
+        public static void Configure()
+        {
+            ConfigureTexture(TexturePath, Size);
+            ConfigureTexture(PaperPath, PaperSize);
+            Bind(ShaderPath, Property, TexturePath);
+            Bind(MistShaderPath, Property, TexturePath);
+            Bind(GradeShaderPath, PaperProperty, PaperPath);
         }
 
         /// <summary><c>CV_Fbm</c> with each octave's lattice wrapped at <see cref="Period"/> times its scale.</summary>

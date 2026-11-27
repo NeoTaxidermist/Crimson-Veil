@@ -3,7 +3,8 @@ guid: 19af9d31295a40245a334f8c1a020742
 ShaderImporter:
   externalObjects: {}
   defaultTextures: []
-  nonModifiableTextures: []
+  nonModifiableTextures:
+  - _CVPaper: {fileID: 2800000, guid: 09caf41d4451f2a4aa4ee6f6af7c8252, type: 3}
   userData: 
   assetBundleName: 
   assetBundleVariant: 

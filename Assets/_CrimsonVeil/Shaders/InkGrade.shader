@@ -10,6 +10,7 @@ Shader "CrimsonVeil/InkGrade"
         _PaperScale ("Paper Scale", Float) = 900
         _Contrast ("Grey Contrast", Range(0.5, 2)) = 1.12
         _Toe ("Shadow Crush", Range(0, 0.2)) = 0.03
+        [HideInInspector][NoScaleOffset] _CVPaper ("Paper Fibres (baked, set on the shader)", 2D) = "gray" {}
     }
     SubShader
     {
@@ -32,6 +33,9 @@ Shader "CrimsonVeil/InkGrade"
             float _PaperScale;
             float _Contrast;
             float _Toe;
+            // Paper fibres baked (NoiseTextureBaker.BakePaper): 256 fibre cells across, 4 texels each.
+            TEXTURE2D(_CVPaper);
+            SAMPLER(sampler_CVPaper);
 
             half4 Frag(Varyings input) : SV_Target
             {
@@ -54,7 +58,7 @@ Shader "CrimsonVeil/InkGrade"
 
                 // Paper fibres (static, aspect corrected).
                 float2 puv = uv * float2(_ScreenParams.x / _ScreenParams.y, 1.0) * _PaperScale;
-                float paper = CV_ValueNoise(puv) * 0.6 + CV_ValueNoise(puv * 0.13) * 0.4;
+                float paper = SAMPLE_TEXTURE2D_LOD(_CVPaper, sampler_CVPaper, puv * (1.0 / 256.0), 0).r;
                 col = SRGBToLinear(saturate(LinearToSRGB(col) * (1.0 + (paper - 0.5) * _PaperStrength * 2.0)));
 
                 return half4(col, 1);

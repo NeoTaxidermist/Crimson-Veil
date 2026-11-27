@@ -67,6 +67,46 @@ namespace CrimsonVeil.Tests
         }
 
         [Test]
+        public void TheMistAndTheGradeReadTheirBakedNoise()
+        {
+            // the mist bands read the grain, the final grade its paper fibres: unbound they would read flat grey
+            // (no drifting mist, no paper)
+            var mist = (ShaderImporter)AssetImporter.GetAtPath(NoiseTextureBaker.MistShaderPath);
+            Assert.AreEqual(AssetDatabase.LoadAssetAtPath<Texture2D>(NoiseTextureBaker.TexturePath), mist.GetNonModifiableTexture(NoiseTextureBaker.Property));
+            var grade = (ShaderImporter)AssetImporter.GetAtPath(NoiseTextureBaker.GradeShaderPath);
+            Assert.AreEqual(AssetDatabase.LoadAssetAtPath<Texture2D>(NoiseTextureBaker.PaperPath), grade.GetNonModifiableTexture(NoiseTextureBaker.PaperProperty));
+            foreach (var path in new[] { NoiseTextureBaker.MistShaderPath, NoiseTextureBaker.GradeShaderPath })
+                StringAssert.DoesNotContain("CV_Fbm(", System.IO.File.ReadAllText(path), path + " works its noise out per pixel again");
+        }
+
+        [Test]
+        public void ThePaperTextureIsLinearTilingAndHasThePapersSpread()
+        {
+            var ti = (TextureImporter)AssetImporter.GetAtPath(NoiseTextureBaker.PaperPath);
+            Assert.IsFalse(ti.sRGBTexture);
+            Assert.AreEqual(TextureWrapMode.Repeat, ti.wrapMode);
+            Assert.IsFalse(ti.mipmapEnabled);
+            var tex = AssetDatabase.LoadAssetAtPath<Texture2D>(NoiseTextureBaker.PaperPath);
+            Assert.AreEqual(NoiseTextureBaker.PaperSize, tex.width);
+        }
+
+        [Test]
+        public void TheRendererSkipsWorkNothingShows()
+        {
+            // no shader reads the opaque copy (copying the frame cost ~0.3 ms on an integrated GPU), and the
+            // ambient occlusion is worked out at half resolution (1.4 ms saved, the blur hides the difference)
+            var asset = AssetDatabase.LoadAssetAtPath<UnityEngine.Rendering.Universal.UniversalRenderPipelineAsset>("Assets/Settings/PC_RPAsset.asset");
+            Assert.IsFalse(asset.supportsCameraOpaqueTexture, "the opaque texture is copied every frame for nothing");
+            foreach (var guid in AssetDatabase.FindAssets("t:Shader", new[] { "Assets/_CrimsonVeil" }))
+                StringAssert.DoesNotContain("_CameraOpaqueTexture", System.IO.File.ReadAllText(AssetDatabase.GUIDToAssetPath(guid)),
+                    "a shader reads the opaque texture now: switch it back on in PC_RPAsset");
+            var data = AssetDatabase.LoadAssetAtPath<UnityEngine.Rendering.Universal.ScriptableRendererData>("Assets/Settings/PC_Renderer.asset");
+            var ssao = data.rendererFeatures.Find(f => f != null && f.GetType().Name == "ScreenSpaceAmbientOcclusion");
+            Assert.IsNotNull(ssao, "the ambient occlusion is part of the look");
+            Assert.IsTrue(new SerializedObject(ssao).FindProperty("m_Settings.Downsample").boolValue, "SSAO at full resolution costs 1.4 ms more");
+        }
+
+        [Test]
         public void OnlyCutOutMaterialsUseTheClipVariant()
         {
             // a shader that may discard keeps the GPU from rejecting hidden pixels early: the solid ink must not

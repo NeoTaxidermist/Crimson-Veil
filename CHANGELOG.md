@@ -5,6 +5,34 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.100.0] – 2026-11-27
+### Změněno
+- **Zrno tuše se už nepočítá v každém pixelu, ale čte se z předem spočítané textury.** Shader `Silhouette` (všechny kameny, ruiny, tráva, postavy) počítal pro každý pixel pět oktáv šumu čtyřikrát: dvakrát pro zrno, jednou pro deformaci prasklin a jednou pro vlnění přízemní mlhy. To je asi 100 hashů na pixel a ve vysokém rozlišení to bylo **1,7 ms ze 4,5 ms snímku**. Teď je stejný šum (stejné oktávy, stejný průměr 0,485 a rozptyl) jednou spočítaný v dlaždicové textuře `Shaders/CVNoise.png` (2048×2048, jeden kanál, bez mip map) a shader ho jen čte. Textura je přiřazená přímo shaderu (v jeho importu), takže ji mají všechny materiály v editoru i v sestavené hře. Znovu se dá upéct přes `Crimson Veil → Bake Ink Grain Texture`.
+- **`clip()` je jen ve variantě pro vystřižené tvary** (javorové listy, klíčové slovo `_ALPHACLIP_ON`). Shader, který může pixel zahodit, brání grafické kartě zahodit zakryté pixely předem. Samo o sobě to měřitelně nezrychlilo, ale je to správně. `LevelKitMaterials` klíčové slovo zapíná.
+- **Ukazatel zdraví (šála) se překresluje jen při změně, nebo 30× za sekundu kvůli vlání**, ne každý snímek. Má vlastní vnořený Canvas, takže nepřekresluje zbytek rozhraní. Rudá vinětka při zásahu se úplně vypne, když je průhledná. Uživatelské rozhraní stálo procesor 0,48 ms na snímek, teď 0,15 ms.
+- **Benchmark** (`-cvbench`) umí `-cvoff` pro všechny objekty daného jména (dřív jen první), `-cvoffmat` (skryje vše s daným materiálem, třeba celou hloubkovou vrstvu), `-cvcombine` (zkusmo statický batching), `-cvshot soubor.png` (snímek obrazovky) a vypisuje i obnovovací frekvenci displeje a režim okna.
+
+### Změřeno
+Sestavená hra (IL2CPP, Direct3D 11), Prototype_Ruins, **v okně 1920×1080** (na celé obrazovce se část snímků zarovnává na 144 Hz displeje a medián je zkreslený), i7-9750H + RTX 2060:
+
+| Verze | Medián |
+|---|---|
+| 0.99.0 | 4,48–4,59 ms (218–223 fps) |
+| bez šumu v shaderu vůbec (jen pro změření) | 2,80 ms (357 fps) |
+| **0.100.0** | **2,77–2,88 ms (347–362 fps)** |
+
+- Stejný záběr vyrenderovaný se starým a novým shaderem má průměrný jas 55,82 vs 55,85 a stejný rozptyl. Kresba zrna je jiná náhodná, ale stejného charakteru.
+- Rozbor, kam čas šel: při 960×540 hra běžela 2,85 ms a dekorace v ní stála jen 0,12 ms. Ve 1080p stála 1,9 ms, takže šlo o cenu pixelů, ne objektů. Vypnutí jednotlivých druhů dekorací (tráva, plevel, světelné sloupy, mlha, vodopády, závěsy, jednotlivé hloubkové vrstvy) ubralo vždy jen 0,0–0,5 ms. Drahý byl společný shader.
+
+### Zkoušeno a zamítnuto
+- **GPU Resident Drawer** (Unity kreslí stovky objektů jedním voláním): po zprovoznění (instanční ID v shaderu, vypnutý statický batching, zachované BRG varianty) byl **pomalejší**, 5,37 ms proti 4,45 ms. Vráceno.
+- **Statický batching dekorace a terénu** (dosud nic není „static“): ušetřil jen ~0,15 ms. Nezapnuto, protože by změnil sdílené meshe, na které se dívají testy a editor úrovní.
+- **Depth priming** (napřed jen hloubka, pak drahý shader jen jednou na pixel): všechny objekty se shaderem `Silhouette` zmizely (hloubka se přesně neshodovala). Vráceno.
+
+### Testy
+- `InkGrainTextureTests` (EditMode, 5): textura je přiřazená shaderu, je lineární, dlaždicová a bez mip map, šum navazuje přes okraj bez švu, má průměr a rozptyl jako `CV_Fbm` a variantu s `clip()` mají jen materiály s vystřiženým tvarem.
+- `HudRedrawPlayTests` (PlayMode, 2): ukazatel zdraví se překresluje 15–40× za sekundu a hned při změně zdraví, má vlastní Canvas. Vinětka je vypnutá, když je průhledná.
+
 ## [0.99.0] – 2026-11-26
 ### Změněno
 - **Hra pro Windows se sestavuje přes IL2CPP** (kód přeložený do C++) místo Mono, v konfiguraci Release.

@@ -224,6 +224,7 @@ namespace CrimsonVeil.EditorTools
         {
             m.SetTexture("_MainTex", shape);
             m.SetFloat("_AlphaClip", 1f);
+            m.EnableKeyword("_ALPHACLIP_ON"); // (the shader cuts the shape out only in this variant)
             m.SetFloat("_Cutoff", 0.5f);
             return m;
         }

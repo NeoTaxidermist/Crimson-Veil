@@ -35,6 +35,8 @@ namespace CrimsonVeil.UI
 
             var barGo = new GameObject("HealthScarf", typeof(RectTransform));
             barGo.transform.SetParent(go.transform, false);
+            // (a canvas of its own: its flutter, redrawn, re-batches only itself, not the map, the menu and the rest)
+            barGo.AddComponent<Canvas>();
             var rt = (RectTransform)barGo.transform;
             rt.anchorMin = rt.anchorMax = new Vector2(0f, 1f);
             rt.pivot = new Vector2(0f, 1f);

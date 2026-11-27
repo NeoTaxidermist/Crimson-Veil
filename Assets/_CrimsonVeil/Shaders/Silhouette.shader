@@ -6,6 +6,7 @@ Shader "CrimsonVeil/Silhouette"
     {
         _BaseColor ("Ink Color", Color) = (0.03, 0.03, 0.035, 1)
         [NoScaleOffset] _MainTex ("Shape (alpha)", 2D) = "white" {}
+        [HideInInspector][NoScaleOffset] _CVNoise ("Ink Grain (baked, set on the shader)", 2D) = "gray" {}
         [Toggle] _AlphaClip ("Alpha Clip", Float) = 0
         _Cutoff ("Cutoff", Range(0, 1)) = 0.5
         _GrainScale ("Ink Grain Scale", Float) = 0.6
@@ -44,6 +45,10 @@ Shader "CrimsonVeil/Silhouette"
 
         TEXTURE2D(_MainTex);
         SAMPLER(sampler_MainTex);
+        // The grain, baked (NoiseTextureBaker): five octaves of value noise spanning 32 lattice cells, tiling.
+        TEXTURE2D(_CVNoise);
+        SAMPLER(sampler_CVNoise);
+        #define CV_NOISE_PERIOD 32.0
 
         CBUFFER_START(UnityPerMaterial)
             half4 _BaseColor;
@@ -95,10 +100,20 @@ Shader "CrimsonVeil/Silhouette"
             return ws;
         }
 
+        // Only the variant for cut-out shapes (maple leaves) has a clip() in it at all: a shader that may discard
+        // keeps the GPU from rejecting hidden pixels before they are shaded, and with it every layer of ruins,
+        // grass and stone behind another paid the full grain-and-crack cost (~1.9 ms a frame at 1080p).
+        // CV_Fbm read instead of worked out (one texture read for ~20 hashes: the noise was 1.7 ms of a 4.5 ms frame)
+        float FbmT(float2 p)
+        {
+            return SAMPLE_TEXTURE2D_LOD(_CVNoise, sampler_CVNoise, p * (1.0 / CV_NOISE_PERIOD), 0).r;
+        }
+
         void ClipShape(float2 uv)
         {
-            if (_AlphaClip > 0.5)
+            #if defined(_ALPHACLIP_ON)
                 clip(SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, uv).a - _Cutoff);
+            #endif
         }
         ENDHLSL
 
@@ -111,6 +126,7 @@ Shader "CrimsonVeil/Silhouette"
             #pragma vertex vert
             #pragma fragment frag
             #pragma multi_compile_fog
+            #pragma shader_feature_local _ALPHACLIP_ON
 
             struct Varyings
             {
@@ -140,7 +156,7 @@ Shader "CrimsonVeil/Silhouette"
             {
                 ClipShape(i.uv);
                 float2 p = i.positionWS.xy * _GrainScale + i.positionWS.z * 0.37;
-                float grain = CV_Fbm(p) + 0.35 * CV_Fbm(p * 6.0);
+                float grain = FbmT(p) + 0.35 * FbmT(p * 6.0 + float2(11.3, 5.9));
                 half3 col = _BaseColor.rgb * (1.0 + (grain - 0.65) * _GrainStrength * 2.0);
                 // Per-vertex tone (masonry): each dressed stone its own shade, the mortar behind them darker.
                 // Meshes without vertex colours read as white here, i.e. unchanged.
@@ -162,7 +178,7 @@ Shader "CrimsonVeil/Silhouette"
                 if (_Cracks > 0.001)
                 {
                     float2 cp = i.positionWS.xy * _CrackScale + i.positionWS.z * 0.21;
-                    float edge = CV_VoronoiEdge(cp + CV_Fbm(cp * 0.7) * 0.6);
+                    float edge = CV_VoronoiEdge(cp + FbmT(cp * 0.7) * 0.6);
                     float crack = 1.0 - smoothstep(0.0, 0.06, edge);
                     // cracks read as lighter lines on dark stone and darker on light stone
                     col = lerp(col, col * 0.55 + 0.035, crack * _Cracks);
@@ -215,7 +231,7 @@ Shader "CrimsonVeil/Silhouette"
                 // (the collar painted like the scarf takes no fog either: the scarf has none, and beside it the fog's
                 // grey made the collar read as another cloth)
                 col = lerp(MixFog(col, i.fogFactor), col, step(0.5, _InkStreaks));
-                float mist = CV_GroundMist(i.positionWS, _MistStrength);
+                float mist = CV_GroundMistW(i.positionWS, _MistStrength, FbmT(CV_MistWobbleAt(i.positionWS)));
                 col = lerp(col, _CV_MistColor.rgb, mist);
                 // struck: the whole body flashes for a moment (pale for a foe, crimson for the hero) - over the mist,
                 // so a hit far off still reads
@@ -234,6 +250,7 @@ Shader "CrimsonVeil/Silhouette"
             HLSLPROGRAM
             #pragma vertex vert
             #pragma fragment frag
+            #pragma shader_feature_local _ALPHACLIP_ON
 
             struct V2F { float4 positionCS : SV_POSITION; float2 uv : TEXCOORD0; };
 

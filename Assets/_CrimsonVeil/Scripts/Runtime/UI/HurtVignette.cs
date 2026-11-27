@@ -47,6 +47,8 @@ namespace CrimsonVeil.UI
             var c = image.color;
             c.a = Deepest * level * level * (3f - 2f * level);
             image.color = c;
+            // (not drawn at all when clear: a screen-sized quad drawn at nothing is still the whole picture blended over)
+            image.enabled = c.a > 0.001f;
         }
 
         void OnDestroy() { if (instance == this) instance = null; }

@@ -33,16 +33,32 @@ namespace CrimsonVeil.UI
         static readonly Color Ash = new Color(0.36f, 0.34f, 0.34f, 0.75f); // lost life: visible on black rock too
         static readonly Color Ink = new Color(0f, 0f, 0f, 0.45f);
 
-        float time;
+        float time, drawnAt = -1f;
+        float drawnHealth = -1f, drawnTrailing, drawnCharge, drawnFlash, drawnMax;
+
+        /// <summary>
+        /// Seconds between redrawn frames of its flutter while nothing else changes. Redrawn every frame it rebuilt the
+        /// whole HUD's batch every frame - 0.5 ms of a 4 ms frame at 240 fps - for a wave that moves a few pixels a
+        /// second. A change of life or strength is drawn at once.
+        /// </summary>
+        public const float FlutterStep = 1f / 30f;
+
+        /// <summary>How many times it has been drawn (for tests).</summary>
+        public int Redraws { get; private set; }
 
         void Update()
         {
             time += Time.unscaledDeltaTime;
-            SetVerticesDirty();
+            bool changed = health != drawnHealth || trailingHealth != drawnTrailing || charge != drawnCharge || hurtFlash != drawnFlash
+                           || maxHealth != drawnMax;
+            if (changed || time - drawnAt >= FlutterStep) SetVerticesDirty();
         }
 
         protected override void OnPopulateMesh(VertexHelper vh)
         {
+            Redraws++;
+            drawnAt = time;
+            drawnHealth = health; drawnTrailing = trailingHealth; drawnCharge = charge; drawnFlash = hurtFlash; drawnMax = maxHealth;
             vh.Clear();
             var r = rectTransform.rect;
             float x0 = r.xMin + 46f, x1 = r.xMax - 22f, y = r.yMax - 36f;

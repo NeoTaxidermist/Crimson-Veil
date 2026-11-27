@@ -60,13 +60,30 @@ namespace CrimsonVeil.Core
             var res = Argument("-cvres");
             if (res != null && res.Split('x') is var wh && wh.Length == 2 && int.TryParse(wh[0], out int w) && int.TryParse(wh[1], out int h))
                 Screen.SetResolution(w, h, FullScreenMode.Windowed);
-            // -cvoff Name,Name: those objects (and all under them) switched off, to see what each costs
+            // -cvoff Name,Name: every object of those names (and all under them) switched off, to see what each costs;
+            // -cvoffmat Mat,Mat: every renderer drawing one of those materials hidden (a whole depth layer at once)
             var off = Argument("-cvoff");
-            if (off != null)
-                foreach (var name in off.Split(','))
+            var offMat = Argument("-cvoffmat");
+            if (off != null || offMat != null)
+            {
+                var names = new HashSet<string>((off ?? "").Split(','));
+                var mats = new HashSet<string>((offMat ?? "").Split(','));
+                foreach (var root in SceneManager.GetActiveScene().GetRootGameObjects())
+                {
+                    foreach (var t in root.GetComponentsInChildren<Transform>(true))
+                        if (names.Contains(t.name)) t.gameObject.SetActive(false);
+                    if (offMat != null)
+                        foreach (var r in root.GetComponentsInChildren<Renderer>(true))
+                            if (r.sharedMaterial != null && mats.Contains(r.sharedMaterial.name)) r.enabled = false;
+                }
+            }
+            // -cvcombine Name,Name: those objects' meshes batched together (what static batching would save)
+            var combine = Argument("-cvcombine");
+            if (combine != null)
+                foreach (var name in combine.Split(','))
                 {
                     var go = GameObject.Find(name);
-                    if (go != null) go.SetActive(false);
+                    if (go != null) StaticBatchingUtility.Combine(go);
                 }
             // -cvnoshadow: no light casts shadows (what the shadow maps cost)
             if (Argument("-cvnoshadow") != null || System.Array.IndexOf(System.Environment.GetCommandLineArgs(), "-cvnoshadow") >= 0)
@@ -86,11 +103,20 @@ namespace CrimsonVeil.Core
                 dts.Add(Time.unscaledDeltaTime);
                 for (int i = 0; i < recs.Count; i++) if (recs[i].rec.Valid && recs[i].rec.Count > 0) sums[i] += recs[i].rec.LastValue * 1e-6;
             }
+            // -cvshot file.png: the picture as it is now (to compare two builds' looks)
+            var shot = Argument("-cvshot");
+            if (shot != null)
+            {
+                ScreenCapture.CaptureScreenshot(shot);
+                yield return null;
+                yield return null;
+            }
             dts.Sort();
             float At(float q) => dts[Mathf.Clamp(Mathf.RoundToInt(q * (dts.Count - 1)), 0, dts.Count - 1)] * 1000f;
             var sb = new StringBuilder();
             sb.AppendLine($"scene {scene}, {dts.Count} frames in {Measure} s, {Screen.width}x{Screen.height}, quality {QualitySettings.names[QualitySettings.GetQualityLevel()]}");
-            sb.AppendLine($"median {At(0.5f):F2} ms ({1000f / At(0.5f):F0} fps), p10 {At(0.1f):F2}, p90 {At(0.9f):F2}, p99 {At(0.99f):F2}, worst {At(1f):F2}");
+            sb.AppendLine($"median {At(0.5f):F2} ms ({1000f / At(0.5f):F0} fps), p10 {At(0.1f):F2}, p90 {At(0.9f):F2}, p99 {At(0.99f):F2}, worst {At(1f):F2}, frames a second on average {dts.Count / Measure:F0}");
+            sb.AppendLine($"display {Screen.currentResolution.width}x{Screen.currentResolution.height} at {Screen.currentResolution.refreshRateRatio.value:F0} Hz, {Screen.fullScreenMode}");
             sb.AppendLine($"{SystemInfo.processorType}, {SystemInfo.graphicsDeviceName}, {SystemInfo.graphicsDeviceType}, Unity {Application.unityVersion}");
             for (int i = 0; i < recs.Count; i++)
             {

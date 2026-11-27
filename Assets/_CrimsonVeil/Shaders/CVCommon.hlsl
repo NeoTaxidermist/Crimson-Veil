@@ -56,16 +56,28 @@ float CV_Fbm(float2 p)
     return v;
 }
 
-// Mist that pools near the ground and grows with distance from the camera.
-float CV_GroundMist(float3 positionWS, float strength)
+// Where the mist's slow wobble reads its noise.
+float2 CV_MistWobbleAt(float3 positionWS)
+{
+    return positionWS.xz * 0.08 + float2(_Time.y * 0.03, 0);
+}
+
+// Mist that pools near the ground and grows with distance from the camera; wobbleNoise is CV_Fbm at
+// CV_MistWobbleAt (worked out or read from a baked texture).
+float CV_GroundMistW(float3 positionWS, float strength, float wobbleNoise)
 {
     float top = _CV_MistParams.x;
     float fade = max(0.01, _CV_MistParams.y);
     float dist = distance(positionWS, _WorldSpaceCameraPos);
     float heightTerm = saturate((top - positionWS.y) / fade);
     float distTerm = saturate(dist / max(0.01, _CV_MistParams.z));
-    float wobble = CV_Fbm(positionWS.xz * 0.08 + float2(_Time.y * 0.03, 0)) * 0.5 + 0.75;
+    float wobble = wobbleNoise * 0.5 + 0.75;
     return saturate(heightTerm * distTerm * wobble * strength * _CV_MistParams.w);
+}
+
+float CV_GroundMist(float3 positionWS, float strength)
+{
+    return CV_GroundMistW(positionWS, strength, CV_Fbm(CV_MistWobbleAt(positionWS)));
 }
 
 float3 CV_WindOffset(float3 positionWS, float weight)

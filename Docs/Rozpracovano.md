@@ -30,10 +30,11 @@ DELL – volno (vše commitnuté a pushnuté, v0.100.13). Lenovo volno.
 
 ### Lenovo – 2026-11-27 (session „Crimson Veil – Lenovo“)
 - **O čem jsme mluvili:** výkon (v0.100.0: zrno tuše zapečené do textury, ~350 fps), příprava DELLu a předávka mezi počítači (v0.100.1–v0.100.5: `CLAUDE.md`, `Docs/NovyPocitac.md`, poznámky v `Docs/claude/`, napojení Blenderu).
-- **Hotovo:** `git pull` na v0.100.13.
-- **Hooky na Lenovu:** stálá session běží ve složce `C:\_ClaudeAI\unity` (je tam `.mcp.json` pro Unity a buildy). Na pokyn uživatele jsou proto hooky zkopírované do `C:\_ClaudeAI\unity\.claude\settings.json` s pevnými cestami `C:\Dev\CrimsonVeil\Tools\session-start.ps1` / `session-stop.ps1`. `C:\_ClaudeAI\unity\CLAUDE.md` načítá repozitářový `CLAUDE.md`. Ručně ověřeno, že oba skripty fungují. Načtou se po restartu aplikace Claude. **Když se změní `.claude/settings.json` v repozitáři, je potřeba změnu přenést i sem.**
+- **Hotovo:** `git pull` na v0.100.13, hooky předávky na Lenovu (v0.100.15–16).
+- **Hooky na Lenovu:** stálá session běží ve složce `C:\_ClaudeAI\unity` (je tam `.mcp.json` pro Unity a buildy). Na pokyn uživatele jsou proto hooky zkopírované do `C:\_ClaudeAI\unity\.claude\settings.json` s pevnými cestami `C:\Dev\CrimsonVeil\Tools\session-start.ps1` / `session-stop.ps1`. `C:\_ClaudeAI\unity\CLAUDE.md` načítá repozitářový `CLAUDE.md`. **Ověřeno po restartu aplikace Claude:** hook SessionStart proběhl a předal předávku i backlog. **Když se změní `.claude/settings.json` v repozitáři, je potřeba změnu přenést i sem.**
+- **Unity po restartu:** editor neběžel (běžel jen pomocný proces Unity Hubu `resources\unity.exe serve`, nezaměňovat) a server MCP for Unity na 8080 taky ne. Spuštěno ručně: server `uvx --from "mcpforunityserver==10.3.0" mcp-for-unity --transport http --http-url http://127.0.0.1:8080 --project-scoped-tools` a editor `Unity.exe -projectPath C:\Dev\CrimsonVeil`. Unity se připojilo samo za 20 s.
 - **Rozdělané:** nic.
-- **Další krok:** uživatel restartuje aplikaci Claude na Lenovu. Pak `Docs/Backlog.md` (ShieldMonk).
+- **Další krok:** podle uživatele. Nahoře v `Docs/Backlog.md` je ShieldMonk.
 
 ## Stav
 - Větev `newFeatures`, do `main` se slučuje jen na pokyn uživatele.

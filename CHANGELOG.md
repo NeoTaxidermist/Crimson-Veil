@@ -5,6 +5,15 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.100.16] – 2026-11-27
+### Změněno
+- Hooky předávky na Lenovu jsou ověřené po restartu aplikace Claude: session dostala předávku i backlog.
+- `Docs/claude/unity-mcp-restart.md`: co dělat, když po restartu aplikace Claude spojení s Unity odmítá připojení. Proces „Unity“ může být jen pomocník Unity Hubu. Server MCP for Unity se dá spustit ručně přes `uvx` a editor přes `-projectPath`.
+- `Docs/Rozpracovano.md`: sekce Lenovo aktualizovaná.
+
+### Testy
+- Jen dokumentace, testy se nespouštěly.
+
 ## [0.100.15] – 2026-11-27
 ### Změněno
 - `Docs/Rozpracovano.md`: hooky předávky platí i na Lenovu. Stálá session tam běží ve složce `C:\_ClaudeAI\unity`, proto jsou hooky zkopírované do jejího `.claude/settings.json` s pevnými cestami do `C:\Dev\CrimsonVeil\Tools`. Ručně ověřeno, že oba skripty fungují, načtou se po restartu aplikace Claude.

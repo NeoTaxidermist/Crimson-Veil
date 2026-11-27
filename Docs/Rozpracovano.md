@@ -10,7 +10,7 @@ Vývoj běží na dvou počítačích (**Lenovo** = hlavní, RTX 2060; **DELL** 
 - Nepracuj, pokud tu stojí, že druhý počítač má rozdělanou necommitnutou práci. Zeptej se uživatele.
 
 ## Teď pracuje
-Nikdo. DELL dokončil přestavbu ShieldMonka (vše commitnuté a pushnuté, v0.101.0), čeká se na posouzení uživatelem. Lenovo volno.
+**DELL** – přestavba nepřátel: HangedMan (od 2026-11-27, v0.101.1). ShieldMonk schválený. Lenovo volno.
 
 ## Poslední session
 

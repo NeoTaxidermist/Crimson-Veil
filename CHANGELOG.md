@@ -5,6 +5,13 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.101.1] – 2026-11-27
+### Změněno
+- `Docs/Backlog.md`, `Docs/Rozpracovano.md`: uživatel schválil nového ShieldMonka („Je to dobré, další“). DELL začíná přestavbu HangedMana.
+
+### Testy
+- Jen dokumentace, testy se nespouštěly.
+
 ## [0.101.0] – 2026-11-27
 ### Změněno
 - **ShieldMonk postavený znovu na úroveň hrdiny** (`ArtSource/monk_build.py`, stejnou metodou jako přízrak):

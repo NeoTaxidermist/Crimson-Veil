@@ -5,6 +5,13 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.100.4] – 2026-11-27
+### Přidáno
+- **DELL je připravený k vývoji:** projekt otevřený v Unity 6000.3.28f1, MCP for Unity se připojuje a spouští sám, konzole bez chyb. Po vypnutí Smart App Control běží Python z uv. Stav je v `Docs/Rozpracovano.md`.
+
+### Testy
+- EditMode na DELLu: 655/655 prošlo. PlayMode se nespouštěl (beze změn kódu).
+
 ## [0.100.3] – 2026-11-27
 ### Přidáno
 - **DELL připravený k vývoji (zatím bez MCP):** Git, Unity 6000.3.28f1 s IL2CPP, Visual Studio 2026 s C++ a Windows SDK 26100, Blender 5.3, uv a Python 3.12. Stav a co zbývá je v `Docs/Rozpracovano.md`.

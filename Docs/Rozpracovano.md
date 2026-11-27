@@ -8,7 +8,7 @@ Vývoj běží na dvou počítačích (**Lenovo** = hlavní, RTX 2060; **DELL** 
 - Nepracuj, pokud tu stojí, že druhý počítač má rozdělanou necommitnutou práci. Zeptej se uživatele.
 
 ## Teď pracuje
-DELL – instalace vývojového prostředí (v0.100.3). Lenovo volno.
+DELL – volno, připravený k vývoji (vše commitnuté a pushnuté, v0.100.4). Lenovo volno.
 
 ## Stav
 - Větev `newFeatures`, do `main` se slučuje jen na pokyn uživatele.
@@ -16,7 +16,8 @@ DELL – instalace vývojového prostředí (v0.100.3). Lenovo volno.
 - **DELL: instalace podle `Docs/NovyPocitac.md` (2026-11-27):**
   - Hotovo: Git 2.56.1, klon `newFeatures` v `C:\Dev\CrimsonVeil` (hooky, followTags, identita jako na Lenovu), Unity Hub 4.0.2 (balíček z Microsoft Store), **Unity 6000.3.28f1 + Windows Build Support (IL2CPP)**, Visual Studio Community 2026 (18.12.1) s C++ a Windows SDK 10.0.26100, Blender 5.3, uv 0.13.10 a Python 3.12.16 (spustil uživatel ve vlastním PowerShellu). Session „Crimson Veil – DELL“, Remote Control pro nové sessions zapnutý, keep-awake běží.
   - Na DELLu je navíc Unity 6000.6.11f1, projekt ho nepoužívá.
-  - Zbývá: uživatel vypíná **Smart App Control** (blokovalo Python z uv, bez něj nejede server MCP for Unity) a restartuje kvůli Visual Studiu. Pak ověřit `python --version`, poprvé otevřít projekt (import desítky minut), MCP for Unity (automatický start), `read_console`, EditMode testy a benchmark na Intel UHD.
+  - Po restartu: **Smart App Control vypnuté** (blokovalo Python z uv), Python 3.12.16 jede, projekt otevřený přes Hub (první import proběhl), **MCP for Unity připojené, automatický start zapnutý**, konzole bez chyb (jen varování o samoprotínajících se polygonech v modelech ruin), **EditMode 655/655 prošlo**.
+  - Zbývá: benchmark sestavené hry na Intel UHD (`Tools/bench.ps1`) a ověření Blender MCP (doplněk v Blenderu nainstaluje uživatel).
   - Úskalí jsou v `Docs/claude/dell-setup-pitfalls.md`.
 
 ## Další na řadě

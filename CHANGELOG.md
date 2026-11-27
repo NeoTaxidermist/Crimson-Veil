@@ -5,6 +5,13 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.100.14] – 2026-11-27
+### Změněno
+- `Docs/Rozpracovano.md`: sekce Lenovo. Stávající session na Lenovu běží mimo repozitář, takže hooky předávky nenačte. Jsou popsané dvě cesty, jak to vyřešit.
+
+### Testy
+- Jen dokumentace, testy se nespouštěly.
+
 ## [0.100.13] – 2026-11-27
 ### Přidáno
 - **Stažení změn při každé zprávě:** hook UserPromptSubmit spouští `Tools/session-start.ps1 -OnPrompt`. Session, která je otevřená celý den, si tak stáhne práci z druhého počítače, jakmile jí uživatel napíše, a dostane novou předávku. Když se nic nezměnilo nebo je počítač offline, hook nic nevypíše (zdržení ~1 s). Git se nikdy neptá na přihlášení (`GIT_TERMINAL_PROMPT=0`).

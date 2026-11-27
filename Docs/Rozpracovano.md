@@ -10,7 +10,7 @@ Vývoj běží na dvou počítačích (**Lenovo** = hlavní, RTX 2060; **DELL** 
 - Nepracuj, pokud tu stojí, že druhý počítač má rozdělanou necommitnutou práci. Zeptej se uživatele.
 
 ## Teď pracuje
-Nikdo. Lenovo práci předalo (vše commitnuté a pushnuté, v0.100.18). DELL volno.
+**DELL** – benchmark sestavené hry na Intel UHD (převzato od Lenova 2026-11-27, v0.100.19). Lenovo volno.
 
 ## Poslední session
 

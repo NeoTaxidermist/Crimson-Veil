@@ -5,6 +5,13 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.105.1] – 2026-11-27
+### Změněno
+- Materiály mlhy (MistBand, MistLow, LightShaft, Waterfall) mají uložený odkaz na předpečený šum `CVNoise`, stejně jako InkGrade. Unity ho zapsalo po navázání textury na shader.
+
+### Testy
+- Beze změny kódu. Platí EditMode 668/668 a PlayMode World 12/12 z v0.105.0, se kterými se build měřil.
+
 ## [0.105.0] – 2026-11-27
 ### Změněno
 - **Optimalizace pro slabou grafiku bez změny vzhledu** (uživatel: „optimalizuj, ale elegantně, ať to nevypadá hnusně“). DELL (Intel UHD), Full HD v okně:

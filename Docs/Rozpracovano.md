@@ -10,7 +10,7 @@ Vývoj běží na dvou počítačích (**Lenovo** = hlavní, RTX 2060; **DELL** 
 - Nepracuj, pokud tu stojí, že druhý počítač má rozdělanou necommitnutou práci. Zeptej se uživatele.
 
 ## Teď pracuje
-**DELL** – přestavba nepřátel: HangedMan (od 2026-11-27, v0.101.1). ShieldMonk schválený. Lenovo volno.
+Nikdo. DELL dokončil HangedMana (vše commitnuté a pushnuté, v0.102.0), čeká se na posouzení uživatelem. ShieldMonk schválený. Lenovo volno.
 
 ## Poslední session
 
@@ -31,13 +31,19 @@ Vývoj běží na dvou počítačích (**Lenovo** = hlavní, RTX 2060; **DELL** 
     - štít v pěsti.
     
     Záběry ze hry dostal uživatel. Postup a úskalí jsou v `Docs/claude/crimson-veil-enemy-rebuild.md`.
+  - ShieldMonk uživatel schválil („Je to dobré, další“).
+  - **HangedMan přestavěný (v0.102.0):**
+    - Kostra a herní logika zůstaly.
+    - Nový model: vyhublé tělo s žebry, zlomeně padlá hlava s tváří, jazykem a vlasy, roztržená košile, ruce s prsty, bosá chodidla, oprátka s uzlem a okov s řetězem.
+    - Společné nástroje pro stavbu jsou v `ArtSource/sculpt_kit.py`.
+    - Záběry ze hry dostal uživatel.
 - **Nehotovo:** rozdělení zbylých ~4 ms pevných průchodů (InkGrade, kopie obrazu a hloubky, HDR). Je potřeba přepínač renderer features v `Benchmark.cs`, nebo dočasné buildy.
 - **Rozdělané:** nic. Necommitnuté jsou jen soubory, které vygenerovalo Unity (`Assets/Settings/Mobile_RPAsset.asset`, `.vsconfig`, `CrimsonVeil.slnx`), ty se necommitují.
 - **Rozhodnutí uživatele:** Smart App Control na DELLu je vypnuté. Stačí dvě stálé sessions (DELL, Lenovo), nové se zakládat nemusí.
 - **Další krok:**
-  - Uživatel posoudí ShieldMonka. Ještě neviděl, jak se hýbe ve skutečné hře, jen statické záběry.
-  - Kandidáti na doladění: z pohledu ze tří čtvrtin prosvítají prsty štítem a předloktí štítové paže jde kolem štítu.
-  - Pak HangedMan (`hanged_build.py`).
+  - Uživatel posoudí HangedMana.
+  - Pak tvorové z `creature_kit` (RootCrawler, AshMoth, LanternWisp, PaperKite, Crow): mají tuhé díly, ne kostru, takže to bude jiný postup.
+  - U ShieldMonka zůstalo z pohledu ze tří čtvrtin: prsty prosvítají štítem.
   - Cíl výkonu pro slabou grafiku podle uživatele „zatím nech být“.
 
 ### Lenovo – 2026-11-27 (session „Crimson Veil – Lenovo“)

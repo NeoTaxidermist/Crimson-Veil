@@ -14,12 +14,12 @@ Značky: **[rozhodnuto]** uživatel výslovně chce · **[návrh]** můj návrh,
 
 ## Musí se (rozhodnuto, čeká na práci)
 
-### 1. Přestavba nepřátel na úroveň hrdiny – další: HangedMan  [rozhodnuto] · L (každý nepřítel M)
+### 1. Přestavba nepřátel na úroveň hrdiny – další: tvorové z creature_kit  [rozhodnuto] · L (každý nepřítel M)
 - **Co:** postavit každého nepřítele znovu od nuly s anatomií a detailem jako hrdina. Jeden nepřítel na verzi, každého vyrenderovat a ukázat uživateli. Pořadí: ShieldMonk (`monk_build.py`), HangedMan (`hanged_build.py`), pak tvorové z `creature_kit` (RootCrawler, AshMoth, LanternWisp, PaperKite, Crow). ShadowDouble používá síť hrdiny.
 - **Proč:** uživatel 2026-11-26 zvolil přestavbu od nuly, ne rychlé vyhlazení.
 - **Dopady:** výkon (kapitola může mít stovky nepřátel; Dormancy a FixBounds z v0.97 to drží, při mnoha nepřátelích na obrazovce budou potřeba LOD), animace (zachovat jména kostí kvůli EnemyAnimator, HeroHands a SpringBones), testy nepřátel, cutscény (detail ze všech stran).
 - **ShieldMonk – zadání uživatele (2026-11-27):** „potřebuje adekvátnější zbraň, ne tu hůlku“. Uživatel vybral **řemdih** (hlavice s hroty na řetězu) a **nový útok zbraní** vedle nárazu štítem. Řemdih nahradí růženec v pravé ruce.
-- **Stav:** hotový je přízrak (Wraith, v0.96) a **ShieldMonk s řemdihem (v0.101.0, uživatel schválil: „Je to dobré, další“)**. **HangedMan rozpracovaný na DELLu (2026-11-27).** Pak ostatní.
+- **Stav:** hotový je přízrak (Wraith, v0.96) a **ShieldMonk s řemdihem (v0.101.0, uživatel schválil: „Je to dobré, další“)**. **HangedMan (v0.102.0, čeká na posouzení uživatelem)**. Další jsou tvorové z `creature_kit` (RootCrawler, AshMoth, LanternWisp, PaperKite, Crow).
 - **Odkazy:** `Docs/claude/crimson-veil-enemy-rebuild.md`, `crimson-veil-no-stock-art.md`, `crimson-veil-cutscenes.md`.
 
 ---

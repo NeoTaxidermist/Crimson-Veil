@@ -47,6 +47,33 @@ namespace CrimsonVeil.Tests
             finally { Object.DestroyImmediate(m); }
         }
 
+        /// <summary>
+        /// Rebuilt to stand beside the hero (v0.102): a starved body with every rib, a fallen head with a face, real hands
+        /// and feet - yet light enough for several hanging in one place; the crimson noose round his neck.
+        /// </summary>
+        [Test]
+        public void TheHangedMan_IsMadeAsFinelyAsTheHero_WithTheNooseRoundHisNeck()
+        {
+            var h = Load("HangedMan");
+            var hero = Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_CrimsonVeil/Art/Hero/Hero.fbx"));
+            try
+            {
+                var smr = h.GetComponentInChildren<SkinnedMeshRenderer>();
+                var mesh = smr.sharedMesh;
+                int heroVerts = hero.GetComponentInChildren<SkinnedMeshRenderer>().sharedMesh.vertexCount;
+                Assert.Greater(mesh.vertexCount, heroVerts * 0.7f, "as finely made as the hero (it had a fraction of his detail)");
+                Assert.Less(mesh.vertexCount, 60000, "light enough for several at once");
+                Assert.AreEqual(2, smr.sharedMaterials.Length, "ink and crimson");
+                // crimson at the neck: the noose (stored z up; the neck is at 1.6-1.75 m, the tongue in the fallen head above)
+                var v = mesh.vertices;
+                int neck = 0;
+                foreach (int i in mesh.GetTriangles(1)) if (v[i].z > 1.55f && v[i].z < 1.78f) neck++;
+                Assert.Greater(neck, 200, "the noose round his neck");
+                Assert.That(smr.bounds.size.y, Is.InRange(1.9f, 2.3f), "a man's height, the feet at the bottom");
+            }
+            finally { Object.DestroyImmediate(h); Object.DestroyImmediate(hero); }
+        }
+
         [Test]
         public void TheHangedMan_HasLooseLimbs_AndAFallenHead()
         {

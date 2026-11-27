@@ -5,6 +5,24 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.102.0] – 2026-11-27
+### Změněno
+- **HangedMan postavený znovu na úroveň hrdiny** (`ArtSource/hanged_build.py`). Kostra i jména kostí zůstaly, takže houpání, pád a přeseknutí lana fungují jako dřív. Nový model:
+  - **Tělo:** vyhublé, s každým žebrem, klíčními kostmi, propadlým břichem, kyčelními kostmi, lopatkami a obratli. Krk je natažený provazem.
+  - **Hlava:** zlomeně padlá k levému rameni. Propadlé oči s přivřenými víčky, propadlé tváře, pokleslá otevřená čelist s karmínovým jazykem, uši a splihlé vlasy v pramenech, které visí dolů.
+  - **Košile:** roztržená vepředu (žebra jsou vidět), prodřená a roztřepená do cárů. Levý rukáv je utržený u ramene, pravý visí v cárech k lokti.
+  - **Kalhoty:** krátké, s provázkem, utržené pod kolenem.
+  - **Paže a ruce:** vyzáblé paže s kostnatými lokty a skleslé ruce se čtyřmi dlouhými prsty a palcem.
+  - **Nohy:** bosé holeně, kotníkové kosti a chodidla s patou, klenbou a pěti prsty.
+  - **Karmínová oprátka:** zkroucené lano se šibeničním uzlem za uchem.
+  - **Okov:** na levém kotníku, s přetrženým řetězem.
+  - **Velikost:** 57 000 vrcholů (dřív zlomek detailu hrdiny).
+- **`ArtSource/sculpt_kit.py`:** společné nástroje pro stavbu bestiáře (prstencové plochy s otvory, koule s modelací, smyčky, záhyby), aby je každý skript nekopíroval. HangedMan ho používá.
+
+### Testy
+- **Nový:** `TheHangedMan_IsMadeAsFinelyAsTheHero_WithTheNooseRoundHisNeck` (jemnost jako hrdina, ale do 60 000 vrcholů, karmínová oprátka u krku, výška).
+- **Výsledky:** celý EditMode 664/664, PlayMode Combat 45/45.
+
 ## [0.101.1] – 2026-11-27
 ### Změněno
 - `Docs/Backlog.md`, `Docs/Rozpracovano.md`: uživatel schválil nového ShieldMonka („Je to dobré, další“). DELL začíná přestavbu HangedMana.

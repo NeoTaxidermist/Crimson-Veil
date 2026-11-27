@@ -42,20 +42,18 @@ if ($LASTEXITCODE -ne 0) {
 $dirty = @(git status --porcelain 2>$null)
 if ($dirty.Count -gt 0) { $lines += "Uncommitted changes in working tree: $($dirty.Count) file(s)" }
 
-# Hand-over state: the "who is working now" section of Docs/Rozpracovano.md.
-$handover = ''
+# Hand-over: the whole Docs/Rozpracovano.md (who works where, last session on each computer, what is done/open).
+$handover = '(Docs/Rozpracovano.md not found)'
 $doc = Join-Path $repo 'Docs/Rozpracovano.md'
-if (Test-Path $doc) {
-    $text = Get-Content $doc -Raw -Encoding UTF8
-    # Heading is "## Teď pracuje"; matched without non-ASCII because PowerShell 5.1 reads this file as ANSI.
-    if ($text -match '(?s)## Te\S{1,2} pracuje\s*(.*?)\s*\n## ') { $handover = $Matches[1].Trim() }
-}
+if (Test-Path $doc) { $handover = Get-Content $doc -Raw -Encoding UTF8 }
 
 $context = @(
     "[session-start] $status (branch $branch)."
     $lines
-    "Hand-over (Docs/Rozpracovano.md, who is working now): $handover"
-    'Per CLAUDE.md: read Docs/Rozpracovano.md and the relevant Docs/claude notes before working; update it, commit and push at the end of the task.'
+    ''
+    'This is the hand-over from previous sessions on both computers (Docs/Rozpracovano.md). Continue from it; the user may have just switched computers. Keep your computer''s section under the "last session" heading current after every finished step, then commit and push.'
+    '----- Docs/Rozpracovano.md -----'
+    $handover
 ) -join "`n"
 
 @{

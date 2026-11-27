@@ -3,7 +3,8 @@
 2.5D akční plošinovka v Unity 6000.3.28f1 (URP). Šedý tušový svět, jen karmínové detaily. Hrdina má magickou šálu, která se mění ve zbraně. Kód je v `Assets/_CrimsonVeil`.
 
 ## Nejdřív
-- Hook SessionStart (`.claude/settings.json` → `Tools/session-start.ps1`) na začátku každé session sám udělá `git fetch` a `git pull --ff-only` a předá stav předávky. Když hlásí chybu (pull selhal, offline), vyřeš to dřív, než začneš pracovat.
+- Hook SessionStart (`.claude/settings.json` → `Tools/session-start.ps1`) na začátku každé session sám udělá `git fetch` a `git pull --ff-only` a předá ti celý `Docs/Rozpracovano.md`. Když hlásí chybu (pull selhal, offline), vyřeš to dřív, než začneš pracovat.
+- **Předávka průběžně:** uživatel může kdykoli přejít na druhý počítač a ta session nevidí naši konverzaci. Po každém dokončeném kroku proto aktualizuj svou sekci „Poslední session“ v `Docs/Rozpracovano.md` (o čem jsme mluvili, hotovo, nehotovo, rozdělané, rozhodnutí, další krok), commitni a pushni. Hook Stop (`Tools/session-stop.ps1`) tě vrátí, když zůstanou nepushnuté commity nebo necommitnutá předávka.
 - **`git pull`, pak přečti `Docs/Rozpracovano.md`** (kdo kde pracuje, co je rozdělané a co je na řadě) a v `Docs/claude/README.md` poznámky k úkolu. Vývoj běží na dvou počítačích (Lenovo, DELL) a jediné, co sdílejí, je tento repozitář.
 - **Na konci úkolu** aktualizuj `Docs/Rozpracovano.md`, commitni a pushni. Nové poznatky o projektu zapisuj do `Docs/claude/`, ne do místní paměti Claude.
 

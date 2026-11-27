@@ -12,6 +12,18 @@
           }
         ]
       }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "powershell",
+            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File \"$env:CLAUDE_PROJECT_DIR\\Tools\\session-stop.ps1\"",
+            "timeout": 30
+          }
+        ]
+      }
     ]
   }
 }

@@ -5,6 +5,14 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.100.9] – 2026-11-27
+### Přidáno
+- **Plná předávka mezi sessions:** `Docs/Rozpracovano.md` má sekci „Poslední session“ pro každý počítač (o čem jsme mluvili, hotovo, nehotovo, rozdělané, rozhodnutí, další krok) a pravidlo aktualizovat ji po každém dokončeném kroku. Hook SessionStart předává Claudovi celý soubor, ne jen hlavičku.
+- **Hook Stop** (`Tools/session-stop.ps1`): když na konci odpovědi zůstanou nepushnuté commity nebo necommitnutá předávka, pošle Claude jednou zpátky, aby ji dokončil. `CLAUDE.md` to popisuje.
+
+### Testy
+- Jen nástroje mimo hru, testy se nespouštěly. Oba skripty ověřené ručním spuštěním (stav aktuální i rozdělaný, ochrana proti opakování).
+
 ## [0.100.8] – 2026-11-27
 ### Přidáno
 - **Automatická předávka mezi počítači:** hook SessionStart v `.claude/settings.json` spouští `Tools/session-start.ps1`. Na začátku každé session Claude na Lenovu i DELLu stáhne změny z druhého počítače (`git fetch` + `git pull --ff-only`) a dostane přehled: nové commity, nepushnuté commity, necommitnuté soubory a sekci „Teď pracuje“ z `Docs/Rozpracovano.md`. Když se změnily soubory Unity, připomene kontrolu Play módu. `CLAUDE.md` to zmiňuje.

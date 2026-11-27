@@ -5,6 +5,13 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.100.7] – 2026-11-27
+### Přidáno
+- `Docs/claude/dell-setup-pitfalls.md`: proč byla hra v editoru na DELLu rozmazaná (zvětšení Windows 150 % a v Game view zapnuté „Low Resolution Aspect Ratios“) a jak to vypnout.
+
+### Testy
+- Jen dokumentace, testy se nespouštěly.
+
 ## [0.100.6] – 2026-11-27
 ### Přidáno
 - **DELL: Blender napojený na Claude** (doplněk MCP od Blender Lab + rozšíření „Blender“ v aplikaci Claude) a ověřený. Hra jde na DELLu spustit přes MCP for Unity. Stav je v `Docs/Rozpracovano.md`.

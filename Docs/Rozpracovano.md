@@ -10,7 +10,7 @@ Vývoj běží na dvou počítačích (**Lenovo** = hlavní, RTX 2060; **DELL** 
 - Nepracuj, pokud tu stojí, že druhý počítač má rozdělanou necommitnutou práci. Zeptej se uživatele.
 
 ## Teď pracuje
-**DELL** – přestavba nepřátel, začíná ShieldMonk (s novou zbraní místo hůlky). Od 2026-11-27, v0.100.22. Lenovo volno.
+Nikdo. DELL dokončil přestavbu ShieldMonka (vše commitnuté a pushnuté, v0.101.0), čeká se na posouzení uživatelem. Lenovo volno.
 
 ## Poslední session
 
@@ -24,10 +24,21 @@ Vývoj běží na dvou počítačích (**Lenovo** = hlavní, RTX 2060; **DELL** 
   - `Docs/Backlog.md` (v0.100.10): uživatel chce v gitu seznam nápadů, toho, co se musí a co by se mohlo udělat, včetně dopadů, protože o věcech mluvíme a dělat je jde až za pár dní. Naplněno z otevřených bodů v `Docs/claude/`.
   - Předávka ověřená ve dvou nových sessions. První ukázala, že výstup hooku přes 10 KB se zobrazí jen jako náhled; opraveno ve v0.100.11 (~4,7 KB). Druhá dostala všechno a odpověděla správně.
   - Hook při každé zprávě (v0.100.13): otevřená session si stáhne změny z druhého počítače, jakmile jí uživatel napíše. Pokud se nic nezměnilo, je tichý (~1 s). Ověřeno v dočasném klonu.
+  - **ShieldMonk přestavěný (v0.101.0):** uživatel chtěl „adekvátnější zbraň, ne tu hůlku“ a vybral řemdih s novým útokem. Hotové:
+    - nový model na úrovni hrdiny (tvář, ruce s prsty, roucha, štít),
+    - řemdih (samostatné díly, simulovaný řetěz, vždy ve volné ruce),
+    - útok řemdihem na 1,7–2,8 m,
+    - štít v pěsti.
+    
+    Záběry ze hry dostal uživatel. Postup a úskalí jsou v `Docs/claude/crimson-veil-enemy-rebuild.md`.
 - **Nehotovo:** rozdělení zbylých ~4 ms pevných průchodů (InkGrade, kopie obrazu a hloubky, HDR). Je potřeba přepínač renderer features v `Benchmark.cs`, nebo dočasné buildy.
 - **Rozdělané:** nic. Necommitnuté jsou jen soubory, které vygenerovalo Unity (`Assets/Settings/Mobile_RPAsset.asset`, `.vsconfig`, `CrimsonVeil.slnx`), ty se necommitují.
 - **Rozhodnutí uživatele:** Smart App Control na DELLu je vypnuté. Stačí dvě stálé sessions (DELL, Lenovo), nové se zakládat nemusí.
-- **Další krok:** podle uživatele. Cíl výkonu pro slabou grafiku podle něj „zatím nech být“ (2026-11-27). Nahoře v `Docs/Backlog.md` je přestavba nepřátel (ShieldMonk).
+- **Další krok:**
+  - Uživatel posoudí ShieldMonka. Ještě neviděl, jak se hýbe ve skutečné hře, jen statické záběry.
+  - Kandidáti na doladění: z pohledu ze tří čtvrtin prosvítají prsty štítem a předloktí štítové paže jde kolem štítu.
+  - Pak HangedMan (`hanged_build.py`).
+  - Cíl výkonu pro slabou grafiku podle uživatele „zatím nech být“.
 
 ### Lenovo – 2026-11-27 (session „Crimson Veil – Lenovo“)
 - **O čem jsme mluvili:** výkon (v0.100.0: zrno tuše zapečené do textury, ~350 fps), příprava DELLu a předávka mezi počítači (v0.100.1–v0.100.5: `CLAUDE.md`, `Docs/NovyPocitac.md`, poznámky v `Docs/claude/`, napojení Blenderu).

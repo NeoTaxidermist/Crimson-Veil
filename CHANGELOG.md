@@ -5,6 +5,39 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.101.0] – 2026-11-27
+### Změněno
+- **ShieldMonk postavený znovu na úroveň hrdiny** (`ArtSource/monk_build.py`, stejnou metodou jako přízrak):
+  - **Tvář v kápi:** těžké obočí, hluboké důlky s karmínovýma očima, zlomený nos, jizva a spletený vous s karmínovým korálkem.
+  - **Kápě:** se špičkou svěšenou do čela a otvorem zúženým nahoru.
+  - **Oblečení:** uzavřený plášť přes ramena a těžká roucha v hlubokých záhybech, dole roztrhaná do cárů. Kroucený provaz s karmínovými šňůrami.
+  - **Paže:** široké rukávy a předloktí ovinutá koženými řemeny.
+  - **Ruce:** velké, se čtyřmi prsty o třech článcích a palcem. Sevřou se v pěst kolem úchopu štítu i násady.
+  - **Štít:** jemnější, s prkny pod železným okrajem, nýty, puklicí s hrotem a karmínovým okem, ze kterého stékají tři pramínky.
+  - **Velikost:** tělo má 51 900 vrcholů (hrdina 41 800, přízrak 49 800).
+- **Štít je teď v pěsti.** Dřív se vznášel na pevném místě před monkem a paže držela prázdnou pěst u obličeje. Paže se štítem je níž, ve výšce hrudi.
+
+### Přidáno
+- **Řemdih místo „hůlky“ (rozhodnutí uživatele).** Násada s koženým omotáním, šest článků řetězu a ostnatá hlavice s karmínovým pásem.
+  - **Stavba:** samostatné díly. Hra je vždy dá do volné ruky, tedy té, která právě nedrží štít.
+  - **Řetěz:** simulovaný (`FlailChain`), houpe se a táhne se za pěstí.
+- **Nový útok řemdihem.** Na blízko (do 1,7 m) monk dál narazí štítem. O krok dál (do 2,8 m):
+  - **Nápřah:** 0,8 s točí řemdihem nad hlavou. To je varování pro hráče.
+  - **Úder:** 0,4 s, obloukem přes hlavu dolů před sebe, s krokem vpřed. Hlavice zraní jen na cestě dolů před ním a zasáhne i hrdinu, který ho zrovna přeskakuje.
+  - **Bez štítu** neútočí a mezi údery řemdihem má pauzu 2,4 s.
+- Pózy těla pro nápřah a úder (`CreatureAnimation.Monk`).
+
+### Testy
+- **Nové:** `ShieldMonkFlailTests` (8):
+  - řetěz visí, drží délku článků a vede hlavici po oblouku úderu,
+  - nápřah navazuje na úder, hlavice zraní jen při cestě dolů před monkem,
+  - volba útoku podle vzdálenosti a štítu,
+  - pózy,
+  - ruce, prsty a díly řemdihu v modelu,
+  - jemnost modelu.
+- **Nové v `BestiaryModelPlayTests`:** řemdih je ve volné pěsti a hlavice visí pod násadou. Monk krok před hrdinou roztočí řemdih nad hlavou a zasáhne ho.
+- **Výsledky:** celý EditMode 663/663, PlayMode Combat 45/45.
+
 ## [0.100.23] – 2026-11-27
 ### Změněno
 - `Docs/Backlog.md`: rozhodnutí uživatele pro ShieldMonka: zbraní bude řemdih (místo růžence v pravé ruce) a dostane s ním nový útok vedle nárazu štítem.

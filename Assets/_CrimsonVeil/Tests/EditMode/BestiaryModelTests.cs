@@ -41,7 +41,7 @@ namespace CrimsonVeil.Tests
             try
             {
                 Assert.IsNotNull(CreatureParts.Find(m.transform, "Shield"), "the script raises and drops the shield");
-                Assert.GreaterOrEqual(Chains(m.transform), 12, "hem strips, mantle tails, belt cords, rosary");
+                Assert.GreaterOrEqual(Chains(m.transform), 12, "hem strips, mantle tails, belt cords");
                 Assert.That(m.GetComponentInChildren<SkinnedMeshRenderer>().bounds.size.y, Is.InRange(1.7f, 2.5f));
             }
             finally { Object.DestroyImmediate(m); }

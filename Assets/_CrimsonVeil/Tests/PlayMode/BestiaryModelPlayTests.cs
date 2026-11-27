@@ -54,6 +54,66 @@ namespace CrimsonVeil.Tests
         }
 
         [UnityTest]
+        public IEnumerator TheMonksFlail_IsInHisFreeFist_ItsHeadHangingOnTheChain()
+        {
+            creature = Spawn("ShieldMonk", Vector3.zero);
+            var m = creature.GetComponent<ShieldMonk>();
+            for (float t = 0f; t < 1f; t += Time.deltaTime) yield return null;   // (time for the chain to settle)
+            var haft = CreatureParts.Find(creature.transform, "Flail");
+            Assert.IsNotNull(haft);
+            Assert.IsNotNull(m.FlailHead);
+            Assert.AreSame(CreatureParts.Find(creature.transform, "Visual"), haft.parent, "moved under the Visual");
+            // the free hand: the shield is held by the arm on the camera's side (-z), so the free one is the far one
+            var handL = RigJoint.FindDeep(creature.transform, "Hand.L");
+            var handR = RigJoint.FindDeep(creature.transform, "Hand.R");
+            var shield = CreatureParts.Find(creature.transform, "Shield");
+            var free = handL.position.z > handR.position.z ? handL : handR;
+            Assert.Less(Vector3.Distance(haft.position, free.position), 0.15f,
+                $"the haft in the free fist (haft {haft.position}, L {handL.position}, R {handR.position}, shield {shield.position}, state {m.Current}, facing {m.Facing})");
+            var tip = m.FlailTipPosition;
+            Assert.Greater(tip.y, haft.position.y + 0.2f, "the haft held up out of the fist");
+            Assert.Less(m.FlailHead.position.y, tip.y - 0.3f,
+                $"the head hangs on its chain, below the haft's tip (tip {tip}, head {m.FlailHead.position}, grip {haft.position})");
+            Assert.Greater(m.FlailHead.position.y - creature.transform.position.y, 0.05f, "not through the floor");
+            Assert.IsFalse(float.IsNaN(m.FlailHead.position.x));
+        }
+
+        [UnityTest]
+        public IEnumerator TheMonk_WhirlsTheFlail_AndBringsItDownOnAHeroAStepAway()
+        {
+            var hero = new GameObject("Hero");
+            hero.SetActive(false);
+            hero.transform.position = new Vector3(2.3f, 0.05f, 0f);
+            var cc = hero.AddComponent<CharacterController>();
+            cc.height = 1.8f; cc.radius = 0.28f; cc.center = new Vector3(0f, 0.9f, 0f);
+            hero.AddComponent<ScriptedInput>();
+            hero.AddComponent<CrimsonVeil.Player.PlayerController>();
+            var health = hero.AddComponent<PlayerHealth>();
+            hero.SetActive(true);
+            try
+            {
+                yield return null;
+                creature = Spawn("ShieldMonk", Vector3.zero);
+                var m = creature.GetComponent<ShieldMonk>();
+                bool whirled = false, swung = false;
+                float headTop = float.MinValue;
+                float before = health.Model.Current;
+                for (float t = 0f; t < 3f && health.Model.Current >= before; t += Time.deltaTime)
+                {
+                    if (m.Current == ShieldMonk.State.FlailWindup) whirled = true;
+                    if (m.Current == ShieldMonk.State.FlailSwing) swung = true;
+                    if (whirled) headTop = Mathf.Max(headTop, m.FlailHead.position.y);
+                    yield return null;
+                }
+                Assert.IsTrue(whirled, "a step off, he whirls the flail up (not the shield bash)");
+                Assert.IsTrue(swung, "and brings it down");
+                Assert.Greater(headTop, 2.2f, "whirled up over his head (a warning the hero can see)");
+                Assert.Less(health.Model.Current, before, "the head lands on the hero a step away");
+            }
+            finally { Object.Destroy(hero); }
+        }
+
+        [UnityTest]
         public IEnumerator TheHangedMansLimbs_HangLoose()
         {
             creature = Spawn("HangedMan", new Vector3(0f, 3f, 0f));

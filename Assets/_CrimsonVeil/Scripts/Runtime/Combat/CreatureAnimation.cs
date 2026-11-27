@@ -131,9 +131,13 @@ namespace CrimsonVeil.Combat
         /// <summary>Distance (m) of one full step cycle (two steps) of the shield monk's heavy walk.</summary>
         public const float MonkStride = 1.3f;
 
+        /// <summary>The shield arm at rest: the fist (and the shield in it) before his chest.</summary>
+        public const float MonkShieldArm = 30f, MonkShieldElbow = 40f;
+
         /// <summary>
-        /// The shield monk. The left arm (towards the camera) holds the shield forward; the right swings with the
-        /// heavy step. <paramref name="t"/> is 0..1 through the wind-up / bash / recovery, <paramref name="moving"/>
+        /// The shield monk. The left arm (towards the camera) holds the shield forward; the right (the flail's) swings
+        /// with the heavy step, whirls the flail up over his head and brings it down.
+        /// <paramref name="t"/> is 0..1 through the wind-up / bash / flail / recovery, <paramref name="moving"/>
         /// 0..1 how much he walks, <paramref name="phase"/> 0..1 the step cycle, <paramref name="armed"/> whether he
         /// still has the shield.
         /// </summary>
@@ -148,7 +152,7 @@ namespace CrimsonVeil.Combat
                 spine = 6f + 3f * moving + breathe * 1.2f,
                 chest = 3f,
                 head = -4f + plant * 3f * moving,
-                armL = 62f, elbowL = 48f,                         // the shield held up in front
+                armL = MonkShieldArm, elbowL = MonkShieldElbow,   // the shield held before his chest
                 armR = 8f + step * 22f * moving, elbowR = 18f + Mathf.Max(0f, step) * 18f * moving,
                 lift = (plant - 0.6f) * 0.07f * moving,
             };
@@ -169,7 +173,7 @@ namespace CrimsonVeil.Combat
                     // he plants himself and draws back behind the shield, the shield arm cocked
                     float w = Ease(t);
                     p.spine = Mathf.Lerp(p.spine, -12f, w); p.chest = Mathf.Lerp(3f, -6f, w); p.head = Mathf.Lerp(-4f, 6f, w);
-                    p.armL = Mathf.Lerp(62f, 95f, w); p.elbowL = Mathf.Lerp(48f, 85f, w);
+                    p.armL = Mathf.Lerp(MonkShieldArm, 95f, w); p.elbowL = Mathf.Lerp(MonkShieldElbow, 85f, w);
                     p.armR = Mathf.Lerp(p.armR, -25f, w); p.elbowR = Mathf.Lerp(p.elbowR, 30f, w);
                     p.lift = -0.08f * w;
                     p.lunge = -0.2f * w;
@@ -186,6 +190,29 @@ namespace CrimsonVeil.Combat
                     p.lunge = Mathf.Lerp(-0.2f, 0.4f, b);
                     break;
                 }
+                case ShieldMonk.State.FlailWindup:
+                {
+                    // he settles behind the shield and whirls the flail up: the free arm high over his head, leaning back
+                    float w = Ease(t * 1.6f);
+                    float whirl = Mathf.Sin(t * Mathf.PI * 4f);
+                    p.spine = Mathf.Lerp(p.spine, -8f, w); p.chest = Mathf.Lerp(3f, -7f, w); p.head = Mathf.Lerp(-4f, 4f, w);
+                    p.armL = Mathf.Lerp(MonkShieldArm, MonkShieldArm + 8f, w); p.elbowL = MonkShieldElbow;
+                    p.armR = Mathf.Lerp(p.armR, 150f + 12f * whirl, w); p.elbowR = Mathf.Lerp(p.elbowR, 35f - 15f * whirl, w);
+                    p.lift = -0.05f * w;
+                    p.lunge = -0.12f * w;
+                    break;
+                }
+                case ShieldMonk.State.FlailSwing:
+                {
+                    // the blow: the arm brought down over his head and through, the whole weight stepping after it
+                    float b = Snap(t / 0.8f);
+                    p.spine = Mathf.Lerp(-8f, 24f, b); p.chest = Mathf.Lerp(-7f, 9f, b); p.head = Mathf.Lerp(4f, -6f, b);
+                    p.armL = Mathf.Lerp(MonkShieldArm + 8f, MonkShieldArm - 4f, b); p.elbowL = MonkShieldElbow;
+                    p.armR = Mathf.Lerp(150f, -10f, b); p.elbowR = Mathf.Lerp(35f, 6f, b);
+                    p.lift = Mathf.Lerp(-0.05f, -0.11f, b);
+                    p.lunge = Mathf.Lerp(-0.12f, 0.45f, b);
+                    break;
+                }
                 case ShieldMonk.State.Recover:
                 {
                     // the weight of it carries him on, he sags and heaves himself back behind the shield
@@ -194,7 +221,7 @@ namespace CrimsonVeil.Combat
                     p.spine = Mathf.Lerp(26f, p.spine, back) + 6f * s;
                     p.chest = Mathf.Lerp(10f, 3f, back);
                     p.head = Mathf.Lerp(-8f, -4f, back);
-                    p.armL = Mathf.Lerp(88f, 62f, back); p.elbowL = Mathf.Lerp(4f, 48f, back);
+                    p.armL = Mathf.Lerp(88f, MonkShieldArm, back); p.elbowL = Mathf.Lerp(4f, MonkShieldElbow, back);
                     p.armR = Mathf.Lerp(-40f, p.armR, back); p.elbowR = Mathf.Lerp(20f, p.elbowR, back);
                     p.lift = Mathf.Lerp(-0.12f, 0f, back);
                     p.lunge = Mathf.Lerp(0.4f, 0f, back);

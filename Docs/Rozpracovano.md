@@ -10,7 +10,7 @@ Vývoj běží na dvou počítačích (**Lenovo** = hlavní, RTX 2060; **DELL** 
 - Nepracuj, pokud tu stojí, že druhý počítač má rozdělanou necommitnutou práci. Zeptej se uživatele.
 
 ## Teď pracuje
-Nikdo. DELL dokončil benchmark (vše commitnuté a pushnuté, v0.100.21). Lenovo volno.
+**DELL** – přestavba nepřátel, začíná ShieldMonk (s novou zbraní místo hůlky). Od 2026-11-27, v0.100.22. Lenovo volno.
 
 ## Poslední session
 

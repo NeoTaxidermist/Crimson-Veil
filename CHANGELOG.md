@@ -5,6 +5,13 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.100.22] – 2026-11-27
+### Změněno
+- `Docs/Rozpracovano.md`, `Docs/Backlog.md`: DELL začíná přestavbu ShieldMonka. Zapsané zadání uživatele: místo hůlky adekvátnější zbraň.
+
+### Testy
+- Jen dokumentace, testy se nespouštěly.
+
 ## [0.100.21] – 2026-11-27
 ### Změněno
 - `Docs/Backlog.md`: o cíli výkonu pro slabou grafiku uživatel rozhodl „Zatím nech být“. Položka zůstává v backlogu a nic se nedělá.

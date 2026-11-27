@@ -34,5 +34,6 @@ Poznámky, které si Claude vedl během vývoje: pravidla od uživatele, rozhodn
 - [Claude app MSIX virtualization](claude-app-msix-virtualization.md) – AppData\Roaming installs from Claude are invisible to Unity; user runs them
 - [Unity batchmode pitfall](unity-batchmode-opens-last-project.md) – -createProjectPath opened Swarm game instead; create projects in Hub
 - [Python path](python-path.md) – use C:\Users\vasek\.local\bin\python.exe; bare `python` hits the Store stub
+- [Unity MCP po restartu](unity-mcp-restart.md) – ECONNREFUSED na 8080: ověř, že běží editor (ne pomocník Hubu `resources\unity.exe`), a spusť server přes uvx a editor ručně
 - [DELL setup pitfalls](dell-setup-pitfalls.md) – Hub 4 has no headless CLI (deep link + signed IL2CPP installer), Smart App Control blocks uv Python
 - [Keep-awake stays on](keep-awake-stays-on.md) – C:\_ClaudeAI\unity\keep-awake.ps1 must keep running; never stop it when a task ends

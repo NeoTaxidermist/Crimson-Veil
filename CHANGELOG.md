@@ -5,6 +5,13 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.100.17] – 2026-11-27
+### Změněno
+- `Docs/claude/README.md`: v rejstříku je nová poznámka `unity-mcp-restart.md`.
+
+### Testy
+- Jen dokumentace, testy se nespouštěly.
+
 ## [0.100.16] – 2026-11-27
 ### Změněno
 - Hooky předávky na Lenovu jsou ověřené po restartu aplikace Claude: session dostala předávku i backlog.

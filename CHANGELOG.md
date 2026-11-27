@@ -5,6 +5,16 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.100.1] – 2026-11-27
+### Přidáno
+- **`CLAUDE.md`**: pravidla projektu pro Claude (čeština, verze a tagy u každého commitu, větve, kontrola Play módu, rozsah testů, žádné hotové assety, měření výkonu). Claude si je načte sám na jakémkoli počítači.
+- **`Docs/NovyPocitac.md`**: postup, jak si Claude na dalším počítači nainstaluje všechno pro vývoj (Git, uv/Python, Unity Hub, Unity 6000.3.28f1 s IL2CPP, Visual Studio s C++ a Windows SDK, Blender, MCP for Unity). Vyznačuje, co musí udělat uživatel sám (přihlášení, potvrzení správce).
+- **`.mcp.json`** v kořeni repozitáře, takže se Claude spuštěný ve složce projektu připojí k Unity.
+- **`Tools/bench.ps1`** (měření sestavené hry v okně 1920×1080 se snímkem obrazovky) a **`Tools/keep-awake.ps1`** (drží počítač vzhůru při dlouhých úlohách). Dosud byly jen mimo repozitář.
+
+### Testy
+- Jen dokumentace a skripty mimo hru, testy se nespouštěly.
+
 ## [0.100.0] – 2026-11-27
 ### Změněno
 - **Zrno tuše se už nepočítá v každém pixelu, ale čte se z předem spočítané textury.** Shader `Silhouette` (všechny kameny, ruiny, tráva, postavy) počítal pro každý pixel pět oktáv šumu čtyřikrát: dvakrát pro zrno, jednou pro deformaci prasklin a jednou pro vlnění přízemní mlhy. To je asi 100 hashů na pixel a ve vysokém rozlišení to bylo **1,7 ms ze 4,5 ms snímku**. Teď je stejný šum (stejné oktávy, stejný průměr 0,485 a rozptyl) jednou spočítaný v dlaždicové textuře `Shaders/CVNoise.png` (2048×2048, jeden kanál, bez mip map) a shader ho jen čte. Textura je přiřazená přímo shaderu (v jeho importu), takže ji mají všechny materiály v editoru i v sestavené hře. Znovu se dá upéct přes `Crimson Veil → Bake Ink Grain Texture`.

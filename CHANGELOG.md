@@ -5,6 +5,16 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.100.2] – 2026-11-27
+### Přidáno
+- **`Docs/claude/`**: všech 24 poznámek, které si Claude vedl o projektu (pravidla od uživatele, rozhodnutí, postupy a úskalí: šála, animace, nepřátelé, zvuk, výkon, testy, prostředí). Dosud byly jen v místní paměti Claude na Lenovu, teď je má každá session na každém počítači. Rejstřík je v `Docs/claude/README.md`.
+- **`Docs/Rozpracovano.md`**: předávka mezi počítači (Lenovo a DELL). Kdo právě pracuje, co je rozdělané, co je na řadě a rozhodnutí uživatele, která ještě nejsou v CHANGELOGu.
+- `CLAUDE.md` nově říká: na začátku `git pull` a přečíst předávku. Na konci ji aktualizovat a pushnout. Nové poznatky psát do `Docs/claude/`.
+- `Docs/NovyPocitac.md`: pojmenování session podle počítače, Remote Control a keep-awake.
+
+### Testy
+- Jen dokumentace, testy se nespouštěly.
+
 ## [0.100.1] – 2026-11-27
 ### Přidáno
 - **`CLAUDE.md`**: pravidla projektu pro Claude (čeština, verze a tagy u každého commitu, větve, kontrola Play módu, rozsah testů, žádné hotové assety, měření výkonu). Claude si je načte sám na jakémkoli počítači.

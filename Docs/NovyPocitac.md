@@ -34,6 +34,12 @@ Každou instalaci nejdřív ohlas uživateli: co, odkud a kolik zabere. Stahuj j
 8. **MCP for Unity** je v `Packages/manifest.json` a nainstaluje se s projektem. V Unity: Window → MCP for Unity → Start Server → Connect. Aby se server spouštěl sám, zapni v jeho okně automatický start. Claude se připojí přes `.mcp.json` v kořeni repozitáře (`http://127.0.0.1:8080/mcp`). Claude spusť ve složce `C:\Dev\CrimsonVeil`, nebo složku s `.mcp.json` přidej.
 9. **Ověření:** `read_console` bez chyb, EditMode testy (`run_tests`) projdou. Benchmark: sestav hru do `C:\Dev\CrimsonVeil-build` a spusť `Tools/bench.ps1`.
 
+## 3. Aby se dalo pracovat z telefonu
+1. Pojmenuj svou session podle počítače, např. „Crimson Veil – DELL“ (nástroj `set_session_title`).
+2. Zapni připojování nových sessions k Remote Control (nastavení `connect_new_sessions_to_remote_control` = true, uživatel to potvrdí).
+3. Spusť `Tools/keep-awake.ps1 -Start` a nech ho běžet. **[uživatel]** Pokud má notebook pracovat se zavřeným víkem, nastaví ve Windows „Při zavření víka: Nedělat nic“ (na síti).
+4. Do `Docs/Rozpracovano.md` zapiš, že je počítač připravený. Pak commit a push.
+
 ## Poznámky
 - **Nepracovat na dvou počítačích zároveň.** Před přechodem push, na druhém `git pull`.
 - Pokyny pro Claude jsou v `CLAUDE.md` v kořeni repozitáře a načítají se samy.

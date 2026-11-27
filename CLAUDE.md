@@ -2,6 +2,10 @@
 
 2.5D akční plošinovka v Unity 6000.3.28f1 (URP). Šedý tušový svět, jen karmínové detaily. Hrdina má magickou šálu, která se mění ve zbraně. Kód je v `Assets/_CrimsonVeil`.
 
+## Nejdřív
+- **`git pull`, pak přečti `Docs/Rozpracovano.md`** (kdo kde pracuje, co je rozdělané a co je na řadě) a v `Docs/claude/README.md` poznámky k úkolu. Vývoj běží na dvou počítačích (Lenovo, DELL) a jediné, co sdílejí, je tento repozitář.
+- **Na konci úkolu** aktualizuj `Docs/Rozpracovano.md`, commitni a pushni. Nové poznatky o projektu zapisuj do `Docs/claude/`, ne do místní paměti Claude.
+
 ## Komunikace
 - S uživatelem mluv **česky**, včetně průběžných zpráv. Commit messages a komentáře v kódu piš anglicky.
 - Uživatel často pracuje vzdáleně (Remote Control). Piš stručně a srozumitelně.

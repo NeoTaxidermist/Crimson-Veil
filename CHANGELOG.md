@@ -5,6 +5,13 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.106.1] – 2026-11-27
+### Změněno
+- `Docs/Backlog.md`: vlastní nastavení kvality („Vlastní“) má odhad 1,5–2 h a uživatel ho odložil („Teď ne“).
+
+### Testy
+- Jen dokumentace, testy se nespouštěly.
+
 ## [0.106.0] – 2026-11-27
 ### Přidáno
 - **Tři úrovně kvality obrazu** v menu „Kvalita obrazu“, jak je běžné u PC her (uživatel: „vyhledej si na netu, jak se tyhle nastavení kvality obecně řeší, a vyřeš to“): pár předvoleb, při prvním spuštění se vybere podle grafické karty a hráč může zvolit jinou.

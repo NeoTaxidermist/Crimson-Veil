@@ -39,6 +39,28 @@ namespace CrimsonVeil.Tests
             Assert.AreEqual(0f, c.Head.z, 1e-5f, "kept in the picture's plane");
         }
 
+        /// <summary>
+        /// Frames of uneven length (a slow frame, then fast ones; the game on a weak machine, the editor in a test) must
+        /// not fling the head over the haft: a plain verlet read a long frame's motion as speed in a short one.
+        /// </summary>
+        [Test]
+        public void TheChain_StaysHanging_ThroughFramesOfUnevenLength_AndABobbingFist()
+        {
+            var c = new FlailChain(Segments(), new Vector3(0f, 1.6f, 0f));
+            float t = 0f, highest = float.MinValue;
+            for (int i = 0; i < 600; i++)
+            {
+                float dt = i % 7 == 0 ? 0.03f : (i % 2 == 0 ? 0.002f : 0.004f);
+                t += dt;
+                // walking at his pace, the fist bobbing twice a stride
+                var tip = new Vector3(1.3f * t, 1.6f + 0.035f * Mathf.Sin(t * 4f * Mathf.PI), 0f);
+                c.Step(tip, dt, 9.81f, 0.96f, default, 0f, 55f);
+                if (t > 0.3f) highest = Mathf.Max(highest, c.Head.y - tip.y);
+            }
+            // (carried with its swing limited to 55 degrees from hanging, the head stays over half its chain below)
+            Assert.Less(highest, -0.2f, "the head stays hanging below the fist, never whirled over it by the frame rate");
+        }
+
         [Test]
         public void TheBlow_DrawsTheHeadAlongItsArc()
         {

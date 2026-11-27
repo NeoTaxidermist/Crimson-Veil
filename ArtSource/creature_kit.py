@@ -427,7 +427,9 @@ class Part:
 
     # --- output ----------------------------------------------------------------------------------
 
-    def build(self, parent=None):
+    def build(self, parent=None, smooth=0, thin=None):
+        """smooth: subdivision levels applied on export (the hero-level rebuild of the bestiary, v0.103: the tubes and
+        blobs of 5-8 sides become round, and every bump of the modelling reads)."""
         bmesh.ops.recalc_face_normals(self.bm, faces=self.bm.faces)
         for f in self.bm.faces:
             t = self.tones.get(f, 1.0)
@@ -446,17 +448,26 @@ class Part:
         if parent is not None:
             ob.parent = parent
             ob.location = G(*self.pivot)
+        if smooth:
+            m = ob.modifiers.new("Smooth", 'SUBSURF')
+            m.levels = smooth
+            m.render_levels = smooth
+        if thin:   # ...then thinned where it is flat (several of them on screen at once)
+            m = ob.modifiers.new("Thin", 'DECIMATE')
+            m.ratio = thin
         return ob
 
 
 def export(path):
-    bpy.ops.object.select_all(action='DESELECT')
-    for o in bpy.context.scene.objects:
+    objs = list(bpy.context.scene.objects)
+    for o in objs:
         o.select_set(True)
-    bpy.ops.export_scene.fbx(filepath=path, use_selection=True, apply_scale_options='FBX_SCALE_ALL',
-                             axis_forward='-Z', axis_up='Y', bake_space_transform=True,
-                             object_types={'EMPTY', 'MESH'}, mesh_smooth_type='FACE', use_mesh_modifiers=True,
-                             colors_type='LINEAR')
+    win = bpy.context.window_manager.windows[0]   # (run from outside the UI - an MCP call - there is no window in the context)
+    with bpy.context.temp_override(window=win, screen=win.screen, active_object=objs[0], selected_objects=objs):
+        bpy.ops.export_scene.fbx(filepath=path, use_selection=True, apply_scale_options='FBX_SCALE_ALL',
+                                 axis_forward='-Z', axis_up='Y', bake_space_transform=True,
+                                 object_types={'EMPTY', 'MESH'}, mesh_smooth_type='FACE', use_mesh_modifiers=True,
+                                 colors_type='LINEAR')
 
 
 def preview(path, center=(0, 1, 0), size=2.5, angle=0.0):

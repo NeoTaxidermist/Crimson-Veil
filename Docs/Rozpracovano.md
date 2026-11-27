@@ -10,7 +10,7 @@ Vývoj běží na dvou počítačích (**Lenovo** = hlavní, RTX 2060; **DELL** 
 - Nepracuj, pokud tu stojí, že druhý počítač má rozdělanou necommitnutou práci. Zeptej se uživatele.
 
 ## Teď pracuje
-Nikdo. DELL dokončil HangedMana (vše commitnuté a pushnuté, v0.102.0), čeká se na posouzení uživatelem. ShieldMonk schválený. Lenovo volno.
+Nikdo. DELL dokončil přestavbu celého bestiáře (vše commitnuté a pushnuté, v0.103.0), čeká se na posouzení uživatelem. Lenovo volno.
 
 ## Poslední session
 
@@ -37,12 +37,17 @@ Nikdo. DELL dokončil HangedMana (vše commitnuté a pushnuté, v0.102.0), ček�
     - Nový model: vyhublé tělo s žebry, zlomeně padlá hlava s tváří, jazykem a vlasy, roztržená košile, ruce s prsty, bosá chodidla, oprátka s uzlem a okov s řetězem.
     - Společné nástroje pro stavbu jsou v `ArtSource/sculpt_kit.py`.
     - Záběry ze hry dostal uživatel.
+  - **Zbylí tvorové (v0.103.0):** uživatel řekl „Předělej všechny ostatní modely“ (tím vzal HangedMana).
+    - RootCrawler, AshMoth, LanternWisp, PaperKite a Crow jsou přestavění, se zachovanými jmény dílů.
+    - Do kitu přibylo zjemnění a zředění.
+    - Řetěz řemdihu je místo volné simulace jedno tlumené kyvadlo: PlayMode test na DELLu ukázal, že se Verletův řetěz roztáčel a skládal.
+    - Rendery z Blenderu dostal uživatel.
 - **Nehotovo:** rozdělení zbylých ~4 ms pevných průchodů (InkGrade, kopie obrazu a hloubky, HDR). Je potřeba přepínač renderer features v `Benchmark.cs`, nebo dočasné buildy.
 - **Rozdělané:** nic. Necommitnuté jsou jen soubory, které vygenerovalo Unity (`Assets/Settings/Mobile_RPAsset.asset`, `.vsconfig`, `CrimsonVeil.slnx`), ty se necommitují.
 - **Rozhodnutí uživatele:** Smart App Control na DELLu je vypnuté. Stačí dvě stálé sessions (DELL, Lenovo), nové se zakládat nemusí.
 - **Další krok:**
-  - Uživatel posoudí HangedMana.
-  - Pak tvorové z `creature_kit` (RootCrawler, AshMoth, LanternWisp, PaperKite, Crow): mají tuhé díly, ne kostru, takže to bude jiný postup.
+  - Uživatel posoudí nové tvory.
+  - Vhodné by bylo změřit výkon s novými modely na DELLu (backlog).
   - U ShieldMonka zůstalo z pohledu ze tří čtvrtin: prsty prosvítají štítem.
   - Cíl výkonu pro slabou grafiku podle uživatele „zatím nech být“.
 

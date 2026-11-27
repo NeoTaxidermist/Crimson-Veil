@@ -361,7 +361,10 @@ namespace CrimsonVeil.Combat
             bool swinging = Current == State.FlailWindup || Current == State.FlailSwing;
             Vector3 dir = swinging ? (chain.Head - grip).normalized : (fore + Vector3.up * 1.2f + front * 0.4f).normalized;
             if (dir.sqrMagnitude < 0.5f) dir = Vector3.up;
-            flailHaft.SetPositionAndRotation(grip, Quaternion.Slerp(flailHaft.rotation, Lay(haftAxis, dir), swinging ? 1f : 1f - Mathf.Exp(-14f * dt)));
+            // (when he turns round the free fist changes sides: the haft is carried over to it, not snapped across -
+            // a jump would whip the chain over his head)
+            Vector3 at = chainPlaced && !swinging ? Vector3.Lerp(flailHaft.position, grip, 1f - Mathf.Exp(-18f * dt)) : grip;
+            flailHaft.SetPositionAndRotation(at, Quaternion.Slerp(flailHaft.rotation, Lay(haftAxis, dir), swinging ? 1f : 1f - Mathf.Exp(-14f * dt)));
             Vector3 tip = FlailTip();
             if (!chainPlaced) { chain.Reset(tip); chainPlaced = true; }   // (hung from the fist he holds it in, not from the model's rest)
             float pull = 0f;
@@ -373,7 +376,8 @@ namespace CrimsonVeil.Combat
                 target = FlailChain.ArcPoint(tip, Facing, deg, chain.Length * 0.95f);
                 pull = Current == State.FlailWindup ? 0.35f : 0.7f;
             }
-            chain.Step(tip, Mathf.Min(dt, 1f / 30f), 9.81f, 0.985f, target, pull);
+            // (carried, its swing is limited: a heavy chain jolted by his steps must not whirl over his fist)
+            chain.Step(tip, dt, 9.81f, 0.96f, target, pull, swinging ? 0f : 55f);
             for (int i = 0; i < flailLinks.Length && i + 1 < chain.Count; i++)
             {
                 var a = chain[i]; var b = chain[i + 1];

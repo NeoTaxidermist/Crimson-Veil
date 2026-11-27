@@ -1,4 +1,4 @@
-# Ash moth — facing +x. Wings "WingL"/"WingR" in the picture plane pointing up; the game beats them about x.
+# Ash moth — facing +x (rebuilt to the hero's level, v0.103: a smoothed, denser body coat, finer torn margins, cross-veins). Wings "WingL"/"WingR" in the picture plane pointing up; the game beats them about x.
 # A furred body (thorax coat, banded abdomen with tufts, compound eyes, a curled proboscis, comb antennae,
 # six jointed hairy legs) and wings that are cupped membranes: every vein, band, speck and the eye-spot follows the
 # wing's curve, and a fringe of scales hangs off the torn trailing margin.
@@ -12,35 +12,35 @@ b = K.Part("Body")
 # Abdomen: banded segments trailing back and down, each ring a little proud, ending in a tuft.
 abd = [Vector((-0.03 - 0.05 * k, -0.01 - 0.005 * k * k, 0)) for k in range(8)]
 radii = [0.06, 0.068, 0.07, 0.066, 0.058, 0.046, 0.032, 0.012]
-b.tube(abd, radii, sides=14, flat=0.9)
+b.tube(abd, radii, sides=22, flat=0.9)
 for k in range(1, 7):
     p = abd[k]
     d = (abd[k + 1] - abd[k - 1]).normalized()
-    b.tube([p + d * 0.012, p, p - d * 0.014], [radii[k] * 1.02, radii[k] * 1.1, radii[k] * 1.0], sides=14, flat=0.9)
+    b.tube([p + d * 0.012, p, p - d * 0.014], [radii[k] * 1.02, radii[k] * 1.1, radii[k] * 1.0], sides=22, flat=0.9)
 for k in range(10):                                   # the anal tuft
     a = 2 * math.pi * k / 10
     root = abd[-2] + Vector((0, math.cos(a) * 0.015, math.sin(a) * 0.015))
     b.tube([root, root + Vector((-0.06, -0.02 + 0.02 * math.cos(a), 0.02 * math.sin(a)))], [0.007, 0.0008], sides=4)
 # Thorax and its thick coat of hair.
-b.blob((0.06, 0.02, 0), (0.1, 0.09, 0.08), segs=18, rings=12)
-for k in range(70):
+b.blob((0.06, 0.02, 0), (0.1, 0.09, 0.08), segs=28, rings=18)
+for k in range(140):
     a = rnd.uniform(0, 2 * math.pi)
     e = rnd.uniform(-1.3, 1.3)
     d = Vector((math.cos(a) * math.cos(e) * 0.7 - 0.25, math.sin(e), math.sin(a) * math.cos(e) * 0.8)).normalized()
     root = Vector((0.06, 0.02, 0)) + Vector((d.x * 0.09, d.y * 0.08, d.z * 0.07))
     tip = root + d * rnd.uniform(0.025, 0.045) + Vector((-0.035, -0.008, 0))
-    b.tube([root, root.lerp(tip, 0.5) + Vector((0, -0.006, 0)), tip], [0.01, 0.006, 0.001], sides=4)
+    b.tube([root, root.lerp(tip, 0.5) + Vector((0, -0.006, 0)), tip], [0.009, 0.0055, 0.001], sides=5)
 # A collar of hair between thorax and head.
 for k in range(14):
     a = 2 * math.pi * k / 14
     root = Vector((0.14, 0.02 + math.cos(a) * 0.055, math.sin(a) * 0.05))
     b.tube([root, root + Vector((0.04, math.cos(a) * 0.03, math.sin(a) * 0.03))], [0.009, 0.001], sides=4)
 # Head, with two big faceted compound eyes and a curled proboscis.
-b.blob((0.18, 0.02, 0), (0.05, 0.05, 0.048), segs=14, rings=10)
+b.blob((0.18, 0.02, 0), (0.05, 0.05, 0.048), segs=22, rings=14)
 for zs in (-1, 1):
     b.blob((0.205, 0.035, zs * 0.036), (0.03, 0.032, 0.022), segs=7, rings=5, mat=K.CRIMSON)   # low-poly: facets
 spiral = [Vector((0.215 + 0.03 * math.cos(t) * (1 - t / 12), -0.03 - 0.03 * math.sin(t) * (1 - t / 12), 0)) for t in [j * 0.5 for j in range(20)]]
-b.tube(spiral, [0.006 * (1 - j / 22) for j in range(20)], sides=5)
+b.tube(spiral, [0.006 * (1 - j / 22) for j in range(20)], sides=7)
 # Comb antennae: a spine with paired side teeth, swept back.
 for zs in (-1, 1):
     spine = [Vector((0.2, 0.065, zs * 0.02)) + Vector((0.07 * t + 0.03 * t * t, 0.2 * t, zs * 0.04 * t)) for t in [k / 8 for k in range(9)]]
@@ -57,18 +57,18 @@ for k in range(3):
         hip = Vector((x, -0.035, zs * 0.03))
         knee = hip + Vector((0.035 - 0.025 * k, -0.04, zs * 0.05))
         ankle = knee + Vector((0.04 - 0.045 * k, -0.08, zs * 0.015))
-        b.tube([hip, knee], [0.009, 0.007], sides=6)
-        b.tube([knee, ankle], [0.006, 0.004], sides=6)
+        b.tube([hip, hip.lerp(knee, 0.5) + Vector((0, 0.004, 0)), knee], [0.009, 0.0095, 0.007], sides=8)
+        b.tube([knee, knee.lerp(ankle, 0.5), ankle], [0.0065, 0.006, 0.004], sides=8)
         for j in range(5):
             q = knee.lerp(ankle, 0.15 + 0.17 * j)
             b.tube([q, q + Vector((-0.012, -0.004, zs * 0.008))], [0.0025, 0.0005], sides=3)
         prev = ankle
         for j in range(4):
             nxt = prev + Vector((0.012 - 0.01 * k, -0.012, 0))
-            b.tube([prev, nxt], [0.0032, 0.0028], sides=5)
+            b.tube([prev, prev.lerp(nxt, 0.5) + Vector((0, 0.001, 0)), nxt], [0.0034, 0.0028, 0.003], sides=6)
             prev = nxt
         b.tube([prev, prev + Vector((0.006, -0.006, 0)), prev + Vector((0.012, -0.003, 0))], [0.002, 0.0015, 0.0003], sides=4)
-b.build()
+b.build(smooth=1)   # (no thinning: it breaks the hair, legs and antennae into dashes)
 
 
 def scallop(points, depth, n):
@@ -106,11 +106,11 @@ def wing(name, z, zs):
     lead = [(0.02, 0.0), (0.07, 0.18), (0.12, 0.42), (0.17, 0.66), (0.14, 0.72)]
     margin = [(0.14, 0.72), (0.0, 0.66), (-0.14, 0.56), (-0.26, 0.42), (-0.34, 0.26), (-0.3, 0.16)]
     inner = [(-0.3, 0.16), (-0.18, 0.08), (-0.06, 0.02)]
-    fore = lead[:-1] + scallop(margin, 0.045, 7)[:-1] + inner
+    fore = lead[:-1] + scallop(margin, 0.045, 14)[:-1] + inner
     w.prism(fore, -0.005, 0.005, xform=warp)
     # Hindwing: rounder, behind and below, with a short tail and a crimson rim band.
     hind = [(-0.06, 0.0), (-0.2, 0.1), (-0.34, 0.14), (-0.44, 0.08), (-0.5, -0.05), (-0.56, -0.12), (-0.44, -0.08), (-0.28, -0.06), (-0.12, -0.02)]
-    hind_o = scallop(hind + [hind[0]], 0.025, 5)[:-1]
+    hind_o = scallop(hind + [hind[0]], 0.025, 9)[:-1]
     w.prism(hind_o, 0.005, 0.013, xform=warp)
     band = [Vector((x * 0.93 - 0.02, y * 0.9 + 0.004, 0)) for (x, y) in hind[1:7]]
     w.tube([on(p.x, p.y, 0.003 - 0.0065) for p in band], 0.007, sides=5, mat=K.CRIMSON, flat=0.4)
@@ -122,6 +122,14 @@ def wing(name, z, zs):
             m = Vector((x * 0.6, y * 0.6, 0))
             fork = [on(m.x, m.y, face - 0.001), on(m.x * 1.25 - 0.06, m.y * 1.3, face - 0.001)]
             w.tube(fork, [0.003, 0.0012], sides=4, flat=0.5)
+    # Cross-veins between the long ones (the membrane's cells), each a thin ridge on the cupped surface.
+    longs = [(0.14, 0.66), (0.0, 0.62), (-0.14, 0.52), (-0.26, 0.38), (-0.33, 0.22), (-0.4, 0.08)]
+    for i in range(len(longs) - 1):
+        (xa, ya), (xb, yb) = longs[i], longs[i + 1]
+        for s in (0.35, 0.6, 0.82):
+            pa, pb = on(xa * s, ya * s, face - 0.001), on(xb * s, yb * s, face - 0.001)
+            mid = pa.lerp(pb, 0.5)
+            w.tube([pa, Vector((mid.x, mid.y + 0.006, mid.z)), pb], [0.0022, 0.0018, 0.0022], sides=4, flat=0.5)
     # Crimson eye-spot: a raised ring, an iris and a dark pupil with a pale glint.
     c = Vector((-0.04, 0.42, 0))
     ring = [on(c.x + math.cos(2 * math.pi * k / 24) * 0.085, c.y + math.sin(2 * math.pi * k / 24) * 0.09, face - 0.002) for k in range(25)]
@@ -155,7 +163,7 @@ def wing(name, z, zs):
         if inside(x, y) and math.hypot(x - c.x, y - c.y) > 0.11:
             w.blob(on(x, y, face - 0.0015), (0.008, 0.008, 0.002), segs=6, rings=3)
     # A fringe of scales hanging off the torn outer margin of both wings.
-    for (outline, step) in ((scallop(margin, 0.045, 7), 1), (hind_o[2:9], 1)):
+    for (outline, step) in ((scallop(margin, 0.045, 14), 1), (hind_o[3:16], 1)):
         for i in range(0, len(outline) - 1, step):
             (x0, y0), (x1, y1) = outline[i], outline[i + 1]
             nx, ny = (y1 - y0), -(x1 - x0)

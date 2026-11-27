@@ -5,6 +5,46 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.103.0] – 2026-11-27
+### Změněno
+- **Zbylí tvorové bestiáře přestavění na úroveň hrdiny** (uživatel: „Předělej všechny ostatní modely“). Jména a osy dílů, se kterými hýbe kód, zůstala.
+  - **RootCrawler:**
+    - **Klubko:** hladké propletené kořeny, v místech křížení zesílené. Vidlicové rty kůry kolem tlamy se dvěma řadami trnů, ze které stéká karmínová míza.
+    - **Oči:** šest očí v sucích pod těžkými víčky z kůry.
+    - **Výrůstky:** patrové choroše a visící mech.
+    - **Kořeny:** zesílené klouby a na konci ruka ze tří zahnutých drápů. Kořeny i drápy se vejdou do vějíře, aniž by zajely do kamene.
+    - **Velikost:** 59 tisíc trojúhelníků.
+  - **AshMoth:** hladší tělo s dvojnásobnou srstí, články na nohou, jemnější roztrhané okraje křídel a příčné žilky mezi hlavními (42 tisíc).
+  - **LanternWisp:**
+    - **Kovářské dílo:** kulatější (víc stran), ale ostré, nevyhlazené.
+    - **Plamen:** osm jazyků a tvář se zdviženým obočím, nosní dírkou a naříkajícími ústy.
+    - **Kouř:** šest pramenů karmínového kouře.
+    - **Velikost:** 40 tisíc trojúhelníků.
+  - **PaperKite:**
+    - **Papír:** jemnější plocha, takže vlnění je plynulé, s ostrými sklady po starých přehybech.
+    - **Bambus:** kulatější, s uzly.
+    - **Konce a cáry:** jemnější odtržené cípy a modlitební proužky.
+    - **Velikost:** 20 tisíc trojúhelníků.
+  - **Crow** (hejno 8 vran, proto bez zjemnění):
+    - **Peří:** obrysová pera s roztřepenými konci praporů, 12 loketních a 9 ručních letek se zářezy na koncích (prsty vraního křídla).
+    - **Hlava:** jemnější zobák s nosní dírkou a oko s panenkou.
+    - **Běháky:** šupinaté, s klouby prstů.
+    - **Velikost:** 21 tisíc trojúhelníků.
+- **`creature_kit.py`:**
+  - díly lze při exportu zjemnit (`smooth`) a zředit (`thin`),
+  - export funguje i z MCP bez okna Blenderu,
+  - staré skripty `creatures/shield_monk.py` a `hanged_man.py` jsou odstraněné. Postavily by starého monka a oběšence a přepsaly nové modely.
+
+### Opraveno
+- **Řetěz řemdihu je teď jedno tlumené kyvadlo** (`FlailChain`). Reaguje na tíhu a na zrychlení pěsti, při útoku se stáhne k oblouku úderu a v nesení se nerozkývá víc než 55° od svislice.
+  - **Původní řešení:** volný Verletův řetěz.
+  - **Proč neobstál:** snímky nestejné délky a pokleskávání pěsti při každém kroku ho roztáčely přes násadu a skládaly. Ukázal to PlayMode test na pomalém DELLu.
+  - **Výměna rukou:** při otočce monka násada plynule přejede do druhé ruky, nepřeskočí.
+
+### Testy
+- **Nový:** `TheChain_StaysHanging_ThroughFramesOfUnevenLength_AndABobbingFist`.
+- **Výsledky:** celý EditMode 665/665, PlayMode Combat 45/45. `LedgeReachRootTests` hlídá, že nové kořeny nezajedou do kamene.
+
 ## [0.102.0] – 2026-11-27
 ### Změněno
 - **HangedMan postavený znovu na úroveň hrdiny** (`ArtSource/hanged_build.py`). Kostra i jména kostí zůstaly, takže houpání, pád a přeseknutí lana fungují jako dřív. Nový model:

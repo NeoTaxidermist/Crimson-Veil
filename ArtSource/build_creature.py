@@ -10,8 +10,9 @@ if ROOT not in sys.path:
 import creature_kit as K
 importlib.reload(K)
 
+# (the shield monk and the hanged man are rigged now and built by monk_build.py / hanged_build.py)
 FBX = {
-    "shield_monk": "ShieldMonk", "root_crawler": "RootCrawler", "hanged_man": "HangedMan", "crow": "Crow",
+    "root_crawler": "RootCrawler", "crow": "Crow",
     "ash_moth": "AshMoth", "lantern_wisp": "LanternWisp", "paper_kite": "PaperKite",
 }[NAME]
 exec(open(ROOT + "\\creatures\\" + NAME + ".py").read(), {"__name__": "creature"})

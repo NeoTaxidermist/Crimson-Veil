@@ -1,4 +1,4 @@
-# Paper kite wraith — a torn diamond of paper on bamboo, a painted face. Faces the camera (in the picture plane).
+# Paper kite wraith (rebuilt to the hero's level, v0.103: a finer sheet, sharp old fold creases, rounder bamboo) — a torn diamond of paper on bamboo, a painted face. Faces the camera (in the picture plane).
 # The tail and the thread are drawn by the game.
 # The paper billows towards the camera between the struts, crumpled along old folds; torn corners curl over; the
 # bamboo is jointed and the bow bent; prayer slips and paper tassels hang off the cross-strut. Everything painted on
@@ -12,6 +12,9 @@ k = K.Part("Sail")
 top, right, bottom, left = (0, 0.62), (0.42, 0.08), (0, -0.62), (-0.42, 0.08)
 
 
+FOLDS = [(1.0, 0.7, -0.05, 1), (-1.0, 0.8, 0.02, -1), (0.2, 1.0, 0.25, 1), (0.1, 1.0, -0.3, -1), (1.0, -0.3, 0.15, -1)]
+
+
 def billow(x, y):
     """Depth of the paper: bellied out towards the camera between the struts, flat along them, crumpled."""
     fx = max(0.0, 1 - abs(x) / 0.44)
@@ -20,6 +23,10 @@ def billow(x, y):
     near_spine = math.exp(-(x / 0.03) ** 2)
     near_bow = math.exp(-((y - 0.1 - 0.04 * (1 - (x / 0.46) ** 2)) / 0.03) ** 2)
     crumple = 0.012 * noise.noise(Vector((x * 7, y * 7, 0.3))) + 0.006 * abs(math.sin(x * 31 + y * 12))
+    # old fold creases: sharp ridges and valleys along the lines it was once folded on
+    for (a, b, c, s) in FOLDS:
+        d = (a * x + b * y + c) / math.hypot(a, b)
+        crumple += s * 0.009 * math.exp(-(d / 0.007) ** 2)
     return (belly + crumple) * (1 - 0.85 * near_spine) * (1 - 0.6 * near_bow)
 
 
@@ -97,7 +104,7 @@ def paint(x, y):
     return K.CRIMSON if in_poly(grin, x, y) else K.INK
 
 
-step = 0.02
+step = 0.013
 xs = [-0.5 + step * i for i in range(int(1.0 / step) + 1)]
 ys = [-0.7 + step * j for j in range(int(1.4 / step) + 1)]
 
@@ -139,26 +146,26 @@ for i in range(len(xs) - 1):
 # ...and the torn margin as a ribbon round it, joined to the grid's ragged edge visually by overlap.
 edge = subdivide(outline, 0.02)
 ring = [Vector(on(x * 0.985, y * 0.985, 0)) for x, y in edge]
-k.tube(ring + [ring[0]], 0.0035, sides=4, cap=False, flat=0.6)
+k.tube(ring + [ring[0]], 0.0035, sides=6, cap=False, flat=0.6)
 # Curled torn corners: flaps of paper peeling over at the side corners and the bottom.
 for (cx, cy, dx, dy) in [(0.36, 0.1, -1, 0.3), (-0.37, 0.05, 1, 0.5), (0.04, -0.56, -0.4, 1)]:
     d = Vector((dx, dy, 0)).normalized()
     pts = [Vector(on(cx, cy, 0)) + d * (0.06 * s) + Vector((0, 0, -0.05 * s * s)) for s in (0.0, 0.35, 0.7, 1.0)]
-    k.blade(pts, [0.04, 0.038, 0.03, 0.012], thick=0.0015, normal=(0, 0, -1), camber=-0.15, cols=5)
+    k.blade(pts, [0.04, 0.038, 0.03, 0.012], thick=0.0015, normal=(0, 0, -1), camber=-0.15, cols=9)
 # Bamboo: a jointed spine and a bent bow, behind the paper, bound with crimson cord.
 spine = [Vector((0, 0.68 - 1.36 * t, 0.012)) for t in [j / 20 for j in range(21)]]
-k.tube(spine, 0.015, sides=8)
+k.tube(spine, 0.015, sides=14)
 bow = [Vector((-0.47 + 0.94 * t, 0.06 + 0.07 * math.sin(math.pi * t), 0.012 + 0.03 * math.sin(math.pi * t))) for t in [j / 20 for j in range(21)]]
-k.tube(bow, 0.012, sides=8)
+k.tube(bow, 0.012, sides=14)
 for strut, rad in ((spine, 0.015), (bow, 0.012)):
     for j in (4, 8, 12, 16):
         p, d = strut[j], (strut[j + 1] - strut[j - 1]).normalized()
-        k.tube([p - d * 0.006, p, p + d * 0.006], [rad * 1.05, rad * 1.3, rad * 1.05], sides=8)     # the node rings
+        k.tube([p - d * 0.006, p, p + d * 0.006], [rad * 1.05, rad * 1.3, rad * 1.05], sides=14)     # the node rings
 for (x, y) in [(0, 0.12), (0, 0.63), (0, -0.63), (-0.44, 0.07), (0.44, 0.07)]:
     for j in range(4):
         a = 0.6 + j * 0.25
         k.tube([(x - 0.026 * math.cos(a), y - 0.02 + j * 0.012 - 0.026 * math.sin(a), -0.004),
-                (x + 0.026 * math.cos(a), y - 0.02 + j * 0.012 + 0.026 * math.sin(a), -0.004)], 0.0055, sides=5, mat=K.CRIMSON)
+                (x + 0.026 * math.cos(a), y - 0.02 + j * 0.012 + 0.026 * math.sin(a), -0.004)], 0.0055, sides=8, mat=K.CRIMSON)
 # The paint lies just proud of the paper, laid in narrow pieces so each follows the billow.
 for eye, pup in EYES:
     k.prism(subdivide(eye, 0.02), -0.008, -0.004, mat=K.CRIMSON, xform=warp)
@@ -191,6 +198,6 @@ for sx in (-1, 1):
         L = 0.2 + 0.05 * j + rnd.uniform(0, 0.04)
         pts = [Vector((x0 + 0.02 * sx * s * s, 0.06 - L * s, 0.01 * math.sin(s * 4 + j))) for s in (0.0, 0.25, 0.5, 0.75, 1.0)]
         nrm = (math.sin(j * 1.3) * 0.6, 0, -1)
-        k.blade(pts, [0.008, 0.014 - 0.002 * j, 0.014, 0.012, 0.006], thick=0.0015, normal=nrm, camber=0.2, cols=4,
+        k.blade(pts, [0.008, 0.014 - 0.002 * j, 0.014, 0.012, 0.006], thick=0.0015, normal=nrm, camber=0.2, cols=7,
                 mat=K.CRIMSON if j == 1 else K.INK)
 k.build()

@@ -14,12 +14,17 @@ Značky: **[rozhodnuto]** uživatel výslovně chce · **[návrh]** můj návrh,
 
 ## Musí se (rozhodnuto, čeká na práci)
 
-### 1. Přestavba nepřátel na úroveň hrdiny – další: tvorové z creature_kit  [rozhodnuto] · L (každý nepřítel M)
+### 1. Přestavba nepřátel na úroveň hrdiny – hotovo, čeká na posouzení  [rozhodnuto] · L (každý nepřítel M)
 - **Co:** postavit každého nepřítele znovu od nuly s anatomií a detailem jako hrdina. Jeden nepřítel na verzi, každého vyrenderovat a ukázat uživateli. Pořadí: ShieldMonk (`monk_build.py`), HangedMan (`hanged_build.py`), pak tvorové z `creature_kit` (RootCrawler, AshMoth, LanternWisp, PaperKite, Crow). ShadowDouble používá síť hrdiny.
 - **Proč:** uživatel 2026-11-26 zvolil přestavbu od nuly, ne rychlé vyhlazení.
 - **Dopady:** výkon (kapitola může mít stovky nepřátel; Dormancy a FixBounds z v0.97 to drží, při mnoha nepřátelích na obrazovce budou potřeba LOD), animace (zachovat jména kostí kvůli EnemyAnimator, HeroHands a SpringBones), testy nepřátel, cutscény (detail ze všech stran).
 - **ShieldMonk – zadání uživatele (2026-11-27):** „potřebuje adekvátnější zbraň, ne tu hůlku“. Uživatel vybral **řemdih** (hlavice s hroty na řetězu) a **nový útok zbraní** vedle nárazu štítem. Řemdih nahradí růženec v pravé ruce.
-- **Stav:** hotový je přízrak (Wraith, v0.96) a **ShieldMonk s řemdihem (v0.101.0, uživatel schválil: „Je to dobré, další“)**. **HangedMan (v0.102.0, čeká na posouzení uživatelem)**. Další jsou tvorové z `creature_kit` (RootCrawler, AshMoth, LanternWisp, PaperKite, Crow).
+- **Stav:**
+  - **Hotovo:** přízrak (Wraith, v0.96) a ShieldMonk s řemdihem (v0.101.0, uživatel schválil: „Je to dobré, další“).
+  - **HangedMan (v0.102.0):** uživatel ho přijal pokynem „Předělej všechny ostatní modely“.
+  - **RootCrawler, AshMoth, LanternWisp, PaperKite, Crow (v0.103.0):** čekají na posouzení uživatelem.
+  - Zbývá ShadowDouble, který používá síť hrdiny, takže je hotový s ním.
+- **Navazuje:** změřit výkon nových modelů na DELLu. Těžší jsou RootCrawler (59 tisíc trojúhelníků, 5× ve scéně) a hejno vran (8 × 21 tisíc). Viz „LOD pro nepřátele“.
 - **Odkazy:** `Docs/claude/crimson-veil-enemy-rebuild.md`, `crimson-veil-no-stock-art.md`, `crimson-veil-cutscenes.md`.
 
 ---
@@ -98,6 +103,9 @@ Značky: **[rozhodnuto]** uživatel výslovně chce · **[návrh]** můj návrh,
 ---
 
 ## Hotovo (posledních pár, pak smazat)
+- v0.103.0 – zbylí tvorové bestiáře přestavění (RootCrawler, AshMoth, LanternWisp, PaperKite, Crow), řetěz řemdihu jako tlumené kyvadlo.
+- v0.102.0 – HangedMan přestavěný.
+- v0.101.0 – ShieldMonk přestavěný, s řemdihem.
 - v0.100.20 – benchmark na DELLu (Intel UHD): 58 fps v 1080p, rozpad nákladů, `bench.ps1 -Res`.
 - v0.100.9 – předávka mezi sessions a počítači (`Docs/Rozpracovano.md`, hooky).
 - v0.100.4 – DELL připravený k vývoji.

@@ -5,6 +5,15 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.109.1] – 2026-11-28
+### Změněno
+- **Štít platí proti všem nepřátelům.** Uživatel se ptal, proti komu štít funguje. Zásahy blokoval všem, ale:
+  - **Vrány:** vrána, která klovne do štítu, odletí o 2,4 m a vrátí se na místo. Hejno se rozprchne a 1 s neklove. Dřív letěla dál, jako by se nic nestalo.
+  - **Popel z AshMoth:** dokud štít držíš, popel na šálu nepadá a sklouzne po štítu. Šálu přitom spotřebovává jako vždy, když ho držíš. Dřív proti popelu nepomáhal.
+
+### Testy
+- EditMode 692/692. PlayMode: `CombatFeelPlayTests` (10, z toho 2 nové: vrána odletí od štítu, držený štít zadrží popel), `CreaturePlayTests` a `CastingPlayTests`, dohromady 42/42.
+
 ## [0.109.0] – 2026-11-28
 ### Změněno – boj je plynulejší a předvídatelnější (uživatel: „Potřebuju, abys boj udělal plynulejší…“)
 - **A, ovládání:**

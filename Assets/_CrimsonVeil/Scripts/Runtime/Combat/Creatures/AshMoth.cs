@@ -92,7 +92,7 @@ namespace CrimsonVeil.Combat
                 if (Random.value < dt * 30f)
                     CombatFx.Burst(CloudCentre + new Vector3(Random.Range(-cloudRadius, cloudRadius), Random.Range(0f, 2f), 0f), Vector2.down, new Color(0.3f, 0.3f, 0.32f, 0.7f), 2, 0.6f);
                 if (HasTarget && AshMothLogic.InCloud(TargetPos, CloudCentre, cloudRadius))
-                    target.Health.Dim(dimAmount, dimSeconds);
+                    target.Health.Ash(dimAmount, dimSeconds);   // (a held shield keeps it off)
             }
 
             TouchDamage(pos, 0.6f, contactDamage, new Vector2(Mathf.Sign(velocity.x + 1e-3f) * 4f, 2f));

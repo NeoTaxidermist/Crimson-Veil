@@ -4,8 +4,27 @@ namespace CrimsonVeil.Combat
 {
     /// <summary>One ink crow of a <see cref="CrowSwarm"/>. A single blow downs it.</summary>
     [RequireComponent(typeof(SphereCollider))]
-    public sealed class Crow : MonoBehaviour, IDamageable
+    public sealed class Crow : MonoBehaviour, IDamageable, IStaggerable
     {
+        /// <summary>How far (m) the crow is flung off its place in the swarm right now (it flies back to it).</summary>
+        public Vector3 Fling;
+        /// <summary>How far (m) a crow whose peck hits the hero's shield is flung away.</summary>
+        public const float ShieldFling = 2.4f;
+
+        /// <summary>
+        /// Its peck hit the hero's shield: the crow is flung away off it, tumbling, and the swarm scatters a moment
+        /// (v0.109.1; before, the shield stopped the peck but the crow flew on as if nothing had happened).
+        /// </summary>
+        public void Stagger()
+        {
+            if (IsDead) return;
+            Vector3 away = Swarm != null ? transform.position - Swarm.HeroChest : Vector3.up;
+            away.z = 0f;
+            if (away.sqrMagnitude < 1e-4f) away = Vector3.up;
+            Fling = (away.normalized + Vector3.up * 0.4f).normalized * ShieldFling;
+            CombatFx.Burst(transform.position, new Vector2(away.x, away.y), CombatFx.Ink, 8, 3f);
+            if (Swarm != null) Swarm.OnCrowStaggered(this);
+        }
         public bool IsDead { get; private set; }
         public CrowSwarm Swarm { get; set; }
         /// <summary>Own phase / radius around the swarm centre.</summary>

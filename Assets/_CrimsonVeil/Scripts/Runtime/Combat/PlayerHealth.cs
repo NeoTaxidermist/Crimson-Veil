@@ -63,6 +63,28 @@ namespace CrimsonVeil.Combat
         float dimTimer, dimAmount;
 
         /// <summary>Ash and the like smother the veil: its glow (and with it the hero's strength) is dimmed for a while.</summary>
+        /// <summary>The shield is raised and held: it keeps the ash of a moth off the scarf (v0.109.1).</summary>
+        public bool ShieldHeld => veil != null && veil.ShieldHeld;
+
+        /// <summary>How many times the held shield kept ash off the scarf (for tests).</summary>
+        public int AshWardedCount { get; private set; }
+
+        /// <summary>
+        /// Ash falls on the hero: it smothers the scarf - unless the shield is held over him, then it slides off it
+        /// (a puff of grey off the ring). The held shield drains the scarf as ever, so it is a choice, not free.
+        /// </summary>
+        public void Ash(float amount, float seconds)
+        {
+            if (ShieldHeld)
+            {
+                AshWardedCount++;
+                if (UnityEngine.Random.value < 0.15f)
+                    CombatFx.Burst(transform.position + Vector3.up * 2f, Vector2.up, new Color(0.35f, 0.35f, 0.36f, 0.8f), 3, 1.5f);
+                return;
+            }
+            Dim(amount, seconds);
+        }
+
         public void Dim(float amount, float seconds)
         {
             dimAmount = Mathf.Clamp01(Mathf.Max(dimTimer > 0f ? dimAmount : 0f, amount));

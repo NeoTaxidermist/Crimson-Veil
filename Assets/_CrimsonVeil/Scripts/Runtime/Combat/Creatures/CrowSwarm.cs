@@ -55,6 +55,19 @@ namespace CrimsonVeil.Combat
         void OnEnable() => Hostiles.Register(this);
         void OnDisable() => Hostiles.Unregister(this);
 
+        /// <summary>The hero's chest (where the swarm pecks), or its centre with no hero.</summary>
+        public Vector3 HeroChest => target.IsValid ? target.Position + Vector3.up * 0.9f : centre;
+
+        /// <summary>Seconds no crow pecks after one hit the hero's shield (the swarm scatters).</summary>
+        public const float ShieldPause = 1f;
+
+        /// <summary>A crow's peck hit the hero's shield: the swarm scatters and holds off a moment.</summary>
+        public void OnCrowStaggered(Crow c)
+        {
+            scatter = 1f;
+            contactCooldown = Mathf.Max(contactCooldown, ShieldPause);
+        }
+
         public void OnCrowDown(Crow c)
         {
             crows.Remove(c);
@@ -110,7 +123,8 @@ namespace CrimsonVeil.Combat
             {
                 c.Phase += c.Speed * dt;
                 Vector3 orbit = new Vector3(Mathf.Cos(c.Phase) * c.Radius * 1.4f, Mathf.Sin(c.Phase * 1.3f) * c.Radius * 0.7f, Mathf.Sin(c.Phase) * 0.3f) * spread;
-                Vector3 want = centre + orbit;
+                Vector3 want = centre + orbit + c.Fling;   // (a crow flung off the shield flies back to its place)
+                c.Fling = Vector3.MoveTowards(c.Fling, Vector3.zero, 2.2f * dt);
                 Vector3 pos = c.transform.position;
                 Vector3 next = CreatureMotion.Slide(pos, Vector3.Lerp(pos, want, 1f - Mathf.Exp(-4f * dt)) - pos, 0.15f, c.transform);
                 c.Velocity = (next - pos) / dt;

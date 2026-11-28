@@ -239,6 +239,47 @@ namespace CrimsonVeil.Tests
         }
 
         [UnityTest]
+        public IEnumerator ACrowPeckingTheShield_IsFlungOff_AndTheSwarmHoldsOff()
+        {
+            var go = new GameObject("Crows");
+            go.transform.SetParent(root.transform);
+            go.transform.position = new Vector3(0f, 3f, 0f);
+            CrowSwarm.BuildVisual(go.transform, null, null, 4);
+            var swarm = go.AddComponent<CrowSwarm>();
+            yield return null;
+            var crow = go.GetComponentInChildren<Crow>();
+            Assert.IsNotNull(crow);
+            Vector3 before = crow.transform.position;
+            crow.Stagger();   // (what the shield does to the one who struck it)
+            Assert.Greater(crow.Fling.magnitude, Crow.ShieldFling * 0.9f, "flung off the shield");
+            float farthest = 0f;
+            float end = Time.time + 0.6f;
+            while (Time.time < end) { farthest = Mathf.Max(farthest, crow.Fling.magnitude); yield return null; }
+            Assert.Less(crow.Fling.magnitude, Crow.ShieldFling, "and flies back to its place");
+            Assert.AreEqual(4, swarm.Alive, "not killed: only turned away");
+        }
+
+        [UnityTest]
+        public IEnumerator AHeldShield_KeepsTheAshOffTheScarf()
+        {
+            var health = player.GetComponent<PlayerHealth>();
+            yield return Wait(0.3f);
+            health.Ash(0.5f, 2f);
+            Assert.IsTrue(health.IsDimmed, "without the shield the ash smothers the scarf");
+            yield return Wait(2.2f);
+            Assert.IsFalse(health.IsDimmed);
+            input.cast = VeilForm.Shield;
+            input.held = VeilForm.Shield;
+            float end = Time.time + 1f;
+            while (!health.ShieldHeld && Time.time < end) yield return null;
+            Assert.IsTrue(health.ShieldHeld, "the shield is held over him");
+            health.Ash(0.5f, 2f);
+            Assert.IsFalse(health.IsDimmed, "the ash slides off the held shield");
+            Assert.AreEqual(1, health.AshWardedCount);
+            input.held = null;
+        }
+
+        [UnityTest]
         public IEnumerator TheRootCrawler_WarnsBeforeItDrops()
         {
             Box(new Vector3(4f, 5.5f, 0f), new Vector3(6f, 1f, 4f));   // the ceiling it clings to

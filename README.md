@@ -17,26 +17,27 @@
 | ![Plošina v mlze](Docs/world/3.jpg) | ![Konec úrovně](Docs/world/4.jpg) |
 
 ## Pohyb a boj
-Natočeno přímo ve hře (12 snímků za sekundu, převážně v šedé testovací místnosti vlevo od startu).
+Natočeno přímo ve hře (12 snímků za sekundu, převážně v šedé testovací místnosti vlevo od startu). Stav k verzi 0.109.
 
 | | |
 |---|---|
 | **Chůze a běh**: došlap přes patu, krok v tempu klipu<br>![Chůze a běh](Docs/moves/beh.gif) | **Otočka v běhu**: smyk a otočka, dobrzdění v předklonu<br>![Otočka](Docs/moves/otocka.gif) |
 | **Skok a salto**: dvojskok se saltem, šála se obtočí kolem těla<br>![Skok a salto](Docs/moves/skok.gif) | **Tvrdý dopad** z 10 m do podřepu<br>![Tvrdý dopad](Docs/moves/dopad.gif) |
-| **Kotoul**: po seskoku za běhu ho kotoul nese dál<br>![Kotoul](Docs/moves/kotoul.gif) | **Hrana**: chycení, visení a vylezení<br>![Hrana](Docs/moves/hrana.gif) |
+| **Kotoul**: po seskoku za běhu ho kotoul nese dál<br>![Kotoul](Docs/moves/kotoul.gif) | **Hrana**: chycení prsty přes hranu, visení a vylezení<br>![Hrana](Docs/moves/hrana.gif) |
 | **Plížení** tunelem vysokým 1,35 m<br>![Plížení](Docs/moves/krceni.gif) | **Skluz** z běhu rovnou pod strop<br>![Skluz](Docs/moves/skluz.gif) |
 | **Dash**: krátký výpad rychlostí 19 m/s<br>![Dash](Docs/moves/dash.gif) | **Kombo**: dva seky mečem a dokončení kopím<br>![Kombo](Docs/moves/kombo.gif) |
-| **Bič**: dvě šlehnutí, druhé nízko po zemi<br>![Bič](Docs/moves/bic.gif) | **Luk**: výstřel a míření nad hlavu<br>![Luk](Docs/moves/luk.gif) |
+| **Bič**: dvě šlehnutí, druhé nízko po zemi<br>![Bič](Docs/moves/bic.gif) | **Luk**: výstřel na stisk a míření nad hlavu<br>![Luk](Docs/moves/luk.gif) |
 | **Štít**: šála se rozvine do kruhu kolem těla<br>![Štít](Docs/moves/stit.gif) | **Míření**: sek nahoru, úder pod nohy, bodnutí vzhůru<br>![Míření](Docs/moves/mireni.gif) |
-| **Houpání na biči**: rozhoupání šipkami, seskok s hybností<br>![Houpání](Docs/moves/houpani.gif) | **Přízrak útočí**, hrdina se pod ranou zapotácí<br>![Přízrak útočí](Docs/moves/zjev.gif) |
+| **Houpání na biči**: rozhoupání šipkami, seskok s hybností<br>![Houpání](Docs/moves/houpani.gif) | **Přízrak útočí**: ohlásí útok zábleskem, hrdina se pod ranou zapotácí<br>![Přízrak útočí](Docs/moves/zjev.gif) |
 | **Šála v klidu**: víry na jejím konci<br>![Šála v klidu](Docs/moves/sala.gif) | **Tělo ze tří čtvrtin**: chůze a sek z mocapu<br>![Tělo ze tří čtvrtin](Docs/moves/telo.gif) |
 
 ## Nepřátelé a bytosti
+Všichni jsou postavení znovu na úroveň detailu hrdiny (tvář, ruce s prsty, látka) a každý útok ohlásí stejným karmínovým zábleskem.
 | | | |
 |---|---|---|
-| ![Přízrak](Docs/enemies/Wraith.jpg)<br>**Přízrak**: hlídkuje, pronásleduje a útok předem naznačí. | ![Mnich se štítem](Docs/enemies/ShieldMonk.jpg)<br>**Mnich se štítem**: zepředu nezranitelný. Obejdi ho, nebo mu bičem vytrhni štít. | ![Kořenolez](Docs/enemies/RootCrawler.jpg)<br>**Kořenolez**: visí ze stropu a seskočí na hrdinu. Kopí ho přišpendlí. |
-| ![Oběšenec](Docs/enemies/HangedMan.jpg)<br>**Oběšenec**: houpe se na laně. Přestřel lano a tělo zůstane jako závaží. | ![Stínový dvojník](Docs/enemies/ShadowDouble.jpg)<br>**Stínový dvojník**: opakuje hrdinovy pohyby se zpožděním, ale neskáče. Vlákej ho do propasti. | ![Havraní roj](Docs/enemies/CrowSwarm.jpg)<br>**Havraní roj**: krouží nad hrdinou a střemhlav jím prolétá. Bič jich srazí víc najednou. |
-| ![Popelavá můra](Docs/enemies/AshMoth.jpg)<br>**Popelavá můra**: létá vysoko (na luk) a sype popel, který ztlumí šálu. | ![Bludička](Docs/enemies/LanternWisp.jpg)<br>**Bludička**: neškodná, ale láká k propastem. Zásah ji chytí a zůstane svítit na místě. | ![Papírový drak](Docs/enemies/PaperKite.jpg)<br>**Papírový drak**: létá na niti. Přestřel ji a z jeho látky se dá plachtit (drž skok). |
+| ![Přízrak](Docs/enemies/Wraith.jpg)<br>**Přízrak**: hlídkuje, pronásleduje, napřáhne drápy a udeří. | ![Mnich se štítem](Docs/enemies/ShieldMonk.jpg)<br>**Mnich se štítem**: zepředu nezranitelný, úder se od štítu odrazí. Útočí nárazem štítu a řemdihem. Obejdi ho, nebo mu bičem vytrhni štít. | ![Kořenolez](Docs/enemies/RootCrawler.jpg)<br>**Kořenolez**: visí ze stropu, zachvěje se a seskočí na hrdinu. Kopí ho přišpendlí. |
+| ![Oběšenec](Docs/enemies/HangedMan.jpg)<br>**Oběšenec**: houpe se na laně. Přestřel lano a tělo zůstane jako závaží. | ![Stínový dvojník](Docs/enemies/ShadowDouble.jpg)<br>**Stínový dvojník**: opakuje hrdinovy pohyby se zpožděním, ale neskáče. Vlákej ho do propasti. | ![Havraní roj](Docs/enemies/CrowSwarm.jpg)<br>**Havraní roj**: krouží nad hrdinou a střemhlav jím prolétá. Bič jich srazí víc najednou, od štítu odletí. |
+| ![Popelavá můra](Docs/enemies/AshMoth.jpg)<br>**Popelavá můra**: létá vysoko (na luk) a sype popel, který ztlumí šálu. Držený štít ho zadrží. | ![Bludička](Docs/enemies/LanternWisp.jpg)<br>**Bludička**: neškodná, ale láká k propastem. Zásah ji chytí a zůstane svítit na místě. | ![Papírový drak](Docs/enemies/PaperKite.jpg)<br>**Papírový drak**: létá na niti. Přestřel ji a z jeho látky se dá plachtit (drž skok). |
 
 ## Ovládání
 Hra startuje do hlavního menu (Hrát, Nastavení, Konec). V **Nastavení** (záložky Ovládání, Zvuk, Obraz) jde každou klávesu i tlačítko ovladače přemapovat a nastavit hlasitost, rozlišení, režim okna, VSync a kvalitu; ve hře otevře **Esc** (Start) pauzu s nastavením. Výchozí rozložení je pro dvě ruce: levá se pohybuje, pravá bojuje.
@@ -57,32 +58,37 @@ Hra startuje do hlavního menu (Hrát, Nastavení, Konec). V **Nastavení** (zá
 | **Meč** | **U** | X / West |
 | **Kopí** | **I** | Y / North |
 | **Bič** (u kruhu se chytí a houpe) | **O** | RT |
-| **Luk** (držet a pustit) | **P** | LB |
+| **Luk** (stisk = výstřel) | **P** | LB |
 | **Štít** (držet) | **J** | LT |
 | Pauza / menu | Esc | Start |
 
-Zbraň se seslá a rovnou udeří. Údery navazují do komba a mezi údery jde zbraň vyměnit: dokončující úder je tím silnější, čím víc zbraní kombo spojilo. Zbraně se hrdina učí od relikvií na podstavcích (v testovací místnosti vlevo od startu zná všechny). Zdraví ukazuje šála a ukazatel ve tvaru šály v levém horním rohu.
+Zbraň se seslá a za 0,05 s udeří, ať už ji hrdina drží, nebo se teprve tvoří. Úder ho na chvilku přibije: do konce seku se neotočí ani neodejde. Stisk v posledních 0,3 s úderu naváže další, dřívější stisk naváže, když tlačítko držíš. Údery navazují do komba a mezi údery jde zbraň vyměnit: dokončující úder je tím silnější, čím víc zbraní kombo spojilo. Zbraně se hrdina učí od relikvií na podstavcích (v testovací místnosti vlevo od startu zná všechny). Zdraví ukazuje šála a ukazatel ve tvaru šály v levém horním rohu.
+
+**Odezva boje:** zasažený nepřítel odskočí a chvíli se vzpamatovává, minutí nechá ve vzduchu stopu inkoustu (bez trestu), úder do štítu se odrazí a hrdina odskočí. Štít blokuje útoky všech nepřátel ze všech stran, a když ho zvedneš přesně ve chvíli úderu (do 0,2 s), útok odrazí a nepřítel zakolísá.
+
+**Kvalita obrazu** (Nastavení → Obraz): Nízká, Střední a Vysoká. Při prvním spuštění se vybere podle grafické karty a v menu je označená „(doporučeno)“. Ve **Vlastní** se dá zvlášť nastavit okolní stínění, vyhlazování hran, rozlišení vykreslování (75–100 %) a stíny.
 
 ## Technika
 - **Pohyb (`MotorLogic`):** coyote time, jump buffer, variabilní výška skoku, „apex hang“, rychlejší pád, dash i dash-jump se zachováním hybnosti, chycení hrany, plížení, skluz, kotoul po pádu z výšky, houpání na biči, nízký úder z podřepu a výskok s úderem. Logika je oddělená od Unity, takže se dá testovat v EditMode.
 - **Šála (`VeilSimulation`):** řetěz Verletových bodů. Tělo hrdiny odtrhává střídavé Lamb-Oseenovy víry s frekvencí podle Strouhalova čísla `f = St·U/D`, takže čím rychleji běží, tím divočeji šála víří. Formy zbraní nastaví cílový tvar a „tvrdost“, ale víry působí dál a zbraň pořád žije.
 - **Animace hrdiny:** základem je procedurální póza (`HeroPoseSolver`, `HeroAnimator`). `HeroMocap` přes ni prolíná klipy z motion capture upečené na kostru hrdiny (`HeroMocapBaker`, menu *Crimson Veil > Mocap*). Kontakt se zemí drží chodidla, ruce i tělo na podlaze a kontakt se zdí drží celé tělo mimo zdi, i když se při pohybu vyklání z kolizní kapsle. Obličej má čelist, víčka a obočí pro cutscény (`HeroFace`).
-- **Výkon:** každá část postavy má profilovací značku `CV.*` (`Core/Perf.cs`, okno Profiler ukáže čas i alokace) a test hlídá, že postava za snímek nealokuje žádnou paměť, takže sběrač odpadu nedělá pauzy.
-- **Nepřátelé (`Combat/Creatures`):** každá bytost má vlastní chování a procedurální animaci nad modelem z Blenderu.
+- **Výkon:** v okně 1920 × 1080 asi 350 fps na RTX 2060. Na integrované grafice Intel UHD je to 82 fps na Vysoké, 96 na Střední a 130 na Nízké. Sestavená hra se dá změřit přepínačem `-cvbench` (`Tools/bench.ps1`). Každá část postavy má profilovací značku `CV.*` (`Core/Perf.cs`, okno Profiler ukáže čas i alokace) a test hlídá, že postava za snímek nealokuje žádnou paměť, takže sběrač odpadu nedělá pauzy.
+- **Nepřátelé (`Combat/Creatures`):** každá bytost má vlastní chování a procedurální animaci nad modelem z Blenderu. Společný základ (`CreatureBase`) obstará odskok a vzpamatování po zásahu i zakolísání po vykrytí. `CombatFx` obstará ohlášení útoku, minutí a odraz od štítu.
+- **Kvalita obrazu (`QualityPresets`, `GameSettings`):** každá úroveň má vlastní URP asset, Vlastní mění svůj asset za běhu.
 - **Vizuální styl:** vrstvy hloubky se se vzdáleností noří do mlhy. Finální průchod `InkGrade` hlídá paletu a cokoli, co není výrazně rudé, převede na šeď.
 
 ## Struktura
 ```
 Assets/_CrimsonVeil/
   Scripts/Runtime/
-    Core/      MovementMath, RigJoint, SpringChainSolver
+    Core/      MovementMath, RigJoint, SpringChainSolver, GameSettings, QualityPresets, Benchmark, Perf
     Player/    MotorLogic, PlayerController, HeroPoseSolver + HeroAnimator, HeroMocap, HeroFace, HeroHands, ClipRecorder
     Veil/      VeilSimulation, VeilController, formy zbraní, VeilCombo, VeilCasting, VeilRelic, renderer, šíp
     Combat/    VeilCombat, PlayerHealth, Enemy (přízrak), Creatures/ (ostatní bytosti), CombatFx
     Camera/    CameraFollow25D, CameraZone, CameraFocus
     World/     TerrainBlock, rekvizity (oblouky, sloupy, tráva, stromy…), GrapplePoint, CuttableRope, HingedBridge,
                Checkpoint, TestRoom, AtmosphereController
-    UI/        ScarfHud (zdraví jako šála), Minimap, PlaytestLog
+    UI/        ScarfHud (zdraví jako šála), MainMenu, SettingsPanel, PauseMenu, Minimap, PlaytestLog
   Scripts/Editor/  PrototypeSceneBuilder (Crimson Veil > Build Prototype Scene), Level Editor (Ctrl+Shift+L),
                    Level Kit, HeroMocapBaker
   Animations/Hero/ klipy pohybu upečené na kostru hrdiny
@@ -90,7 +96,8 @@ Assets/_CrimsonVeil/
   LevelKit/    prefaby pro stavbu úrovní
   Tests/EditMode, Tests/PlayMode
 ArtSource/     zdrojové .blend soubory a Blender skripty (mimo Assets)
-Docs/          obrázky a GIFy pro toto README
+Docs/          obrázky a GIFy pro toto README, poznámky pro vývoj (claude/), předávka a backlog
+Tools/         benchmark, hooky předávky mezi počítači, keep-awake
 .githooks/     hlídání verzí a CHANGELOGu
 ```
 

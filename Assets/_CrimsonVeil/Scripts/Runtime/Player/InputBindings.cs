@@ -44,7 +44,7 @@ namespace CrimsonVeil.Player
             new Entry { id = "Sword", label = "Meč", key = "<Keyboard>/u", pad = "<Gamepad>/buttonWest" },
             new Entry { id = "Spear", label = "Kopí", key = "<Keyboard>/i", pad = "<Gamepad>/buttonNorth" },
             new Entry { id = "Whip", label = "Bič", key = "<Keyboard>/o", pad = "<Gamepad>/rightTrigger" },
-            new Entry { id = "Bow", label = "Luk (držet a pustit)", key = "<Keyboard>/p", pad = "<Gamepad>/leftShoulder" },
+            new Entry { id = "Bow", label = "Luk", key = "<Keyboard>/p", pad = "<Gamepad>/leftShoulder" },
             new Entry { id = "Shield", label = "Štít (držet)", key = "<Keyboard>/j", pad = "<Gamepad>/leftTrigger" },
             new Entry { id = "Map", label = "Mapa", key = "<Keyboard>/tab", pad = "<Gamepad>/select" },
             new Entry { id = "Pause", label = "Pauza / menu", key = "<Keyboard>/escape", pad = "<Gamepad>/start" },

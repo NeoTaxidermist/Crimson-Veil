@@ -50,14 +50,6 @@ Značky: **[rozhodnuto]** uživatel výslovně chce · **[návrh]** můj návrh,
 - **Dopady:** vzhled (SSAO a mlha jsou součást nálady), nastavení hry a menu, testy kvality, CHANGELOG. Na Lenovu se nic nezhorší.
 - **Odkazy:** `Docs/claude/crimson-veil-performance.md` (sekce DELL).
 
-### Klávesy zbraní  [návrh] · S
-- **Co:** teď J K L ; a štít U (můj návrh, v0.85). Uživatel navrhoval U I O P a štít J.
-- **Dopady:** výchozí `InputBindings`, nápověda v menu, testy rebindingu. Uložená nastavení hráčů zůstanou.
-
----
-
-## Mělo by se (otevřené chyby a dluhy)
-
 ### Šála a zbraně – otevřené body z playtestů · M
 - **Co:** ve zbývajících 0,06–0,12 s vylézání není ruka na hraně ani noha nahoře; meč ve visu míří do zdi (ve visu teď zbraň mizí, ověřit, jestli to platí i tady).
 - **Starší (v0.16, ověřit, jestli ještě platí):** zubaté plameny prstence štítu, šála se po saltu na okamžik zmuchlá před tělem, zbraně mají starý plamenný vzhled.

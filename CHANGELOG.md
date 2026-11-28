@@ -5,6 +5,20 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.109.3] – 2026-11-28
+### Změněno
+- **README a obrázky odpovídají hře k verzi 0.109.** Uživatel řekl: „Teď je ještě potřeba aktualizovat artefakty a popisy a obrázky v mainu atd.“
+  - Nové portréty všech 9 přestavěných nepřátel (`Docs/enemies`).
+  - Hlavní obrázek a 4 snímky světa.
+  - 18 GIFů pohybu a boje natočených znovu ve hře (úchop na hraně, odskok přízraku, luk na stisk).
+  - Texty: odezva boje, štít proti všem, kvalita obrazu včetně Vlastní, výkon, popisy nepřátel (řemdih, chvění kořenolezu, vrány a popel proti štítu), struktura.
+- Galerie animací (artifact) je natočená znovu pro v0.109, má 20 klipů.
+- Nastavení: akce luku se jmenuje jen „Luk“ (střílí na stisk, dřív stálo „držet a pustit“).
+- Backlog: smazána položka o klávesách zbraní, klávesy už jsou U I O P a štít J.
+
+### Testy
+- `MenuPlayTests` 3/3, jinak se měnila jen dokumentace a obrázky.
+
 ## [0.109.2] – 2026-11-28
 ### Změněno
 - Milník `alpha_10` je na v0.109.1. `newFeatures` je sloučená do `main` (fast-forward) na pokyn uživatele, práce pokračuje na `newFeatures`. Zapsáno do `Docs/Rozpracovano.md`, `Docs/Backlog.md` a poznámky o větvích.

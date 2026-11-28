@@ -73,6 +73,7 @@ Vývoj běží na dvou počítačích (**Lenovo** = hlavní, RTX 2060; **DELL** 
 - **Hotovo:**
   - Převzetí: hook při každé zprávě (`-OnPrompt`) na Lenovu **funguje**. Při zprávě „Teď budeš pracovat ty“ sám stáhl 18 commitů z DELLu (v0.100.19–v0.106.3) a předal předávku.
   - Unity na Lenovu načetlo změny bez chyb kompilace. Úrovně kvality jsou Mobile, Nízká, Střední, Vysoká.
+  - **Keep-awake z hooku (v0.106.5):** na Lenovu po restartu neběžel a uživatel se musel zeptat. `Tools/session-start.ps1` ho teď na obou počítačích spouští sám, na začátku session i při každé zprávě. Když ho musí spustit, napíše to do kontextu. Otestováno na Lenovu: hook trvá ~2 s, nezasekne se a keep-awake běží dál i po skončení hooku.
 - **Hooky na Lenovu:** stálá session běží ve složce `C:\_ClaudeAI\unity` (je tam `.mcp.json` pro Unity a buildy). Hooky jsou proto zkopírované do `C:\_ClaudeAI\unity\.claude\settings.json` s pevnými cestami `C:\Dev\CrimsonVeil\Tools\session-start.ps1` / `session-stop.ps1`. `C:\_ClaudeAI\unity\CLAUDE.md` načítá repozitářový `CLAUDE.md`. **Když se změní `.claude/settings.json` v repozitáři, je potřeba změnu přenést i sem.**
 - **Unity po restartu aplikace Claude:** může neběžet editor (proces `resources\unity.exe serve` je jen pomocník Unity Hubu) ani server MCP for Unity na 8080. Postup je v `Docs/claude/unity-mcp-restart.md`.
 - **Neověřeno:** Stop hook se ještě sám nespustil, ručně funguje.

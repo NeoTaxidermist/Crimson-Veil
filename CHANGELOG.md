@@ -5,6 +5,16 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.106.5] – 2026-11-28
+### Přidáno
+- `Tools/session-start.ps1` spouští na začátku session i při každé zprávě `Tools/keep-awake.ps1 -Start`, aby počítač neusnul ani po restartu. Když keep-awake neběžel, hook to oznámí. Uživatel se ptal, jestli proces běží, a na Lenovu neběžel.
+
+### Změněno
+- `Docs/claude/keep-awake-stays-on.md`, `Docs/Rozpracovano.md`.
+
+### Testy
+- Hook ručně spuštěný se zastaveným i běžícím keep-awake: platný JSON, ~2 s, keep-awake běží i po skončení hooku. Testy Unity se nespouštěly (změna jen v nástrojích).
+
 ## [0.106.4] – 2026-11-28
 ### Změněno
 - `Docs/Rozpracovano.md`: Lenovo převzalo práci od DELLu. Hook při každé zprávě je na Lenovu ověřený (sám stáhl v0.100.19–v0.106.3). Opravený zastaralý odkaz na další práci.

@@ -12,10 +12,17 @@ $env:GIT_TERMINAL_PROMPT = '0'   # never hang on a credential prompt
 $repo = Split-Path -Parent $PSScriptRoot
 Set-Location $repo
 
+# The user wants the computer awake at all times (long Unity jobs, Remote Control from the phone),
+# so make sure keep-awake runs - on every session start and every message, because it dies with a
+# reboot or an app restart. Cheap: a PID-file check when it already runs. Output captured, not printed.
+$awake = & (Join-Path $PSScriptRoot 'keep-awake.ps1') -Start
+$awakeLine = if ("$awake" -like 'Started*') { "Keep-awake was not running, the hook started it: $awake" } else { '' }
+
 # Git may be installed after the Claude app started, so reload PATH from the registry.
 $env:Path = [Environment]::GetEnvironmentVariable('Path', 'Machine') + ';' + [Environment]::GetEnvironmentVariable('Path', 'User') + ';' + $env:Path
 
 $lines = @()
+if ($awakeLine) { $lines += $awakeLine }
 $status = ''
 $pulledOrFailed = $false
 $branch = (git rev-parse --abbrev-ref HEAD 2>$null)

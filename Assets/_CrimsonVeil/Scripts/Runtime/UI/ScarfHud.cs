@@ -14,6 +14,8 @@ namespace CrimsonVeil.UI
     /// </summary>
     public sealed class ScarfHud : MonoBehaviour
     {
+        /// <summary>The life twig's size on screen: 1.25, its leaves some 31 px at 1080p.</summary>
+        public const float LifeScale = 1.25f;
         public LifeLeaves Life { get; private set; }
         public EnergyScarf Energy { get; private set; }
 
@@ -39,6 +41,7 @@ namespace CrimsonVeil.UI
 
             // (each on a canvas of its own: the scarf's flutter, redrawn, re-batches only itself)
             hud.Life = Widget<LifeLeaves>(go.transform, "Life", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(36f, -30f), new Vector2(520f, 80f));
+            hud.Life.rectTransform.localScale = Vector3.one * LifeScale;   // (v0.114.7: a quarter bigger, as the user chose)
             hud.Energy = Widget<EnergyScarf>(go.transform, "Energy", new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 58f), new Vector2(620f, 64f));
             Minimap.Create(go.transform);   // the map, on TAB
             PlaytestLog.Create(go);         // the playtest's times and deaths, written to Playtests/

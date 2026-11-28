@@ -171,7 +171,7 @@ namespace CrimsonVeil.Tests
             Assert.AreEqual(health.Model.Max, health.Model.Current, 1e-4f, "whole again");
             Assert.AreEqual(1f, veil.Charge.Value, 0.01f, "the scarf full");
             Assert.AreSame(cp.GetComponent<Checkpoint>(), Checkpoint.Nearby);
-            HeroProgress.AddCrimson(30);
+            HeroProgress.AddCrimson(50);
             input.interact = true;
             yield return null; yield return null;
             Assert.IsTrue(AltarPanel.IsOpen, "F opens the altar");

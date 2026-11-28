@@ -127,7 +127,7 @@ namespace CrimsonVeil.Tests
             // a wraith slain and crimson gathered in the chapter
             var w = Object.FindFirstObjectByType<CrimsonVeil.Combat.Enemy>();
             w.ReceiveHit(new CrimsonVeil.Combat.DamageInfo { amount = 999f, point = w.transform.position });
-            CrimsonVeil.Combat.HeroProgress.AddCrimson(25);
+            CrimsonVeil.Combat.HeroProgress.AddCrimson(45);
             CrimsonVeil.Combat.HeroProgress.Buy(CrimsonVeil.Combat.HeroProgress.Upgrade.Blade);
             yield return new WaitForSeconds(2f);
             Assert.Less(Object.FindObjectsByType<CrimsonVeil.Combat.Enemy>(FindObjectsSortMode.None).Length, foes, "the wraith is gone");

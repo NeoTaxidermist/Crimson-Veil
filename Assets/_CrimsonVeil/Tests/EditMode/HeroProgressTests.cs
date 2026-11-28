@@ -18,17 +18,17 @@ namespace CrimsonVeil.Tests
         public void Crimson_BuysUpgrades_AtRisingCost_UpToTheTop()
         {
             Assert.IsFalse(HeroProgress.Buy(HeroProgress.Upgrade.Scarf), "nothing to pay with");
-            HeroProgress.AddCrimson(200);
-            Assert.AreEqual(20, HeroProgress.Cost(HeroProgress.Upgrade.Scarf));
+            HeroProgress.AddCrimson(400);
+            Assert.AreEqual(40, HeroProgress.Cost(HeroProgress.Upgrade.Scarf));
             Assert.IsTrue(HeroProgress.Buy(HeroProgress.Upgrade.Scarf));
-            Assert.AreEqual(180, HeroProgress.Crimson);
-            Assert.AreEqual(45, HeroProgress.Cost(HeroProgress.Upgrade.Scarf), "dearer each level");
+            Assert.AreEqual(360, HeroProgress.Crimson);
+            Assert.AreEqual(90, HeroProgress.Cost(HeroProgress.Upgrade.Scarf), "dearer each level");
             Assert.IsTrue(HeroProgress.Buy(HeroProgress.Upgrade.Scarf));
             Assert.IsTrue(HeroProgress.Buy(HeroProgress.Upgrade.Scarf));
             Assert.AreEqual(HeroProgress.MaxLevel, HeroProgress.Level(HeroProgress.Upgrade.Scarf));
             Assert.AreEqual(-1, HeroProgress.Cost(HeroProgress.Upgrade.Scarf));
             Assert.IsFalse(HeroProgress.Buy(HeroProgress.Upgrade.Scarf), "no higher");
-            Assert.AreEqual(200 - 20 - 45 - 80, HeroProgress.Crimson);
+            Assert.AreEqual(400 - 40 - 90 - 150, HeroProgress.Crimson);
             Assert.AreEqual(1.75f, HeroProgress.ScarfCapacity, 1e-4f);
         }
 

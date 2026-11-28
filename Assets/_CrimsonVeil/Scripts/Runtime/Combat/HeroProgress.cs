@@ -39,12 +39,19 @@ namespace CrimsonVeil.Combat
 
         public static int Level(Upgrade u) => levels[(int)u];
 
-        /// <summary>What the next level of an upgrade costs, in crimson (rising: 20, 45, 80); -1 at the top - the top
-        /// of this chapter (<see cref="ChapterCap"/>) or of all.</summary>
+        /// <summary>
+        /// What each level of an upgrade costs, in crimson (v0.114.7: 40, 90, 150; it was 20, 45, 80). The first
+        /// chapter gives some 147 crimson to one who slays all in it, and lets each upgrade reach level 1: the three
+        /// cost 120 of it, so a thorough chapter buys them all with a little to spare for a death, a hasty one not.
+        /// </summary>
+        public static readonly int[] Prices = { 40, 90, 150 };
+
+        /// <summary>What the next level of an upgrade costs; -1 at the top - the top of this chapter
+        /// (<see cref="ChapterCap"/>) or of all.</summary>
         public static int Cost(Upgrade u)
         {
             int l = Level(u);
-            return l >= Cap ? -1 : l == 0 ? 20 : l == 1 ? 45 : 80;
+            return l >= Cap ? -1 : Prices[Mathf.Clamp(l, 0, Prices.Length - 1)];
         }
 
         /// <summary>The highest level an upgrade may reach in the chapter being played (v0.111: so crimson gathered

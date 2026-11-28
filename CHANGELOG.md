@@ -5,6 +5,21 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.114.7] – 2026-11-28
+### Změněno
+Uživatel vybral body „1 2 3 4 a 7, běž do toho“.
+- **Obvaz jen u životů.** Uzel obvazu na začátku šály dole je pryč. Obvaz je vidět jen jako ovinutí u kořene větvičky.
+- **Větší listy.** Větvička se životy je o čtvrtinu větší, list má ve Full HD asi 31 px.
+- **Šála dole je hladká.** Prameny, kouřové nitky, stopa i značky cen zbraní se kreslí přes měkký tah ze stejné textury jako listy, takže nemají zubaté okraje. Šála na začátku plynule vyrůstá a třpyt při plné síle je malá světlá čočka.
+- **Ceny vylepšení 40 / 90 / 150** (předtím 20 / 45 / 80).
+  - Ruiny dají při zabití všech nepřátel asi 147 karmínu: mniši 5 × 8, plazivci 5 × 3, můry a draci po 3 × 3, oběšenec a dvojník po 3, přízraky 11 × 4 a vrány 24 × 1.
+  - V 1. kapitole jde každé vylepšení jen na úroveň 1. Dřív to stálo dohromady 60, takže víc než polovina karmínu neměla využití.
+  - Teď stojí tři vylepšení 120, asi 80 % kapitoly. Kdo kapitolu projde důkladně, koupí všechna a zbude mu na jednu ztracenou hromádku po smrti.
+- **Úrovně kvality vyzkoušené.** Všechny čtyři jsou nafocené ve Full HD na stejném místě v ruinách.
+
+### Testy
+- Testy počítají s novými cenami: `HeroProgressTests`, `MenuPlayTests`, `ProgressPlayTests`.
+
 ## [0.114.6] – 2026-11-28
 ### Změněno
 - **Větvička je vidět i na tmavém.** Uživatel: „Na tmavém ale není vidět ta větvička.“ Větvička, stopky listů a poupě mají barvu suché větve osvětlené shora: dole jsou uhlové, k horní hraně plynule přecházejí do popelavě šedé. Na černé skále je tak vidět a na světlé mlze zůstává tmavá. Ověřeno ve Full HD na obou pozadích.

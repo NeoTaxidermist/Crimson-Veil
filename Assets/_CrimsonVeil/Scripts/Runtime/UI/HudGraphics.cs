@@ -389,12 +389,13 @@ namespace CrimsonVeil.UI
     }
 
     /// <summary>
-    /// The scarf's strength at the bottom in the middle (v0.113): the scarf itself, painted as a fluttering ribbon of
-    /// crimson flame whose length is the strength - where the eyes are in a fight. A faint ink track shows its whole
-    /// length; small light notches mark what each weapon costs (the whip, the shield, the spear, the bow - closer
-    /// together on a longer scarf, bought at an altar), so it is seen at a glance which weapon there is scarf for. At its
-    /// start the knot a wound is bound with, tied tighter as blows land; full, it glows. Full strength, a glint at the
-    /// end: the scarf will take the next blow. Redrawn about thirty times a second for its flutter, at once on a change.
+    /// The scarf's strength at the bottom in the middle (v0.113): the scarf itself, strands of translucent crimson
+    /// cloth twisting round each other, whose length is the strength - where the eyes are in a fight. A faint track
+    /// shows its whole length; small light notches mark what each weapon costs (the whip, the shield, the spear, the
+    /// bow - closer together on a longer scarf, bought at an altar). Full strength, a glint at the end: the scarf will
+    /// take the next blow. v0.114.7: every strand, thread and mark is drawn over the soft stroke of
+    /// <see cref="LeafAtlas"/>, so its edges are smooth; the mend knot is no longer here but bound round the base of
+    /// the life twig (<see cref="LifeLeaves"/>). Redrawn about thirty times a second for its flutter.
     /// </summary>
     [RequireComponent(typeof(CanvasRenderer))]
     public sealed class EnergyScarf : MaskableGraphic
@@ -402,18 +403,15 @@ namespace CrimsonVeil.UI
         [Range(0f, 1f)] public float charge = 1f;
         /// <summary>The scarf's length bought at altars: the weapons' notches lie at their cost divided by it.</summary>
         public float capacity = 1f;
-        /// <summary>The mend knot, 0..1.</summary>
+        /// <summary>The mend knot, 0..1 (shown on the life twig since v0.114.7; kept for the HUD's wiring).</summary>
         [Range(0f, 1f)] public float mend;
         [Range(0f, 1f)] public float hurtFlash;
 
         public float thickness = 28f, waveAmplitude = 6f;
         public const float FlutterStep = 1f / 30f;
 
-        static readonly Color Deep = new Color(0.32f, 0.0f, 0.02f, 1f);
-        static readonly Color Mid = new Color(0.78f, 0.03f, 0.05f, 1f);
-        static readonly Color Glow = new Color(1.0f, 0.22f, 0.12f, 1f);
-        static readonly Color Track = new Color(0f, 0f, 0f, 0.6f);
-        static readonly Color Ash = new Color(0.4f, 0.38f, 0.38f, 0.8f);
+        static readonly Color Track = new Color(0f, 0f, 0f, 0.55f);
+        static readonly Color Ash = new Color(0.45f, 0.43f, 0.42f, 0.8f);
 
         /// <summary>The weapons whose cost is marked, in order of cost.</summary>
         public static readonly VeilForm[] Marked = { VeilForm.Whip, VeilForm.Shield, VeilForm.Spear, VeilForm.Bow };
@@ -421,43 +419,52 @@ namespace CrimsonVeil.UI
         /// <summary>Where (0..1 of the scarf) the notch of <paramref name="form"/> lies: its cost on a scarf this long.</summary>
         public static float NotchAt(VeilForm form, float capacity) => Mathf.Clamp01(VeilCasting.Cost(form) / Mathf.Max(0.1f, capacity));
 
+        public override Texture mainTexture => LeafAtlas.Texture;
+
         public int Redraws { get; private set; }
-        float time, drawnAt = -1f, dCharge = -1f, dMend = -1f, dFlash, dCap;
+        float time, drawnAt = -1f, dCharge = -1f, dFlash, dCap;
+
+        // the soft stroke's edges and middle, and how much wider than its solid ink a strip must be
+        static Vector4 Top => new Vector4(LeafAtlas.StrokeCell.center.x, LeafAtlas.StrokeCell.yMax);
+        static Vector4 Bottom => new Vector4(LeafAtlas.StrokeCell.center.x, LeafAtlas.StrokeCell.yMin);
+        static Vector4 Middle => new Vector4(LeafAtlas.StrokeCell.center.x, LeafAtlas.StrokeCell.center.y);
+        const float Spread = LeafAtlas.StrokeSpread;
 
         void Update()
         {
             time += Time.unscaledDeltaTime;
-            bool changed = charge != dCharge || mend != dMend || hurtFlash != dFlash || capacity != dCap;
+            bool changed = charge != dCharge || hurtFlash != dFlash || capacity != dCap;
             if (changed || time - drawnAt >= FlutterStep) SetVerticesDirty();
         }
 
         protected override void OnPopulateMesh(VertexHelper vh)
         {
             Redraws++;
-            drawnAt = time; dCharge = charge; dMend = mend; dFlash = hurtFlash; dCap = capacity;
+            drawnAt = time; dCharge = charge; dFlash = hurtFlash; dCap = capacity;
             vh.Clear();
             var r = rectTransform.rect;
-            float x0 = r.xMin + 64f, x1 = r.xMax - 20f, y = r.center.y;
-            // the whole length, faint: a thin ash thread under it (seen on black rock and pale mist alike)
-            Ribbon(vh, x0, x1, y, 0f, 1f, 9f, waveAmplitude, (u, a) => Track, 28);
-            Ribbon(vh, x0, x1, y, Mathf.Clamp01(charge), 1f, 4f, waveAmplitude, (u, a) => Ash, 28);
-            // the strength: the scarf itself (v0.113.1 - "it should look like the scarf")
+            float x0 = r.xMin + 30f, x1 = r.xMax - 20f, y = r.center.y;
+            // the whole length, faint: a dark track with a thin ash thread (seen on black rock and pale mist alike)
+            Ribbon(vh, x0, x1, y, 0f, 1f, 9f, Track);
+            Ribbon(vh, x0, x1, y, Mathf.Clamp01(charge), 1f, 3f, Ash);
+            // the strength: the scarf itself
             if (charge > 0.003f) Scarf(vh, x0, x1, y, Mathf.Clamp01(charge));
-            // the weapons' costs
+            // the weapons' costs: a small mark over the scarf
             foreach (var f in Marked)
             {
                 float u = NotchAt(f, capacity);
                 float nx = Mathf.Lerp(x0, x1, u), ny = y + ScarfHudLayout.Wave(u, time, waveAmplitude);
                 bool affordable = charge + 1e-3f >= Mathf.Min(u, VeilCasting.MinToCast);
-                // (a small mark over the scarf, not across it)
-                Quad(vh, new Vector2(nx, ny + thickness * 0.95f), 1.2f, 5f, affordable ? new Color(1f, 0.9f, 0.85f, 0.75f) : new Color(0.5f, 0.48f, 0.46f, 0.5f));
+                var c = affordable ? new Color(1f, 0.9f, 0.85f, 0.8f) : new Color(0.5f, 0.48f, 0.46f, 0.55f);
+                Mark(vh, new Vector2(nx, ny + thickness * 0.95f - 5f), new Vector2(nx, ny + thickness * 0.95f + 5f), 2.2f, c);
             }
             if (charge >= 0.999f)
             {
-                float gx = x0 + (x1 - x0), gy = y + ScarfHudLayout.Wave(1f, time, waveAmplitude);
-                Diamond(vh, new Vector2(gx, gy), 7f + 2f * Mathf.Sin(time * 5f), new Color(1f, 0.75f, 0.7f, 0.95f));
+                // the glint: a small pale lens at the scarf's end
+                float gy = y + ScarfHudLayout.Wave(1f, time, waveAmplitude);
+                float s = 0.32f + 0.06f * Mathf.Sin(time * 5f);
+                Glint(vh, new Vector2(x1, gy - LifeLeaves.LeafLength * s * 0.5f), s, new Color(1f, 0.78f, 0.72f, 0.95f));
             }
-            Knot(vh, new Vector2(r.xMin + 30f, y), 18f);
         }
 
         /// <summary>
@@ -473,12 +480,11 @@ namespace CrimsonVeil.UI
             {
                 float k = s / (strands - 1f);                 // 0 the dark under-strand .. 1 the bright top one
                 float phase = s * 1.37f, speed = 1.6f + 0.35f * s;
-                var col = Color.Lerp(new Color(0.28f, 0.0f, 0.03f, 0.85f), new Color(0.9f, 0.06f, 0.08f, 0.62f), k);
+                var col = Color.Lerp(new Color(0.28f, 0.0f, 0.03f, 0.85f), new Color(0.82f, 0.07f, 0.09f, 0.62f), k);
                 col = Color.Lerp(col, new Color(1f, 0.6f, 0.5f, col.a), 0.5f * hurtFlash);
                 float width = thickness * (0.95f - 0.35f * Mathf.Abs(k - 0.5f));
-                Strand(vh, x0, y, L, len, phase, speed, width, col, k, s);
+                Strand(vh, x0, y, L, phase, speed, width, col, k, s);
             }
-            // threads of smoke trailing past the end
             for (int t = 0; t < 3; t++)
             {
                 float ph = 2.1f + t * 2.3f;
@@ -489,7 +495,7 @@ namespace CrimsonVeil.UI
         /// <summary>The scarf's centre line at <paramref name="u"/> (0..1 of its length): a long S that streams.</summary>
         float Centre(float u, float L) => ScarfHudLayout.Wave(u, time, waveAmplitude) + Mathf.Sin(u * 5.2f - time * 1.3f) * 3.5f * Mathf.Clamp01(L / 200f);
 
-        void Strand(VertexHelper vh, float x0, float y, float L, float len, float phase, float speed, float width, Color col, float k, int seed)
+        void Strand(VertexHelper vh, float x0, float y, float L, float phase, float speed, float width, Color col, float k, int seed)
         {
             int n = Mathf.Max(6, Mathf.CeilToInt(L / 6f));
             int start = vh.currentVertCount;
@@ -497,23 +503,19 @@ namespace CrimsonVeil.UI
             for (int i = 0; i <= n; i++)
             {
                 float u = i / (float)n;
-                // strands cross over one another as the cloth twists; nearer the end they part and fan out
                 float part = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.55f, 1f, u));
                 float twist = Mathf.Sin(u * (6f + seed * 0.6f) - time * speed + phase);
                 float off = (k - 0.5f) * thickness * 0.55f * twist + (k - 0.5f) * thickness * 1.6f * part
                             + Mathf.Sin(u * 11f - time * 3f + phase) * 4f * part;
-                // thick at the neck, a little narrower along, thin and curling at the very end
                 float w = width * (1f - 0.55f * part) * (0.75f + 0.25f * Mathf.Sin(u * 17f + phase - time * 2f)) * Mathf.Clamp01((1f - u) * 14f + 0.15f);
                 float cy = y + Centre(u, L) + off;
-                // the end curls up or down a little, strand by strand
                 float curl = part * part * Mathf.Sin(phase + time * 0.9f) * 10f;
                 float x = x0 + u * L;
-                // the twist turns the strand's face: narrow where it is edge-on, with a gloss where it faces the light
                 float face = 0.45f + 0.55f * Mathf.Abs(Mathf.Cos(u * (6f + seed * 0.6f) - time * speed + phase));
-                float hw = w * 0.5f * face;
-                var c = col; c.a *= 0.7f + 0.3f * face;
-                vh.AddVert(new Vector3(x, cy + curl + hw), Color.Lerp(c, gloss, gloss.a * face), Vector4.zero);
-                vh.AddVert(new Vector3(x, cy + curl - hw), c, Vector4.zero);
+                float hw = w * 0.5f * face * Spread;
+                var c = col; c.a *= (0.7f + 0.3f * face) * Mathf.SmoothStep(0f, 1f, (x - x0) / 16f);   // (it comes out of nothing at its start)
+                vh.AddVert(new Vector3(x, cy + curl + hw), Color.Lerp(c, gloss, gloss.a * face), Top);
+                vh.AddVert(new Vector3(x, cy + curl - hw), c, Bottom);
                 if (i > 0)
                 {
                     int a = start + (i - 1) * 2, b = start + i * 2;
@@ -532,10 +534,10 @@ namespace CrimsonVeil.UI
                 float u = i / (float)n;
                 float x = xs + u * length;
                 float cy = y + Mathf.Sin(u * 7f - time * 2.4f + phase) * 7f * u + Mathf.Sin(phase) * 6f * u;
-                float hw = 1.3f * (1f - u * 0.6f);
+                float hw = 1.3f * (1f - u * 0.6f) * Spread;
                 var c = col; c.a *= Mathf.Sin(Mathf.Clamp01(u) * Mathf.PI);
-                vh.AddVert(new Vector3(x, cy + hw), c, Vector4.zero);
-                vh.AddVert(new Vector3(x, cy - hw), c, Vector4.zero);
+                vh.AddVert(new Vector3(x, cy + hw), c, Top);
+                vh.AddVert(new Vector3(x, cy - hw), c, Bottom);
                 if (i > 0)
                 {
                     int a = start + (i - 1) * 2, b = start + i * 2;
@@ -544,116 +546,53 @@ namespace CrimsonVeil.UI
             }
         }
 
-        Color Flame(float u, float across)
-        {
-            float streak = 0.5f + 0.5f * Mathf.Sin(u * 46f - time * 6.5f + across * 2.2f + Mathf.Sin(u * 9f + time) * 1.5f);
-            float core = 1f - Mathf.Abs(across);
-            var c = Color.Lerp(Deep, Mid, 0.25f + 0.75f * core);
-            c = Color.Lerp(c, Deep, 0.45f * (1f - streak) * (1f - streak));
-            c = Color.Lerp(c, Glow, 0.35f * streak * streak * core);
-            c = Color.Lerp(c, Color.white, 0.5f * hurtFlash * core);
-            c.a = 1f;
-            return c;
-        }
-
-        /// <summary>The knot at the scarf's start: ink, wound round by crimson as far as the knot is tied; full, it glows.</summary>
-        void Knot(VertexHelper vh, Vector2 c, float radius)
-        {
-            bool full = mend >= 0.999f;
-            float pulse = full ? 0.5f + 0.5f * Mathf.Sin(time * 4f) : 0f;
-            Disc(vh, c, radius + 6f, 1f, new Color(0f, 0f, 0f, 0.55f));
-            Disc(vh, c, radius, 1f, new Color(0.06f, 0.05f, 0.05f, 1f));
-            if (mend > 0.001f) ArcBand(vh, c, radius - 4f, 6f, mend, Color.Lerp(Mid, Glow, 0.3f * pulse));
-            if (full) Disc(vh, c, radius * (0.45f + 0.08f * pulse), 1f, Color.Lerp(Mid, Glow, 0.4f + 0.4f * pulse));
-            // two short tails
-            for (int s = 0; s < 2; s++)
-            {
-                float sway = Mathf.Sin(time * 2.6f + s) * 3f;
-                int i = vh.currentVertCount;
-                float dy = s == 0 ? 5f : -5f;
-                vh.AddVert(new Vector3(c.x - radius * 0.6f, c.y + dy + 4f), Deep, Vector4.zero);
-                vh.AddVert(new Vector3(c.x - radius * 0.6f, c.y + dy - 4f), Mid, Vector4.zero);
-                vh.AddVert(new Vector3(c.x - radius - 22f, c.y + dy * 2.2f + sway), new Color(Deep.r, Deep.g, Deep.b, 0.3f), Vector4.zero);
-                vh.AddTriangle(i, i + 1, i + 2);
-            }
-        }
-
-        void Ribbon(VertexHelper vh, float x0, float x1, float y, float u0, float u1, float thick, float amp,
-                    System.Func<float, float, Color> color, int samples)
+        /// <summary>A band along the scarf's wave from <paramref name="u0"/> to <paramref name="u1"/>, its edges soft, tapering at its living end.</summary>
+        void Ribbon(VertexHelper vh, float x0, float x1, float y, float u0, float u1, float thick, Color col)
         {
             if (u1 - u0 < 1e-4f) return;
-            int n = Mathf.Max(2, Mathf.CeilToInt(samples * (u1 - u0)) + 2);
+            int n = Mathf.Max(2, Mathf.CeilToInt(28 * (u1 - u0)) + 2);
             int start = vh.currentVertCount;
             for (int i = 0; i < n; i++)
             {
                 float u = Mathf.Lerp(u0, u1, (float)i / (n - 1));
-                float cy = y + ScarfHudLayout.Wave(u, time, amp);
-                // the living end tapers and frays, as the scarf's tip
+                float cy = y + ScarfHudLayout.Wave(u, time, waveAmplitude);
                 float tipFade = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((u1 - u) / 0.06f));
-                float hw = thick * 0.5f * (0.55f + 0.45f * tipFade) * (1f + 0.06f * Mathf.Sin(u * 23f - time * 4f));
-                float fray = 1f - 0.3f * Mathf.Abs(Mathf.Sin(u * 61f + Mathf.Sin(u * 13f) * 2f));
+                float hw = thick * 0.5f * (0.55f + 0.45f * tipFade) * (1f + 0.06f * Mathf.Sin(u * 23f - time * 4f)) * Spread;
                 float x = Mathf.Lerp(x0, x1, u);
-                vh.AddVert(new Vector3(x, cy + hw), color(u, 1f), Vector4.zero);
-                vh.AddVert(new Vector3(x, cy), color(u, 0f), Vector4.zero);
-                vh.AddVert(new Vector3(x, cy - hw * fray), color(u, -1f), Vector4.zero);
+                var c = col; c.a *= Mathf.SmoothStep(0f, 1f, (x - x0) / 16f);
+                vh.AddVert(new Vector3(x, cy + hw), c, Top);
+                vh.AddVert(new Vector3(x, cy - hw), c, Bottom);
                 if (i > 0)
                 {
-                    int a = start + (i - 1) * 3, b = start + i * 3;
+                    int a = start + (i - 1) * 2, b = start + i * 2;
                     vh.AddTriangle(a, b, a + 1); vh.AddTriangle(a + 1, b, b + 1);
-                    vh.AddTriangle(a + 1, b + 1, a + 2); vh.AddTriangle(a + 2, b + 1, b + 2);
                 }
             }
         }
 
-        static void Disc(VertexHelper vh, Vector2 c, float radius, float fraction, Color col)
+        /// <summary>A short soft line (a weapon's cost mark).</summary>
+        static void Mark(VertexHelper vh, Vector2 a, Vector2 b, float w, Color col)
         {
-            const int seg = 28;
-            int centre = vh.currentVertCount;
-            vh.AddVert(c, col, Vector4.zero);
-            int n = Mathf.Max(2, Mathf.CeilToInt(seg * fraction));
-            for (int k = 0; k <= n; k++)
-            {
-                float a = Mathf.PI * 0.5f - fraction * Mathf.PI * 2f * k / n;
-                vh.AddVert(c + new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * radius, col, Vector4.zero);
-                if (k > 0) vh.AddTriangle(centre, centre + k, centre + k + 1);
-            }
-        }
-
-        static void ArcBand(VertexHelper vh, Vector2 c, float radius, float w, float fraction, Color col)
-        {
-            int n = Mathf.Max(2, Mathf.CeilToInt(32 * fraction));
-            int start = vh.currentVertCount;
-            for (int k = 0; k <= n; k++)
-            {
-                float a = Mathf.PI * 0.5f - fraction * Mathf.PI * 2f * k / n;
-                var d = new Vector2(Mathf.Cos(a), Mathf.Sin(a));
-                vh.AddVert(c + d * (radius + w * 0.5f), col, Vector4.zero);
-                vh.AddVert(c + d * (radius - w * 0.5f), col, Vector4.zero);
-                if (k > 0)
-                {
-                    int i0 = start + (k - 1) * 2, i1 = start + k * 2;
-                    vh.AddTriangle(i0, i1, i0 + 1); vh.AddTriangle(i0 + 1, i1, i1 + 1);
-                }
-            }
-        }
-
-        static void Quad(VertexHelper vh, Vector2 c, float halfW, float halfH, Color col)
-        {
+            var d = (b - a).normalized; var n = new Vector2(-d.y, d.x) * (w * 0.5f * Spread);
             int i = vh.currentVertCount;
-            vh.AddVert(new Vector3(c.x - halfW, c.y - halfH), col, Vector4.zero);
-            vh.AddVert(new Vector3(c.x - halfW, c.y + halfH), col, Vector4.zero);
-            vh.AddVert(new Vector3(c.x + halfW, c.y + halfH), col, Vector4.zero);
-            vh.AddVert(new Vector3(c.x + halfW, c.y - halfH), col, Vector4.zero);
+            vh.AddVert(a + n, col, Top); vh.AddVert(a - n, col, Bottom);
+            vh.AddVert(b - n, col, Bottom); vh.AddVert(b + n, col, Top);
             vh.AddTriangle(i, i + 1, i + 2); vh.AddTriangle(i, i + 2, i + 3);
         }
 
-        static void Diamond(VertexHelper vh, Vector2 c, float s, Color col)
+        /// <summary>The glint at full strength: a small pale lens standing upright, from the atlas's pale leaf.</summary>
+        static void Glint(VertexHelper vh, Vector2 baseAt, float size, Color col)
         {
+            var cell = LeafAtlas.Pale;
+            float L = LifeLeaves.LeafLength * size, half = L * LeafAtlas.CellHalfWidth;
+            Vector2 dir = Vector2.up, side = Vector2.left;
+            Vector2 a = baseAt, b = baseAt + dir * L;
+            float v0 = LeafAtlas.V(cell, 0f), v1 = LeafAtlas.V(cell, 1f);
             int i = vh.currentVertCount;
-            vh.AddVert(new Vector3(c.x, c.y + s), col, Vector4.zero);
-            vh.AddVert(new Vector3(c.x + s * 0.6f, c.y), col, Vector4.zero);
-            vh.AddVert(new Vector3(c.x, c.y - s), col, Vector4.zero);
-            vh.AddVert(new Vector3(c.x - s * 0.6f, c.y), col, Vector4.zero);
+            vh.AddVert(a - side * half, col, new Vector4(cell.xMin, v0));
+            vh.AddVert(a + side * half, col, new Vector4(cell.xMax, v0));
+            vh.AddVert(b + side * half, col, new Vector4(cell.xMax, v1));
+            vh.AddVert(b - side * half, col, new Vector4(cell.xMin, v1));
             vh.AddTriangle(i, i + 1, i + 2); vh.AddTriangle(i, i + 2, i + 3);
         }
     }

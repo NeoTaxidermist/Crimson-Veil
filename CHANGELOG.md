@@ -5,6 +5,10 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.114.8] – 2026-11-28
+### Dokumentace
+- Backlog: nový vzhled šály se silou dole v HUD. Uživateli připadá „amatérská, jen jak křivá čára“. Dostal tři návrhy do záběru ze hry: látka, tah štětcem, stuha. Čeká se, který vybere.
+
 ## [0.114.7] – 2026-11-28
 ### Změněno
 Uživatel vybral body „1 2 3 4 a 7, běž do toho“.

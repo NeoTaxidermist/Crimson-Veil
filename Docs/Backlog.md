@@ -63,6 +63,16 @@ Značky: **[rozhodnuto]** uživatel výslovně chce · **[návrh]** můj návrh,
 
 ---
 
+### Šála se silou dole v HUD – nový vzhled · M
+- **Co:** uživatel 2026-11-28, po v0.114.7: „Ta šála s energií vypadá nějak amatérsky, je prostě jen jak křivá čára.“
+- **Návrhy:** poslal jsem tři návrhy do záběru ze hry (`C:\_ClaudeAI\unity\world\navrh_sala_A/B/C.png` na Lenovu):
+  - A: látka s přehybem a třásněmi,
+  - B: tah štětcem (vlákna, suchý konec, prázdná část jako šedá stopa),
+  - C: stuha s vykrojeným koncem.
+  Doporučil jsem B.
+- **Stav:** čeká na výběr uživatele.
+- **Dopady:** `EnergyScarf` v `HudGraphics.cs` (kreslí se přes `LeafAtlas`; štětec by potřeboval novou buňku s texturou vláken) a testy HUD (`HudRedrawPlayTests`, značky cen zbraní).
+
 ## Mohlo by se (nápady a možnosti)
 
 ### Šála do Burst jobů · L  [návrh]

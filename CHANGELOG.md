@@ -5,6 +5,18 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.114.0] – 2026-11-28
+### Změněno
+- **Životy v HUD jako listy rudého stromu.** Uživatel vybral ze dvou návrhů listy: „Ty listy se mi líbí, ale musí se to udělat nějak logicky, až bude hráč získávat upgradem víc životů.“
+  - Vlevo nahoře je větvička tuší, na ní karmínový list za každý život, střídavě visí dolů a stojí nahoru. Listy mají vrstvený průsvitný karmín jako šála a tmavou žilku.
+  - Zásah list natrhne po čtvrtinách, okraj je zubatý. Právě ztracená část chvíli doutná.
+  - Ztracený list zešedne a opadne, na větvičce zůstane holá stopka.
+  - **Růst dalšího života:** na konci větvičky je pupen. S každým úlomkem srdce povyroste, čtvrtý úlomek z něj udělá nový list a větvička se prodlouží, aby nesla další pupen.
+  - Třída `LifeRings` se jmenuje `LifeLeaves`. Překresluje se jen při změně a během pádu listu.
+
+### Testy
+- PlayMode: nový test `ALeafLost_FallsAway_ThenTheTwigStandsStill` (opadne jen celý ztracený list, ne natržený; po pádu se HUD nepřekresluje; pupen a další list). PlayMode celkem 175.
+
 ## [0.113.3] – 2026-11-28
 ### Změněno
 - `Docs/Rozpracovano.md`: životy v HUD dostanou nový tvar. Uživatel vybírá mezi uzly na šále a listy rudého stromu, obrázky obou návrhů dostal.

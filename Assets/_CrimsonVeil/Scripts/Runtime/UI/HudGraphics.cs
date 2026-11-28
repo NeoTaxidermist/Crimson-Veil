@@ -5,40 +5,66 @@ using UnityEngine.UI;
 namespace CrimsonVeil.UI
 {
     /// <summary>
-    /// Life in the top-left corner: a loop tied of the scarf's own strands for every point of life (v0.113.2, the user:
-    /// the HUD should look like the scarf) - four translucent strands, dark carmine to bright, twisting over one another
-    /// round the loop, two short ends hanging from its knot. A wound unties a loop a quarter at a time (the strands part
-    /// and fray at the cut), leaving a thread of ash where the life was; what was just lost glows on as embers a moment.
-    /// After the loops a small one is tied for the shards of the next life, a quarter each. Built in code; redrawn only
-    /// when something changes. (v0.113.0 drew rings of ink filled with crimson.)
+    /// Life in the top-left corner as leaves of the crimson tree (v0.113.4, the user's choice): a twig painted in ink,
+    /// a crimson leaf on it for every point of life, alternately hanging below it and standing above it as on a real
+    /// twig, so many fit on a short one. A wound tears a leaf a quarter at a time (from its tip back to the stalk); a
+    /// leaf lost turns grey and falls away, the bare stalk left. More life is grown, not added: the shards of the next
+    /// life swell a bud at the twig's tip, a quarter each; the fourth opens it into a new leaf, and the twig grows on
+    /// to carry the next bud. Translucent layered crimson as the scarf. Built in code; redrawn only on a change or
+    /// while a leaf falls.
     /// </summary>
     [RequireComponent(typeof(CanvasRenderer))]
-    public sealed class LifeRings : MaskableGraphic
+    public sealed class LifeLeaves : MaskableGraphic
     {
         public float maxHealth = 5f, health = 5f;
-        /// <summary>Life a moment ago: the part just lost glows on as embers.</summary>
+        /// <summary>Life a moment ago: the part just lost glows on a moment.</summary>
         public float trailingHealth = 5f;
         [Range(0f, 1f)] public float hurtFlash;
-        /// <summary>Shards towards the next life (0..3).</summary>
+        /// <summary>Shards towards the next life (0..3): the bud at the twig's tip.</summary>
         public int shards;
 
-        public const float Radius = 26f, Spacing = 68f, Stroke = 8f;
+        /// <summary>The twig's length per leaf (px) and a leaf's length.</summary>
+        public const float Spacing = 36f, LeafLength = 44f, LeafWidth = 22f;
+        public const float FallSeconds = 1.3f;
+
         static readonly Color InkC = new Color(0.03f, 0.03f, 0.035f, 1f);
-        static readonly Color Fill = new Color(0.66f, 0.03f, 0.05f, 1f);
-        static readonly Color Ember = new Color(1f, 0.3f, 0.15f, 1f);
+        static readonly Color Dark = new Color(0.32f, 0.0f, 0.03f, 0.92f);
+        static readonly Color Mid = new Color(0.72f, 0.03f, 0.06f, 0.85f);
+        static readonly Color Bright = new Color(1f, 0.2f, 0.16f, 0.55f);
+        static readonly Color Ember = new Color(1f, 0.35f, 0.18f, 0.9f);
+        static readonly Color Ashen = new Color(0.45f, 0.43f, 0.43f, 0.85f);
 
         /// <summary>How many times it has been drawn (for tests).</summary>
         public int Redraws { get; private set; }
+        /// <summary>Leaves falling now (for tests).</summary>
+        public int Falling => falls.Count;
+
         float dHealth = -1f, dTrail, dFlash, dMax; int dShards = -1;
-        float time;
+        float time, lastHealth = -1f;
+        readonly System.Collections.Generic.List<Vector2> falls = new System.Collections.Generic.List<Vector2>();   // (leaf index, start time)
 
         void Update()
         {
             time += Time.unscaledDeltaTime;
+            // a whole leaf lost: it falls away
+            if (lastHealth >= 0f)
+                for (int i = Mathf.CeilToInt(health); i < Mathf.CeilToInt(lastHealth) && i < 64; i++)
+                    if (health <= i) falls.Add(new Vector2(i, time));
+            lastHealth = health;
+            falls.RemoveAll(f => time - f.y > FallSeconds);
             bool low = health > 0f && health <= 1.01f;
-            if (health != dHealth || trailingHealth != dTrail || hurtFlash != dFlash || maxHealth != dMax || shards != dShards || low)
+            if (health != dHealth || trailingHealth != dTrail || hurtFlash != dFlash || maxHealth != dMax || shards != dShards || low || falls.Count > 0)
                 SetVerticesDirty();
         }
+
+        /// <summary>Where leaf <paramref name="i"/> grows on the twig, and whether it hangs below (true) or stands above.</summary>
+        public static Vector2 Node(int i, Rect r, out bool below)
+        {
+            below = i % 2 == 0;
+            return new Vector2(r.xMin + 22f + i * Spacing, TwigY(r, i * Spacing));
+        }
+
+        static float TwigY(Rect r, float x) => r.yMax - 40f + Mathf.Sin(x * 0.02f + 0.7f) * 3f;
 
         protected override void OnPopulateMesh(VertexHelper vh)
         {
@@ -48,173 +74,158 @@ namespace CrimsonVeil.UI
             var r = rectTransform.rect;
             int n = Mathf.Max(1, Mathf.RoundToInt(maxHealth));
             float low = health > 0f && health <= 1.01f ? 0.5f + 0.5f * Mathf.Sin(time * 6f) : 0f;
+
+            // the twig: from its base at the corner to beyond the last leaf, where the bud is; thick at the base
+            float length = 22f + (n - 1) * Spacing + 34f;
+            Twig(vh, r, length);
+            // the bud for the next life at the tip, swelling with the shards (where the next leaf will grow)
+            var tip = new Vector2(r.xMin + length, TwigY(r, length));
+            Bud(vh, tip, shards / 4f, n);
+
             for (int i = 0; i < n; i++)
             {
-                var c = new Vector2(r.xMin + Radius + 6f + i * Spacing, r.yMax - Radius - 6f);
+                var at = Node(i, r, out bool below);
                 float full = Mathf.Clamp01(health - i), trail = Mathf.Clamp01(Mathf.Max(trailingHealth, health) - i);
-                // a dark wash behind each loop, so it reads on the pale mist
-                Disc(vh, c, Radius + 9f, 0f, 1f, new Color(0f, 0f, 0f, 0.38f), i * 7 + 1);
-                // the whole loop as a thread of ash: what a lost life leaves
-                Arc(vh, c, Radius, 2.2f, 0f, 1f, new Color(0.42f, 0.4f, 0.4f, 0.75f), i * 7 + 2);
-                // just lost: the strands glow on as embers a moment
-                if (trail > full + 1e-3f) Loop(vh, c, full, trail, i, Color.Lerp(new Color(0.9f, 0.25f, 0.15f, 0.7f), Ember, hurtFlash), 0.6f);
-                // the life: a loop tied of the scarf's strands; a wound unties it a quarter at a time
+                float angle = (below ? -58f : 46f) * Mathf.Deg2Rad + 0.1f * Mathf.Sin(i * 1.7f);
+                var dir = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle));
+                // the stalk, always (a bare one where the leaf has gone)
+                var stalkEnd = at + dir * 6f;
+                Line(vh, at, stalkEnd, 2.2f, 1.4f, InkC);
+                if (trail > full + 1e-3f) Leaf(vh, stalkEnd, dir, full, trail, Ember, Ember, i, 1f);
                 if (full > 0f)
                 {
-                    var tint = Color.Lerp(Color.white, Ember, 0.4f * low + 0.6f * hurtFlash);
-                    Loop(vh, c, 0f, full, i, tint, 1f);
-                    if (full >= 0.999f) Tails(vh, c, i);
+                    var glow = Color.Lerp(Color.white, new Color(1f, 0.6f, 0.5f, 1f), 0.5f * low + 0.6f * hurtFlash);
+                    Leaf(vh, stalkEnd, dir, 0f, full, Dark * glow, Mid * glow, i, 1f);
                 }
             }
-            if (shards > 0)
+            // leaves lost a moment ago, grey, falling and turning
+            foreach (var f in falls)
             {
-                // the next life being tied, a quarter for every shard found
-                var c = new Vector2(r.xMin + Radius + 6f + n * Spacing - 12f, r.yMax - Radius);
-                Arc(vh, c, Radius * 0.5f, 1.6f, 0f, 1f, new Color(0.42f, 0.4f, 0.4f, 0.6f), 91);
-                LoopAt(vh, c, Radius * 0.5f, 0f, shards / 4f, 91, Color.white, 0.55f);
+                int i = (int)f.x;
+                float t = (time - f.y) / FallSeconds;
+                var at = Node(i, r, out bool below);
+                float angle = (below ? -58f : 46f) * Mathf.Deg2Rad - t * 2.2f;
+                var dir = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle));
+                var pos = at + new Vector2(Mathf.Sin(t * 5f) * 8f + t * 10f, -t * 46f);
+                var c = Ashen; c.a *= 1f - t;
+                Leaf(vh, pos, dir, 0f, 1f, c, c, i, 1f - 0.2f * t);
             }
         }
 
-        /// <summary>The scarf's strands, from dark carmine under to bright on top, translucent, laid over one another.</summary>
-        static readonly Color[] StrandColours =
+        /// <summary>The twig: an ink stroke tapering from the corner out, a little uneven, with a knot at each leaf.</summary>
+        void Twig(VertexHelper vh, Rect r, float length)
         {
-            new Color(0.3f, 0.0f, 0.03f, 0.85f), new Color(0.55f, 0.02f, 0.05f, 0.75f),
-            new Color(0.78f, 0.04f, 0.07f, 0.7f), new Color(0.95f, 0.1f, 0.1f, 0.6f),
-        };
-
-        void Loop(VertexHelper vh, Vector2 c, float f0, float f1, int seed, Color tint, float widthScale)
-            => LoopAt(vh, c, Radius, f0, f1, seed, tint, widthScale);
+            const int seg = 40;
+            int start = vh.currentVertCount;
+            for (int k = 0; k <= seg; k++)
+            {
+                float u = k / (float)seg;
+                float x = r.xMin + u * length;
+                float y = TwigY(r, u * length);
+                float w = Mathf.Lerp(7f, 2.6f, u) * (1f + 0.12f * Mathf.Sin(u * 37f));
+                vh.AddVert(new Vector3(x, y + w * 0.5f), InkC, Vector4.zero);
+                vh.AddVert(new Vector3(x, y - w * 0.5f), InkC, Vector4.zero);
+                if (k > 0)
+                {
+                    int i0 = start + (k - 1) * 2, i1 = start + k * 2;
+                    vh.AddTriangle(i0, i1, i0 + 1); vh.AddTriangle(i0 + 1, i1, i1 + 1);
+                }
+            }
+            // a dark wash under it, so it reads on the pale mist
+        }
 
         /// <summary>
-        /// A loop tied of the scarf's strands round <paramref name="c"/>, from <paramref name="f0"/> to <paramref name="f1"/>
-        /// of the way round (from the top, clockwise): four translucent strands twisting over and under one another, their
-        /// width wavering; where the loop is untied (a wound) the strands part and fray at the cut.
+        /// A crimson leaf from its stalk along <paramref name="dir"/>, as the scarf's cloth: a dark underside, the crimson
+        /// over it, a bright gloss along one half, a dark midrib. Only from <paramref name="f0"/> to <paramref name="f1"/>
+        /// of its length is drawn (a torn leaf: the rest is gone, its edge ragged).
         /// </summary>
-        static void LoopAt(VertexHelper vh, Vector2 c, float radius, float f0, float f1, int seed, Color tint, float widthScale)
+        static void Leaf(VertexHelper vh, Vector2 baseAt, Vector2 dir, float f0, float f1, Color under, Color over, int seed, float size)
         {
             if (f1 - f0 < 1e-3f) return;
-            float scale = radius / Radius;
-            for (int s = 0; s < StrandColours.Length; s++)
+            float L = LeafLength * size, W = LeafWidth * size;
+            var side = new Vector2(-dir.y, dir.x);
+            const int seg = 14;
+            // the outline's half-width along the leaf: round at the base, broadest a third along, pointed at the tip
+            float Half(float u) => W * 0.5f * Mathf.Sin(Mathf.Pow(Mathf.Clamp01(u), 0.75f) * Mathf.PI) * (1f + 0.05f * Mathf.Sin(u * 20f + seed));
+            for (int layer = 0; layer < 3; layer++)
             {
-                float k = s / (StrandColours.Length - 1f);
-                var col = StrandColours[s] * tint; col.a = StrandColours[s].a * tint.a;
-                int seg = Mathf.Max(4, Mathf.CeilToInt(48 * (f1 - f0)));
+                var col = layer == 0 ? under : layer == 1 ? over : Bright;
+                if (layer == 2) col.a *= over.a;   // (the gloss fades with the leaf)
+                float shrink = layer == 0 ? 1f : layer == 1 ? 0.86f : 0.5f;
+                float shift = layer == 2 ? 0.1f : 0f;   // the gloss on one half
                 int start = vh.currentVertCount;
-                float phase = seed * 1.9f + s * 1.3f;
-                for (int j = 0; j <= seg; j++)
+                for (int k = 0; k <= seg; k++)
                 {
-                    float f = Mathf.Lerp(f0, f1, j / (float)seg);
-                    float a = Mathf.PI * 0.5f - f * Mathf.PI * 2f;
-                    // the strands cross over each other as they go round (a twisted cord)
-                    float twist = Mathf.Sin(f * 9f + phase);
-                    // at an untied end (a wound's cut) they part and thin to loose threads
-                    float toEnd = f1 < 0.999f ? Mathf.Clamp01((f1 - f) / 0.12f) : 1f;
-                    float fray = (1f - toEnd) * (k - 0.5f) * 9f * scale;
-                    float rr = radius + (k - 0.5f) * 8f * twist * scale + fray;
-                    float face = 0.45f + 0.55f * Mathf.Abs(Mathf.Cos(f * 9f + phase));
-                    float w = (6.5f + 3f * Mathf.Sin(f * 13f + phase)) * scale * widthScale * face * (0.3f + 0.7f * toEnd);
-                    var d = new Vector2(Mathf.Cos(a), Mathf.Sin(a));
-                    var cc = col; cc.a *= 0.75f + 0.25f * face;
-                    var gloss = Color.Lerp(cc, new Color(1f, 0.6f, 0.55f, cc.a), 0.35f * k * k * face);
-                    vh.AddVert(c + d * (rr + w * 0.5f), gloss, Vector4.zero);
-                    vh.AddVert(c + d * (rr - w * 0.5f), cc, Vector4.zero);
-                    if (j > 0)
+                    float u = Mathf.Lerp(f0, f1, k / (float)seg);
+                    float h = Half(u) * shrink;
+                    var p = baseAt + dir * (u * L);
+                    vh.AddVert(p + side * (h + shift * W), col, Vector4.zero);
+                    vh.AddVert(p - side * (h * (layer == 2 ? 0.1f : 1f) - shift * W), col, Vector4.zero);
+                    if (k > 0)
                     {
-                        int i0 = start + (j - 1) * 2, i1 = start + j * 2;
+                        int i0 = start + (k - 1) * 2, i1 = start + k * 2;
                         vh.AddTriangle(i0, i1, i0 + 1); vh.AddTriangle(i0 + 1, i1, i1 + 1);
                     }
                 }
             }
-        }
-
-        /// <summary>A whole life's loop is tied: two short ends of the strands hang from the knot at its bottom.</summary>
-        static void Tails(VertexHelper vh, Vector2 c, int seed)
-        {
-            for (int t = 0; t < 2; t++)
+            // a torn end: ragged teeth of the leaf left standing past the cut
+            if (f1 < 0.999f)
             {
-                var col = StrandColours[1 + t * 2];
-                int start = vh.currentVertCount;
-                const int seg = 8;
-                for (int j = 0; j <= seg; j++)
+                float h = Half(f1);
+                var cut = baseAt + dir * (f1 * L);
+                const int teeth = 4;
+                for (int j = 0; j < teeth; j++)
                 {
-                    float u = j / (float)seg;
-                    float x = c.x + (t == 0 ? -1f : 1f) * (3f + 8f * u) + Mathf.Sin(u * 4f + seed + t) * 2f;
-                    float y = c.y - Radius - 2f - 13f * u;
-                    float w = 4f * (1f - u * 0.8f);
-                    var cc = col; cc.a *= 1f - u * 0.6f;
-                    vh.AddVert(new Vector3(x - w * 0.5f, y), cc, Vector4.zero);
-                    vh.AddVert(new Vector3(x + w * 0.5f, y), cc, Vector4.zero);
-                    if (j > 0)
-                    {
-                        int i0 = start + (j - 1) * 2, i1 = start + j * 2;
-                        vh.AddTriangle(i0, i1, i0 + 1); vh.AddTriangle(i0 + 1, i1, i1 + 1);
-                    }
+                    var a = cut + side * Mathf.Lerp(h, -h, j / (float)teeth);
+                    var b = cut + side * Mathf.Lerp(h, -h, (j + 1f) / teeth);
+                    float reach = L * (((j + seed) & 1) == 0 ? 0.09f : 0.035f);
+                    var tipAt = (a + b) * 0.5f + dir * reach;
+                    int t0 = vh.currentVertCount;
+                    vh.AddVert(a, under, Vector4.zero); vh.AddVert(b, under, Vector4.zero); vh.AddVert(tipAt, under, Vector4.zero);
+                    vh.AddTriangle(t0, t0 + 1, t0 + 2);
                 }
             }
+            // the midrib
+            Line(vh, baseAt + dir * (f0 * L), baseAt + dir * (Mathf.Min(f1, 0.92f) * L), 1.4f, 0.5f, new Color(0.2f, 0f, 0.02f, 0.85f * over.a));
         }
 
-        /// <summary>A filled slice of a disc from <paramref name="f0"/> to <paramref name="f1"/> of the way round (from
-        /// the top, clockwise), its rim a little uneven.</summary>
-        static void Disc(VertexHelper vh, Vector2 c, float radius, float f0, float f1, Color col, int seed)
+        /// <summary>The bud for the next life: two dark sepals and the crimson swelling between, bigger with every shard.</summary>
+        static void Bud(VertexHelper vh, Vector2 at, float grown, int seed)
         {
-            if (f1 - f0 < 1e-3f) return;
-            int seg = Mathf.Max(3, Mathf.CeilToInt(40 * (f1 - f0)));
+            // a small leaf still folded, pointing on along the twig; it unfolds into the next leaf on the fourth shard
+            float angle = 18f * Mathf.Deg2Rad;
+            var dir = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle));
+            if (grown <= 0f) { Ellipse(vh, at + dir * 3f, 4f, 2.6f, InkC); return; }
+            float size = 0.22f + 0.4f * grown;
+            Leaf(vh, at, dir, 0f, 1f, Dark, Mid, seed, size);
+            // the sepals holding it, dark
+            var side = new Vector2(-dir.y, dir.x);
+            float s = LeafLength * size;
+            Line(vh, at, at + dir * (s * 0.35f) + side * (s * 0.22f), 2f, 0.5f, InkC);
+            Line(vh, at, at + dir * (s * 0.35f) - side * (s * 0.22f), 2f, 0.5f, InkC);
+        }
+
+        static void Line(VertexHelper vh, Vector2 a, Vector2 b, float w0, float w1, Color col)
+        {
+            var d = (b - a).normalized; var n = new Vector2(-d.y, d.x);
+            int i = vh.currentVertCount;
+            vh.AddVert(a + n * w0 * 0.5f, col, Vector4.zero); vh.AddVert(a - n * w0 * 0.5f, col, Vector4.zero);
+            vh.AddVert(b - n * w1 * 0.5f, col, Vector4.zero); vh.AddVert(b + n * w1 * 0.5f, col, Vector4.zero);
+            vh.AddTriangle(i, i + 1, i + 2); vh.AddTriangle(i, i + 2, i + 3);
+        }
+
+        static void Disc(VertexHelper vh, Vector2 c, float radius, Color col) => Ellipse(vh, c, radius, radius, col);
+
+        static void Ellipse(VertexHelper vh, Vector2 c, float rx, float ry, Color col)
+        {
+            const int seg = 16;
             int centre = vh.currentVertCount;
             vh.AddVert(c, col, Vector4.zero);
             for (int k = 0; k <= seg; k++)
             {
-                float f = Mathf.Lerp(f0, f1, k / (float)seg);
-                float a = Mathf.PI * 0.5f - f * Mathf.PI * 2f;
-                float rr = radius * (1f + 0.05f * Mathf.Sin(a * 5f + seed));
-                vh.AddVert(c + new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * rr, col, Vector4.zero);
+                float a = Mathf.PI * 2f * k / seg;
+                vh.AddVert(c + new Vector2(Mathf.Cos(a) * rx, Mathf.Sin(a) * ry), col, Vector4.zero);
                 if (k > 0) vh.AddTriangle(centre, centre + k, centre + k + 1);
-            }
-        }
-
-        /// <summary>
-        /// A ring painted in one stroke of a brush: it starts thick (where the brush came down), runs round thinning,
-        /// and stops short of where it began - the gap where the brush lifted - its width wavering as ink does.
-        /// </summary>
-        static void Enso(VertexHelper vh, Vector2 c, float radius, float stroke, Color col, int seed, float reach = 0.9f)
-        {
-            const int seg = 56;
-            int start = vh.currentVertCount;
-            float startAngle = 1.9f + seed * 0.37f;
-            for (int k = 0; k <= seg; k++)
-            {
-                float u = k / (float)seg * reach;
-                float a = startAngle - u * Mathf.PI * 2f;
-                float w = stroke * (1.25f - 0.7f * u) * (1f + 0.18f * Mathf.Sin(u * 31f + seed)) * Mathf.Clamp01(k / 2f + 0.3f);
-                float rr = radius * (1f + 0.04f * Mathf.Sin(u * 9f + seed * 1.7f));
-                var dir = new Vector2(Mathf.Cos(a), Mathf.Sin(a));
-                var cc = col; cc.a *= 0.75f + 0.25f * Mathf.Clamp01(1.2f - u);
-                vh.AddVert(c + dir * (rr + w * 0.5f), cc, Vector4.zero);
-                vh.AddVert(c + dir * (rr - w * 0.5f), cc, Vector4.zero);
-                if (k > 0)
-                {
-                    int i0 = start + (k - 1) * 2, i1 = start + k * 2;
-                    vh.AddTriangle(i0, i1, i0 + 1); vh.AddTriangle(i0 + 1, i1, i1 + 1);
-                }
-            }
-        }
-
-        static void Arc(VertexHelper vh, Vector2 c, float radius, float w, float f0, float f1, Color col, int seed)
-        {
-            if (f1 - f0 < 1e-3f) return;
-            int seg = Mathf.Max(2, Mathf.CeilToInt(40 * (f1 - f0)));
-            int start = vh.currentVertCount;
-            for (int k = 0; k <= seg; k++)
-            {
-                float f = Mathf.Lerp(f0, f1, k / (float)seg);
-                float a = Mathf.PI * 0.5f - f * Mathf.PI * 2f;
-                var dir = new Vector2(Mathf.Cos(a), Mathf.Sin(a));
-                vh.AddVert(c + dir * (radius + w * 0.5f), col, Vector4.zero);
-                vh.AddVert(c + dir * (radius - w * 0.5f), col, Vector4.zero);
-                if (k > 0)
-                {
-                    int i0 = start + (k - 1) * 2, i1 = start + k * 2;
-                    vh.AddTriangle(i0, i1, i0 + 1); vh.AddTriangle(i0 + 1, i1, i1 + 1);
-                }
             }
         }
     }

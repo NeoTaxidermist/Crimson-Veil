@@ -6,15 +6,15 @@ using UnityEngine.UI;
 namespace CrimsonVeil.UI
 {
     /// <summary>
-    /// The HUD (v0.113, the user's choice): life in the top-left corner as rings of ink filled with crimson
-    /// (<see cref="LifeRings"/>); the scarf's strength at the bottom in the middle as the scarf itself, a fluttering
+    /// The HUD (v0.113, the user's choice): life in the top-left corner as crimson leaves on a twig
+    /// (<see cref="LifeLeaves"/>); the scarf's strength at the bottom in the middle as the scarf itself, a fluttering
     /// ribbon of flame with the weapons' costs marked on it and the mend knot at its start (<see cref="EnergyScarf"/>);
     /// the crimson carried in the bottom-right corner (<see cref="ProgressHud"/>). (Until v0.112 a scarf in the corner
     /// was the life, a thread under it the strength.) Created automatically when the hero comes to life.
     /// </summary>
     public sealed class ScarfHud : MonoBehaviour
     {
-        public LifeRings Life { get; private set; }
+        public LifeLeaves Life { get; private set; }
         public EnergyScarf Energy { get; private set; }
 
         PlayerHealth health;
@@ -38,7 +38,7 @@ namespace CrimsonVeil.UI
             var hud = go.AddComponent<ScarfHud>();
 
             // (each on a canvas of its own: the scarf's flutter, redrawn, re-batches only itself)
-            hud.Life = Widget<LifeRings>(go.transform, "Life", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(36f, -30f), new Vector2(520f, 80f));
+            hud.Life = Widget<LifeLeaves>(go.transform, "Life", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(36f, -30f), new Vector2(520f, 80f));
             hud.Energy = Widget<EnergyScarf>(go.transform, "Energy", new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 58f), new Vector2(620f, 64f));
             Minimap.Create(go.transform);   // the map, on TAB
             PlaytestLog.Create(go);         // the playtest's times and deaths, written to Playtests/
@@ -65,7 +65,7 @@ namespace CrimsonVeil.UI
 
         void Awake()
         {
-            if (Life == null) Life = GetComponentInChildren<LifeRings>();
+            if (Life == null) Life = GetComponentInChildren<LifeLeaves>();
             if (Energy == null) Energy = GetComponentInChildren<EnergyScarf>();
         }
 

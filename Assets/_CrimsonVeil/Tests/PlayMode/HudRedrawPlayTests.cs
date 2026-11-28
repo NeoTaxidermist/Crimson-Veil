@@ -55,6 +55,33 @@ namespace CrimsonVeil.Tests
             Assert.IsNotNull(rings.GetComponent<Canvas>());
         }
 
+        [UnityTest]
+        public IEnumerator ALeafLost_FallsAway_ThenTheTwigStandsStill()
+        {
+            var leaves = hud.Life;
+            leaves.maxHealth = 5f; leaves.health = leaves.trailingHealth = 5f;
+            yield return Wait(0.2f);
+            leaves.health = leaves.trailingHealth = 3.5f;   // the fifth leaf lost whole, the fourth torn
+            yield return null;
+            Assert.AreEqual(1, leaves.Falling, "only the whole leaf lost falls, not the torn one");
+            int was = leaves.Redraws;
+            yield return Wait(0.3f);
+            Assert.Greater(leaves.Redraws, was + 3, "drawn while it falls");
+            yield return Wait(LifeLeaves.FallSeconds);
+            Assert.AreEqual(0, leaves.Falling, "gone");
+            was = leaves.Redraws;
+            yield return Wait(0.5f);
+            Assert.LessOrEqual(leaves.Redraws - was, 1, "then still again");
+
+            // the bud: every shard redraws it once, a new life lengthens the twig by a leaf
+            was = leaves.Redraws;
+            leaves.shards = 2;
+            yield return null; yield return null;
+            Assert.Greater(leaves.Redraws, was, "a shard swells the bud");
+            var r = leaves.rectTransform.rect;
+            Assert.Greater(LifeLeaves.Node(5, r, out _).x, LifeLeaves.Node(4, r, out _).x + 20f, "the sixth leaf grows on beyond the fifth");
+        }
+
         [Test]
         public void TheScarf_MarksTheWeaponsCosts_NearerOnALongerScarf()
         {

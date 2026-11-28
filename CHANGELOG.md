@@ -5,6 +5,10 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.114.3] – 2026-11-28
+### Změněno
+- **Životy čitelné i na tmavém pozadí.** Snímek ze hry ukázal, že v ruinách je levý horní roh na černé skále. Černá větvička, obrysy prázdných listů a náhled obvazu tam nebyly vidět. Za větvičkou je teď jemná světlá mlha jako tah štětce na papíře: nejhustší podél větvičky, do stran a ke koncům mizí, na světlé mlze ve hře skoro není znát.
+
 ## [0.114.2] – 2026-11-28
 ### Změněno
 - **Obvaz přímo u listů.** Uživatel: „Jo, tohle nějak vylepši.“

@@ -110,6 +110,7 @@ namespace CrimsonVeil.UI
 
             // the twig: from its base at the corner to beyond the last leaf, where the bud is; thick at the base
             float length = 22f + (n - 1) * Spacing + 34f;
+            Wash(vh, r, length);
             Twig(vh, r, length);
             // the bud for the next life at the tip, swelling with the shards (where the next leaf will grow)
             var tip = new Vector2(r.xMin + length, TwigY(r, length));
@@ -170,6 +171,39 @@ namespace CrimsonVeil.UI
                 centre += new Vector2(Mathf.Sin(fall * 5f) * 7f + fall * 12f, -fall * fall * 70f - fall * 10f);
                 var c = Color.Lerp(Ember, Ashen, Mathf.Clamp01(t * 4f)); c.a *= 1f - t * t;
                 Leaf(vh, centre - dir * mid, dir, p.f0, p.f1, c, c, p.leaf, 1f, false);
+            }
+        }
+
+        /// <summary>
+        /// A soft wash of pale mist behind the twig, as a brushstroke on paper (v0.114.3): in the game the corner is often
+        /// on black rock, where the ink twig, the empty outlines and the promise of a binding vanished. Densest along the
+        /// twig, fading out above and below and at both ends; on pale mist it is barely seen.
+        /// </summary>
+        static void Wash(VertexHelper vh, Rect r, float length)
+        {
+            const int cols = 24;
+            float[] rows = { -60f, -44f, -28f, -12f, 0f, 12f, 28f, 44f, 58f };
+            float[] alpha = { 0f, 0.07f, 0.2f, 0.33f, 0.38f, 0.33f, 0.2f, 0.07f, 0f };
+            var paper = new Color(0.86f, 0.84f, 0.8f, 1f);
+            float x0 = r.xMin - 16f, x1 = r.xMin + length + 26f;
+            int start = vh.currentVertCount;
+            for (int k = 0; k <= cols; k++)
+            {
+                float u = k / (float)cols, x = Mathf.Lerp(x0, x1, u);
+                float ends = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(u * 4f)) * Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((1f - u) * 3f));
+                float y = TwigY(r, x - r.xMin);
+                for (int j = 0; j < rows.Length; j++)
+                {
+                    float wobble = Mathf.Abs(rows[j]) * 0.15f * Mathf.Sin(u * 9f + j * 2.3f);   // an uneven, misty edge
+                    var c = paper; c.a = alpha[j] * ends;
+                    vh.AddVert(new Vector3(x, y + rows[j] + wobble), c, Vector4.zero);
+                }
+                if (k == 0) continue;
+                for (int j = 0; j < rows.Length - 1; j++)
+                {
+                    int a = start + (k - 1) * rows.Length + j, b = start + k * rows.Length + j;
+                    vh.AddTriangle(a, b, a + 1); vh.AddTriangle(a + 1, b, b + 1);
+                }
             }
         }
 

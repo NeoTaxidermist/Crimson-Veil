@@ -5,6 +5,10 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.114.6] – 2026-11-28
+### Změněno
+- **Větvička je vidět i na tmavém.** Uživatel: „Na tmavém ale není vidět ta větvička.“ Větvička, stopky listů a poupě mají barvu suché větve osvětlené shora: dole jsou uhlové, k horní hraně plynule přecházejí do popelavě šedé. Na černé skále je tak vidět a na světlé mlze zůstává tmavá. Ověřeno ve Full HD na obou pozadích.
+
 ## [0.114.5] – 2026-11-28
 ### Změněno
 - **Životy hladce, bez zubů.** Uživatel: „Je to odporný. A zubatý.“

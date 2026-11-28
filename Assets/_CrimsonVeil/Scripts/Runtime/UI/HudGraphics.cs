@@ -122,7 +122,7 @@ namespace CrimsonVeil.UI
                 var at = Node(i, r, out bool below);
                 var dir = LeafDir(i, below);
                 var stalkEnd = at + dir * 5f;
-                Stroke(vh, at - dir * 1.5f, stalkEnd + dir * 1.5f, 2.6f, 1.8f, InkC);
+                Stroke(vh, at - dir * 1.5f, stalkEnd + dir * 1.5f, 2.6f, 1.8f, Color.white, true);
                 float full = Mathf.Clamp01(health - i);
                 if (full < 0.999f) Leaf(vh, stalkEnd, dir, full, 1f, LeafAtlas.Empty, Color.white);
                 if (full > 0f)
@@ -198,11 +198,12 @@ namespace CrimsonVeil.UI
         /// <summary>
         /// A line of ink with smooth edges: a quad over the soft stroke in the atlas, wide enough to hold its fringe.
         /// </summary>
-        static void Stroke(VertexHelper vh, Vector2 a, Vector2 b, float w0, float w1, Color col)
+        static void Stroke(VertexHelper vh, Vector2 a, Vector2 b, float w0, float w1, Color col, bool bark = false)
         {
             var d = (b - a).normalized; var n = new Vector2(-d.y, d.x);
+            if (bark && n.y < 0f) n = -n;   // (its lit side up)
             float k = LeafAtlas.StrokeSpread;
-            var s = LeafAtlas.StrokeCell;
+            var s = bark ? LeafAtlas.BarkCell : LeafAtlas.StrokeCell;
             float u = s.center.x;
             int i = vh.currentVertCount;
             vh.AddVert(a + n * w0 * 0.5f * k, col, new Vector4(u, s.yMax));
@@ -216,8 +217,9 @@ namespace CrimsonVeil.UI
         static void Twig(VertexHelper vh, Rect r, float length)
         {
             const int seg = 40;
-            var s = LeafAtlas.StrokeCell;
+            var s = LeafAtlas.BarkCell;
             float k = LeafAtlas.StrokeSpread, u0 = s.center.x;
+            var white = Color.white;
             int start = vh.currentVertCount;
             for (int j = 0; j <= seg; j++)
             {
@@ -225,8 +227,8 @@ namespace CrimsonVeil.UI
                 float x = r.xMin + 2f + u * (length - 2f);
                 float y = TwigY(r, x - r.xMin);
                 float w = Mathf.Lerp(6.5f, 2.4f, Mathf.Pow(u, 0.8f)) * (1f + 0.1f * Mathf.Sin(u * 31f));
-                vh.AddVert(new Vector3(x, y + w * 0.5f * k), InkC, new Vector4(u0, s.yMax));
-                vh.AddVert(new Vector3(x, y - w * 0.5f * k), InkC, new Vector4(u0, s.yMin));
+                vh.AddVert(new Vector3(x, y + w * 0.5f * k), white, new Vector4(u0, s.yMax));
+                vh.AddVert(new Vector3(x, y - w * 0.5f * k), white, new Vector4(u0, s.yMin));
                 if (j > 0)
                 {
                     int i0 = start + (j - 1) * 2, i1 = start + j * 2;
@@ -260,13 +262,13 @@ namespace CrimsonVeil.UI
         {
             float angle = 18f * Mathf.Deg2Rad;
             var dir = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle));
-            if (grown <= 0f) { Leaf(vh, at - dir * 1f, dir, 0f, 1f, LeafAtlas.Pale, InkC, 0.2f); return; }
+            if (grown <= 0f) { Leaf(vh, at - dir * 1f, dir, 0f, 1f, LeafAtlas.Pale, new Color(0.34f, 0.31f, 0.29f, 1f), 0.2f); return; }
             float size = 0.24f + 0.4f * grown;
             Leaf(vh, at, dir, 0f, 1f, LeafAtlas.Full, Color.white, size);
             var side = new Vector2(-dir.y, dir.x);
             float s = LeafLength * size;
-            Stroke(vh, at, at + dir * (s * 0.32f) + side * (s * 0.2f), 2f, 0.8f, InkC);
-            Stroke(vh, at, at + dir * (s * 0.32f) - side * (s * 0.2f), 2f, 0.8f, InkC);
+            Stroke(vh, at, at + dir * (s * 0.32f) + side * (s * 0.2f), 2f, 0.8f, Color.white, true);
+            Stroke(vh, at, at + dir * (s * 0.32f) - side * (s * 0.2f), 2f, 0.8f, Color.white, true);
         }
     }
 
@@ -286,6 +288,8 @@ namespace CrimsonVeil.UI
         /// <summary>UV cells: the crimson leaf, its empty place, a pale leaf to tint, the soft stroke.</summary>
         public static readonly Rect Full = Cell(0), Empty = Cell(1), Pale = Cell(2);
         public static readonly Rect StrokeCell = new Rect(208f / Size, 0f, 32f / Size, 32f / Size);
+        /// <summary>The same stroke as bark: a dry branch lit from above (its top at the cell's top).</summary>
+        public static readonly Rect BarkCell = new Rect(208f / Size, 32f / Size, 32f / Size, 32f / Size);
         /// <summary>A quad over a leaf cell is this wide (each side of the midrib) per unit of the leaf's length.</summary>
         public const float CellHalfWidth = (CellW * 0.5f) / Len;
         /// <summary>The stroke cell is this much wider than the solid ink it holds (its soft fringe).</summary>
@@ -350,6 +354,12 @@ namespace CrimsonVeil.UI
                 float d = Mathf.Abs(y + 0.5f - 16f) - 10f;
                 float a = Mathf.Clamp01(0.5f - d / 1.6f);
                 for (int x = 200; x < 248; x++) px[y * Size + x] = new Color(1f, 1f, 1f, a);
+                // the bark (v0.114.6): the same stroke as a dry branch lit from above, charcoal below, ash-grey along
+                // its top, so the twig shows on black rock and stays dark on pale mist
+                float t = Mathf.Clamp01((y + 0.5f - 6f) / 20f);
+                var bark = Color.Lerp(new Color(0.07f, 0.06f, 0.06f), new Color(0.5f, 0.46f, 0.43f), Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.3f, 1f, t)));
+                bark.a = a;
+                for (int x = 200; x < 248; x++) px[(y + 32) * Size + x] = bark;
             }
             var tex = new Texture2D(Size, Size, TextureFormat.RGBA32, true) { name = "LifeLeaves", wrapMode = TextureWrapMode.Clamp, filterMode = FilterMode.Trilinear, anisoLevel = 2, hideFlags = HideFlags.DontSave };
             tex.SetPixels32(px);

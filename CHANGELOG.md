@@ -5,6 +5,13 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.106.4] – 2026-11-28
+### Změněno
+- `Docs/Rozpracovano.md`: Lenovo převzalo práci od DELLu. Hook při každé zprávě je na Lenovu ověřený (sám stáhl v0.100.19–v0.106.3). Opravený zastaralý odkaz na další práci.
+
+### Testy
+- Jen dokumentace. Unity po stažení změn zkompilovalo bez chyb, testy se nespouštěly.
+
 ## [0.106.3] – 2026-11-27
 ### Změněno
 - `Docs/Rozpracovano.md`: DELL předal práci, nikdo teď nepracuje.

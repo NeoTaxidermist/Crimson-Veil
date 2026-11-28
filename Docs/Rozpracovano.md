@@ -10,7 +10,7 @@ Vývoj běží na dvou počítačích (**Lenovo** = hlavní, RTX 2060; **DELL** 
 - Nepracuj, pokud tu stojí, že druhý počítač má rozdělanou necommitnutou práci. Zeptej se uživatele.
 
 ## Teď pracuje
-Nikdo. DELL předal práci (uživatel 2026-11-27: „díky, předej práci“), vše je commitnuté a pushnuté, poslední verze v0.106.3. Lenovo i DELL volné.
+**Lenovo** (session „Crimson Veil – Lenovo“) od 2026-11-28. Uživatel řekl „Teď budeš pracovat ty“. DELL je volný.
 
 ## Poslední session
 
@@ -68,14 +68,16 @@ Nikdo. DELL předal práci (uživatel 2026-11-27: „díky, předej práci“), 
   - Uživatel vyzkouší úrovně kvality ve hře (menu → Nastavení → Obraz → Kvalita obrazu).
   - Cíl výkonu pro slabou grafiku podle uživatele „zatím nech být“.
 
-### Lenovo – 2026-11-27 (session „Crimson Veil – Lenovo“)
-- **O čem jsme mluvili:** výkon (v0.100.0: zrno tuše zapečené do textury, ~350 fps), příprava DELLu a předávka mezi počítači (v0.100.1–v0.100.5: `CLAUDE.md`, `Docs/NovyPocitac.md`, poznámky v `Docs/claude/`, napojení Blenderu).
-- **Hotovo:** `git pull` na v0.100.13, hooky předávky na Lenovu (v0.100.15–16).
-- **Hooky na Lenovu:** stálá session běží ve složce `C:\_ClaudeAI\unity` (je tam `.mcp.json` pro Unity a buildy). Na pokyn uživatele jsou proto hooky zkopírované do `C:\_ClaudeAI\unity\.claude\settings.json` s pevnými cestami `C:\Dev\CrimsonVeil\Tools\session-start.ps1` / `session-stop.ps1`. `C:\_ClaudeAI\unity\CLAUDE.md` načítá repozitářový `CLAUDE.md`. **Ověřeno po restartu aplikace Claude:** hook SessionStart proběhl a předal předávku i backlog. **Když se změní `.claude/settings.json` v repozitáři, je potřeba změnu přenést i sem.**
-- **Unity po restartu:** editor neběžel (běžel jen pomocný proces Unity Hubu `resources\unity.exe serve`, nezaměňovat) a server MCP for Unity na 8080 taky ne. Spuštěno ručně: server `uvx --from "mcpforunityserver==10.3.0" mcp-for-unity --transport http --http-url http://127.0.0.1:8080 --project-scoped-tools` a editor `Unity.exe -projectPath C:\Dev\CrimsonVeil`. Unity se připojilo samo za 20 s.
-- **Neověřeno:** hook při každé zprávě (`-OnPrompt`) na Lenovu se ještě neozval, protože od restartu DELL nic nepushnul. Stop hook se ještě sám nespustil, ručně funguje. Jestli uživatel vidí v telefonu obě sessions, ví jen on. Navržený test: na DELLu něco commitnout a pushnout, pak napsat Lenovu. Má se objevit blok `[git-sync: ...]`.
-- **Rozdělané:** nic. Uživatel řekl „předej práci“ (2026-11-27).
-- **Další krok:** podle uživatele. Nahoře v `Docs/Backlog.md` je ShieldMonk a benchmark na DELLu.
+### Lenovo – 2026-11-28 (session „Crimson Veil – Lenovo“)
+- **O čem jsme mluvili:** 2026-11-27 výkon (v0.100.0: zrno tuše zapečené do textury, ~350 fps), příprava DELLu a předávka mezi počítači (v0.100.1–v0.100.18). 2026-11-28 uživatel řekl „Teď budeš pracovat ty“, Lenovo převzalo práci od DELLu.
+- **Hotovo:**
+  - Převzetí: hook při každé zprávě (`-OnPrompt`) na Lenovu **funguje**. Při zprávě „Teď budeš pracovat ty“ sám stáhl 18 commitů z DELLu (v0.100.19–v0.106.3) a předal předávku.
+  - Unity na Lenovu načetlo změny bez chyb kompilace. Úrovně kvality jsou Mobile, Nízká, Střední, Vysoká.
+- **Hooky na Lenovu:** stálá session běží ve složce `C:\_ClaudeAI\unity` (je tam `.mcp.json` pro Unity a buildy). Hooky jsou proto zkopírované do `C:\_ClaudeAI\unity\.claude\settings.json` s pevnými cestami `C:\Dev\CrimsonVeil\Tools\session-start.ps1` / `session-stop.ps1`. `C:\_ClaudeAI\unity\CLAUDE.md` načítá repozitářový `CLAUDE.md`. **Když se změní `.claude/settings.json` v repozitáři, je potřeba změnu přenést i sem.**
+- **Unity po restartu aplikace Claude:** může neběžet editor (proces `resources\unity.exe serve` je jen pomocník Unity Hubu) ani server MCP for Unity na 8080. Postup je v `Docs/claude/unity-mcp-restart.md`.
+- **Neověřeno:** Stop hook se ještě sám nespustil, ručně funguje.
+- **Rozdělané:** nic, čeká se na pokyn uživatele.
+- **Další krok:** podle uživatele. Čeká se, až uživatel posoudí nové tvory (v0.103.0) a vyzkouší úrovně kvality. Ostatní je v `Docs/Backlog.md`.
 
 ## Stav
 - Větev `newFeatures`, do `main` se slučuje jen na pokyn uživatele.
@@ -83,7 +85,7 @@ Nikdo. DELL předal práci (uživatel 2026-11-27: „díky, předej práci“), 
 - **DELL je připravený k vývoji (2026-11-27):** Git 2.56.1, Unity 6000.3.28f1 + IL2CPP (navíc je tam 6000.6.11f1, projekt ho nepoužívá), Visual Studio 2026 s C++ a Windows SDK 10.0.26100, Blender 5.3 s doplňkem MCP od Blender Lab, uv 0.13.10 a Python 3.12.16, Smart App Control vypnuté. MCP for Unity a Blender MCP fungují, keep-awake běží, Remote Control pro nové sessions zapnutý. Úskalí jsou v `Docs/claude/dell-setup-pitfalls.md`.
 
 ## Další na řadě
-Všechno, co se má, může nebo čeká na rozhodnutí, je v **`Docs/Backlog.md`** (s dopady a odkazy). Nahoře v sekci „Musí se“: přestavba nepřátel (další je ShieldMonk) a benchmark na DELLu.
+Všechno, co se má, může nebo čeká na rozhodnutí, je v **`Docs/Backlog.md`** (s dopady a odkazy). V sekci „Musí se“ zbývá jen posouzení přestavěných tvorů uživatelem.
 
 ## Rozhodnutí uživatele, která ještě nejsou v CHANGELOGu
 - (zatím nic)

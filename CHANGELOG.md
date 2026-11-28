@@ -5,6 +5,13 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.113.3] – 2026-11-28
+### Změněno
+- `Docs/Rozpracovano.md`: životy v HUD dostanou nový tvar. Uživatel vybírá mezi uzly na šále a listy rudého stromu, obrázky obou návrhů dostal.
+
+### Testy
+- Jen dokumentace, testy se nespouštěly.
+
 ## [0.113.2] – 2026-11-28
 ### Změněno
 - **Životy v HUD jako smyčky šály.** Uživatel chtěl předělat i kruhy: „Taky předělat.“

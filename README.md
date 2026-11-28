@@ -64,7 +64,7 @@ Hra startuje do hlavního menu (Hrát, Nastavení, Konec). **Hrát** ukáže kap
 | **Štít** (držet) | **J** | LT |
 | Pauza / menu | Esc | Start |
 
-Zbraň se seslá a za 0,05 s udeří, ať už ji hrdina drží, nebo se teprve tvoří. Úder ho na chvilku přibije: do konce seku se neotočí ani neodejde. Stisk v posledních 0,3 s úderu naváže další, dřívější stisk naváže, když tlačítko držíš. Údery navazují do komba a mezi údery jde zbraň vyměnit: dokončující úder je tím silnější, čím víc zbraní kombo spojilo. Zbraně se hrdina učí od relikvií na podstavcích (v testovací místnosti vlevo od startu zná všechny). **HUD:** vlevo nahoře jsou životy jako karmínové listy na větvičce tuší. Prázdné místo zůstane jako obrys a žilky dělí list na čtvrtiny. Každý zásah ulomí přesně tolik, kolik vzal, a utržený kus zešedne a opadne. Obvaz nechá karmín dorůst. Pupen na konci větvičky roste s úlomky a ze čtvrtého se rozvine nový list. Dole uprostřed je síla jako šála ze skroucených pramenů se značkami cen zbraní a s uzlem pro obvázání rány. Vpravo dole je počet karmínových kapek.
+Zbraň se seslá a za 0,05 s udeří, ať už ji hrdina drží, nebo se teprve tvoří. Úder ho na chvilku přibije: do konce seku se neotočí ani neodejde. Stisk v posledních 0,3 s úderu naváže další, dřívější stisk naváže, když tlačítko držíš. Údery navazují do komba a mezi údery jde zbraň vyměnit: dokončující úder je tím silnější, čím víc zbraní kombo spojilo. Zbraně se hrdina učí od relikvií na podstavcích (v testovací místnosti vlevo od startu zná všechny). **HUD:** vlevo nahoře jsou životy jako karmínové listy na větvičce tuší. Prázdné místo zůstane jako obrys a žilky dělí list na čtvrtiny. Každý zásah ulomí přesně tolik, kolik vzal, a utržený kus zešedne a opadne. U kořene větvičky je obvaz: každý zásah ho ovine o čtvrtinu, a když je celý a chybí život, slabý karmín na listech ukáže, kolik obvázání (drž R) doplní. Pupen na konci větvičky roste s úlomky a ze čtvrtého se rozvine nový list. Dole uprostřed je síla jako šála ze skroucených pramenů se značkami cen zbraní a s uzlem pro obvázání rány. Vpravo dole je počet karmínových kapek.
 
 **Odezva boje:** zasažený nepřítel odskočí a chvíli se vzpamatovává, minutí nechá ve vzduchu stopu inkoustu (bez trestu), úder do štítu se odrazí a hrdina odskočí. Štít blokuje útoky všech nepřátel ze všech stran, a když ho zvedneš přesně ve chvíli úderu (do 0,2 s), útok odrazí a nepřítel zakolísá.
 
@@ -106,7 +106,7 @@ Tools/         benchmark, hooky předávky mezi počítači, keep-awake
 ```
 
 ## Testy
-Unity → Window → General → Test Runner: **701 EditMode** a **175 PlayMode** testů. PlayMode testy ověřují každý pohyb a kombo na skutečném prefabu hrdiny (`HeroMoveSetPlayTests`).
+Unity → Window → General → Test Runner: **701 EditMode** a **176 PlayMode** testů. PlayMode testy ověřují každý pohyb a kombo na skutečném prefabu hrdiny (`HeroMoveSetPlayTests`).
 
 ## Verze a CHANGELOG
 Každý commit má vlastní verzi podle [SemVer](https://semver.org/lang/cs/): sekci `## [X.Y.Z] – RRRR-MM-DD` v [CHANGELOG.md](CHANGELOG.md) a tag `vX.Y.Z`. Hlídají to git hooky v `.githooks/`:

@@ -94,6 +94,9 @@ namespace CrimsonVeil.UI
             Life.trailingHealth = trailing;
             Life.hurtFlash = flash;
             Life.shards = HeroProgress.Shards % HeroProgress.ShardsPerHeart;
+            Life.mend = HeroProgress.Mend;
+            Life.mendAmount = HeroProgress.HealAmount;
+            Life.mending = health.Mending;
             Energy.charge = veil != null ? veil.Charge.Value : 0f;
             Energy.capacity = veil != null ? veil.Charge.Capacity : 1f;
             Energy.mend = HeroProgress.Mend;

@@ -25,15 +25,23 @@ namespace CrimsonVeil.UI
         [Range(0f, 1f)] public float hurtFlash;
         /// <summary>Shards towards the next life (0..3): the bud at the twig's tip.</summary>
         public int shards;
+        /// <summary>The mend knot (0..1), how much one binding gives back, and how far the binding now held is (0..1).</summary>
+        public float mend, mendAmount = 1f, mending;
+
+        /// <summary>True when a wound can be bound now: the knot whole and life missing.</summary>
+        public bool CanMend => mend >= 1f - 1e-4f && health < maxHealth - 1e-3f && health > 0f;
 
         /// <summary>The twig's length per leaf (px) and a leaf's length.</summary>
         public const float Spacing = 36f, LeafLength = 44f, LeafWidth = 22f;
         public const float FallSeconds = 1.3f, MendGlowSeconds = 0.7f;
 
         static readonly Color InkC = new Color(0.03f, 0.03f, 0.035f, 1f);
-        static readonly Color Dark = new Color(0.32f, 0.0f, 0.03f, 0.92f);
-        static readonly Color Mid = new Color(0.72f, 0.03f, 0.06f, 0.85f);
-        static readonly Color Bright = new Color(1f, 0.2f, 0.16f, 0.55f);
+        static readonly Color Dark = new Color(0.28f, 0.02f, 0.04f, 0.95f);
+        static readonly Color Mid = new Color(0.58f, 0.05f, 0.08f, 0.9f);
+        static readonly Color Bright = new Color(0.95f, 0.42f, 0.36f, 0.3f);
+        static readonly Color Lit = new Color(0.86f, 0.3f, 0.24f, 0.95f);
+        static readonly Color Promise = new Color(0.62f, 0.08f, 0.1f, 0.2f);
+        static readonly Color MendGlow = new Color(1f, 0.6f, 0.5f, 0.45f);
         static readonly Color Ember = new Color(1f, 0.42f, 0.2f, 0.95f);
         static readonly Color Ashen = new Color(0.45f, 0.43f, 0.43f, 0.85f);
         static readonly Color Empty = new Color(0.03f, 0.03f, 0.035f, 0.22f);
@@ -50,7 +58,7 @@ namespace CrimsonVeil.UI
         readonly System.Collections.Generic.List<Piece> pieces = new System.Collections.Generic.List<Piece>();
         readonly System.Collections.Generic.List<Piece> mends = new System.Collections.Generic.List<Piece>();
 
-        float dHealth = -1f, dFlash, dMax; int dShards = -1;
+        float dHealth = -1f, dFlash, dMax, dMend = -1f, dMending; int dShards = -1;
         float time, lastHealth = -1f, lastMax = -1f;
 
         void Update()
@@ -71,7 +79,8 @@ namespace CrimsonVeil.UI
             pieces.RemoveAll(p => time - p.start > FallSeconds);
             mends.RemoveAll(p => time - p.start > MendGlowSeconds);
             bool low = health > 0f && health <= 1.01f;
-            if (health != dHealth || hurtFlash != dFlash || maxHealth != dMax || shards != dShards || low || pieces.Count > 0 || mends.Count > 0)
+            if (health != dHealth || hurtFlash != dFlash || maxHealth != dMax || shards != dShards || mend != dMend || mending != dMending
+                || low || CanMend || pieces.Count > 0 || mends.Count > 0)
                 SetVerticesDirty();
         }
 
@@ -93,7 +102,7 @@ namespace CrimsonVeil.UI
         protected override void OnPopulateMesh(VertexHelper vh)
         {
             Redraws++;
-            dHealth = health; dFlash = hurtFlash; dMax = maxHealth; dShards = shards;
+            dHealth = health; dFlash = hurtFlash; dMax = maxHealth; dShards = shards; dMend = mend; dMending = mending;
             vh.Clear();
             var r = rectTransform.rect;
             int n = Mathf.Max(1, Mathf.RoundToInt(maxHealth));
@@ -105,8 +114,16 @@ namespace CrimsonVeil.UI
             // the bud for the next life at the tip, swelling with the shards (where the next leaf will grow)
             var tip = new Vector2(r.xMin + length, TwigY(r, length));
             Bud(vh, tip, shards / 4f, n);
+            // the binding wound round the twig's base: the mend knot, a wrap for every blow that landed
+            float ready = CanMend ? 0.5f + 0.5f * Mathf.Sin(time * 3.5f) : 0f;
+            Binding(vh, r, mend, ready);
 
-            var glow = Color.Lerp(Color.white, new Color(1f, 0.6f, 0.5f, 1f), 0.5f * low + 0.6f * hurtFlash);
+            // a hit or the last leaf: the crimson lightens a moment (lighter, not more garish)
+            float lift = Mathf.Clamp01(0.35f * low + 0.5f * hurtFlash);
+            var under = Color.Lerp(Dark, Lit, lift * 0.5f);
+            var over = Color.Lerp(Mid, Lit, lift);
+            // what a binding would give back: a faint crimson promise on the empty leaves; held, it fills from the stalk
+            float promised = Mathf.Min(n, health + mendAmount), grown = health + mendAmount * Mathf.Clamp01(mending);
             for (int i = 0; i < n; i++)
             {
                 var at = Node(i, r, out bool below);
@@ -117,7 +134,14 @@ namespace CrimsonVeil.UI
                 float full = Mathf.Clamp01(health - i);
                 // its place: a faint ink outline of the whole leaf, so what is missing shows
                 if (full < 0.999f) Leaf(vh, stalkEnd, dir, full, 1f, Empty, Empty, i, 1f, false);
-                if (full > 0f) Leaf(vh, stalkEnd, dir, 0f, full, Dark * glow, Mid * glow, i, 1f, full < 0.999f);
+                if (full > 0f) Leaf(vh, stalkEnd, dir, 0f, full, under, over, i, 1f, full < 0.999f);
+                if (CanMend && full < 0.999f)
+                {
+                    float p1 = Mathf.Clamp01(promised - i), g1 = Mathf.Clamp01(Mathf.Min(grown, promised) - i);
+                    var pc = Promise; pc.a += 0.12f * ready;
+                    if (p1 > full) Leaf(vh, stalkEnd, dir, Mathf.Max(full, g1), p1, pc, pc, i, 1f, false);
+                    if (g1 > full) Leaf(vh, stalkEnd, dir, full, g1, Dark, Lit, i, 1f, false);
+                }
                 Veins(vh, stalkEnd, dir, full, i);
             }
             // a mended piece glows as it grows back
@@ -127,7 +151,7 @@ namespace CrimsonVeil.UI
                 float t = (time - m.start) / MendGlowSeconds;
                 var at = Node(m.leaf, r, out bool below);
                 var dir = LeafDir(m.leaf, below);
-                var c = Bright; c.a = 0.8f * (1f - t);
+                var c = MendGlow; c.a *= 1f - t;
                 Leaf(vh, at + dir * 6f, dir, m.f0, m.f1, c, c, m.leaf, 1f, false);
             }
             // the pieces a hit took: a moment glowing where they were, then grey, falling and turning
@@ -147,6 +171,26 @@ namespace CrimsonVeil.UI
                 var c = Color.Lerp(Ember, Ashen, Mathf.Clamp01(t * 4f)); c.a *= 1f - t * t;
                 Leaf(vh, centre - dir * mid, dir, p.f0, p.f1, c, c, p.leaf, 1f, false);
             }
+        }
+
+        /// <summary>
+        /// The mend knot as a crimson binding wound round the twig's base: four wraps, one tied by every blow that lands;
+        /// whole, two loose ends hang from it and it breathes while a wound waits to be bound.
+        /// </summary>
+        static void Binding(VertexHelper vh, Rect r, float mend, float ready)
+        {
+            for (int q = 0; q < 4; q++)
+            {
+                float x = r.xMin + 3f + q * 5f, y = TwigY(r, x - r.xMin);
+                bool tied = mend >= (q + 1) / 4f - 1e-4f;
+                var c = tied ? Color.Lerp(Mid, Lit, 0.35f + 0.5f * ready) : new Color(0.5f, 0.47f, 0.46f, 0.6f);
+                Line(vh, new Vector2(x - 2.5f, y + 8f), new Vector2(x + 2.5f, y - 8f), tied ? 3.8f : 1.6f, tied ? 3.8f : 1.6f, c);
+            }
+            if (mend < 1f - 1e-4f) return;
+            float y0 = TwigY(r, 12f);
+            var end = Color.Lerp(Mid, Lit, 0.35f + 0.5f * ready);
+            Line(vh, new Vector2(r.xMin + 12f, y0 - 4f), new Vector2(r.xMin + 9f, y0 - 15f - 2f * ready), 2.6f, 1f, end);
+            Line(vh, new Vector2(r.xMin + 14f, y0 - 4f), new Vector2(r.xMin + 18f, y0 - 13f - 2f * ready), 2.6f, 1f, end);
         }
 
         /// <summary>Three side veins split a leaf into quarters: dark on the crimson, faint on what is missing.</summary>
@@ -209,15 +253,23 @@ namespace CrimsonVeil.UI
                 var col = layer == 0 ? under : layer == 1 ? over : Bright;
                 if (layer == 2) col.a *= over.a;   // (the gloss fades with the leaf)
                 float shrink = layer == 0 ? 1f : layer == 1 ? 0.86f : 0.5f;
-                float shift = layer == 2 ? 0.1f : 0f;   // the gloss on one half
                 int start = vh.currentVertCount;
                 for (int k = 0; k <= seg; k++)
                 {
                     float u = Mathf.Lerp(f0, f1, k / (float)seg);
                     float h = Half(u) * shrink;
                     var p = baseAt + dir * (u * L);
-                    vh.AddVert(p + side * (h + shift * W), col, Vector4.zero);
-                    vh.AddVert(p - side * (h * (layer == 2 ? 0.1f : 1f) - shift * W), col, Vector4.zero);
+                    if (layer == 2)
+                    {
+                        // the gloss: from beside the midrib to short of the edge, on one half only
+                        vh.AddVert(p + side * (h * 1.3f), col, Vector4.zero);
+                        vh.AddVert(p + side * (h * 0.25f), col, Vector4.zero);
+                    }
+                    else
+                    {
+                        vh.AddVert(p + side * h, col, Vector4.zero);
+                        vh.AddVert(p - side * h, col, Vector4.zero);
+                    }
                     if (k > 0)
                     {
                         int i0 = start + (k - 1) * 2, i1 = start + k * 2;

@@ -5,6 +5,20 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.114.2] – 2026-11-28
+### Změněno
+- **Obvaz přímo u listů.** Uživatel: „Jo, tohle nějak vylepši.“
+  - U kořene větvičky je obvaz ze čtyř karmínových ovinutí. Každý zásah, který trefí, přidá jedno. Neuvázaná ovinutí jsou šedá.
+  - Celý obvaz má dva visící konce. Když chybí život, obvaz dýchá a slabý karmín na prázdných listech ukazuje, kolik obvázání (drž R) doplní (s vylepšením Obvaz víc).
+  - Při držení R karmín do vyznačeného místa dorůstá, po obvázání krátce zazáří.
+- **Listy bez zářivého odstínu.** Uživatel: „Proč některé listy mají divně zářivý odstín?“
+  - Karmín je tlumenější, stejně jako šála. Lesk zůstává uvnitř jedné poloviny listu a nevytéká přes okraj.
+  - Záblesk po zásahu a pulz posledního života karmín zesvětlí, místo aby ho přesytil.
+  - Zář po obvázání je jemná, světlá a rychle zmizí.
+
+### Testy
+- PlayMode: nový test `TheBinding_ShowsOnTheTwig_AndWhatItWouldGiveBack`. HUD a postup 12/12.
+
 ## [0.114.1] – 2026-11-28
 ### Změněno
 - **Listy životů čitelně a pro různě velké zásahy.** Uživatel: „Musí to být intuitivní a taky to počítat s tím, že každý zásah může dát různé zranění.“

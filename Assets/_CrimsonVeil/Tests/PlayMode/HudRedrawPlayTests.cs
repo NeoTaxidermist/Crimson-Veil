@@ -86,6 +86,29 @@ namespace CrimsonVeil.Tests
             Assert.Greater(LifeLeaves.Node(5, r, out _).x, LifeLeaves.Node(4, r, out _).x + 20f, "the sixth leaf grows on beyond the fifth");
         }
 
+        [UnityTest]
+        public IEnumerator TheBinding_ShowsOnTheTwig_AndWhatItWouldGiveBack()
+        {
+            var leaves = hud.Life;
+            leaves.maxHealth = 5f; leaves.health = leaves.trailingHealth = 5f; leaves.mend = 1f;
+            yield return Wait(0.3f);
+            Assert.IsFalse(leaves.CanMend, "nothing to bind at full life");
+            int was = leaves.Redraws;
+            yield return Wait(0.3f);
+            Assert.LessOrEqual(leaves.Redraws - was, 1, "a whole knot alone does not keep it redrawing");
+
+            leaves.health = leaves.trailingHealth = 3f;
+            yield return Wait(1.5f);
+            Assert.IsTrue(leaves.CanMend, "wounded with the knot whole: a binding waits");
+            was = leaves.Redraws;
+            yield return Wait(0.3f);
+            Assert.Greater(leaves.Redraws, was + 3, "it breathes, the leaves it would fill show faintly");
+
+            leaves.mend = 0.5f;
+            yield return Wait(0.2f);
+            Assert.IsFalse(leaves.CanMend, "half a knot binds nothing");
+        }
+
         [Test]
         public void TheScarf_MarksTheWeaponsCosts_NearerOnALongerScarf()
         {

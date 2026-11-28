@@ -46,8 +46,8 @@ namespace CrimsonVeil.UI
         readonly Button[] tabs = new Button[3];
         Button resetButton, cancelButton, saveButton;
         readonly List<Slider> sliders = new List<Slider>();
-        Dropdown resolution, mode, quality;
-        Toggle vsync;
+        Dropdown resolution, mode, quality, antiAliasing, renderScale, shadows;
+        Toggle vsync, ambientOcclusion;
         List<Vector2Int> resolutions = new List<Vector2Int>();
         string keysWhenOpened;
         GameSettings.Snapshot settingsWhenOpened;
@@ -56,6 +56,10 @@ namespace CrimsonVeil.UI
         public Dropdown ModeList => mode;
         public Dropdown QualityList => quality;
         public Toggle VSyncBox => vsync;
+        public Toggle AmbientOcclusionBox => ambientOcclusion;
+        public Dropdown AntiAliasingList => antiAliasing;
+        public Dropdown RenderScaleList => renderScale;
+        public Dropdown ShadowsList => shadows;
 
         void Build(RectTransform root)
         {
@@ -154,7 +158,7 @@ namespace CrimsonVeil.UI
 
         void BuildPicture(RectTransform list)
         {
-            var hint = MenuKit.Label(list, "Obraz se změní po uložení, a jen v sestavené hře (v editoru Unity ne).", 22, MenuKit.Dim);
+            var hint = MenuKit.Label(list, "Obraz se změní po uložení, a jen v sestavené hře (v editoru Unity ne). Změna kterékoli položky kvality ji přepne na Vlastní.", 22, MenuKit.Dim);
             hint.rectTransform.sizeDelta = new Vector2(1180f, 60f);
             resolutions = GameSettings.Resolutions();
             var names = new List<string>();
@@ -166,10 +170,26 @@ namespace CrimsonVeil.UI
                 (int)GameSettings.Mode, i => GameSettings.SetMode((GameSettings.WindowMode)i));
             var qualities = new List<string>();
             for (int q = 0; q < QualitySettings.names.Length; q++) qualities.Add(QualityName(q));
-            quality = MenuKit.Dropdown(PictureRow(list, "Kvalita obrazu"), qualities, GameSettings.Quality, GameSettings.SetQuality);
+            quality = MenuKit.Dropdown(PictureRow(list, "Kvalita obrazu"), qualities, GameSettings.Quality, i => { GameSettings.SetQuality(i); Refresh(); });
+            // the quality's items one by one: changing any makes the quality Vlastní
+            ambientOcclusion = MenuKit.Toggle(PictureRow(list, "    Okolní stínění (SSAO)"), GameSettings.ChosenDetail.ambientOcclusion,
+                on => ChangeDetail(d => { d.ambientOcclusion = on; return d; }));
+            antiAliasing = MenuKit.Dropdown(PictureRow(list, "    Vyhlazování hran"), QualityPresets.AntiAliasingLabels, 0,
+                i => ChangeDetail(d => { d.antiAliasing = QualityPresets.AntiAliasings[Mathf.Clamp(i, 0, QualityPresets.AntiAliasings.Length - 1)]; return d; }));
+            var scales = new List<string>();
+            foreach (var s in QualityPresets.RenderScales) scales.Add(GameSettings.Percent(s));
+            renderScale = MenuKit.Dropdown(PictureRow(list, "    Rozlišení vykreslování"), scales, 0,
+                i => ChangeDetail(d => { d.renderScale = QualityPresets.RenderScales[Mathf.Clamp(i, 0, QualityPresets.RenderScales.Length - 1)]; return d; }));
+            shadows = MenuKit.Dropdown(PictureRow(list, "    Stíny"), QualityPresets.ShadowLabels, 0, i => ChangeDetail(d => { d.shadows = i; return d; }));
             vsync = MenuKit.Toggle(PictureRow(list, "Svislá synchronizace (VSync)"), GameSettings.VSync, GameSettings.SetVSync);
             var why = MenuKit.Label(list, "VSync: hra kreslí snímky v rytmu monitoru. Obraz se netrhá a karta se zbytečně nezahřívá; odezva je o chlup pomalejší.", 20, MenuKit.Dim);
             why.rectTransform.sizeDelta = new Vector2(1180f, 50f);
+        }
+
+        void ChangeDetail(Func<QualityPresets.Detail, QualityPresets.Detail> edit)
+        {
+            GameSettings.SetDetail(edit(GameSettings.ChosenDetail));
+            Refresh();
         }
 
         static string QualityName(int q)
@@ -292,6 +312,11 @@ namespace CrimsonVeil.UI
                 mode.SetValueWithoutNotify((int)GameSettings.Mode);
                 quality.SetValueWithoutNotify(Mathf.Max(0, GameSettings.Quality));
                 vsync.SetIsOnWithoutNotify(GameSettings.VSync);
+                var d = GameSettings.ChosenDetail;
+                ambientOcclusion.SetIsOnWithoutNotify(d.ambientOcclusion);
+                antiAliasing.SetValueWithoutNotify(Mathf.Max(0, Array.IndexOf(QualityPresets.AntiAliasings, d.antiAliasing)));
+                renderScale.SetValueWithoutNotify(Mathf.Max(0, Array.IndexOf(QualityPresets.RenderScales, d.renderScale)));
+                shadows.SetValueWithoutNotify(d.shadows);
             }
         }
 

@@ -34,6 +34,11 @@ namespace CrimsonVeil.Core
         public static Vector2Int Resolution { get; private set; }
         public static bool VSync { get; private set; } = true;
         public static int Quality { get; private set; } = -1;
+        /// <summary>
+        /// Vlastní's items (<see cref="QualityPresets.Detail"/>). Picking a preset copies its items here, so the menu
+        /// shows what that preset does and Vlastní starts from it.
+        /// </summary>
+        public static QualityPresets.Detail Custom { get; private set; } = QualityPresets.Preset(QualityPresets.High);
 
         /// <summary>Music's level with the overall volume in it (0..1), for whatever plays music.</summary>
         public static float MusicLevel => Heard(Music);
@@ -59,7 +64,39 @@ namespace CrimsonVeil.Core
         public static void SetMode(WindowMode m) { Mode = m; Commit(); }
         public static void SetResolution(Vector2Int r) { Resolution = r; Commit(); }
         public static void SetVSync(bool on) { VSync = on; Commit(); }
-        public static void SetQuality(int q) { Quality = Mathf.Clamp(q, 0, Mathf.Max(0, QualitySettings.names.Length - 1)); Commit(); }
+        public static void SetQuality(int q)
+        {
+            Quality = Mathf.Clamp(q, 0, Mathf.Max(0, QualitySettings.names.Length - 1));
+            string name = LevelName(Quality);
+            if (name != QualityPresets.Custom) Custom = QualityPresets.Preset(name);
+            Commit();
+        }
+
+        /// <summary>One item changed by the player: the quality becomes Vlastní, with <paramref name="d"/>.</summary>
+        public static void SetDetail(QualityPresets.Detail d)
+        {
+            Custom = QualityPresets.Sanitize(d);
+            int c = QualityPresets.IndexOf(QualityPresets.Custom);
+            if (c >= 0) Quality = c;
+            Commit();
+        }
+
+        /// <summary>The items the chosen quality has (shown in the menu): Vlastní's own, or the preset's.</summary>
+        public static QualityPresets.Detail ChosenDetail
+        {
+            get
+            {
+                string name = LevelName(Quality);
+                return name == QualityPresets.Custom ? QualityPresets.Sanitize(Custom) : QualityPresets.Preset(name);
+            }
+        }
+
+        /// <summary>The menu's name of level <paramref name="q"/> ("" when there is none).</summary>
+        public static string LevelName(int q)
+        {
+            var names = QualitySettings.names;
+            return q >= 0 && q < names.Length ? QualityPresets.Label(names[q]) : "";
+        }
 
         public static void ResetSound()
         {
@@ -73,6 +110,7 @@ namespace CrimsonVeil.Core
             Resolution = Native();
             VSync = true;
             Quality = RecommendedIndex();
+            Custom = QualityPresets.Preset(LevelName(Quality));
             Commit();
         }
 
@@ -122,18 +160,19 @@ namespace CrimsonVeil.Core
             public Vector2Int resolution;
             public bool vsync;
             public int quality;
+            public QualityPresets.Detail custom;
         }
 
         public static Snapshot Capture() => new Snapshot
         {
-            master = Master, music = Music, effects = Effects, mode = Mode, resolution = Resolution, vsync = VSync, quality = Quality,
+            master = Master, music = Music, effects = Effects, mode = Mode, resolution = Resolution, vsync = VSync, quality = Quality, custom = Custom,
         };
 
         /// <summary>Back to <paramref name="s"/> (nothing is saved).</summary>
         public static void Restore(Snapshot s)
         {
             Master = s.master; Music = s.music; Effects = s.effects;
-            Mode = s.mode; Resolution = s.resolution; VSync = s.vsync; Quality = s.quality;
+            Mode = s.mode; Resolution = s.resolution; VSync = s.vsync; Quality = s.quality; Custom = s.custom;
             Commit();
         }
 
@@ -154,6 +193,9 @@ namespace CrimsonVeil.Core
             if (!Persist || Application.isEditor) return;
             if (Quality >= 0 && Quality < QualitySettings.names.Length && QualitySettings.GetQualityLevel() != Quality)
                 QualitySettings.SetQualityLevel(Quality, true);
+            // (Vlastní's own asset, every time: its items may change while the level stays the same)
+            if (QualityPresets.Current == QualityPresets.Custom)
+                QualityPresets.ApplyDetail(QualitySettings.renderPipeline as UnityEngine.Rendering.Universal.UniversalRenderPipelineAsset, Custom);
             QualityPresets.ApplyToCameras();
             QualitySettings.vSyncCount = VSync ? 1 : 0;
             if (Resolution.x > 0 && Resolution.y > 0)
@@ -215,6 +257,10 @@ namespace CrimsonVeil.Core
             PlayerPrefs.SetInt(Prefix + "VSync", VSync ? 1 : 0);
             var names = QualitySettings.names;
             if (Quality >= 0 && Quality < names.Length) PlayerPrefs.SetString(Prefix + "QualityName", QualityPresets.Label(names[Quality]));
+            PlayerPrefs.SetInt(Prefix + "Custom.AO", Custom.ambientOcclusion ? 1 : 0);
+            PlayerPrefs.SetInt(Prefix + "Custom.AA", (int)Custom.antiAliasing);
+            PlayerPrefs.SetFloat(Prefix + "Custom.Scale", Custom.renderScale);
+            PlayerPrefs.SetInt(Prefix + "Custom.Shadows", Custom.shadows);
             PlayerPrefs.Save();
         }
 
@@ -232,12 +278,22 @@ namespace CrimsonVeil.Core
             Resolution = new Vector2Int(PlayerPrefs.GetInt(Prefix + "Width", native.x), PlayerPrefs.GetInt(Prefix + "Height", native.y));
             VSync = PlayerPrefs.GetInt(Prefix + "VSync", 1) == 1;
             Quality = SavedQuality(PlayerPrefs.GetString(Prefix + "QualityName", ""), PlayerPrefs.HasKey(Prefix + "Quality"));
+            // Vlastní's items; nothing saved yet (or saved before v0.107) - the chosen preset's
+            var preset = QualityPresets.Preset(LevelName(Quality));
+            Custom = QualityPresets.Sanitize(new QualityPresets.Detail
+            {
+                ambientOcclusion = PlayerPrefs.GetInt(Prefix + "Custom.AO", preset.ambientOcclusion ? 1 : 0) == 1,
+                antiAliasing = (UnityEngine.Rendering.Universal.AntialiasingMode)PlayerPrefs.GetInt(Prefix + "Custom.AA", (int)preset.antiAliasing),
+                renderScale = PlayerPrefs.GetFloat(Prefix + "Custom.Scale", preset.renderScale),
+                shadows = PlayerPrefs.GetInt(Prefix + "Custom.Shadows", preset.shadows),
+            });
         }
 
         static void Defaults()
         {
             Master = DefaultMaster; Music = DefaultMusic; Effects = DefaultEffects;
             Mode = WindowMode.Borderless; Resolution = new Vector2Int(1920, 1080); VSync = true; Quality = 0;
+            Custom = QualityPresets.Preset(QualityPresets.High);
         }
 
         /// <summary>Tests: defaults, nothing read or written, the screen left alone; <see cref="EndTests"/> undoes it.</summary>

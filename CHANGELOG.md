@@ -5,6 +5,19 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.107.0] – 2026-11-28
+### Přidáno
+- **Kvalita obrazu „Vlastní“.** Pod volbou Kvalita obrazu v menu Obraz jsou čtyři položky: Okolní stínění (SSAO), Vyhlazování hran (Vypnuto, FXAA, SMAA), Rozlišení vykreslování (75, 80, 90, 100 %) a Stíny (Nízké, Střední, Vysoké). Předvolba Nízká, Střední nebo Vysoká ukáže svoje hodnoty. Změna kterékoli položky přepne kvalitu na Vlastní. Hodnoty se ukládají, Zrušit je vrátí.
+- Vlastní je pátá úroveň kvality s vlastním URP assetem a rendererem (`Custom_RPAsset`, `Custom_Renderer`), takže změny nesahají na předvolby.
+- `Benchmark.cs`: `-cvdetail ao,aa,scale,stíny` (např. `0,0,0.75,0`) nastaví Vlastní bez uložení. Výpis benchmarku nově ukazuje skutečný stav URP assetu.
+
+### Změněno
+- Kamera, které Vlastní vypne vyhlazování, ho při dalším zapnutí zase dostane.
+
+### Testy
+- EditMode 692/692 (nové: hodnoty předvoleb odpovídají jejich assetům, Vlastní má vlastní asset a renderer, ApplyDetail, Sanitize, přepnutí na Vlastní a Zrušit). PlayMode `MenuPlayTests` 3/3 (položky v menu).
+- Sestavená hra (IL2CPP) na Lenovu, 1080p v okně: Vysoká 2,81 ms; Vlastní jako Vysoká 2,68 ms; Vlastní bez SSAO, bez vyhlazování, 75 %, nízké stíny 2,70 ms. Asset měl pokaždé přesně zadané hodnoty. Lenovo tu brzdí procesor, rozdíl se projeví na slabé grafice. Na DELLu se neměřilo.
+
 ## [0.106.5] – 2026-11-28
 ### Přidáno
 - `Tools/session-start.ps1` spouští na začátku session i při každé zprávě `Tools/keep-awake.ps1 -Start`, aby počítač neusnul ani po restartu. Když keep-awake neběžel, hook to oznámí. Uživatel se ptal, jestli proces běží, a na Lenovu neběžel.

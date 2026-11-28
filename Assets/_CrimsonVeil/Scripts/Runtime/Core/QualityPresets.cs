@@ -16,17 +16,95 @@ namespace CrimsonVeil.Core
     /// sharpening cost more than the smaller picture saved on an Intel UHD), one cascade.</item>
     /// </list>
     /// The ink look (grain, cracks, mist, paper, the crimson) is the same at every level.
+    /// <para><b>Vlastní</b> - the player's own mix of the four things the presets differ in (<see cref="Detail"/>):
+    /// a quality level of its own with its own URP asset and renderer (Custom_RPAsset, Custom_Renderer), changed at run
+    /// time by <see cref="ApplyDetail"/>, so the presets' assets are never touched. Changing any one item in the menu
+    /// makes the quality Vlastní; picking a preset shows that preset's items.</para>
     /// </summary>
     public static class QualityPresets
     {
-        public const string Low = "Nízká", Medium = "Střední", High = "Vysoká";
+        public const string Low = "Nízká", Medium = "Střední", High = "Vysoká", Custom = "Vlastní";
+
+        /// <summary>What the presets differ in, and what Vlastní lets the player set one by one.</summary>
+        public struct Detail
+        {
+            /// <summary>Screen-space ambient occlusion (the shading where things meet; ~2-3 ms on an Intel UHD).</summary>
+            public bool ambientOcclusion;
+            /// <summary>None, FXAA or SMAA.</summary>
+            public AntialiasingMode antiAliasing;
+            /// <summary>The share of the screen's resolution the picture is drawn at (one of <see cref="RenderScales"/>).</summary>
+            public float renderScale;
+            /// <summary>0 low (one cascade, 1024), 1 medium (two, 1024), 2 high (four, 2048).</summary>
+            public int shadows;
+
+            public override string ToString() => $"AO {ambientOcclusion}, {antiAliasing}, {renderScale:0.##}, shadows {shadows}";
+        }
+
+        /// <summary>The drawing scales offered (below 75 % the picture turns mushy).</summary>
+        public static readonly float[] RenderScales = { 0.75f, 0.8f, 0.9f, 1f };
+        /// <summary>The anti-aliasing modes offered, in the menu's order.</summary>
+        public static readonly AntialiasingMode[] AntiAliasings =
+            { AntialiasingMode.None, AntialiasingMode.FastApproximateAntialiasing, AntialiasingMode.SubpixelMorphologicalAntiAliasing };
+        public static readonly string[] AntiAliasingLabels = { "Vypnuto", "FXAA (rychlé)", "SMAA (ostré)" };
+        public static readonly string[] ShadowLabels = { "Nízké", "Střední", "Vysoké" };
+        static readonly int[] ShadowCascades = { 1, 2, 4 }, ShadowResolutions = { 1024, 1024, 2048 };
+
+        /// <summary>The items of a preset, as its URP asset has them (QualityPresetTests keeps the two the same).</summary>
+        public static Detail Preset(string level)
+        {
+            level = Label(level);
+            if (level == Low || level == Low + " (mobil)")
+                return new Detail { ambientOcclusion = false, antiAliasing = AntialiasingMode.FastApproximateAntialiasing, renderScale = 0.8f, shadows = 0 };
+            if (level == Medium)
+                return new Detail { ambientOcclusion = false, antiAliasing = AntialiasingMode.FastApproximateAntialiasing, renderScale = 1f, shadows = 1 };
+            return new Detail { ambientOcclusion = true, antiAliasing = AntialiasingMode.SubpixelMorphologicalAntiAliasing, renderScale = 1f, shadows = 2 };
+        }
+
+        /// <summary><paramref name="d"/> with every item one that is offered (a damaged or old save).</summary>
+        public static Detail Sanitize(Detail d)
+        {
+            float best = 1f;
+            foreach (var s in RenderScales) if (Mathf.Abs(s - d.renderScale) < Mathf.Abs(best - d.renderScale)) best = s;
+            d.renderScale = float.IsNaN(d.renderScale) ? 1f : best;
+            d.shadows = Mathf.Clamp(d.shadows, 0, ShadowCascades.Length - 1);
+            if (System.Array.IndexOf(AntiAliasings, d.antiAliasing) < 0) d.antiAliasing = AntialiasingMode.SubpixelMorphologicalAntiAliasing;
+            return d;
+        }
+
+        public static int ShadowCascadesOf(int shadows) => ShadowCascades[Mathf.Clamp(shadows, 0, 2)];
+        public static int ShadowResolutionOf(int shadows) => ShadowResolutions[Mathf.Clamp(shadows, 0, 2)];
+
+        /// <summary>The shadow item (0..2) an asset's shadows are, by its cascades.</summary>
+        public static int ShadowsOf(UniversalRenderPipelineAsset a)
+            => a.shadowCascadeCount >= 4 ? 2 : a.shadowCascadeCount >= 2 ? 1 : 0;
+
+        /// <summary>The renderer feature that draws the ambient occlusion in <paramref name="a"/>'s renderer (null: none).</summary>
+        public static ScriptableRendererFeature AmbientOcclusionOf(UniversalRenderPipelineAsset a)
+        {
+            if (a == null || a.rendererDataList.Length == 0 || a.rendererDataList[0] == null) return null;
+            return a.rendererDataList[0].rendererFeatures.Find(f => f != null && f.GetType().Name == "ScreenSpaceAmbientOcclusion");
+        }
+
+        /// <summary>Puts <paramref name="d"/> into Vlastní's URP asset (the anti-aliasing goes on the cameras).</summary>
+        public static void ApplyDetail(UniversalRenderPipelineAsset a, Detail d)
+        {
+            if (a == null) return;
+            d = Sanitize(d);
+            a.renderScale = d.renderScale;
+            // stretched bilinearly: FSR's sharpening cost more than the smaller picture saved on an Intel UHD
+            a.upscalingFilter = d.renderScale < 1f ? UpscalingFilterSelection.Linear : UpscalingFilterSelection.Auto;
+            a.shadowCascadeCount = ShadowCascadesOf(d.shadows);
+            a.mainLightShadowmapResolution = ShadowResolutionOf(d.shadows);
+            var ao = AmbientOcclusionOf(a);
+            if (ao != null) ao.SetActive(d.ambientOcclusion);
+        }
 
         /// <summary>The level the menu calls <paramref name="name"/> ("PC" was the high level's name until v0.106).</summary>
         public static string Label(string name) => name == "PC" ? High : name == "Mobile" ? Low + " (mobil)" : name;
 
         /// <summary>Anti-aliasing at a level: SMAA on Vysoká, the cheaper FXAA below (SMAA was ~1 ms on an Intel UHD).</summary>
         public static AntialiasingMode AntiAliasing(string level) =>
-            level == Low || level == Medium ? AntialiasingMode.FastApproximateAntialiasing : AntialiasingMode.SubpixelMorphologicalAntiAliasing;
+            Label(level) == Custom ? Sanitize(GameSettings.Custom).antiAliasing : Preset(level).antiAliasing;
 
         /// <summary>The level this computer's graphics card is offered first.</summary>
         public static string Recommended => Recommend(SystemInfo.graphicsDeviceName, SystemInfo.graphicsMemorySize, SystemInfo.graphicsShaderLevel);
@@ -82,6 +160,11 @@ namespace CrimsonVeil.Core
             if (!Application.isEditor) ApplyToCameras();
         }
 
+        static readonly System.Collections.Generic.HashSet<int> Smoothed = new System.Collections.Generic.HashSet<int>();
+
+        /// <summary>The items in effect: Vlastní's own, or the preset's.</summary>
+        public static Detail CurrentDetail => Current == Custom ? Sanitize(GameSettings.Custom) : Preset(Current);
+
         /// <summary>Gives every camera the level's anti-aliasing (it lives on the camera, not in the URP asset).</summary>
         public static void ApplyToCameras()
         {
@@ -89,7 +172,12 @@ namespace CrimsonVeil.Core
             foreach (var cam in Object.FindObjectsByType<Camera>(FindObjectsSortMode.None))
             {
                 var d = cam.GetComponent<UniversalAdditionalCameraData>();
-                if (d == null || d.antialiasing == AntialiasingMode.None) continue; // (a camera that never smoothed keeps that)
+                if (d == null) continue;
+                // (a camera that never smoothed keeps that; one this turned off - Vlastní without anti-aliasing - is
+                // remembered, so turning it back on reaches it again)
+                int id = cam.GetInstanceID();
+                if (d.antialiasing == AntialiasingMode.None && !Smoothed.Contains(id)) continue;
+                Smoothed.Add(id);
                 d.antialiasing = aa;
                 if (aa == AntialiasingMode.SubpixelMorphologicalAntiAliasing) d.antialiasingQuality = AntialiasingQuality.High;
             }

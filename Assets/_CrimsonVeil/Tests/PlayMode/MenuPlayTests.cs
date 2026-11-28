@@ -54,6 +54,21 @@ namespace CrimsonVeil.Tests
             Assert.Greater(panel.ResolutionList.options.Count, 0, "the resolutions in a drop-down list");
             Assert.AreEqual(3, panel.ModeList.options.Count, "window, borderless, fullscreen");
             Assert.AreEqual(QualitySettings.names.Length, panel.QualityList.options.Count);
+            // the quality's items: a preset shows its own, changing one makes the quality Vlastní
+            int medium = CrimsonVeil.Core.QualityPresets.IndexOf(CrimsonVeil.Core.QualityPresets.Medium);
+            panel.QualityList.value = medium;
+            Assert.IsFalse(panel.AmbientOcclusionBox.isOn, "Střední draws no ambient occlusion");
+            Assert.AreEqual("100 %", panel.RenderScaleList.options[panel.RenderScaleList.value].text);
+            Assert.AreEqual("Střední", panel.ShadowsList.options[panel.ShadowsList.value].text);
+            panel.ShadowsList.value = 2;
+            Assert.AreEqual(CrimsonVeil.Core.QualityPresets.Custom, CrimsonVeil.Core.GameSettings.LevelName(panel.QualityList.value), "the list shows Vlastní");
+            Assert.AreEqual(2, CrimsonVeil.Core.GameSettings.ChosenDetail.shadows);
+            Assert.IsFalse(panel.AmbientOcclusionBox.isOn, "the other items stay Střední's");
+            panel.Cancel();
+            Assert.AreNotEqual(CrimsonVeil.Core.QualityPresets.Custom, CrimsonVeil.Core.GameSettings.LevelName(CrimsonVeil.Core.GameSettings.Quality), "Zrušit takes Vlastní back");
+            menu.OpenSettings();
+            yield return null;
+            panel.Show(SettingsPanel.Page.Picture);
             // a change is tried, Zrušit takes it back...
             bool vsync = CrimsonVeil.Core.GameSettings.VSync;
             panel.VSyncBox.isOn = !vsync;

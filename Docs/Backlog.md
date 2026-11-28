@@ -33,7 +33,7 @@ Značky: **[rozhodnuto]** uživatel výslovně chce · **[návrh]** můj návrh,
 
 ### Výkon na slabé grafice (Intel UHD: 58 fps v 1080p) – vyřešeno ve v0.106.0, čeká na vyzkoušení uživatelem  [rozhodnuto] · M
 - **Co:** změřeno na DELLu ve v0.100.20. Hra je tam omezená pixely: 1080p 17,1 ms (58 fps), 720p 9,0 ms (111), 540p 6,4 ms (156). Na Lenovu (RTX 2060) je to ~350 fps.
-- **v0.106.0 – vyřešeno:** uživatel řekl „vyhledej si na netu, jak se tyhle nastavení kvality obecně řeší, a vyřeš to“. Hra má tři úrovně (Nízká, Střední, Vysoká) a při prvním spuštění se vybere podle grafické karty: DELL dostane Střední, 96 fps na startu, 81 mezi nepřáteli. Praskliny v kamenech jsou předpečené pro všechny úrovně. Otevřené: vlastní nastavení jednotlivých položek („Vlastní“), které mají velké hry. Odhad 1,5–2 h: v menu Obraz SSAO, vyhlazování, rozlišení vykreslování a stíny; změna přepne předvolbu na „Vlastní“; ukládání; testy. Uživatel 2026-11-27: „Teď ne.“
+- **v0.106.0 – vyřešeno:** uživatel řekl „vyhledej si na netu, jak se tyhle nastavení kvality obecně řeší, a vyřeš to“. Hra má tři úrovně (Nízká, Střední, Vysoká) a při prvním spuštění se vybere podle grafické karty: DELL dostane Střední, 96 fps na startu, 81 mezi nepřáteli. Praskliny v kamenech jsou předpečené pro všechny úrovně. **v0.107.0:** přidaná kvalita „Vlastní“ s jednotlivými položkami (SSAO, vyhlazování, rozlišení vykreslování, stíny). Uživatel o ni požádal 2026-11-28. Na DELLu se zatím neměřila.
 - **Volba kvality v menu už existuje** (uživatel 2026-11-27: „vždyť to už je v menu, jen tam máš zatím jen jednu“): `SettingsPanel` → „Kvalita obrazu“, nabízí `QualitySettings.names` a ukládá je přes `GameSettings`. Pro Windows je teď jen „PC“ (v menu „Vysoká“). „Mobile“ (v menu „Nízká“) má ve `ProjectSettings/QualitySettings.asset` vyřazenou platformu Standalone. Nová úroveň pro slabou grafiku = nová úroveň kvality s vlastním URP assetem (např. bez SSAO). Menu ji nabídne samo.
 - **v0.105.0:** uživatel řekl „optimalizuj, ale elegantně, ať to nevypadá hnusně“. Zrychleno beze změny vzhledu na 62–72 fps ve Full HD (mlha a papír z předpečených textur, SSAO v polovičním rozlišení, bez zbytečné kopie obrazu). Další páky by už sahaly do vzhledu nebo do shaderu vrstev pozadí (vzdálené vrstvy 2,9 ms, střední 1,4 ms).
 - **v0.104.0:** ve Full HD mezi nepřáteli 50–54 fps. Grafika potřebuje 17,5–20 ms na snímek, procesor ~5 ms, takže brzdí jen GPU. Uživatel: „hlavně na DELLu změř i Full HD, 540p je brutální nouzovka“, tedy cílem je Full HD, ne nižší rozlišení.
@@ -104,6 +104,7 @@ Značky: **[rozhodnuto]** uživatel výslovně chce · **[návrh]** můj návrh,
 ---
 
 ## Hotovo (posledních pár, pak smazat)
+- v0.107.0 – kvalita „Vlastní“: v menu Obraz se dá zvlášť nastavit SSAO, vyhlazování hran, rozlišení vykreslování (75–100 %) a stíny. Změna kterékoli položky přepne kvalitu na Vlastní.
 - v0.106.2 – ShieldMonk: prsty už nevyčnívají ze štítu při pohledu ze tří čtvrtin (štít odsazený od pěsti po své kolmici). Položka „UI plátna se přestavují každý snímek“ byla už hotová ve v0.100.0 (vlastní plátno šály, třepotání 30 Hz), dnes UI ~0,24 ms. Smazána.
 - v0.106.0 – tři úrovně kvality s automatickým výběrem podle grafiky, praskliny předpečené.
 - v0.105.0 – optimalizace pro slabou grafiku beze změny vzhledu (DELL Full HD 58 → 72 fps).

@@ -77,8 +77,9 @@ Vývoj běží na dvou počítačích (**Lenovo** = hlavní, RTX 2060; **DELL** 
 - **Hooky na Lenovu:** stálá session běží ve složce `C:\_ClaudeAI\unity` (je tam `.mcp.json` pro Unity a buildy). Hooky jsou proto zkopírované do `C:\_ClaudeAI\unity\.claude\settings.json` s pevnými cestami `C:\Dev\CrimsonVeil\Tools\session-start.ps1` / `session-stop.ps1`. `C:\_ClaudeAI\unity\CLAUDE.md` načítá repozitářový `CLAUDE.md`. **Když se změní `.claude/settings.json` v repozitáři, je potřeba změnu přenést i sem.**
 - **Unity po restartu aplikace Claude:** může neběžet editor (proces `resources\unity.exe serve` je jen pomocník Unity Hubu) ani server MCP for Unity na 8080. Postup je v `Docs/claude/unity-mcp-restart.md`.
 - **Neověřeno:** Stop hook se ještě sám nespustil, ručně funguje.
-- **Rozdělané:** nic, čeká se na pokyn uživatele.
-- **Další krok:** podle uživatele. Čeká se, až uživatel posoudí nové tvory (v0.103.0) a vyzkouší úrovně kvality. Ostatní je v `Docs/Backlog.md`.
+  - **Kvalita „Vlastní“ (v0.107.0):** uživatel řekl „Vlastní nastavení kvality“. V menu Obraz jsou pod volbou Kvalita obrazu čtyři položky: Okolní stínění (SSAO), Vyhlazování hran (Vypnuto / FXAA / SMAA), Rozlišení vykreslování (75–100 %) a Stíny (Nízké / Střední / Vysoké). Předvolba ukáže svoje hodnoty, změna kterékoli položky přepne kvalitu na Vlastní (pátá úroveň s vlastním URP assetem a rendererem). Testy: EditMode 692/692, MenuPlayTests 3/3. V sestaveném buildu ověřeno přes `-cvdetail` (výpis ukazuje skutečný stav assetu). Snímek menu dostal uživatel.
+- **Rozdělané:** nic.
+- **Další krok:** podle uživatele. Na DELLu by stálo za to změřit Vlastní (`bench.ps1 -Extra "-cvdetail","1,1,1,1"` apod.). Čeká se, až uživatel posoudí nové tvory (v0.103.0) a vyzkouší úrovně kvality.
 
 ## Stav
 - Větev `newFeatures`, do `main` se slučuje jen na pokyn uživatele.

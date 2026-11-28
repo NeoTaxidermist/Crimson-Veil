@@ -182,6 +182,24 @@ namespace CrimsonVeil.Core
                 QualitySettings.SetQualityLevel(qi, true);
                 QualityPresets.ApplyToCameras();
             }
+            // -cvdetail 1,2,0.9,1: Vlastní with those items (ambient occlusion 0/1, anti-aliasing 0 off / 1 FXAA / 2 SMAA,
+            // drawing scale, shadows 0-2), put into effect the way the menu's Uložit does, but not saved
+            var detail = Argument("-cvdetail");
+            if (detail != null && detail.Split(',') is var dp && dp.Length == 4)
+            {
+                var inv = System.Globalization.CultureInfo.InvariantCulture;
+                GameSettings.SetDetail(new QualityPresets.Detail
+                {
+                    ambientOcclusion = dp[0] == "1",
+                    antiAliasing = QualityPresets.AntiAliasings[Mathf.Clamp(int.Parse(dp[1], inv), 0, 2)],
+                    renderScale = float.Parse(dp[2], inv),
+                    shadows = int.Parse(dp[3], inv),
+                });
+                // (not GameSettings.Apply: that would also put back the saved resolution over -cvres)
+                QualitySettings.SetQualityLevel(GameSettings.Quality, true);
+                QualityPresets.ApplyDetail(QualitySettings.renderPipeline as UnityEngine.Rendering.Universal.UniversalRenderPipelineAsset, GameSettings.Custom);
+                QualityPresets.ApplyToCameras();
+            }
             ApplyRenderOptions();
             // -cvat X,Y: the hero stands there (next to a group of enemies) and cannot be hurt, so the enemies attack
             // for the whole run instead of killing him and sending him back to the start
@@ -227,6 +245,8 @@ namespace CrimsonVeil.Core
             var sb = new StringBuilder();
             if (at != null) sb.AppendLine($"hero at {at}");
             sb.AppendLine($"scene {scene}, {dts.Count} frames in {Measure} s, {Screen.width}x{Screen.height}, quality {QualitySettings.names[QualitySettings.GetQualityLevel()]}");
+            if (QualitySettings.renderPipeline is UnityEngine.Rendering.Universal.UniversalRenderPipelineAsset qa)
+                sb.AppendLine($"pipeline {qa.name}: scale {qa.renderScale:0.##}, cascades {qa.shadowCascadeCount}, shadow map {qa.mainLightShadowmapResolution}, AO {(QualityPresets.AmbientOcclusionOf(qa) is var ao && ao != null ? ao.isActive.ToString() : "none")}, AA {QualityPresets.AntiAliasing(QualityPresets.Current)}");
             sb.AppendLine($"median {At(0.5f):F2} ms ({1000f / At(0.5f):F0} fps), p10 {At(0.1f):F2}, p90 {At(0.9f):F2}, p99 {At(0.99f):F2}, worst {At(1f):F2}, frames a second on average {dts.Count / Measure:F0}");
             sb.AppendLine($"display {Screen.currentResolution.width}x{Screen.currentResolution.height} at {Screen.currentResolution.refreshRateRatio.value:F0} Hz, {Screen.fullScreenMode}");
             sb.AppendLine($"{SystemInfo.processorType}, {SystemInfo.graphicsDeviceName}, {SystemInfo.graphicsDeviceType}, Unity {Application.unityVersion}");

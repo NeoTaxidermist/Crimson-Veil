@@ -83,6 +83,7 @@ Značky: **[rozhodnuto]** uživatel výslovně chce · **[návrh]** můj návrh,
 ---
 
 ## Hotovo (posledních pár, pak smazat)
+- v0.114.1 – listy jako nádoby: obrys prázdného místa, žilky po čtvrtinách, každý zásah ulomí přesně svůj kus.
 - v0.114.0 – životy jako karmínové listy na větvičce, pupen na konci roste s úlomky a ze čtvrtého se rozvine nový list.
 - v0.113.0 – nový HUD: životy jako kruhy tuše vlevo nahoře, síla šály jako malovaná šála se zářezy cen zbraní a uzlem dole uprostřed, karmín vpravo dole.
 - v0.112.0 – nové menu (pozadí z ruin, štětcové tahy, karty kapitol s náhledem), zkušební místnost jako samostatná kapitola, potvrzování mezerníkem. Trest za smrt: uživatel odsouhlasil přísnou variantu („Asi dobrý“).

@@ -56,14 +56,18 @@ namespace CrimsonVeil.Tests
         }
 
         [UnityTest]
-        public IEnumerator ALeafLost_FallsAway_ThenTheTwigStandsStill()
+        public IEnumerator EveryHit_BreaksOffWhatItTook_ThenTheTwigStandsStill()
         {
             var leaves = hud.Life;
             leaves.maxHealth = 5f; leaves.health = leaves.trailingHealth = 5f;
             yield return Wait(0.2f);
-            leaves.health = leaves.trailingHealth = 3.5f;   // the fifth leaf lost whole, the fourth torn
+            leaves.health = leaves.trailingHealth = 3.5f;   // a heavy blow: the fifth leaf lost whole, half the fourth
             yield return null;
-            Assert.AreEqual(1, leaves.Falling, "only the whole leaf lost falls, not the torn one");
+            Assert.AreEqual(2, leaves.Falling, "the whole leaf and the torn-off half fall");
+            Assert.AreEqual(1.5f, leaves.FallingAmount, 1e-3f, "what falls is exactly what the hit took");
+            leaves.health = leaves.trailingHealth = 3.25f;   // a peck: a quarter more
+            yield return null;
+            Assert.AreEqual(0.25f + 1.5f, leaves.FallingAmount, 1e-3f, "a peck breaks off a flake of its own");
             int was = leaves.Redraws;
             yield return Wait(0.3f);
             Assert.Greater(leaves.Redraws, was + 3, "drawn while it falls");

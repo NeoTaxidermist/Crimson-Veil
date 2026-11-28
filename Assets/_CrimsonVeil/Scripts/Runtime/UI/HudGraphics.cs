@@ -5,19 +5,22 @@ using UnityEngine.UI;
 namespace CrimsonVeil.UI
 {
     /// <summary>
-    /// Life in the top-left corner as leaves of the crimson tree (v0.113.4, the user's choice): a twig painted in ink,
-    /// a crimson leaf on it for every point of life, alternately hanging below it and standing above it as on a real
-    /// twig, so many fit on a short one. A wound tears a leaf a quarter at a time (from its tip back to the stalk); a
-    /// leaf lost turns grey and falls away, the bare stalk left. More life is grown, not added: the shards of the next
-    /// life swell a bud at the twig's tip, a quarter each; the fourth opens it into a new leaf, and the twig grows on
-    /// to carry the next bud. Translucent layered crimson as the scarf. Built in code; redrawn only on a change or
-    /// while a leaf falls.
+    /// Life in the top-left corner as leaves of the crimson tree (v0.114, the user's choice): a twig painted in ink, a
+    /// leaf on it for every point of life, alternately hanging below it and standing above it as on a real twig.
+    /// Read as heart containers: every leaf keeps its place as a faint ink outline, crimson fills what is left of it, and
+    /// three side veins split it into quarters, so how much is missing reads at a glance, whatever a hit took. Every hit
+    /// shows its own size (v0.114.1, "každý zásah může dát různé zranění"): exactly the piece it took breaks off, glows
+    /// a moment and falls away grey, a peck a flake, a heavy blow a whole leaf and a piece of the next. Life drains from
+    /// the twig's tip back to its base; mending grows the crimson back from the stalk with a brief bright glow. More life
+    /// is grown, not added: the shards of the next life swell a bud at the twig's tip, a quarter each; the fourth opens
+    /// it into a new leaf and the twig grows on to carry the next bud. Built in code; redrawn only on a change or while
+    /// a piece falls or a mend glows.
     /// </summary>
     [RequireComponent(typeof(CanvasRenderer))]
     public sealed class LifeLeaves : MaskableGraphic
     {
         public float maxHealth = 5f, health = 5f;
-        /// <summary>Life a moment ago: the part just lost glows on a moment.</summary>
+        /// <summary>Life a moment ago (kept for the HUD; the falling pieces show what was lost).</summary>
         public float trailingHealth = 5f;
         [Range(0f, 1f)] public float hurtFlash;
         /// <summary>Shards towards the next life (0..3): the bud at the twig's tip.</summary>
@@ -25,35 +28,50 @@ namespace CrimsonVeil.UI
 
         /// <summary>The twig's length per leaf (px) and a leaf's length.</summary>
         public const float Spacing = 36f, LeafLength = 44f, LeafWidth = 22f;
-        public const float FallSeconds = 1.3f;
+        public const float FallSeconds = 1.3f, MendGlowSeconds = 0.7f;
 
         static readonly Color InkC = new Color(0.03f, 0.03f, 0.035f, 1f);
         static readonly Color Dark = new Color(0.32f, 0.0f, 0.03f, 0.92f);
         static readonly Color Mid = new Color(0.72f, 0.03f, 0.06f, 0.85f);
         static readonly Color Bright = new Color(1f, 0.2f, 0.16f, 0.55f);
-        static readonly Color Ember = new Color(1f, 0.35f, 0.18f, 0.9f);
+        static readonly Color Ember = new Color(1f, 0.42f, 0.2f, 0.95f);
         static readonly Color Ashen = new Color(0.45f, 0.43f, 0.43f, 0.85f);
+        static readonly Color Empty = new Color(0.03f, 0.03f, 0.035f, 0.22f);
+        static readonly Color Vein = new Color(0.18f, 0f, 0.02f, 0.8f);
 
         /// <summary>How many times it has been drawn (for tests).</summary>
         public int Redraws { get; private set; }
-        /// <summary>Leaves falling now (for tests).</summary>
-        public int Falling => falls.Count;
+        /// <summary>Pieces falling now (for tests).</summary>
+        public int Falling => pieces.Count;
+        /// <summary>How much life the pieces falling now add up to (for tests: a hit's size).</summary>
+        public float FallingAmount { get { float s = 0f; foreach (var p in pieces) s += p.f1 - p.f0; return s; } }
 
-        float dHealth = -1f, dTrail, dFlash, dMax; int dShards = -1;
-        float time, lastHealth = -1f;
-        readonly System.Collections.Generic.List<Vector2> falls = new System.Collections.Generic.List<Vector2>();   // (leaf index, start time)
+        struct Piece { public int leaf; public float f0, f1, start; }
+        readonly System.Collections.Generic.List<Piece> pieces = new System.Collections.Generic.List<Piece>();
+        readonly System.Collections.Generic.List<Piece> mends = new System.Collections.Generic.List<Piece>();
+
+        float dHealth = -1f, dFlash, dMax; int dShards = -1;
+        float time, lastHealth = -1f, lastMax = -1f;
 
         void Update()
         {
             time += Time.unscaledDeltaTime;
-            // a whole leaf lost: it falls away
-            if (lastHealth >= 0f)
-                for (int i = Mathf.CeilToInt(health); i < Mathf.CeilToInt(lastHealth) && i < 64; i++)
-                    if (health <= i) falls.Add(new Vector2(i, time));
-            lastHealth = health;
-            falls.RemoveAll(f => time - f.y > FallSeconds);
+            if (lastHealth >= 0f && maxHealth == lastMax && health != lastHealth)
+            {
+                // exactly what changed, leaf by leaf: lost pieces break off, mended ones glow as they grow back
+                float lo = Mathf.Min(health, lastHealth), hi = Mathf.Max(health, lastHealth);
+                var into = health < lastHealth ? pieces : mends;
+                for (int i = Mathf.FloorToInt(lo); i < Mathf.CeilToInt(hi) && i < 64; i++)
+                {
+                    float f0 = Mathf.Clamp01(lo - i), f1 = Mathf.Clamp01(hi - i);
+                    if (f1 - f0 > 1e-3f) into.Add(new Piece { leaf = i, f0 = f0, f1 = f1, start = time });
+                }
+            }
+            lastHealth = health; lastMax = maxHealth;
+            pieces.RemoveAll(p => time - p.start > FallSeconds);
+            mends.RemoveAll(p => time - p.start > MendGlowSeconds);
             bool low = health > 0f && health <= 1.01f;
-            if (health != dHealth || trailingHealth != dTrail || hurtFlash != dFlash || maxHealth != dMax || shards != dShards || low || falls.Count > 0)
+            if (health != dHealth || hurtFlash != dFlash || maxHealth != dMax || shards != dShards || low || pieces.Count > 0 || mends.Count > 0)
                 SetVerticesDirty();
         }
 
@@ -66,10 +84,16 @@ namespace CrimsonVeil.UI
 
         static float TwigY(Rect r, float x) => r.yMax - 40f + Mathf.Sin(x * 0.02f + 0.7f) * 3f;
 
+        static Vector2 LeafDir(int i, bool below)
+        {
+            float angle = (below ? -58f : 46f) * Mathf.Deg2Rad + 0.1f * Mathf.Sin(i * 1.7f);
+            return new Vector2(Mathf.Cos(angle), Mathf.Sin(angle));
+        }
+
         protected override void OnPopulateMesh(VertexHelper vh)
         {
             Redraws++;
-            dHealth = health; dTrail = trailingHealth; dFlash = hurtFlash; dMax = maxHealth; dShards = shards;
+            dHealth = health; dFlash = hurtFlash; dMax = maxHealth; dShards = shards;
             vh.Clear();
             var r = rectTransform.rect;
             int n = Mathf.Max(1, Mathf.RoundToInt(maxHealth));
@@ -82,35 +106,68 @@ namespace CrimsonVeil.UI
             var tip = new Vector2(r.xMin + length, TwigY(r, length));
             Bud(vh, tip, shards / 4f, n);
 
+            var glow = Color.Lerp(Color.white, new Color(1f, 0.6f, 0.5f, 1f), 0.5f * low + 0.6f * hurtFlash);
             for (int i = 0; i < n; i++)
             {
                 var at = Node(i, r, out bool below);
-                float full = Mathf.Clamp01(health - i), trail = Mathf.Clamp01(Mathf.Max(trailingHealth, health) - i);
-                float angle = (below ? -58f : 46f) * Mathf.Deg2Rad + 0.1f * Mathf.Sin(i * 1.7f);
-                var dir = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle));
-                // the stalk, always (a bare one where the leaf has gone)
+                var dir = LeafDir(i, below);
                 var stalkEnd = at + dir * 6f;
+                // the stalk, always (a bare one where the leaf has gone)
                 Line(vh, at, stalkEnd, 2.2f, 1.4f, InkC);
-                if (trail > full + 1e-3f) Leaf(vh, stalkEnd, dir, full, trail, Ember, Ember, i, 1f);
-                if (full > 0f)
-                {
-                    var glow = Color.Lerp(Color.white, new Color(1f, 0.6f, 0.5f, 1f), 0.5f * low + 0.6f * hurtFlash);
-                    Leaf(vh, stalkEnd, dir, 0f, full, Dark * glow, Mid * glow, i, 1f);
-                }
+                float full = Mathf.Clamp01(health - i);
+                // its place: a faint ink outline of the whole leaf, so what is missing shows
+                if (full < 0.999f) Leaf(vh, stalkEnd, dir, full, 1f, Empty, Empty, i, 1f, false);
+                if (full > 0f) Leaf(vh, stalkEnd, dir, 0f, full, Dark * glow, Mid * glow, i, 1f, full < 0.999f);
+                Veins(vh, stalkEnd, dir, full, i);
             }
-            // leaves lost a moment ago, grey, falling and turning
-            foreach (var f in falls)
+            // a mended piece glows as it grows back
+            foreach (var m in mends)
             {
-                int i = (int)f.x;
-                float t = (time - f.y) / FallSeconds;
-                var at = Node(i, r, out bool below);
-                float angle = (below ? -58f : 46f) * Mathf.Deg2Rad - t * 2.2f;
-                var dir = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle));
-                var pos = at + new Vector2(Mathf.Sin(t * 5f) * 8f + t * 10f, -t * 46f);
-                var c = Ashen; c.a *= 1f - t;
-                Leaf(vh, pos, dir, 0f, 1f, c, c, i, 1f - 0.2f * t);
+                if (m.leaf >= n) continue;
+                float t = (time - m.start) / MendGlowSeconds;
+                var at = Node(m.leaf, r, out bool below);
+                var dir = LeafDir(m.leaf, below);
+                var c = Bright; c.a = 0.8f * (1f - t);
+                Leaf(vh, at + dir * 6f, dir, m.f0, m.f1, c, c, m.leaf, 1f, false);
+            }
+            // the pieces a hit took: a moment glowing where they were, then grey, falling and turning
+            foreach (var p in pieces)
+            {
+                if (p.leaf >= n) continue;
+                float t = (time - p.start) / FallSeconds;
+                var at = Node(p.leaf, r, out bool below);
+                var dir0 = LeafDir(p.leaf, below);
+                var baseAt = at + dir0 * 6f;
+                float mid = (p.f0 + p.f1) * 0.5f * LeafLength;
+                var centre = baseAt + dir0 * mid;
+                float fall = Mathf.Max(0f, t - 0.12f);   // it hangs a moment first, so the hit is seen
+                float turn = fall * 2.4f * (below ? 1f : -1f);
+                var dir = new Vector2(dir0.x * Mathf.Cos(turn) - dir0.y * Mathf.Sin(turn), dir0.x * Mathf.Sin(turn) + dir0.y * Mathf.Cos(turn));
+                centre += new Vector2(Mathf.Sin(fall * 5f) * 7f + fall * 12f, -fall * fall * 70f - fall * 10f);
+                var c = Color.Lerp(Ember, Ashen, Mathf.Clamp01(t * 4f)); c.a *= 1f - t * t;
+                Leaf(vh, centre - dir * mid, dir, p.f0, p.f1, c, c, p.leaf, 1f, false);
             }
         }
+
+        /// <summary>Three side veins split a leaf into quarters: dark on the crimson, faint on what is missing.</summary>
+        static void Veins(VertexHelper vh, Vector2 baseAt, Vector2 dir, float full, int seed)
+        {
+            var side = new Vector2(-dir.y, dir.x);
+            for (int q = 1; q <= 3; q++)
+            {
+                float u = q / 4f;
+                float h = HalfWidth(u, seed, 1f) * 0.85f;
+                var on = baseAt + dir * (u * LeafLength);
+                var c = u < full ? Vein : Empty;
+                // from the midrib out and forward to both edges
+                Line(vh, on, on + side * h + dir * (h * 0.55f), 1.2f, 0.5f, c);
+                Line(vh, on, on - side * h + dir * (h * 0.55f), 1.2f, 0.5f, c);
+            }
+        }
+
+        /// <summary>A leaf's half-width a fraction <paramref name="u"/> along it: round at the base, broadest a third along, pointed at the tip.</summary>
+        static float HalfWidth(float u, int seed, float size) =>
+            LeafWidth * size * 0.5f * Mathf.Sin(Mathf.Pow(Mathf.Clamp01(u), 0.75f) * Mathf.PI) * (1f + 0.05f * Mathf.Sin(u * 20f + seed));
 
         /// <summary>The twig: an ink stroke tapering from the corner out, a little uneven, with a knot at each leaf.</summary>
         void Twig(VertexHelper vh, Rect r, float length)
@@ -139,16 +196,16 @@ namespace CrimsonVeil.UI
         /// over it, a bright gloss along one half, a dark midrib. Only from <paramref name="f0"/> to <paramref name="f1"/>
         /// of its length is drawn (a torn leaf: the rest is gone, its edge ragged).
         /// </summary>
-        static void Leaf(VertexHelper vh, Vector2 baseAt, Vector2 dir, float f0, float f1, Color under, Color over, int seed, float size)
+        static void Leaf(VertexHelper vh, Vector2 baseAt, Vector2 dir, float f0, float f1, Color under, Color over, int seed, float size, bool ragged)
         {
             if (f1 - f0 < 1e-3f) return;
             float L = LeafLength * size, W = LeafWidth * size;
             var side = new Vector2(-dir.y, dir.x);
             const int seg = 14;
-            // the outline's half-width along the leaf: round at the base, broadest a third along, pointed at the tip
-            float Half(float u) => W * 0.5f * Mathf.Sin(Mathf.Pow(Mathf.Clamp01(u), 0.75f) * Mathf.PI) * (1f + 0.05f * Mathf.Sin(u * 20f + seed));
+            float Half(float u) => HalfWidth(u, seed, size);
             for (int layer = 0; layer < 3; layer++)
             {
+                if (layer == 2 && (over.a < 0.5f || over.g > 0.3f)) continue;   // (no gloss on an empty outline, an ember or ash)
                 var col = layer == 0 ? under : layer == 1 ? over : Bright;
                 if (layer == 2) col.a *= over.a;   // (the gloss fades with the leaf)
                 float shrink = layer == 0 ? 1f : layer == 1 ? 0.86f : 0.5f;
@@ -169,7 +226,7 @@ namespace CrimsonVeil.UI
                 }
             }
             // a torn end: ragged teeth of the leaf left standing past the cut
-            if (f1 < 0.999f)
+            if (ragged)
             {
                 float h = Half(f1);
                 var cut = baseAt + dir * (f1 * L);
@@ -197,7 +254,7 @@ namespace CrimsonVeil.UI
             var dir = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle));
             if (grown <= 0f) { Ellipse(vh, at + dir * 3f, 4f, 2.6f, InkC); return; }
             float size = 0.22f + 0.4f * grown;
-            Leaf(vh, at, dir, 0f, 1f, Dark, Mid, seed, size);
+            Leaf(vh, at, dir, 0f, 1f, Dark, Mid, seed, size, false);
             // the sepals holding it, dark
             var side = new Vector2(-dir.y, dir.x);
             float s = LeafLength * size;

@@ -5,6 +5,18 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.114.1] – 2026-11-28
+### Změněno
+- **Listy životů čitelně a pro různě velké zásahy.** Uživatel: „Musí to být intuitivní a taky to počítat s tím, že každý zásah může dát různé zranění.“
+  - Každý list drží své místo jako slabý obrys tuše a karmín vyplňuje, co z něj zbývá, takže chybějící život je vidět na první pohled.
+  - Tři boční žilky dělí list na čtvrtiny. Všechna zranění ve hře jsou násobky čtvrtiny: klovnutí vrány ¼, většina nepřátel ½, PaperKite ¾, mnich a dvojník 1.
+  - Každý zásah ulomí přesně to, co vzal. Kus chvíli žhne, pak zešedne a padá. Klovnutí ulomí špičku, těžká rána celý list a kus dalšího.
+  - Obvázání rány nechá karmín dorůst se září.
+  - Natržený okraj je zubatý jen u živého listu, obrys a padající kusy jsou hladké.
+
+### Testy
+- PlayMode: test `EveryHit_BreaksOffWhatItTook_ThenTheTwigStandsStill` ověřuje, že padá přesně to, co zásah vzal (1½ = celý list a půlka, ¼ = vlastní šupina). HUD testy 5/5.
+
 ## [0.114.0] – 2026-11-28
 ### Změněno
 - **Životy v HUD jako listy rudého stromu.** Uživatel vybral ze dvou návrhů listy: „Ty listy se mi líbí, ale musí se to udělat nějak logicky, až bude hráč získávat upgradem víc životů.“

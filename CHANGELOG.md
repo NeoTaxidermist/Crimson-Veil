@@ -5,6 +5,18 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.114.5] – 2026-11-28
+### Změněno
+- **Životy hladce, bez zubů.** Uživatel: „Je to odporný. A zubatý.“
+  - Listy, větvička, obvaz i stopky se kreslí z jedné malé textury s mipmapami, kterou hra namaluje v kódu při prvním použití (`LeafAtlas`). Všechny okraje jsou vyhlazené.
+  - Karmínový list má tmavší okraj, světlejší polovinu, žilku a tři boční žilky po čtvrtinách. Prázdné místo listu má slabou výplň a jemný světlý okraj. Popel, žár a záře obvazu jsou světlý list obarvený barvou.
+  - Natržený list má místo zubů rovný tmavý řez.
+  - Světlo na horní hraně větvičky je pryč.
+- Postup: snímky HUD se dělají ve skutečném Full HD (`PlayModeWindow.SetCustomRenderingResolution`), ne zvětšením malého okna Game.
+
+### Testy
+- PlayMode: HUD a postup 12/12.
+
 ## [0.114.4] – 2026-11-28
 ### Změněno
 - **Bez mlhového obdélníku.** Uživatel: „Ten mlhový obdélník je vyloženě hnus. Musíš to vyřešit elegantně.“

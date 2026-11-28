@@ -7,14 +7,13 @@ namespace CrimsonVeil.UI
     /// <summary>
     /// Life in the top-left corner as leaves of the crimson tree (v0.114, the user's choice): a twig painted in ink, a
     /// leaf on it for every point of life, alternately hanging below it and standing above it as on a real twig.
-    /// Read as heart containers: every leaf keeps its place as a faint ink outline, crimson fills what is left of it, and
-    /// three side veins split it into quarters, so how much is missing reads at a glance, whatever a hit took. Every hit
-    /// shows its own size (v0.114.1, "každý zásah může dát různé zranění"): exactly the piece it took breaks off, glows
-    /// a moment and falls away grey, a peck a flake, a heavy blow a whole leaf and a piece of the next. Life drains from
-    /// the twig's tip back to its base; mending grows the crimson back from the stalk with a brief bright glow. More life
-    /// is grown, not added: the shards of the next life swell a bud at the twig's tip, a quarter each; the fourth opens
-    /// it into a new leaf and the twig grows on to carry the next bud. Built in code; redrawn only on a change or while
-    /// a piece falls or a mend glows.
+    /// Read as heart containers: every leaf keeps its place as a faint outline, crimson fills what is left of it, and
+    /// three side veins split it into quarters. Every hit shows its own size: exactly the piece it took breaks off,
+    /// glows a moment and falls away grey. Life drains from the twig's tip back to its base; the mend binding is wound
+    /// round the twig's base, and while a wound can be bound the leaves show faintly what binding would give back.
+    /// The shards of the next life swell a bud at the twig's tip; the fourth opens it into a new leaf.
+    /// v0.114.5: drawn from smooth textures made in code (<see cref="LeafAtlas"/>), every edge anti-aliased - bare
+    /// UI triangles were jagged ("je to odporný a zubatý"). Redrawn only on a change or while something moves.
     /// </summary>
     [RequireComponent(typeof(CanvasRenderer))]
     public sealed class LifeLeaves : MaskableGraphic
@@ -35,20 +34,15 @@ namespace CrimsonVeil.UI
         public const float Spacing = 36f, LeafLength = 44f, LeafWidth = 22f;
         public const float FallSeconds = 1.3f, MendGlowSeconds = 0.7f;
 
-        static readonly Color InkC = new Color(0.03f, 0.03f, 0.035f, 1f);
-        static readonly Color Dark = new Color(0.28f, 0.02f, 0.04f, 0.95f);
-        static readonly Color Mid = new Color(0.58f, 0.05f, 0.08f, 0.9f);
-        static readonly Color Bright = new Color(0.95f, 0.42f, 0.36f, 0.3f);
-        static readonly Color Lit = new Color(0.86f, 0.3f, 0.24f, 0.95f);
-        static readonly Color Promise = new Color(0.62f, 0.08f, 0.1f, 0.2f);
-        static readonly Color MendGlow = new Color(1f, 0.6f, 0.5f, 0.45f);
-        static readonly Color Ember = new Color(1f, 0.42f, 0.2f, 0.95f);
-        static readonly Color Ashen = new Color(0.45f, 0.43f, 0.43f, 0.85f);
-        static readonly Color Empty = new Color(0.03f, 0.03f, 0.035f, 0.22f);
-        /// <summary>The paper's edge round the ink (v0.114.4): a thin pale rim, seen on dark rock, lost on pale mist.</summary>
-        static readonly Color Rim = new Color(0.86f, 0.84f, 0.8f, 0.45f);
-        static readonly Color PromiseEdge = new Color(0.85f, 0.28f, 0.26f, 0.35f);
-        static readonly Color Vein = new Color(0.18f, 0f, 0.02f, 0.8f);
+        static readonly Color InkC = new Color(0.04f, 0.035f, 0.035f, 1f);
+        static readonly Color CutC = new Color(0.16f, 0f, 0.02f, 0.9f);
+        static readonly Color Wrap = new Color(0.6f, 0.07f, 0.09f, 1f);
+        static readonly Color WrapLit = new Color(0.86f, 0.3f, 0.26f, 1f);
+        static readonly Color Untied = new Color(0.5f, 0.47f, 0.46f, 0.6f);
+        static readonly Color Ember = new Color(1f, 0.5f, 0.3f, 0.95f);
+        static readonly Color Ashen = new Color(0.5f, 0.48f, 0.47f, 0.9f);
+
+        public override Texture mainTexture => LeafAtlas.Texture;
 
         /// <summary>How many times it has been drawn (for tests).</summary>
         public int Redraws { get; private set; }
@@ -102,6 +96,9 @@ namespace CrimsonVeil.UI
             return new Vector2(Mathf.Cos(angle), Mathf.Sin(angle));
         }
 
+        /// <summary>A leaf's half-width (px) a fraction <paramref name="f"/> along it, as the texture draws it.</summary>
+        public static float HalfWidthAt(float f, float size = 1f) => LeafWidth * 0.5f * size * LeafAtlas.Profile(f);
+
         protected override void OnPopulateMesh(VertexHelper vh)
         {
             Redraws++;
@@ -109,58 +106,47 @@ namespace CrimsonVeil.UI
             vh.Clear();
             var r = rectTransform.rect;
             int n = Mathf.Max(1, Mathf.RoundToInt(maxHealth));
-            float low = health > 0f && health <= 1.01f ? 0.5f + 0.5f * Mathf.Sin(time * 6f) : 0f;
+            float low = health > 0f && health <= 1.01f ? 0.5f + 0.5f * Mathf.Sin(time * 5f) : 0f;
+            float ready = CanMend ? 0.5f + 0.5f * Mathf.Sin(time * 3.5f) : 0f;
 
-            // the twig: from its base at the corner to beyond the last leaf, where the bud is; thick at the base
+            // the twig, the bud at its tip, the binding round its base
             float length = 22f + (n - 1) * Spacing + 34f;
             Twig(vh, r, length);
-            // the bud for the next life at the tip, swelling with the shards (where the next leaf will grow)
-            var tip = new Vector2(r.xMin + length, TwigY(r, length));
-            Bud(vh, tip, shards / 4f, n);
-            // the binding wound round the twig's base: the mend knot, a wrap for every blow that landed
-            float ready = CanMend ? 0.5f + 0.5f * Mathf.Sin(time * 3.5f) : 0f;
+            Bud(vh, new Vector2(r.xMin + length, TwigY(r, length)), shards / 4f);
             Binding(vh, r, mend, ready);
 
-            // a hit or the last leaf: the crimson lightens a moment (lighter, not more garish)
-            float lift = Mathf.Clamp01(0.35f * low + 0.5f * hurtFlash);
-            var under = Color.Lerp(Dark, Lit, lift * 0.5f);
-            var over = Color.Lerp(Mid, Lit, lift);
-            // what a binding would give back: a faint crimson promise on the empty leaves; held, it fills from the stalk
+            float lift = Mathf.Clamp01(0.4f * low + 0.6f * hurtFlash);
             float promised = Mathf.Min(n, health + mendAmount), grown = health + mendAmount * Mathf.Clamp01(mending);
             for (int i = 0; i < n; i++)
             {
                 var at = Node(i, r, out bool below);
                 var dir = LeafDir(i, below);
-                var stalkEnd = at + dir * 6f;
-                // the stalk, always (a bare one where the leaf has gone)
-                Line(vh, at, stalkEnd, 2.2f, 1.4f, InkC);
+                var stalkEnd = at + dir * 5f;
+                Stroke(vh, at - dir * 1.5f, stalkEnd + dir * 1.5f, 2.6f, 1.8f, InkC);
                 float full = Mathf.Clamp01(health - i);
-                // its place: a faint ink outline of the whole leaf, so what is missing shows
-                if (full < 0.999f)
+                if (full < 0.999f) Leaf(vh, stalkEnd, dir, full, 1f, LeafAtlas.Empty, Color.white);
+                if (full > 0f)
                 {
-                    Leaf(vh, stalkEnd, dir, full, 1f, Empty, Empty, i, 1f, false);
-                    var ee = Rim; ee.a = 0.3f; Edge(vh, stalkEnd, dir, full, i, ee);
+                    Leaf(vh, stalkEnd, dir, 0f, full, LeafAtlas.Full, Color.white);
+                    if (lift > 0.01f) Leaf(vh, stalkEnd, dir, 0f, full, LeafAtlas.Pale, new Color(1f, 0.55f, 0.45f, 0.4f * lift));
+                    if (full < 0.999f) Cut(vh, stalkEnd, dir, full);
                 }
-                if (full > 0f) Leaf(vh, stalkEnd, dir, 0f, full, under, over, i, 1f, full < 0.999f);
                 if (CanMend && full < 0.999f)
                 {
+                    // what binding would give back, faint; held, it fills from the stalk
                     float p1 = Mathf.Clamp01(promised - i), g1 = Mathf.Clamp01(Mathf.Min(grown, promised) - i);
-                    var pc = Promise; pc.a += 0.12f * ready;
-                    if (p1 > full) Leaf(vh, stalkEnd, dir, Mathf.Max(full, g1), p1, pc, pc, i, 1f, false);
-                    if (p1 > full) { var pe = PromiseEdge; pe.a += 0.3f * ready; Edge(vh, stalkEnd, dir, full, i, pe, p1); }
-                    if (g1 > full) Leaf(vh, stalkEnd, dir, full, g1, Dark, Lit, i, 1f, false);
+                    if (p1 > Mathf.Max(full, g1)) Leaf(vh, stalkEnd, dir, Mathf.Max(full, g1), p1, LeafAtlas.Full, new Color(1f, 1f, 1f, 0.28f + 0.17f * ready));
+                    if (g1 > full) Leaf(vh, stalkEnd, dir, full, g1, LeafAtlas.Full, Color.white);
                 }
-                Veins(vh, stalkEnd, dir, full, i);
             }
-            // a mended piece glows as it grows back
+            // a mended piece glows a moment as it grows back
             foreach (var m in mends)
             {
                 if (m.leaf >= n) continue;
                 float t = (time - m.start) / MendGlowSeconds;
                 var at = Node(m.leaf, r, out bool below);
                 var dir = LeafDir(m.leaf, below);
-                var c = MendGlow; c.a *= 1f - t;
-                Leaf(vh, at + dir * 6f, dir, m.f0, m.f1, c, c, m.leaf, 1f, false);
+                Leaf(vh, at + dir * 5f, dir, m.f0, m.f1, LeafAtlas.Pale, new Color(1f, 0.62f, 0.52f, 0.5f * (1f - t)));
             }
             // the pieces a hit took: a moment glowing where they were, then grey, falling and turning
             foreach (var p in pieces)
@@ -169,15 +155,83 @@ namespace CrimsonVeil.UI
                 float t = (time - p.start) / FallSeconds;
                 var at = Node(p.leaf, r, out bool below);
                 var dir0 = LeafDir(p.leaf, below);
-                var baseAt = at + dir0 * 6f;
+                var baseAt = at + dir0 * 5f;
                 float mid = (p.f0 + p.f1) * 0.5f * LeafLength;
                 var centre = baseAt + dir0 * mid;
-                float fall = Mathf.Max(0f, t - 0.12f);   // it hangs a moment first, so the hit is seen
+                float fall = Mathf.Max(0f, t - 0.12f);
                 float turn = fall * 2.4f * (below ? 1f : -1f);
                 var dir = new Vector2(dir0.x * Mathf.Cos(turn) - dir0.y * Mathf.Sin(turn), dir0.x * Mathf.Sin(turn) + dir0.y * Mathf.Cos(turn));
                 centre += new Vector2(Mathf.Sin(fall * 5f) * 7f + fall * 12f, -fall * fall * 70f - fall * 10f);
                 var c = Color.Lerp(Ember, Ashen, Mathf.Clamp01(t * 4f)); c.a *= 1f - t * t;
-                Leaf(vh, centre - dir * mid, dir, p.f0, p.f1, c, c, p.leaf, 1f, false);
+                Leaf(vh, centre - dir * mid, dir, p.f0, p.f1, LeafAtlas.Pale, c);
+            }
+        }
+
+        /// <summary>
+        /// A leaf (or the part of it from <paramref name="f0"/> to <paramref name="f1"/> of its length) from its stalk
+        /// along <paramref name="dir"/>: one quad over the leaf's picture in the atlas, so its edge is smooth.
+        /// </summary>
+        static void Leaf(VertexHelper vh, Vector2 baseAt, Vector2 dir, float f0, float f1, Rect cell, Color tint, float size = 1f)
+        {
+            if (f1 - f0 < 1e-3f) return;
+            float L = LeafLength * size, half = L * LeafAtlas.CellHalfWidth;
+            var side = new Vector2(-dir.y, dir.x);
+            Vector2 a = baseAt + dir * (f0 * L), b = baseAt + dir * (f1 * L);
+            float v0 = LeafAtlas.V(cell, f0), v1 = LeafAtlas.V(cell, f1);
+            int i = vh.currentVertCount;
+            vh.AddVert(a - side * half, tint, new Vector4(cell.xMin, v0));
+            vh.AddVert(a + side * half, tint, new Vector4(cell.xMax, v0));
+            vh.AddVert(b + side * half, tint, new Vector4(cell.xMax, v1));
+            vh.AddVert(b - side * half, tint, new Vector4(cell.xMin, v1));
+            vh.AddTriangle(i, i + 1, i + 2); vh.AddTriangle(i, i + 2, i + 3);
+        }
+
+        /// <summary>The clean edge where a leaf was torn: a thin dark line across it.</summary>
+        static void Cut(VertexHelper vh, Vector2 baseAt, Vector2 dir, float f)
+        {
+            var side = new Vector2(-dir.y, dir.x);
+            var p = baseAt + dir * (f * LeafLength);
+            float h = HalfWidthAt(f) * 0.92f;
+            Stroke(vh, p - side * h, p + side * h, 1.6f, 1.6f, CutC);
+        }
+
+        /// <summary>
+        /// A line of ink with smooth edges: a quad over the soft stroke in the atlas, wide enough to hold its fringe.
+        /// </summary>
+        static void Stroke(VertexHelper vh, Vector2 a, Vector2 b, float w0, float w1, Color col)
+        {
+            var d = (b - a).normalized; var n = new Vector2(-d.y, d.x);
+            float k = LeafAtlas.StrokeSpread;
+            var s = LeafAtlas.StrokeCell;
+            float u = s.center.x;
+            int i = vh.currentVertCount;
+            vh.AddVert(a + n * w0 * 0.5f * k, col, new Vector4(u, s.yMax));
+            vh.AddVert(a - n * w0 * 0.5f * k, col, new Vector4(u, s.yMin));
+            vh.AddVert(b - n * w1 * 0.5f * k, col, new Vector4(u, s.yMin));
+            vh.AddVert(b + n * w1 * 0.5f * k, col, new Vector4(u, s.yMax));
+            vh.AddTriangle(i, i + 1, i + 2); vh.AddTriangle(i, i + 2, i + 3);
+        }
+
+        /// <summary>The twig: an ink stroke tapering from the corner out, a little uneven, its edges smooth.</summary>
+        static void Twig(VertexHelper vh, Rect r, float length)
+        {
+            const int seg = 40;
+            var s = LeafAtlas.StrokeCell;
+            float k = LeafAtlas.StrokeSpread, u0 = s.center.x;
+            int start = vh.currentVertCount;
+            for (int j = 0; j <= seg; j++)
+            {
+                float u = j / (float)seg;
+                float x = r.xMin + 2f + u * (length - 2f);
+                float y = TwigY(r, x - r.xMin);
+                float w = Mathf.Lerp(6.5f, 2.4f, Mathf.Pow(u, 0.8f)) * (1f + 0.1f * Mathf.Sin(u * 31f));
+                vh.AddVert(new Vector3(x, y + w * 0.5f * k), InkC, new Vector4(u0, s.yMax));
+                vh.AddVert(new Vector3(x, y - w * 0.5f * k), InkC, new Vector4(u0, s.yMin));
+                if (j > 0)
+                {
+                    int i0 = start + (j - 1) * 2, i1 = start + j * 2;
+                    vh.AddTriangle(i0, i1, i0 + 1); vh.AddTriangle(i0 + 1, i1, i1 + 1);
+                }
             }
         }
 
@@ -189,202 +243,138 @@ namespace CrimsonVeil.UI
         {
             for (int q = 0; q < 4; q++)
             {
-                float x = r.xMin + 3f + q * 5f, y = TwigY(r, x - r.xMin);
+                float x = r.xMin + 4f + q * 4.6f, y = TwigY(r, x - r.xMin);
                 bool tied = mend >= (q + 1) / 4f - 1e-4f;
-                var c = tied ? Color.Lerp(Mid, Lit, 0.35f + 0.5f * ready) : new Color(0.5f, 0.47f, 0.46f, 0.6f);
-                Line(vh, new Vector2(x - 2.5f, y + 8f), new Vector2(x + 2.5f, y - 8f), tied ? 3.8f : 1.6f, tied ? 3.8f : 1.6f, c);
+                var c = tied ? Color.Lerp(Wrap, WrapLit, 0.25f + 0.45f * ready) : Untied;
+                Stroke(vh, new Vector2(x - 2.2f, y + 7f), new Vector2(x + 2.2f, y - 7f), tied ? 3.2f : 1.6f, tied ? 3.2f : 1.6f, c);
             }
             if (mend < 1f - 1e-4f) return;
             float y0 = TwigY(r, 12f);
-            var end = Color.Lerp(Mid, Lit, 0.35f + 0.5f * ready);
-            Line(vh, new Vector2(r.xMin + 12f, y0 - 4f), new Vector2(r.xMin + 9f, y0 - 15f - 2f * ready), 2.6f, 1f, end);
-            Line(vh, new Vector2(r.xMin + 14f, y0 - 4f), new Vector2(r.xMin + 18f, y0 - 13f - 2f * ready), 2.6f, 1f, end);
+            var end = Color.Lerp(Wrap, WrapLit, 0.25f + 0.45f * ready);
+            Stroke(vh, new Vector2(r.xMin + 11f, y0 - 4f), new Vector2(r.xMin + 8f, y0 - 15f - 2f * ready), 2.6f, 1f, end);
+            Stroke(vh, new Vector2(r.xMin + 13f, y0 - 4f), new Vector2(r.xMin + 17f, y0 - 13f - 2f * ready), 2.6f, 1f, end);
         }
 
-        /// <summary>
-        /// A thin line round a leaf's outline from <paramref name="f0"/> to <paramref name="f1"/> of its length (to the tip
-        /// by default): the pale edge of a leaf's empty place, so the place shows on dark rock too.
-        /// </summary>
-        static void Edge(VertexHelper vh, Vector2 baseAt, Vector2 dir, float f0, int seed, Color col, float f1 = 1f)
+        /// <summary>The bud for the next life: a small leaf still folded at the tip, unfolding with every shard.</summary>
+        static void Bud(VertexHelper vh, Vector2 at, float grown)
         {
-            var side = new Vector2(-dir.y, dir.x);
-            const int seg = 10;
-            for (int s = -1; s <= 1; s += 2)
-            {
-                Vector2 last = Vector2.zero;
-                for (int k = 0; k <= seg; k++)
-                {
-                    float u = Mathf.Lerp(f0, f1, k / (float)seg);
-                    var pt = baseAt + dir * (u * LeafLength) + side * (s * HalfWidth(u, seed, 1f));
-                    if (k > 0) Line(vh, last, pt, 1.1f, 1.1f, col);
-                    last = pt;
-                }
-            }
-        }
-
-        /// <summary>Three side veins split a leaf into quarters: dark on the crimson, faint on what is missing.</summary>
-        static void Veins(VertexHelper vh, Vector2 baseAt, Vector2 dir, float full, int seed)
-        {
-            var side = new Vector2(-dir.y, dir.x);
-            for (int q = 1; q <= 3; q++)
-            {
-                float u = q / 4f;
-                float h = HalfWidth(u, seed, 1f) * 0.85f;
-                var on = baseAt + dir * (u * LeafLength);
-                var c = u < full ? Vein : Empty;
-                // from the midrib out and forward to both edges
-                Line(vh, on, on + side * h + dir * (h * 0.55f), 1.2f, 0.5f, c);
-                Line(vh, on, on - side * h + dir * (h * 0.55f), 1.2f, 0.5f, c);
-            }
-        }
-
-        /// <summary>A leaf's half-width a fraction <paramref name="u"/> along it: round at the base, broadest a third along, pointed at the tip.</summary>
-        static float HalfWidth(float u, int seed, float size) =>
-            LeafWidth * size * 0.5f * Mathf.Sin(Mathf.Pow(Mathf.Clamp01(u), 0.75f) * Mathf.PI) * (1f + 0.05f * Mathf.Sin(u * 20f + seed));
-
-        /// <summary>The twig: an ink stroke tapering from the corner out, a little uneven, with a knot at each leaf.</summary>
-        void Twig(VertexHelper vh, Rect r, float length)
-        {
-            const int seg = 40;
-            int start = vh.currentVertCount;
-            for (int k = 0; k <= seg; k++)
-            {
-                float u = k / (float)seg;
-                float x = r.xMin + u * length;
-                float y = TwigY(r, u * length);
-                float w = Mathf.Lerp(7f, 2.6f, u) * (1f + 0.12f * Mathf.Sin(u * 37f));
-                vh.AddVert(new Vector3(x, y + w * 0.5f), InkC, Vector4.zero);
-                vh.AddVert(new Vector3(x, y - w * 0.5f), InkC, Vector4.zero);
-                if (k > 0)
-                {
-                    int i0 = start + (k - 1) * 2, i1 = start + k * 2;
-                    vh.AddTriangle(i0, i1, i0 + 1); vh.AddTriangle(i0 + 1, i1, i1 + 1);
-                }
-            }
-            // light from above along its upper edge (v0.114.4): a thin pale line that fades into the ink, so the twig
-            // reads on black rock as a lit branch; on pale mist it is lost
-            int lit = vh.currentVertCount;
-            for (int k = 0; k <= seg; k++)
-            {
-                float u = k / (float)seg;
-                float x = r.xMin + u * length, y = TwigY(r, u * length);
-                float top = y + Mathf.Lerp(7f, 2.6f, u) * (1f + 0.12f * Mathf.Sin(u * 37f)) * 0.5f;
-                var c = Rim; c.a *= Mathf.Clamp01(u * 10f) * Mathf.Clamp01((1f - u) * 6f) * (0.75f + 0.25f * Mathf.Sin(u * 23f));
-                var outer = c; outer.a *= 0.4f;
-                var clear = c; clear.a = 0f;
-                vh.AddVert(new Vector3(x, top + 0.7f), outer, Vector4.zero);
-                vh.AddVert(new Vector3(x, top), c, Vector4.zero);
-                vh.AddVert(new Vector3(x, top - 1.6f), clear, Vector4.zero);
-                if (k > 0)
-                    for (int j = 0; j < 2; j++)
-                    {
-                        int i0 = lit + (k - 1) * 3 + j, i1 = lit + k * 3 + j;
-                        vh.AddTriangle(i0, i1, i0 + 1); vh.AddTriangle(i0 + 1, i1, i1 + 1);
-                    }
-            }
-        }
-
-        /// <summary>
-        /// A crimson leaf from its stalk along <paramref name="dir"/>, as the scarf's cloth: a dark underside, the crimson
-        /// over it, a bright gloss along one half, a dark midrib. Only from <paramref name="f0"/> to <paramref name="f1"/>
-        /// of its length is drawn (a torn leaf: the rest is gone, its edge ragged).
-        /// </summary>
-        static void Leaf(VertexHelper vh, Vector2 baseAt, Vector2 dir, float f0, float f1, Color under, Color over, int seed, float size, bool ragged)
-        {
-            if (f1 - f0 < 1e-3f) return;
-            float L = LeafLength * size, W = LeafWidth * size;
-            var side = new Vector2(-dir.y, dir.x);
-            const int seg = 14;
-            float Half(float u) => HalfWidth(u, seed, size);
-            for (int layer = 0; layer < 3; layer++)
-            {
-                if (layer == 2 && (over.a < 0.5f || over.g > 0.3f)) continue;   // (no gloss on an empty outline, an ember or ash)
-                var col = layer == 0 ? under : layer == 1 ? over : Bright;
-                if (layer == 2) col.a *= over.a;   // (the gloss fades with the leaf)
-                float shrink = layer == 0 ? 1f : layer == 1 ? 0.86f : 0.5f;
-                int start = vh.currentVertCount;
-                for (int k = 0; k <= seg; k++)
-                {
-                    float u = Mathf.Lerp(f0, f1, k / (float)seg);
-                    float h = Half(u) * shrink;
-                    var p = baseAt + dir * (u * L);
-                    if (layer == 2)
-                    {
-                        // the gloss: from beside the midrib to short of the edge, on one half only
-                        vh.AddVert(p + side * (h * 1.3f), col, Vector4.zero);
-                        vh.AddVert(p + side * (h * 0.25f), col, Vector4.zero);
-                    }
-                    else
-                    {
-                        vh.AddVert(p + side * h, col, Vector4.zero);
-                        vh.AddVert(p - side * h, col, Vector4.zero);
-                    }
-                    if (k > 0)
-                    {
-                        int i0 = start + (k - 1) * 2, i1 = start + k * 2;
-                        vh.AddTriangle(i0, i1, i0 + 1); vh.AddTriangle(i0 + 1, i1, i1 + 1);
-                    }
-                }
-            }
-            // a torn end: ragged teeth of the leaf left standing past the cut
-            if (ragged)
-            {
-                float h = Half(f1);
-                var cut = baseAt + dir * (f1 * L);
-                const int teeth = 4;
-                for (int j = 0; j < teeth; j++)
-                {
-                    var a = cut + side * Mathf.Lerp(h, -h, j / (float)teeth);
-                    var b = cut + side * Mathf.Lerp(h, -h, (j + 1f) / teeth);
-                    float reach = L * (((j + seed) & 1) == 0 ? 0.09f : 0.035f);
-                    var tipAt = (a + b) * 0.5f + dir * reach;
-                    int t0 = vh.currentVertCount;
-                    vh.AddVert(a, under, Vector4.zero); vh.AddVert(b, under, Vector4.zero); vh.AddVert(tipAt, under, Vector4.zero);
-                    vh.AddTriangle(t0, t0 + 1, t0 + 2);
-                }
-            }
-            // the midrib
-            Line(vh, baseAt + dir * (f0 * L), baseAt + dir * (Mathf.Min(f1, 0.92f) * L), 1.4f, 0.5f, new Color(0.2f, 0f, 0.02f, 0.85f * over.a));
-        }
-
-        /// <summary>The bud for the next life: two dark sepals and the crimson swelling between, bigger with every shard.</summary>
-        static void Bud(VertexHelper vh, Vector2 at, float grown, int seed)
-        {
-            // a small leaf still folded, pointing on along the twig; it unfolds into the next leaf on the fourth shard
             float angle = 18f * Mathf.Deg2Rad;
             var dir = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle));
-            if (grown <= 0f) { Ellipse(vh, at + dir * 3f, 4f, 2.6f, InkC); return; }
-            float size = 0.22f + 0.4f * grown;
-            Leaf(vh, at, dir, 0f, 1f, Dark, Mid, seed, size, false);
-            // the sepals holding it, dark
+            if (grown <= 0f) { Leaf(vh, at - dir * 1f, dir, 0f, 1f, LeafAtlas.Pale, InkC, 0.2f); return; }
+            float size = 0.24f + 0.4f * grown;
+            Leaf(vh, at, dir, 0f, 1f, LeafAtlas.Full, Color.white, size);
             var side = new Vector2(-dir.y, dir.x);
             float s = LeafLength * size;
-            Line(vh, at, at + dir * (s * 0.35f) + side * (s * 0.22f), 2f, 0.5f, InkC);
-            Line(vh, at, at + dir * (s * 0.35f) - side * (s * 0.22f), 2f, 0.5f, InkC);
+            Stroke(vh, at, at + dir * (s * 0.32f) + side * (s * 0.2f), 2f, 0.8f, InkC);
+            Stroke(vh, at, at + dir * (s * 0.32f) - side * (s * 0.2f), 2f, 0.8f, InkC);
         }
+    }
 
-        static void Line(VertexHelper vh, Vector2 a, Vector2 b, float w0, float w1, Color col)
+    /// <summary>
+    /// The pictures the life leaves are drawn from, painted in code once into one small texture with mipmaps
+    /// (v0.114.5): the crimson leaf (layered as the scarf: dark at its edge and underside, lit along one half, a dark
+    /// midrib and three side veins splitting it in quarters), the empty place of a leaf (a faint fill and a pale edge,
+    /// seen on dark rock and pale mist alike), a pale leaf to tint (falling ash, embers, a mend's glow) and a soft stroke
+    /// for every line of ink. Every edge is anti-aliased in the texture, so nothing on screen is jagged.
+    /// </summary>
+    public static class LeafAtlas
+    {
+        const int Size = 256, CellW = 64, CellH = 128, Base = 4, Len = 120;
+        /// <summary>A leaf's half-width in the texture at its broadest, px.</summary>
+        const float HalfW = 30f;
+
+        /// <summary>UV cells: the crimson leaf, its empty place, a pale leaf to tint, the soft stroke.</summary>
+        public static readonly Rect Full = Cell(0), Empty = Cell(1), Pale = Cell(2);
+        public static readonly Rect StrokeCell = new Rect(208f / Size, 0f, 32f / Size, 32f / Size);
+        /// <summary>A quad over a leaf cell is this wide (each side of the midrib) per unit of the leaf's length.</summary>
+        public const float CellHalfWidth = (CellW * 0.5f) / Len;
+        /// <summary>The stroke cell is this much wider than the solid ink it holds (its soft fringe).</summary>
+        public const float StrokeSpread = 32f / 20f;
+
+        static Texture2D texture;
+        public static Texture2D Texture { get { if (texture == null) texture = Paint(); return texture; } }
+
+        static Rect Cell(int k) => new Rect(k * CellW / (float)Size, 0f, CellW / (float)Size, CellH / (float)Size);
+
+        /// <summary>The v coordinate a fraction <paramref name="f"/> along a leaf in <paramref name="cell"/>.</summary>
+        public static float V(Rect cell, float f) => cell.yMin + (Base + f * Len) / Size;
+
+        /// <summary>A leaf's outline: 0 at the stalk and the tip, 1 at its broadest a third along.</summary>
+        public static float Profile(float f) => f <= 0f || f >= 1f ? 0f : Mathf.Sin(Mathf.Pow(f, 0.72f) * Mathf.PI);
+
+        static Texture2D Paint()
         {
-            var d = (b - a).normalized; var n = new Vector2(-d.y, d.x);
-            int i = vh.currentVertCount;
-            vh.AddVert(a + n * w0 * 0.5f, col, Vector4.zero); vh.AddVert(a - n * w0 * 0.5f, col, Vector4.zero);
-            vh.AddVert(b - n * w1 * 0.5f, col, Vector4.zero); vh.AddVert(b + n * w1 * 0.5f, col, Vector4.zero);
-            vh.AddTriangle(i, i + 1, i + 2); vh.AddTriangle(i, i + 2, i + 3);
-        }
+            var px = new Color32[Size * Size];
+            var deep = new Color(0.27f, 0.015f, 0.035f);
+            var crimson = new Color(0.62f, 0.06f, 0.085f);
+            var lit = new Color(0.9f, 0.32f, 0.28f);
+            var vein = new Color(0.15f, 0f, 0.02f);
+            var paper = new Color(0.88f, 0.86f, 0.82f);
+            for (int y = 0; y < CellH; y++)
+                for (int x = 0; x < CellW; x++)
+                {
+                    float t = (y + 0.5f - Base) / Len;
+                    float xs = x + 0.5f - CellW * 0.5f;
+                    float hw = HalfW * Profile(t);
+                    float d = Mathf.Abs(xs) - hw;                           // < 0 inside, px (good enough near the sides)
+                    float tipD = (t - 1f) * Len, baseD = -t * Len;          // past the tip or the stalk
+                    float edge = Mathf.Max(d, Mathf.Max(tipD, baseD));
+                    float cover = Mathf.Clamp01(0.5f - edge);              // 1 px anti-aliased edge
+                    if (cover <= 0f) continue;
+                    float s = hw > 0.01f ? Mathf.Clamp(xs / hw, -1f, 1f) : 0f;   // across: -1 .. 1
 
-        static void Disc(VertexHelper vh, Vector2 c, float radius, Color col) => Ellipse(vh, c, radius, radius, col);
+                    // the crimson leaf
+                    float light = 0.5f + 0.5f * s;
+                    var c = Color.Lerp(deep, crimson, 0.45f + 0.4f * light * (1f - 0.35f * t));
+                    float gloss = Mathf.Exp(-Mathf.Pow((s - 0.45f) / 0.25f, 2f)) * Mathf.Exp(-Mathf.Pow((t - 0.4f) / 0.25f, 2f));
+                    c = Color.Lerp(c, lit, 0.4f * gloss);
+                    float rim = Mathf.Clamp01((edge + 3f) / 3f);            // darker towards the edge
+                    c = Color.Lerp(c, deep, 0.55f * rim);
+                    float rib = Mathf.Clamp01(1.3f - Mathf.Abs(xs)) * (t < 0.92f ? 1f : 0f);
+                    float veins = VeinCover(xs, y + 0.5f - Base, hw);
+                    c = Color.Lerp(c, vein, Mathf.Max(0.75f * rib, 0.6f * veins));
+                    Put(px, 0, x, y, c, 0.97f * cover);
 
-        static void Ellipse(VertexHelper vh, Vector2 c, float rx, float ry, Color col)
-        {
-            const int seg = 16;
-            int centre = vh.currentVertCount;
-            vh.AddVert(c, col, Vector4.zero);
-            for (int k = 0; k <= seg; k++)
+                    // its empty place: a faint ink fill, a pale edge, the quarter veins faintly
+                    float ring = Mathf.Clamp01(1f - Mathf.Abs(edge + 1.2f) / 1.2f);
+                    var e = Color.Lerp(new Color(0.05f, 0.04f, 0.04f), paper, Mathf.Max(ring, 0.5f * veins));
+                    float ea = Mathf.Max(0.16f, Mathf.Max(0.5f * ring, 0.25f * veins));
+                    Put(px, 1, x, y, e, ea * cover);
+
+                    // a pale leaf to tint
+                    Put(px, 2, x, y, Color.Lerp(Color.white, paper, 0.3f * rim), cover);
+                }
+            // the soft stroke: solid in its middle 20 px of 32, a smooth fringe either side
+            for (int y = 0; y < 32; y++)
             {
-                float a = Mathf.PI * 2f * k / seg;
-                vh.AddVert(c + new Vector2(Mathf.Cos(a) * rx, Mathf.Sin(a) * ry), col, Vector4.zero);
-                if (k > 0) vh.AddTriangle(centre, centre + k, centre + k + 1);
+                float d = Mathf.Abs(y + 0.5f - 16f) - 10f;
+                float a = Mathf.Clamp01(0.5f - d / 1.6f);
+                for (int x = 200; x < 248; x++) px[y * Size + x] = new Color(1f, 1f, 1f, a);
             }
+            var tex = new Texture2D(Size, Size, TextureFormat.RGBA32, true) { name = "LifeLeaves", wrapMode = TextureWrapMode.Clamp, filterMode = FilterMode.Trilinear, anisoLevel = 2, hideFlags = HideFlags.DontSave };
+            tex.SetPixels32(px);
+            tex.Apply(true, true);
+            return tex;
+        }
+
+        /// <summary>Three side veins from the midrib out and forward to the edge, a quarter, a half and three quarters along.</summary>
+        static float VeinCover(float xs, float yAlong, float hw)
+        {
+            float best = 0f, ax = Mathf.Abs(xs);
+            if (ax > hw * 0.85f) return 0f;
+            for (int q = 1; q <= 3; q++)
+            {
+                float line = q * 0.25f * Len + ax * 0.6f;
+                float dist = Mathf.Abs(yAlong - line) / 1.17f;
+                best = Mathf.Max(best, Mathf.Clamp01(1.1f - dist) * Mathf.Clamp01((hw * 0.85f - ax) / 3f));
+            }
+            return best;
+        }
+
+        static void Put(Color32[] px, int cell, int x, int y, Color c, float a)
+        {
+            c.a = a;
+            px[y * Size + cell * CellW + x] = c;
         }
     }
 

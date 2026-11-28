@@ -82,11 +82,12 @@ Vývoj běží na dvou počítačích (**Lenovo** = hlavní, RTX 2060; **DELL** 
   - **Plachtění bez čerpání šály (2026-11-28):** uživateli se zdálo, že plachtění někdy nečerpá šálu. Příčina je záměr: látka ze sestřeleného PaperKite dává 8 s plachtění zdarma (`KiteCloth`, `MotorLogic.GlideTime`) a ve hře to není vidět. Uživatel rozhodl nechat to, jak to je (v0.108.1).
   - **Boj, balíky A–E (v0.109.0):** uživatel řekl „Na chvilku přibít a je. Odezva bez trestu. A udělej všechno a b c d e“. Hotovo a popsané v `Docs/claude/combat-feel.md`. Testy: EditMode 692/692, PlayMode 163/163 (8 nových v `CombatFeelPlayTests`). Uživatel to ve hře ještě nezkoušel a nové efekty (ohlášení útoku, minutí, odraz od štítu) jsem neviděl na obrazovce, jen v testech.
   - **Štít proti všem (v0.109.1):** uživatel se ptal, jestli má štít fungovat proti všem nepřátelům. Blokoval všechny zásahy, jen vrány se nezapotácely a proti popelu z AshMoth štít nepomáhal. Teď vrána odletí od štítu a hejno 1 s neútočí. Držený štít nepustí popel na šálu, šálu přitom dál spotřebovává. Testy: EditMode 692/692; CombatFeel, Creature a Casting 42/42.
+  - **Milník a sloučení (2026-11-28):** uživatel řekl „Otaguj to a zamerguj do mainu. Pak budeme ale pokračovat nad branchí“. Značka `alpha_10` je na v0.109.1 a `main` je na ni posunutá (fast-forward). Práce pokračuje na `newFeatures`.
 - **Rozdělané:** nic.
 - **Další krok:** podle uživatele. Na DELLu by stálo za to změřit Vlastní (`bench.ps1 -Extra "-cvdetail","1,1,1,1"` apod.). Čeká se, až uživatel posoudí nové tvory (v0.103.0) a vyzkouší úrovně kvality.
 
 ## Stav
-- Větev `newFeatures`, do `main` se slučuje jen na pokyn uživatele.
+- Větev `newFeatures`, do `main` se slučuje jen na pokyn uživatele. Naposledy sloučeno 2026-11-28 na v0.109.1 (`alpha_10`).
 - Výkon: ~350 fps v okně 1080p na Lenovu (v0.100.0). Na DELLu (Intel UHD) 58 fps v 1080p, 111 v 720p (v0.100.20); ve Full HD na Střední (automaticky) 96 fps na startu a 81 mezi nepřáteli, na Vysoké 82/70 (v0.106.0).
 - **DELL je připravený k vývoji (2026-11-27):** Git 2.56.1, Unity 6000.3.28f1 + IL2CPP (navíc je tam 6000.6.11f1, projekt ho nepoužívá), Visual Studio 2026 s C++ a Windows SDK 10.0.26100, Blender 5.3 s doplňkem MCP od Blender Lab, uv 0.13.10 a Python 3.12.16, Smart App Control vypnuté. MCP for Unity a Blender MCP fungují, keep-awake běží, Remote Control pro nové sessions zapnutý. Úskalí jsou v `Docs/claude/dell-setup-pitfalls.md`.
 

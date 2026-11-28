@@ -5,6 +5,13 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.109.2] – 2026-11-28
+### Změněno
+- Milník `alpha_10` je na v0.109.1. `newFeatures` je sloučená do `main` (fast-forward) na pokyn uživatele, práce pokračuje na `newFeatures`. Zapsáno do `Docs/Rozpracovano.md`, `Docs/Backlog.md` a poznámky o větvích.
+
+### Testy
+- Jen dokumentace, testy se nespouštěly.
+
 ## [0.109.1] – 2026-11-28
 ### Změněno
 - **Štít platí proti všem nepřátelům.** Uživatel se ptal, proti komu štít funguje. Zásahy blokoval všem, ale:

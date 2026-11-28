@@ -54,9 +54,6 @@ Značky: **[rozhodnuto]** uživatel výslovně chce · **[návrh]** můj návrh,
 - **Co:** teď J K L ; a štít U (můj návrh, v0.85). Uživatel navrhoval U I O P a štít J.
 - **Dopady:** výchozí `InputBindings`, nápověda v menu, testy rebindingu. Uložená nastavení hráčů zůstanou.
 
-### Sloučení `newFeatures` do `main`  [čeká na pokyn] · S
-- **Co:** do `main` se slučuje jen na výslovný pokyn uživatele. Naposledy (v0.74) řekl „ne nemerguj“.
-
 ---
 
 ## Mělo by se (otevřené chyby a dluhy)
@@ -94,6 +91,7 @@ Značky: **[rozhodnuto]** uživatel výslovně chce · **[návrh]** můj návrh,
 ---
 
 ## Hotovo (posledních pár, pak smazat)
+- v0.109.1 – milník `alpha_10`, `newFeatures` sloučená do `main` (fast-forward) na pokyn uživatele 2026-11-28; práce pokračuje na `newFeatures`.
 - v0.109.0 – plynulejší a předvídatelnější boj (balíky A–E): stejný rozběh každého úderu, delší okno pro navázání a podržený stisk, který navazuje, krátké přibití během švihu, zásahy nezávislé na fps, odskok a zakolísání všech nepřátel, viditelné minutí, odraz od štítu, zakolísání nepřítele po vykrytí jeho útoku a jednotné ohlášení útoku u všech nepřátel (RootCrawler nově varuje 0,45 s).
 - v0.108.0 – úchop na hraně: prsty přehnuté přes hranu místo otevřené dlaně na horní ploše. Stisk zbraně na hraně se už neztratí: při šplhání se zapamatuje a zbraň se vyvolá nahoře, ve visu ho odmítne obláček inkoustu u ruky.
 - v0.107.0 – kvalita „Vlastní“: v menu Obraz se dá zvlášť nastavit SSAO, vyhlazování hran, rozlišení vykreslování (75–100 %) a stíny. Změna kterékoli položky přepne kvalitu na Vlastní.

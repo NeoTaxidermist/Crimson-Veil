@@ -5,6 +5,13 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.109.4] – 2026-11-28
+### Změněno
+- `Docs/Backlog.md`: nová položka „Zdraví, léčení a co padá z nepřátel“. Obsahuje otázky uživatele (samoléčení, drop, upgrady, jedny životy na kapitolu), dnešní stav a můj návrh.
+
+### Testy
+- Jen dokumentace, testy se nespouštěly.
+
 ## [0.109.3] – 2026-11-28
 ### Změněno
 - **README a obrázky odpovídají hře k verzi 0.109.** Uživatel řekl: „Teď je ještě potřeba aktualizovat artefakty a popisy a obrázky v mainu atd.“

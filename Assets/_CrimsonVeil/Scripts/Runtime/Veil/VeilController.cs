@@ -282,14 +282,15 @@ namespace CrimsonVeil.Veil
             if (Latched != null) return false;
             float cost = VeilCasting.Cost(form);
 
-            // A blow is committed: nothing cuts it short (not even the whip's grapple), and a press during it - or
-            // while the weapon forms, or while he recovers - is let go: it neither breaks the blow off nor comes after
-            // it. Only one in the blow's last moments (FollowWindow) follows at once, or a quick chain would feel
-            // unheard. (Every press used to be remembered and follow the blow: a bow pressed during a shot loosed late,
-            // when it was no longer expected, and pressed again then loosed twice.)
+            // A blow is committed: nothing cuts it short (not even the whip's grapple). A press in the blow's last
+            // moments (FollowWindow, with its recovery) follows it at once. One earlier is kept only while its button
+            // stays held: held into the last moments it follows like one pressed there; let go before, it is let go too.
+            // (Every press used to be remembered and follow the blow: a bow pressed during a shot loosed late, when it
+            // was no longer expected, and pressed again then loosed twice. Then every early one was dropped, and a
+            // chain felt unpredictable - v0.109 widened the window and carries a held press.)
             if (attackTime >= 0f || pendingAttack.HasValue || recoverTimer > 0f)
             {
-                if (pendingAttack.HasValue || FreeIn() > FollowWindow) return false;
+                if (FreeIn() > FollowWindow) { heldEarly = form; return false; }
                 buffered = form;
                 return true;
             }
@@ -314,6 +315,7 @@ namespace CrimsonVeil.Veil
             if (!Charge.TryCast(cost)) { Fizzle(form); return false; }
             if (Form != form || !castMode) BeginCast(form);
             pendingAttack = form;
+            pendingTime = 0f;
             if (form == VeilForm.Shield) sinceShieldRaised = 0f;
             return true;
         }
@@ -363,12 +365,40 @@ namespace CrimsonVeil.Veil
             Cast(form);
         }
 
-        /// <summary>A press this close (s) to the end of a blow and its recovery follows it at once; earlier ones are let go.</summary>
-        public const float FollowWindow = 0.15f;
+        /// <summary>A press this close (s) to the end of a blow and its recovery follows it at once; an earlier one
+        /// follows only if its button is still held here (0.15 s until v0.109: chains felt unheard).</summary>
+        public const float FollowWindow = 0.3f;
+
+        /// <summary>
+        /// Seconds from a press to the blow, the same for every press: a weapon in hand and one still to form alike.
+        /// (Until v0.109 the blow came when the weapon was half hard: at once with it in hand, a few frames later when
+        /// it formed - one press struck sooner than another.)
+        /// </summary>
+        public const float CastStartup = 0.05f;
+
+        VeilForm? heldEarly;
+        float pendingTime;
+
+        /// <summary>
+        /// The blow pins the hero now (<see cref="MotorLogic.AttackPinned"/>): from the press until its cut is done -
+        /// the end of its active part, or the arrow leaving the bow. Not on the whip's rope.
+        /// </summary>
+        public bool PinnedNow => Latched == null && (pendingAttack.HasValue || (attackTime >= 0f && AttackProgress < PinUntil(ShapeForm)));
+
+        /// <summary>The share of a blow (0..1) until which it pins the hero.</summary>
+        public static float PinUntil(VeilForm form)
+            => form == VeilForm.Bow ? BowPinUntil : CrimsonVeil.Combat.VeilCombatProfile.ActiveWindow(form).y;
+
+        /// <summary>The bow pins him until just after the arrow leaves (it leaves at 0.3 of the shot).</summary>
+        public const float BowPinUntil = 0.4f;
 
         /// <summary>Seconds until the blow under way and the body's recovery from it are over (0: free now).</summary>
         public float FreeIn()
         {
+            if (pendingAttack.HasValue)
+                return Mathf.Max(0f, CastStartup - pendingTime)
+                       + VeilFormLibrary.AttackDuration(pendingAttack.Value) / Mathf.Max(0.01f, Combo.Current.Speed)
+                       + VeilCasting.Recovery(pendingAttack.Value);
             if (attackTime < 0f) return Mathf.Max(0f, recoverTimer);
             float duration = VeilFormLibrary.AttackDuration(ShapeForm) / Mathf.Max(0.01f, Combo.Current.Speed);
             return Mathf.Max(0f, duration - attackTime) + VeilCasting.Recovery(ShapeForm) + Combo.Current.ExtraRecovery;
@@ -403,6 +433,7 @@ namespace CrimsonVeil.Veil
             AttackProgress = -1f;
             pendingAttack = null;
             buffered = null;
+            heldEarly = null;
             Drawing = false;
             ThrustingDown = false;
             DownStrike = false;
@@ -727,7 +758,8 @@ namespace CrimsonVeil.Veil
         {
             sinceShieldRaised += dt;
             // The blow comes the moment the weapon is firm: the transformation is its wind-up.
-            if (pendingAttack.HasValue && Form == pendingAttack.Value && Hardness >= 0.5f * VeilFormLibrary.Hardness(Form))
+            if (pendingAttack.HasValue) pendingTime += dt;
+            if (pendingAttack.HasValue && Form == pendingAttack.Value && pendingTime >= CastStartup)
             {
                 pendingAttack = null;
                 bool guard = Form == VeilForm.Shield && input != null && input.CastHeld(VeilForm.Shield);
@@ -743,6 +775,7 @@ namespace CrimsonVeil.Veil
             if (player != null && player.Motor != null)
             {
                 var m = player.Motor;
+                m.AttackPinned = PinnedNow;
                 m.ScarfGlide = Form == VeilForm.Flow && Charge.Value > 0.02f;
                 if (m.IsGliding && m.GlideTime <= 0f && Form == VeilForm.Flow) Charge.Drain(VeilCasting.GlideDrain, dt);
                 bool low = VeilAim.LowBlow(m.IsGrounded, m.IsCrouching, m.IsSliding);
@@ -756,6 +789,12 @@ namespace CrimsonVeil.Veil
             Combo.Tick(dt);
             // A press late in a blow follows it up once it is spent and the body has recovered (combo, or pour
             // into another weapon).
+            // A press made early in the blow, its button still held now its last moments are here, follows it.
+            if (heldEarly.HasValue && FreeIn() <= FollowWindow)
+            {
+                if (!buffered.HasValue && input != null && input.CastHeld(heldEarly.Value)) buffered = heldEarly;
+                heldEarly = null;
+            }
             if (buffered.HasValue && attackTime < 0f && !pendingAttack.HasValue && recoverTimer <= 0f)
             {
                 var next = buffered.Value;

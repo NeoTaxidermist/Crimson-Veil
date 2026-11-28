@@ -90,6 +90,8 @@ namespace CrimsonVeil.Combat
                 centre = Vector3.Lerp(centre, want, 1f - Mathf.Exp(-1.6f * dt));
                 if (hunting)
                 {
+                    // (the same sign every foe gives, as the swarm gathers to stoop)
+                    if (diveTimer > DiveWarning && diveTimer - dt <= DiveWarning) CombatFx.Telegraph(centre);
                     diveTimer -= dt;
                     if (diveTimer <= 0f)
                     {

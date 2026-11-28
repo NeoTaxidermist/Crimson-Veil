@@ -79,7 +79,10 @@ namespace CrimsonVeil.Combat
                 playerAlive = hasTarget && target.IsAlive,
                 pathClear = PathClear(Brain.Facing),
             };
+            var before = Brain.State;
             var intent = Brain.Tick(dt, senses);
+            // (the same sign every foe gives, as its eyes flare and its arms rise)
+            if (Brain.State == EnemyState.Windup && before != EnemyState.Windup) CombatFx.Telegraph(pos + new Vector3(Facing * 0.3f, 1.7f, 0f));
 
             // Horizontal motion: own intent + decaying knockback, never through walls or off ledges on purpose.
             knockX = Mathf.MoveTowards(knockX, 0f, knockbackDrag * dt);

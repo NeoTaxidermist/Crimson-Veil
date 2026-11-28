@@ -37,6 +37,19 @@ namespace CrimsonVeil.Combat
         void Stagger();
     }
 
+    /// <summary>
+    /// A hit was stopped by a shield (ReceiveHit said no because it was blocked, not because the target was out of
+    /// reach of harm): the one who struck learns of it and recoils. (Until v0.109 the hero's blow on a monk's shield
+    /// went on through it as through smoke - a few sparks, nothing else.)
+    /// </summary>
+    public static class Deflection
+    {
+        /// <summary>The blocker, and the hit it stopped (its <see cref="DamageInfo.source"/> is who struck).</summary>
+        public static event Action<GameObject, DamageInfo> Blocked;
+
+        public static void Report(GameObject blocker, in DamageInfo info) => Blocked?.Invoke(blocker, info);
+    }
+
     /// <summary>Hit points with invulnerability frames. Engine independent.</summary>
     public sealed class HealthModel
     {

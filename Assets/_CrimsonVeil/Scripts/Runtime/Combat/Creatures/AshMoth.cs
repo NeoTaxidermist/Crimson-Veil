@@ -75,6 +75,8 @@ namespace CrimsonVeil.Combat
             cloudTimer = Mathf.Max(0f, cloudTimer - dt);
             if (hunting)
             {
+                // (the same sign every foe gives, as it rears up to shake the ash out)
+                if (dustTimer > DustWarning && dustTimer - dt <= DustWarning) CombatFx.Telegraph(pos + Vector3.up * 0.2f);
                 dustTimer -= dt;
                 if (dustTimer <= 0f)
                 {

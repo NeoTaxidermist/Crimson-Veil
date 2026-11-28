@@ -66,7 +66,11 @@ namespace CrimsonVeil.Combat
                     inReach = true;
                     want = PaperKiteLogic.AngleTowards(toHero);
                     // the hero just came within reach: it first rears back away from him, shuddering, then swoops
-                    if (!engaged) { engaged = true; windup = SwoopWarning; rearAngle = PaperKiteLogic.RearBack(angle, want); }
+                    if (!engaged)
+                    {
+                        engaged = true; windup = SwoopWarning; rearAngle = PaperKiteLogic.RearBack(angle, want);
+                        CombatFx.Telegraph(pos + Vector3.up * 0.3f);   // (the same sign every foe gives)
+                    }
                     if (windup > 0f) want = rearAngle;
                 }
             }

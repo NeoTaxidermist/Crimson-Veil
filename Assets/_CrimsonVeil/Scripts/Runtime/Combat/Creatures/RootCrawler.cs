@@ -23,8 +23,13 @@ namespace CrimsonVeil.Combat
                                                 && Mathf.Abs(target.Position.x - transform.position.x) < 12f;
         public int Facing { get; private set; } = 1;
 
+        /// <summary>Seconds it quivers on its root, the hero under it, before it drops (its warning).</summary>
+        public const float DropWarning = 0.45f;
+        /// <summary>It is quivering, about to drop.</summary>
+        public bool AboutToDrop => dropWarn >= 0f;
+
         Vector3 velocity;
-        float stateTime, hopTimer, sinceLanding = 1f, tilt;
+        float stateTime, hopTimer, sinceLanding = 1f, tilt, dropWarn = -1f;
         bool onGround;
         Transform visual;
         Transform[] roots;
@@ -68,9 +73,18 @@ namespace CrimsonVeil.Combat
             switch (Current)
             {
                 case State.Cling:
-                    if (HasTarget && RootCrawlerLogic.ShouldDrop(dx, target.Position.y - pos.y, dropTrigger))
+                    // The hero under it: it gives the sign every foe gives and shakes earth loose, then lets go.
+                    // (It used to drop the instant he was under it: nothing to read, nothing to dodge.)
+                    if (dropWarn < 0f && HasTarget && RootCrawlerLogic.ShouldDrop(dx, target.Position.y - pos.y, dropTrigger))
                     {
-                        Current = State.Drop; stateTime = 0f; velocity = Vector3.zero;
+                        dropWarn = 0f;
+                        CombatFx.Telegraph(pos + Vector3.down * 0.2f);
+                        CombatFx.Burst(pos, Vector2.down, CombatFx.Ink, 8, 1.5f);
+                    }
+                    if (dropWarn >= 0f)
+                    {
+                        dropWarn += dt;
+                        if (dropWarn >= DropWarning) { Current = State.Drop; stateTime = 0f; velocity = Vector3.zero; dropWarn = -1f; }
                     }
                     break;
                 case State.Drop:
@@ -146,6 +160,8 @@ namespace CrimsonVeil.Combat
             float lean = skitter && !onGround ? Mathf.Clamp(-velocity.x * 4f, -24f, 24f) : 0f;
             tilt = Mathf.Lerp(tilt, lean, 1f - Mathf.Exp(-12f * dt));
             visual.localRotation = Quaternion.Slerp(visual.localRotation, Quaternion.Euler(0f, 0f, (hanging ? 180f : 0f) + tilt), 0.2f);
+            // about to drop, it quivers on its root
+            if (AboutToDrop) visual.localRotation *= Quaternion.Euler(0f, 0f, Mathf.Sin(Time.time * 70f) * 7f);
             float sy = skitter ? CreatureAnimation.HopSquash(onGround, sinceLanding, Mathf.Max(0f, hopTimer), velocity.y)
                      : Current == State.Drop ? CreatureAnimation.HopSquash(false, 1f, 1f, velocity.y)
                      : hanging ? 1f + Mathf.Sin(Time.time * 2.4f) * 0.05f : 1f;

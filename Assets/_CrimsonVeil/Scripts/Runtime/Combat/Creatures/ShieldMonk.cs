@@ -283,7 +283,23 @@ namespace CrimsonVeil.Combat
             TouchDamage(pos + Vector3.up, 0.55f, contactDamage, new Vector2(Mathf.Sign(dx) * 5f, 3f));
         }
 
-        void Enter(State s) { Current = s; stateTime = 0f; }
+        void Enter(State s)
+        {
+            Current = s;
+            stateTime = 0f;
+            // every foe says it is about to strike the same way (the bash raises the shield, the flail whirls over him)
+            if (s == State.Windup) CombatFx.Telegraph(transform.position + new Vector3(Facing * 0.7f, 1.6f, 0f));
+            else if (s == State.FlailWindup) CombatFx.Telegraph(transform.position + new Vector3(-Facing * 0.3f, 2.3f, 0f));
+        }
+
+        /// <summary>Reeling from a blow or from his strike turned by the hero's shield, the blow he was about to deal is lost.</summary>
+        protected override void OnReel(bool staggered)
+        {
+            bool striking = Current == State.Windup || Current == State.Bash || Current == State.FlailWindup || Current == State.FlailSwing;
+            if (!striking) return;
+            if (Current == State.FlailWindup || Current == State.FlailSwing) flailTimer = flailCooldown;
+            Enter(State.Recover);
+        }
 
         protected override bool AcceptHit(in DamageInfo info)
         {
@@ -293,12 +309,17 @@ namespace CrimsonVeil.Combat
             {
                 disarmTimer = disarmTime;
                 CombatFx.Burst(transform.position + new Vector3(Facing * 0.6f, 1.1f, 0f), new Vector2(-Facing, 1f), CombatFx.Ink, 20, 5f);
+                // (felt like a blow that lands: the shield torn out of his grip)
+                CombatFx.HitStop(0.08f);
+                CombatFx.Shake(0.3f);
+                GameSound.Play(Cue.WhipCrack);
+                if (Current == State.Windup || Current == State.Bash || Current == State.FlailWindup || Current == State.FlailSwing) Enter(State.Recover);
                 return false; // the lash takes the shield, not his life
             }
             if (ShieldMonkLogic.Blocks(Facing, transform.position.x, attackerX, ShieldUp))
             {
-                CombatFx.Burst(info.point, new Vector2(-Facing, 0.5f), CombatFx.Crimson, 8, 3f);
-                CombatFx.Shake(0.15f);
+                // the blow rings off the shield and the hero is thrown back from it (VeilCombat, CombatFx.Deflect)
+                Deflection.Report(gameObject, info);
                 return false;
             }
             return true;

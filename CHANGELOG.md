@@ -5,6 +5,26 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.109.0] – 2026-11-28
+### Změněno – boj je plynulejší a předvídatelnější (uživatel: „Potřebuju, abys boj udělal plynulejší…“)
+- **A, ovládání:**
+  - Každý úder přijde 0,05 s po stisku, ať je zbraň v ruce, nebo se teprve tvoří. Dřív se zbraň v ruce ohnala hned a nová o pár snímků později.
+  - Okno pro navázání dalšího úderu je 0,3 s (dřív 0,15 s).
+  - Dřívější stisk se nezahodí, pokud tlačítko držíš, dokud okno nenastane.
+  - Úder hrdinu na chvilku přibije: od stisku do konce švihu se neotočí a na zemi z úderu neodejde. Skok a úskok fungují.
+  - Zásahy už nezávisí na snímkové frekvenci: zbraň zasahuje i v prostoru, kterým proletěla mezi dvěma snímky.
+- **B, zásah:** každý zasažený nepřítel odskočí ve směru úderu, pruží zpět a 0,3 s se vzpamatovává. Během té doby nezraňuje dotykem a mnich ztratí rozmáchnutý útok.
+- **C, minutí:** úder, který nic nezasáhne, nechá ve vzduchu bledou stopu inkoustu a pár kapek. Minutí se ničím netrestá.
+- **D, vykrytí:**
+  - Úder do štítu mnicha zazvoní, odletí jiskry, svět se na chvilku zastaví, hrdina odskočí a úder se přeruší. Dřív jím jen projel.
+  - Utržení štítu bičem má zastavení času a zvuk.
+  - Když hrdina vykryje nebo odrazí útok, zakolísá jakýkoli nepřítel, dřív jen přízrak.
+- **E, ohlášení útoku:** všichni nepřátelé ohlásí útok stejně, karmínovým zábleskem na začátku nápřahu. RootCrawler se nově 0,45 s chvěje a pak teprve spadne, dřív spadl hned.
+- Nové zvuky nepřibyly, použité jsou stávající (Block, WhipCrack).
+
+### Testy
+- EditMode 692/692. PlayMode 163/163, z toho nových 8 v `CombatFeelPlayTests`: stejný rozběh úderu, navázání podrženým stiskem, přibití, odskok a vzpamatování, minutí, odraz od štítu, ohlášení a zakolísání mnicha, varování RootCrawleru.
+
 ## [0.108.2] – 2026-11-28
 ### Změněno
 - `Docs/Backlog.md`: nová položka „Plynulejší a předvídatelnější boj“. Obsahuje rozbor dnešního boje (zahazované stisky, proměnlivý rozběh úderu, žádná odezva na minutí, slabé vykrytí, nejednotné ohlašování útoků nepřátel) a návrh balíků A–E.

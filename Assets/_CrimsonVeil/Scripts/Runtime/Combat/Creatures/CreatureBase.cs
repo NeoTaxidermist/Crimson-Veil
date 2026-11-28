@@ -8,8 +8,72 @@ namespace CrimsonVeil.Combat
     /// A creature only implements <see cref="Tick"/> (its behaviour) and optionally filters hits.
     /// Visuals are built in the editor by each creature's static <c>BuildVisual</c> and found by name at runtime.
     /// </summary>
-    public abstract class CreatureBase : MonoBehaviour, IDamageable, IHostile
+    public abstract class CreatureBase : MonoBehaviour, IDamageable, IHostile, IStaggerable
     {
+        /// <summary>Seconds a creature reels from a blow that lands (its touch harms nothing meanwhile).</summary>
+        public const float HurtReel = 0.3f;
+        /// <summary>Seconds it reels when its own strike is blocked or parried by the hero's shield.</summary>
+        public const float StaggerReel = 0.7f;
+        /// <summary>How far (m) the body is thrown back by a blow, at most, before it springs back.</summary>
+        public const float RecoilReach = 0.28f;
+
+        /// <summary>It is reeling (from a blow, or a strike turned by the shield): it harms nothing, its wind-ups stop.</summary>
+        public bool Reeling => reel > 0f;
+        /// <summary>How far (m) the body is thrown back from its place right now (springing back to zero).</summary>
+        public Vector3 Recoil => recoil;
+        float reel;
+        Vector3 recoil, recoilVel, recoilApplied, visualWritten;
+        Quaternion tiltApplied = Quaternion.identity, rotWritten;
+        Transform visual;
+        bool visualSearched;
+
+        /// <summary>The hero's shield turned its strike (block or parry): it reels back.</summary>
+        public void Stagger()
+        {
+            if (IsDead) return;
+            reel = Mathf.Max(reel, StaggerReel);
+            Vector3 away = transform.position - (target.IsValid ? target.Position : transform.position - Vector3.right);
+            Kick(new Vector2(Mathf.Sign(away.x == 0f ? 1f : away.x) * 6f, 2f), 1.2f);
+            HitFlash.Flash(gameObject, HitFlash.Pale, HitFlash.FoeSeconds);
+            OnReel(true);
+        }
+
+        /// <summary>A blow landed or a strike was turned: the body is thrown along <paramref name="push"/> and springs back.</summary>
+        void Kick(Vector2 push, float strength)
+        {
+            Vector2 d = push.sqrMagnitude > 1e-4f ? push.normalized : Vector2.right;
+            float reach = Mathf.Min(RecoilReach, 0.04f * push.magnitude) * strength;
+            recoilVel += new Vector3(d.x, d.y * 0.5f, 0f) * (reach * 14f);
+        }
+
+        /// <summary>It begins to reel (<paramref name="staggered"/>: its strike was turned): a creature stops its wind-up.</summary>
+        protected virtual void OnReel(bool staggered) { }
+
+        /// <summary>The body springs back from a recoil (a stiff, quickly damped spring), drawn over the creature's own
+        /// pose: whatever its Tick put on the visual this frame stays, the recoil is added on top.</summary>
+        void LateUpdate()
+        {
+            float dt = Time.deltaTime;
+            if (dt <= 0f) return;
+            if (!visualSearched) { visual = CreatureParts.Find(transform, "Visual"); visualSearched = true; }
+            const float k = 260f, damping = 26f;
+            recoilVel += (-recoil * k - recoilVel * damping) * dt;
+            recoil += recoilVel * dt;
+            if (visual == null) return;
+            // (taken off again only if the creature left the visual as it was: a creature that sets it every frame has
+            // already put its own pose there)
+            if (visual.localPosition == visualWritten) visual.localPosition -= recoilApplied;
+            if (visual.localRotation == rotWritten) visual.localRotation *= Quaternion.Inverse(tiltApplied);
+            Vector3 local = visual.parent != null ? visual.parent.InverseTransformVector(recoil) : recoil;
+            float lean = Mathf.Clamp(recoil.x * 70f, -14f, 14f);
+            var tilt = Quaternion.Euler(0f, 0f, -lean);
+            visual.localPosition += local;
+            visual.localRotation *= tilt;
+            recoilApplied = local;
+            tiltApplied = tilt;
+            visualWritten = visual.localPosition;
+            rotWritten = visual.localRotation;
+        }
         [SerializeField] protected float maxHealth = 2f;
         [SerializeField] protected float contactDamage = 0.5f;
         [SerializeField] protected float killY = -25f;
@@ -53,6 +117,7 @@ namespace CrimsonVeil.Combat
             if (dt <= 0f) return;
             Health.Tick(dt);
             contactCooldown -= dt;
+            reel -= dt;
             SinceHurt += dt;
             if (!target.IsValid) target = CombatTarget.Find();
             Tick(dt);
@@ -70,6 +135,11 @@ namespace CrimsonVeil.Combat
             dealt.amount *= DamageMultiplier(info);
             if (!Health.TryDamage(dealt)) return false;
             SinceHurt = 0f;
+            // every blow that lands throws the body back along it, and it reels a moment (the finisher's push is
+            // stronger, and throws it further)
+            reel = Mathf.Max(reel, HurtReel);
+            Kick(info.knockback, 1f);
+            OnReel(false);
             OnHurt(info);
             Hurt?.Invoke(info);
             CombatFx.Burst(info.point, info.knockback.normalized, CombatFx.Ink, 20, 5f);
@@ -89,7 +159,7 @@ namespace CrimsonVeil.Combat
         /// <summary>Damages the hero if his chest is within <paramref name="radius"/> of <paramref name="center"/>.</summary>
         protected bool TouchDamage(Vector3 center, float radius, float amount, Vector2 knockback, DamageKind kind = DamageKind.Contact)
         {
-            if (!HasTarget || contactCooldown > 0f || amount <= 0f) return false;
+            if (!HasTarget || contactCooldown > 0f || amount <= 0f || Reeling) return false;   // (reeling, it harms nothing)
             Vector3 d = TargetPos - center;
             d.z = 0f;
             if (d.sqrMagnitude > radius * radius) return false;

@@ -98,6 +98,105 @@ namespace CrimsonVeil.Combat
             go.AddComponent<SlashMark>().Begin(lr, SlashSeconds);
         }
 
+        /// <summary>The pale of a blow that strikes stone or a shield: sparks, not blood.</summary>
+        public static readonly Color Spark = new Color(1f, 0.93f, 0.8f, 0.95f);
+
+        /// <summary>How many times each feedback was shown (for tests).</summary>
+        public static int Telegraphs, Whiffs, Deflects;
+
+        /// <summary>
+        /// A foe is about to strike: every one says so the same way - a crimson glint flares at its eye or weapon (a
+        /// cross of two strokes that opens and fades), then the wind-up plays out. Seen at a glance, the same for all,
+        /// so the fight can be read.
+        /// </summary>
+        public static void Telegraph(Vector3 at)
+        {
+            Telegraphs++;
+            var fx = Instance;
+            if (fx == null) return;
+            var go = new GameObject("Telegraph");
+            go.transform.position = at + new Vector3(0f, 0f, -0.4f);
+            for (int i = 0; i < 2; i++)
+            {
+                var stroke = new GameObject("Stroke");
+                stroke.transform.SetParent(go.transform, false);
+                var lr = stroke.AddComponent<LineRenderer>();
+                lr.useWorldSpace = false;
+                lr.positionCount = 3;
+                Vector3 d = i == 0 ? new Vector3(1f, 0f, 0f) : new Vector3(0f, 1f, 0f);
+                lr.SetPosition(0, -d); lr.SetPosition(1, Vector3.zero); lr.SetPosition(2, d);
+                lr.widthCurve = new AnimationCurve(new Keyframe(0f, 0f), new Keyframe(0.5f, 0.07f), new Keyframe(1f, 0f));
+                lr.sharedMaterial = fx.burstMaterial;
+                lr.startColor = lr.endColor = new Color(1f, 0.15f, 0.12f, 1f);
+                lr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            }
+            go.AddComponent<Glint>().Begin(TelegraphSeconds);
+        }
+
+        public const float TelegraphSeconds = 0.32f;
+
+        /// <summary>The glint opens to its size, turns a little and fades.</summary>
+        sealed class Glint : MonoBehaviour
+        {
+            float start, length;
+            LineRenderer[] lines;
+            public void Begin(float seconds) { length = seconds; start = Time.time; lines = GetComponentsInChildren<LineRenderer>(); Update(); }
+            void Update()
+            {
+                float t = (Time.time - start) / length;
+                if (t >= 1f) { Destroy(gameObject); return; }
+                float open = Mathf.Sin(Mathf.Clamp01(t) * Mathf.PI);
+                transform.localScale = Vector3.one * (0.12f + 0.38f * open);
+                transform.rotation = Quaternion.Euler(0f, 0f, 45f * t);
+                foreach (var lr in lines) { var c = lr.startColor; c.a = open; lr.startColor = lr.endColor = c; }
+            }
+        }
+
+        /// <summary>
+        /// A blow cut only air: the blade's way is drawn as a pale streak of ink that thins out, and a few drops fly off
+        /// its tip. No penalty (the user's choice) - only seen, so a miss never looks like a hit that was not heard.
+        /// </summary>
+        public static void Whiff(Vector3 tip, Vector2 along)
+        {
+            Whiffs++;
+            var fx = Instance;
+            if (fx == null) return;
+            Vector2 d = along.sqrMagnitude > 1e-4f ? along.normalized : Vector2.right;
+            var go = new GameObject("Whiff");
+            var lr = go.AddComponent<LineRenderer>();
+            lr.useWorldSpace = true;
+            lr.positionCount = 3;
+            Vector3 half = new Vector3(d.x, d.y, 0f) * 0.55f;
+            Vector3 front = new Vector3(0f, 0f, -0.3f);
+            lr.SetPosition(0, tip - half * 2f + front);
+            lr.SetPosition(1, tip - half + front);
+            lr.SetPosition(2, tip + front);
+            lr.widthCurve = new AnimationCurve(new Keyframe(0f, 0f), new Keyframe(0.6f, 0.06f), new Keyframe(1f, 0f));
+            lr.sharedMaterial = fx.burstMaterial;
+            lr.startColor = lr.endColor = new Color(0.08f, 0.08f, 0.08f, 0.6f);
+            lr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            go.AddComponent<SlashMark>().Begin(lr, 0.22f);
+            Burst(tip, d, Ink, 6, 3.5f);
+        }
+
+        /// <summary>
+        /// The hero's blow is stopped by a shield: sparks fly back at him, the world stands still a moment, the blade
+        /// rings off it (<see cref="Cue.Block"/>) - and he is thrown back a step (see <c>VeilCombat</c>).
+        /// </summary>
+        public static void Deflect(Vector3 point, int heroFacing)
+        {
+            Deflects++;
+            HitStop(DeflectStop);
+            Shake(0.3f);
+            GameSound.Play(Cue.Block);
+            if (Instance == null) return;
+            Burst(point, new Vector2(-heroFacing, 0.6f), Spark, 22, 7f);
+            Slash(point, new Vector2(0f, 1f), 0.8f, 0.09f);
+        }
+
+        /// <summary>How long (s) the world stands still when a blow is stopped by a shield.</summary>
+        public const float DeflectStop = 0.09f;
+
         /// <summary>The stroke thins and fades away.</summary>
         sealed class SlashMark : MonoBehaviour
         {

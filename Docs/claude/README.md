@@ -27,6 +27,7 @@ Poznámky, které si Claude vedl během vývoje: pravidla od uživatele, rozhodn
 - [Clipping measure + ledge hold](crimson-veil-clipping-measure.md) – vertex-in-stone method, BakeMesh(mesh, true) pitfall, v0.81.0 ledge state and my open decisions
 - [Enemy rebuild](crimson-veil-enemy-rebuild.md) – rebuild each enemy to hero level, one per version, show each; wraith done v0.96; method + pitfalls
 - [Performance](crimson-veil-performance.md) – target ~250 fps; measure builds with Benchmark -cvbench; v0.98 breakdown; levers IL2CPP + Burst
+- [Kite cloth free glide](kite-cloth-free-glide.md) – gliding without scarf drain = the PaperKite's cloth (8 s), by design; user: leave as is
 - [Sound judging](crimson-veil-sound-judging.md) – CLAP model + LUFS instead of ears; sine thumps and digital silence sounded fake; mix targets
 
 ## Prostředí (zjištěno na Lenovu, na jiném počítači ověř)

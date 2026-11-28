@@ -5,6 +5,13 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.108.1] – 2026-11-28
+### Změněno
+- Dokumentace: plachtění, které někdy nečerpá šálu, je záměr. Látka ze sestřeleného papírového draka dává 8 s plachtění zdarma. Uživatel rozhodl nechat to, jak to je (`Docs/claude/kite-cloth-free-glide.md`, `Docs/Rozpracovano.md`).
+
+### Testy
+- Jen dokumentace, testy se nespouštěly.
+
 ## [0.108.0] – 2026-11-28
 ### Změněno
 - **Úchop na hraně:** ve visu a při přitahování se hrdina drží hrany jako lezec. Zápěstí má dole na stěně, dlaň u kamene a prsty přehnuté přes roh na horní plochu. Dřív ležela otevřená dlaň naplocho na horní ploše. Když se přetahuje přes hranu, ruka se plynule srovná naplocho jako dřív. Zvolil to uživatel.

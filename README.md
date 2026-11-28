@@ -54,6 +54,8 @@ Hra startuje do hlavního menu (Hrát, Nastavení, Konec). V **Nastavení** (zá
 | Výskok s úderem z podřepu (meč, kopí, bič) | z podřepu pustit S, držet W a útok | z podřepu páčka nahoru a útok |
 | Stát na místě (míření bez pohybu) | Levý Ctrl | stisk levé páčky |
 | Rozhlédnout se nahoru / dolů | E / Q | pravá páčka |
+| Obvázat ránu (držet, když je karmínový uzel plný) | R | RB |
+| Oltář u checkpointu (vylepšení za karmín) | F | křížový ovladač nahoru |
 | Mapa úrovně | Tab | Select / View |
 | **Meč** | **U** | X / West |
 | **Kopí** | **I** | Y / North |
@@ -65,6 +67,8 @@ Hra startuje do hlavního menu (Hrát, Nastavení, Konec). V **Nastavení** (zá
 Zbraň se seslá a za 0,05 s udeří, ať už ji hrdina drží, nebo se teprve tvoří. Úder ho na chvilku přibije: do konce seku se neotočí ani neodejde. Stisk v posledních 0,3 s úderu naváže další, dřívější stisk naváže, když tlačítko držíš. Údery navazují do komba a mezi údery jde zbraň vyměnit: dokončující úder je tím silnější, čím víc zbraní kombo spojilo. Zbraně se hrdina učí od relikvií na podstavcích (v testovací místnosti vlevo od startu zná všechny). Zdraví ukazuje šála a ukazatel ve tvaru šály v levém horním rohu.
 
 **Odezva boje:** zasažený nepřítel odskočí a chvíli se vzpamatovává, minutí nechá ve vzduchu stopu inkoustu (bez trestu), úder do štítu se odrazí a hrdina odskočí. Štít blokuje útoky všech nepřátel ze všech stran, a když ho zvedneš přesně ve chvíli úderu (do 0,2 s), útok odrazí a nepřítel zakolísá.
+
+**Zdraví a karmín:** život sám nedorůstá. Údery, které zasáhnou, uvážou karmínový uzel (ukazatel pod zdravím). Když je plný, podržením R hrdina obváže ránu a vrátí si život. Checkpoint doplní život i šálu. Z poražených nepřátel padají karmínové kapky a u oltáře na checkpointu (F) se za ně kupuje delší šála, pevnější obvaz a ostřejší závoj. Čtyři úlomky schované v tajných místech dají život navíc. Po smrti zůstanou kapky ležet na místě a dají se sebrat zpátky.
 
 **Kvalita obrazu** (Nastavení → Obraz): Nízká, Střední a Vysoká. Při prvním spuštění se vybere podle grafické karty a v menu je označená „(doporučeno)“. Ve **Vlastní** se dá zvlášť nastavit okolní stínění, vyhlazování hran, rozlišení vykreslování (75–100 %) a stíny.
 
@@ -102,7 +106,7 @@ Tools/         benchmark, hooky předávky mezi počítači, keep-awake
 ```
 
 ## Testy
-Unity → Window → General → Test Runner: **692 EditMode** a **165 PlayMode** testů. PlayMode testy ověřují každý pohyb a kombo na skutečném prefabu hrdiny (`HeroMoveSetPlayTests`).
+Unity → Window → General → Test Runner: **699 EditMode** a **171 PlayMode** testů. PlayMode testy ověřují každý pohyb a kombo na skutečném prefabu hrdiny (`HeroMoveSetPlayTests`).
 
 ## Verze a CHANGELOG
 Každý commit má vlastní verzi podle [SemVer](https://semver.org/lang/cs/): sekci `## [X.Y.Z] – RRRR-MM-DD` v [CHANGELOG.md](CHANGELOG.md) a tag `vX.Y.Z`. Hlídají to git hooky v `.githooks/`:

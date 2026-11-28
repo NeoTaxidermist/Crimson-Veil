@@ -159,6 +159,9 @@ namespace CrimsonVeil.Combat
             return true;
         }
 
+        /// <summary>Drops of crimson a slain wraith sheds.</summary>
+        public const int CrimsonWorth = 4;
+
         public void Stagger()
         {
             if (IsDead) return;
@@ -174,6 +177,8 @@ namespace CrimsonVeil.Combat
             Died?.Invoke();
             CombatFx.Burst(transform.position + Vector3.up * 1.1f, Vector2.up, CombatFx.Ink, 40, 5f);
             GameSound.Play(Cue.Dissolve);
+            // slain, it sheds its crimson (v0.110); fallen out of the world, none
+            if (transform.position.y > killY) CrimsonDrop.Spill(transform.position + Vector3.up * 1f, CrimsonWorth);
             Destroy(gameObject, 1.6f);
         }
     }

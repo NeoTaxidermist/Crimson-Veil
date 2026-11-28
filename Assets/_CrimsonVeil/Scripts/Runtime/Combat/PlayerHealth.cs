@@ -9,6 +9,10 @@ namespace CrimsonVeil.Combat
     /// <summary>
     /// Hero's life, shown by the scarf-shaped gauge in the top-left corner (<see cref="CrimsonVeil.UI.ScarfHud"/>).
     /// A hardened shield facing the attacker blocks the hit and staggers it.
+    /// <para>Life does not grow back by itself (it did until v0.110 - the user: "ten autoheal je divný"): a checkpoint
+    /// fills it, and he can bind a wound with the scarf - hold <c>R</c> standing, the knot of crimson tied by his blows
+    /// that land (<see cref="HeroProgress.Mend"/>) full, for <see cref="MendTime"/>; a blow that reaches him breaks it off.
+    /// Dying leaves the crimson he carries where he fell (<see cref="CrimsonCache"/>).</para>
     /// </summary>
     [RequireComponent(typeof(PlayerController))]
     public sealed class PlayerHealth : MonoBehaviour, IDamageable
@@ -17,8 +21,6 @@ namespace CrimsonVeil.Combat
         [SerializeField] float invulnerableTime = 0.9f;
         [SerializeField] float stunTime = 0.3f;
         [SerializeField] float respawnDelay = 1.4f;
-        [SerializeField] float regenDelay = 6f;
-        [SerializeField] float regenPerSecond = 0.25f;
         [SerializeField] Transform visualRoot;
 
         public HealthModel Model { get; private set; }
@@ -51,7 +53,9 @@ namespace CrimsonVeil.Combat
             float dt = Time.deltaTime;
             Model.Tick(dt);
             sinceHit += dt;
-            if (IsAlive && sinceHit > regenDelay) Model.Heal(regenPerSecond * dt);
+            UpdateMending(dt);
+            int wanted = Mathf.RoundToInt(maxHealth) + HeroProgress.ExtraLives;
+            if (Mathf.RoundToInt(Model.Max) != wanted) Model.SetMax(wanted);
             dimTimer = Mathf.Max(0f, dimTimer - dt);
             float dim = dimTimer > 0f ? dimAmount : 0f;
             // Life is shown by the HUD (top-left), not by the scarf: the scarf only dims when smothered by ash.
@@ -59,6 +63,61 @@ namespace CrimsonVeil.Combat
         }
 
         void Start() => CrimsonVeil.UI.ScarfHud.Ensure();
+
+        /// <summary>Seconds of binding a wound (held still, the scarf wound round him).</summary>
+        public const float MendTime = 0.9f;
+        /// <summary>0..1 through binding a wound now (0: not binding).</summary>
+        public float Mending { get; private set; }
+        /// <summary>Wounds bound (for tests).</summary>
+        public int MendCount { get; private set; }
+        public event Action Mended;
+
+        /// <summary>
+        /// R held, standing on the ground, the knot full and a wound to bind: the scarf winds round him and after
+        /// <see cref="MendTime"/> the knot is untied into life. Let go, off the ground or struck, it is broken off and
+        /// nothing is spent.
+        /// </summary>
+        void UpdateMending(float dt)
+        {
+            var input = player != null ? player.InputSource : null;
+            bool want = IsAlive && input != null && input.HealHeld && player.IsGrounded && HeroProgress.Mend >= 1f - 1e-4f
+                        && Model.Current < Model.Max - 1e-3f && (veil == null || !veil.IsAttacking);
+            if (!want)
+            {
+                Mending = 0f;
+                if (player != null && player.Motor != null) player.Motor.Mending = false;
+                return;
+            }
+            if (Mending <= 0f && veil != null) { veil.Interrupt(0f); }
+            player.Motor.Mending = true;   // (he stands still while he binds it)
+            Mending = Mathf.Min(1f, Mending + dt / MendTime);
+            if (UnityEngine.Random.value < dt * 20f)
+                CombatFx.Burst(transform.position + Vector3.up * UnityEngine.Random.Range(0.6f, 1.5f), Vector2.up, CombatFx.Crimson, 2, 1.2f);
+            if (Mending < 1f) return;
+            Mending = 0f;
+            player.Motor.Mending = false;
+            if (!HeroProgress.SpendMend()) return;
+            Model.Heal(HeroProgress.HealAmount);
+            MendCount++;
+            CombatFx.Burst(transform.position + Vector3.up * 1.1f, Vector2.up, CombatFx.Crimson, 40, 4f);
+            GameSound.Play(Cue.Absorb);
+            Mended?.Invoke();
+        }
+
+        /// <summary>A checkpoint: life and the scarf full again.</summary>
+        public void Refill()
+        {
+            if (!IsAlive) return;
+            Model.Heal(Model.Max);
+            if (veil != null) veil.Charge.Restore();
+        }
+
+        /// <summary>Four shards made a life: one more, and all of them full.</summary>
+        public void GrowByOneLife()
+        {
+            Model.SetMax(Mathf.RoundToInt(maxHealth) + HeroProgress.ExtraLives);
+            Model.Heal(Model.Max);
+        }
 
         float dimTimer, dimAmount;
 
@@ -149,6 +208,7 @@ namespace CrimsonVeil.Combat
 
             if (!Model.TryDamage(info)) return false;
             sinceHit = 0f;
+            Mending = 0f;   // (struck, the binding is broken off)
             player.Motor.ApplyKnockback(info.knockback, stunTime);
             // struck, the hero's blow is broken off and his combo starts again - except a strike under the feet
             // driven down onto an enemy: bumping its body there is the point of it
@@ -178,6 +238,9 @@ namespace CrimsonVeil.Combat
                 veil.Disarmed = true;
             }
             CombatFx.Burst(transform.position + Vector3.up * 1f, Vector2.up, CombatFx.Crimson, 60, 7f);
+            // the crimson he carried stays where he fell, to be fetched back (dying again first, it is lost)
+            if (HeroProgress.DeathLeavesCrimson) CrimsonCache.Leave(transform.position, HeroProgress.TakeAllCrimson());
+            Mending = 0f;
             if (visualRoot != null) visualRoot.gameObject.SetActive(false);
             player.enabled = false;
 

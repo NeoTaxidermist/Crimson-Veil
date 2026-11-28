@@ -10,7 +10,7 @@ namespace CrimsonVeil.Player
     /// </summary>
     public sealed class PlayerInputReader : MonoBehaviour, IPlayerInput
     {
-        InputAction left, right, up, down, lookUp, lookDown, jump, dash, stand;
+        InputAction left, right, up, down, lookUp, lookDown, jump, dash, stand, heal, interact;
 
         void Awake()
         {
@@ -23,6 +23,8 @@ namespace CrimsonVeil.Player
             jump = InputBindings.Action("Jump");
             dash = InputBindings.Action("Dash");
             stand = InputBindings.Action("Stand");
+            heal = InputBindings.Action("Heal");
+            interact = InputBindings.Action("Interact");
         }
 
         static bool Blocked => InputBindings.GameplayBlocked;
@@ -34,6 +36,8 @@ namespace CrimsonVeil.Player
         public bool JumpHeld => !Blocked && jump.IsPressed();
         public bool DashPressed => !Blocked && dash.WasPressedThisFrame();
         public bool StandHeld => !Blocked && stand.IsPressed();
+        public bool HealHeld => !Blocked && heal.IsPressed();
+        public bool InteractPressed => !Blocked && interact.WasPressedThisFrame();
 
         public VeilForm? CastPressed
         {

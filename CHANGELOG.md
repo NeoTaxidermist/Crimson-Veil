@@ -5,6 +5,30 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.110.0] – 2026-11-28
+### Přidáno – zdraví, léčení a karmín (uživatel: „Ten autoheal je divný. A z nepřátel by mělo něco po zabití vypadnout…“, pak „Udělej to všechno do branche“)
+- **Život sám nedorůstá.** Dřív dorůstal 0,25/s po 6 s bez zásahu.
+- **Obvázání rány:** každý úder, který zasáhne, uváže čtvrtinu karmínového uzlu. Šípy se počítají taky.
+  - S plným uzlem hrdina podržením **R** (na ovladači RB) obváže ránu: 0,9 s stojí na místě a pak se mu vrátí jeden život.
+  - Zásah, puštění klávesy nebo opuštění země obvazování přeruší a uzel se nespotřebuje.
+  - Uzel neplní šála, protože šála sama dorůstá a bylo by to zase samoléčení.
+- **Karmínové kapky:** padají z každého poraženého nepřítele (přízrak 4, mnich 8, ostatní 3, vrána 1) a přiletí k hrdinovi, když je blízko.
+- **Checkpoint** pokaždé doplní život i šálu. Klávesou **F** (na ovladači křížový ovladač nahoru) se u něj otevře **oltář**, hra mezitím stojí. Za karmín se tam kupují 3 vylepšení, každé do úrovně 3 (ceny 20, 45 a 80):
+  - **Delší šála:** zbraně a štít berou o pětinu méně šály.
+  - **Pevnější obvaz:** obvaz vrátí o půl života víc.
+  - **Ostřejší závoj:** údery zraňují o 15 % víc.
+- **Úlomky života:** 4 úlomky dají jeden život navíc a doplní všechny životy. V úrovni leží u čtyř skrytých uren a v sadě pro stavbu úrovní je nová položka „Úlomek života“.
+- **Smrt:** karmín, který hrdina nesl, zůstane ležet na místě smrti a dá se sebrat zpátky. Když hrdina zemře znovu dřív, než ho sebere, karmín se ztratí. Pád mimo svět nic nebere.
+- **HUD:** pod ukazatelem zdraví je uzel, počet kapek a úlomky. Dole se ukáže nápověda klávesy u oltáře, a když je uzel plný a hrdina zraněný, i nápověda k obvázání.
+- **Nastavení:** v ovládání jsou nové akce „Obvázat ránu“ a „Oltář u checkpointu“. Řádky jsou nižší, aby se seznam vešel.
+
+### Opraveno
+- `CreatureBase`: soukromé pole pro odskok se jmenovalo stejně jako pole potomků (`visual`), Unity na to upozorňovalo. Je přejmenované.
+
+### Testy
+- EditMode 699/699, z toho 6 nových v `HeroProgressTests`. PlayMode 171, z toho 6 nových v `ProgressPlayTests`: život nedorůstá, obvázání rány, kapky z nepřítele, kapky na místě smrti, checkpoint a oltář, úlomky.
+- Past, kterou jsem při tom našel: nová položka sady pro stavbu úrovní přegenerovala všechny prefaby z továrny. Hrdina měl pak kapsli 1,80 m místo 1,90 m a test stropu selhal. Prefaby jsou vrácené, popsáno v `Docs/claude/health-and-crimson.md`.
+
 ## [0.109.4] – 2026-11-28
 ### Změněno
 - `Docs/Backlog.md`: nová položka „Zdraví, léčení a co padá z nepřátel“. Obsahuje otázky uživatele (samoléčení, drop, upgrady, jedny životy na kapitolu), dnešní stav a můj návrh.

@@ -457,6 +457,7 @@ namespace CrimsonVeil.Veil
         public void NotifyHitLanded()
         {
             Charge.OnHitLanded();
+            CrimsonVeil.Combat.HeroProgress.BlowLanded();   // (the knot of crimson a wound is bound with: v0.110)
             if ((ThrustingDown || DownStrike) && player != null && player.Motor != null)
             {
                 player.Motor.Bounce();
@@ -776,6 +777,7 @@ namespace CrimsonVeil.Veil
             {
                 var m = player.Motor;
                 m.AttackPinned = PinnedNow;
+                Charge.Capacity = CrimsonVeil.Combat.HeroProgress.ScarfCapacity;   // (a longer scarf, bought at an altar)
                 m.ScarfGlide = Form == VeilForm.Flow && Charge.Value > 0.02f;
                 if (m.IsGliding && m.GlideTime <= 0f && Form == VeilForm.Flow) Charge.Drain(VeilCasting.GlideDrain, dt);
                 bool low = VeilAim.LowBlow(m.IsGrounded, m.IsCrouching, m.IsSliding);

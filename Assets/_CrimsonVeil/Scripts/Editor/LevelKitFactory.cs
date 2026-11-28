@@ -585,6 +585,15 @@ namespace CrimsonVeil.EditorTools
             return root;
         }
 
+        /// <summary>A shard of a life (v0.110): four make one more life. Hide it in a secret place.</summary>
+        public static GameObject HeartShard(Vector3 pos)
+        {
+            var go = new GameObject("HeartShard");
+            go.transform.position = new Vector3(pos.x, pos.y, 0f);
+            go.AddComponent<CrimsonVeil.Combat.HeartShard>();
+            return go;
+        }
+
         /// <summary>An invisible secret marker: near it, the loose scarf leans towards it.</summary>
         public static GameObject Hint(Vector3 pos)
         {

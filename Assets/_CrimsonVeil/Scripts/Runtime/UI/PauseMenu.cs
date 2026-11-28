@@ -48,6 +48,7 @@ namespace CrimsonVeil.UI
         void Update()
         {
             if (SettingsPanel.IsOpen || SettingsPanel.Rebinding) return;   // (its own Esc goes back from it)
+            if (AltarPanel.IsOpen || AltarPanel.ClosedFrame == Time.frameCount) return;   // (the altar's Esc closes the altar)
             if (!SettingsPanel.MenuEscPressed()) return;
             if (IsOpen) Close(); else Open();
         }

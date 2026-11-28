@@ -27,22 +27,6 @@ Značky: **[rozhodnuto]** uživatel výslovně chce · **[návrh]** můj návrh,
 - **Výkon nových modelů (změřeno ve v0.104.0, DELL, 1080p):** nepřátelé v záběru stojí 0,45–1,0 ms. U skupin nepřátel je to 50–54 fps, na startu 58 fps; rozdíl dělá hlavně pozadí. LOD zatím není potřeba.
 - **Odkazy:** `Docs/claude/crimson-veil-enemy-rebuild.md`, `crimson-veil-no-stock-art.md`, `crimson-veil-cutscenes.md`.
 
-### 2. Zdraví, léčení a co padá z nepřátel  [návrh, čeká na rozhodnutí uživatele] · L
-- **Co (uživatel 2026-11-28):** „Ten autoheal je divný. A z nepřátel by mělo něco po zabití vypadnout. Ale nevím, k čemu by se to mělo používat. K nějakým upgradům energie a maximálního zdraví? Nebo k healování? A mělo by se vůbec healovat? Nebo se celá kapitola bude procházet na jedny životy?“
-- **Jak to je teď:**
-  - 5 životů. Po 6 s bez zásahu dorůstají rychlostí 0,25/s (`PlayerHealth.regenDelay`, `regenPerSecond`).
-  - Po smrti se hrdina objeví u checkpointu, v úrovni jich je 14.
-  - Šála je energie na zbraně, sama dorůstá a zásahy ji doplňují (`VeilCharge`). Plná šála jednou pohltí zásah místo hrdiny.
-- **Můj návrh:**
-  - **Samoléčení zrušit.**
-  - **Léčení šálou:** podržením tlačítka hrdina obváže ránu šálou, to stojí celou délku šály a trvá asi 1 s. Útok to přeruší. Šála se doplňuje zásahy, takže léčení je odměna za útočení a volba mezi zbraněmi a životem.
-  - **Checkpoint doplní** životy i šálu.
-  - **Z nepřátel padají karmínové kapky** (měna). U checkpointů se za ně kupuje delší šála (víc energie), silnější léčení nebo vylepšení zbraní.
-  - **Maximální zdraví** jen ze vzácných nálezů v tajných místech, například 4 úlomky = 1 život navíc. Odměňuje to průzkum.
-  - **Po smrti** návrat ke checkpointu se vším, co máš. Volitelně (přísnější varianta) kapky zůstanou ležet na místě smrti a dají se sebrat zpět.
-- **Rozhodnout:** léčit, nebo ne a jak; k čemu kapky; trest za smrt; jestli se kapitola hraje na jedny životy.
-- **Dopady:** `PlayerHealth`, `VeilCharge`, nové ovládání (léčení), HUD (kapky, úlomky), `Checkpoint` (obchod nebo oltář), drop v `CreatureBase` a `Enemy`, ukládání postupu, vyvážení obtížnosti, testy.
-
 ---
 
 ## Čeká na rozhodnutí uživatele
@@ -99,6 +83,7 @@ Značky: **[rozhodnuto]** uživatel výslovně chce · **[návrh]** můj návrh,
 ---
 
 ## Hotovo (posledních pár, pak smazat)
+- v0.110.0 – bez samoléčení. Rány se obvazují uzlem z úspěšných zásahů (R). Z nepřátel padají karmínové kapky, za které se u oltáře na checkpointu kupují 3 vylepšení (delší šála, pevnější obvaz, ostřejší závoj). Checkpoint pokaždé doplní život i šálu. 4 úlomky v tajných místech dají život navíc. Po smrti kapky zůstanou na místě. Návrh zbylý k posouzení: vyvážení cen a množství kapek po hraní.
 - v0.109.1 – milník `alpha_10`, `newFeatures` sloučená do `main` (fast-forward) na pokyn uživatele 2026-11-28; práce pokračuje na `newFeatures`.
 - v0.109.0 – plynulejší a předvídatelnější boj (balíky A–E): stejný rozběh každého úderu, delší okno pro navázání a podržený stisk, který navazuje, krátké přibití během švihu, zásahy nezávislé na fps, odskok a zakolísání všech nepřátel, viditelné minutí, odraz od štítu, zakolísání nepřítele po vykrytí jeho útoku a jednotné ohlášení útoku u všech nepřátel (RootCrawler nově varuje 0,45 s).
 - v0.108.0 – úchop na hraně: prsty přehnuté přes hranu místo otevřené dlaně na horní ploše. Stisk zbraně na hraně se už neztratí: při šplhání se zapamatuje a zbraň se vyvolá nahoře, ve visu ho odmítne obláček inkoustu u ruky.

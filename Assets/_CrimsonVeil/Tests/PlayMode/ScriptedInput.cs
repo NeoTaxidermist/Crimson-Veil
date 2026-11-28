@@ -13,6 +13,12 @@ namespace CrimsonVeil.Tests
         /// <summary>Planted (Ctrl held).</summary>
         public bool stand;
         public bool StandHeld => stand;
+        /// <summary>Binding a wound (R held).</summary>
+        public bool heal;
+        public bool HealHeld => heal;
+        /// <summary>The altar (one shot).</summary>
+        public bool interact;
+        public bool InteractPressed { get { bool v = interact; interact = false; return v; } }
         /// <summary>Cast this weapon (one shot).</summary>
         public VeilForm? cast;
         /// <summary>The weapon whose button is held down.</summary>

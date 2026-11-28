@@ -426,6 +426,9 @@ namespace CrimsonVeil.Player
         /// </summary>
         public bool AttackPinned { get; set; }
 
+        /// <summary>Binding a wound with the scarf (set by PlayerHealth): he stands still for it, as pinned by a blow.</summary>
+        public bool Mending { get; set; }
+
         /// <summary>Share of the jump's take-off speed a rising strike out of the crouch leaps with.</summary>
         public const float RiseFactor = 0.85f;
 
@@ -564,10 +567,10 @@ namespace CrimsonVeil.Player
             }
 
             bool locked = inputLockTimer > 0f;
-            if (hasInput && !IsDashing && !IsRolling && !locked && !AttackPinned) Facing = inputSide;
+            if (hasInput && !IsDashing && !IsRolling && !locked && !AttackPinned && !Mending) Facing = inputSide;
             // A blow pins him for a moment (the user's choice, v0.109): turned the way it was struck until its cut is
             // done, and on the ground he doesn't walk out of it - the blow's own lunge still carries him.
-            if (AttackPinned && IsGrounded && !IsDashing)
+            if ((AttackPinned || Mending) && IsGrounded && !IsDashing)
             {
                 moveX = 0f;
                 hasInput = false;

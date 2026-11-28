@@ -50,6 +50,7 @@ namespace CrimsonVeil.Combat
             GetComponent<SphereCollider>().enabled = false;
             fallVelocity = 2f;
             CombatFx.Burst(transform.position, info.knockback.normalized, CombatFx.Ink, 10, 3.5f);
+            CrimsonDrop.Spill(transform.position, 1);   // (one drop a crow: a swarm is many)
             if (Swarm != null) Swarm.OnCrowDown(this);
             return true;
         }

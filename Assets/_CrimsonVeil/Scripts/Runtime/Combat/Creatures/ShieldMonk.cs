@@ -283,6 +283,9 @@ namespace CrimsonVeil.Combat
             TouchDamage(pos + Vector3.up, 0.55f, contactDamage, new Vector2(Mathf.Sign(dx) * 5f, 3f));
         }
 
+        /// <summary>The hardest foe sheds the most crimson.</summary>
+        public override int CrimsonWorth => 8;
+
         void Enter(State s)
         {
             Current = s;

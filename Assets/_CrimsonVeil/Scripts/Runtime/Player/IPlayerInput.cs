@@ -24,5 +24,9 @@ namespace CrimsonVeil.Player
         /// <summary>Planted (Ctrl / the left stick pressed): on the ground the direction only turns and aims the hero,
         /// he doesn't run (an attack up and forward from the spot).</summary>
         bool StandHeld => false;
+        /// <summary>Binding a wound with the scarf (R held, v0.110).</summary>
+        bool HealHeld => false;
+        /// <summary>Using what is at hand this frame (F: a checkpoint's altar, v0.110).</summary>
+        bool InteractPressed => false;
     }
 }

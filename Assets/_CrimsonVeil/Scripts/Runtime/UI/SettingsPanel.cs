@@ -235,7 +235,8 @@ namespace CrimsonVeil.UI
         RectTransform Row(Transform list, string label, string key, string pad, bool header)
         {
             var row = MenuKit.Rect("Row " + label, list);
-            row.sizeDelta = new Vector2(1180f, header ? 40f : 42f);
+            // (36 high: eighteen actions since v0.110 - binding a wound, the altar - and the list must fit its page)
+            row.sizeDelta = new Vector2(1180f, header ? 40f : 36f);
             var h = row.gameObject.AddComponent<HorizontalLayoutGroup>();
             h.spacing = 20f; h.childAlignment = TextAnchor.MiddleLeft;
             h.childControlWidth = false; h.childControlHeight = false;
@@ -255,7 +256,7 @@ namespace CrimsonVeil.UI
         Button Cell(Transform row, InputBindings.Entry e, bool pad)
         {
             Button b = null;
-            b = MenuKit.Button(row, "", () => StartRebind(e, pad, b), 300f, 40f, 24);
+            b = MenuKit.Button(row, "", () => StartRebind(e, pad, b), 300f, 34f, 22);
             return b;
         }
 

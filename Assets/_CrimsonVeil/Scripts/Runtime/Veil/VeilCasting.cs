@@ -76,11 +76,16 @@ namespace CrimsonVeil.Veil
 
         public bool IsFull => Value >= 0.999f;
 
-        public bool CanAfford(float cost) => Value + 1e-4f >= cost;
+        /// <summary>How long the scarf is against its first length (bought longer at an altar, v0.110): every cost and
+        /// drain takes that much less of it.</summary>
+        public float Capacity = 1f;
+        float Scaled(float cost) => cost / Mathf.Max(0.1f, Capacity);
+
+        public bool CanAfford(float cost) => Value + 1e-4f >= Scaled(cost);
 
         /// <summary>Can a weapon costing <paramref name="cost"/> be cast: there is a stub of scarf to make it of
         /// (<see cref="VeilCasting.MinToCast"/>), or all it costs if that is less. The sword is always there.</summary>
-        public bool CanCast(float cost) => cost <= 0f || Value + 1e-4f >= Mathf.Min(cost, VeilCasting.MinToCast);
+        public bool CanCast(float cost) => cost <= 0f || Value + 1e-4f >= Mathf.Min(Scaled(cost), VeilCasting.MinToCast);
 
         /// <summary>Casts: takes the weapon's cost of the scarf, or all that is left of it. False (and nothing taken)
         /// when there is not even a stub.</summary>
@@ -88,7 +93,7 @@ namespace CrimsonVeil.Veil
         {
             if (!CanCast(cost)) return false;
             if (cost <= 0f) return true;
-            Value = Mathf.Max(0f, Value - cost);
+            Value = Mathf.Max(0f, Value - Scaled(cost));
             sinceSpend = 0f;
             return true;
         }
@@ -106,7 +111,7 @@ namespace CrimsonVeil.Veil
         public bool Drain(float perSecond, float dt)
         {
             if (Value <= 0f) return false;
-            Value = Mathf.Max(0f, Value - perSecond * dt);
+            Value = Mathf.Max(0f, Value - Scaled(perSecond) * dt);
             sinceSpend = 0f;
             return Value > 0f;
         }

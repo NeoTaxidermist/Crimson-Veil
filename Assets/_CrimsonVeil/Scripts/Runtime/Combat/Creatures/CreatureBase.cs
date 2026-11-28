@@ -24,7 +24,7 @@ namespace CrimsonVeil.Combat
         float reel;
         Vector3 recoil, recoilVel, recoilApplied, visualWritten;
         Quaternion tiltApplied = Quaternion.identity, rotWritten;
-        Transform visual;
+        Transform recoilVisual;
         bool visualSearched;
 
         /// <summary>The hero's shield turned its strike (block or parry): it reels back.</summary>
@@ -55,10 +55,11 @@ namespace CrimsonVeil.Combat
         {
             float dt = Time.deltaTime;
             if (dt <= 0f) return;
-            if (!visualSearched) { visual = CreatureParts.Find(transform, "Visual"); visualSearched = true; }
+            if (!visualSearched) { recoilVisual = CreatureParts.Find(transform, "Visual"); visualSearched = true; }
             const float k = 260f, damping = 26f;
             recoilVel += (-recoil * k - recoilVel * damping) * dt;
             recoil += recoilVel * dt;
+            var visual = recoilVisual;
             if (visual == null) return;
             // (taken off again only if the creature left the visual as it was: a creature that sets it every frame has
             // already put its own pose there)
@@ -94,6 +95,9 @@ namespace CrimsonVeil.Combat
             Health = new HealthModel(maxHealth, 0.12f);
             Dormancy.Track(gameObject);   // (asleep far out of the picture: a chapter holds hundreds)
         }
+
+        /// <summary>How many drops of crimson it sheds when slain (a harmless one sheds none).</summary>
+        public virtual int CrimsonWorth => Fights ? 3 : 0;
 
         /// <summary>Does it fight the hero at all? (A harmless lure does not: it never makes a fight.)</summary>
         public virtual bool Fights => true;
@@ -181,6 +185,8 @@ namespace CrimsonVeil.Combat
             if (!Health.IsDead) Health.TryDamage(new DamageInfo { amount = 9999f });
             diedFired = true;
             Died?.Invoke();
+            // slain, it sheds its crimson (v0.110); one that fell out of the world has none to give
+            if (transform.position.y > killY) CrimsonDrop.Spill(transform.position + Vector3.up * 0.6f, CrimsonWorth);
             CombatFx.Burst(transform.position + Vector3.up * 0.6f, Vector2.up, CombatFx.Ink, 32, 4.5f);
             GameSound.Play(Cue.Dissolve);
             OnDeath();

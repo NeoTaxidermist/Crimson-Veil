@@ -23,6 +23,13 @@ namespace CrimsonVeil.EditorTools
     {
         const string ScenePath = LevelKitMaterials.Root + "/Scenes/Prototype_Ruins.unity";
 
+        /// <summary>Where the four shards of a life lie (v0.110): by the urns on the high perch at the start, at the
+        /// shaft's top, on the lookout over the pillar and on the chasm floor - each off the main way.</summary>
+        public static readonly Vector3[] ShardSpots =
+        {
+            new Vector3(-10.7f, 6f, 0f), new Vector3(148.3f, 26.5f, 0f), new Vector3(225.3f, 38f, 0f), new Vector3(284.8f, -14f, 0f),
+        };
+
         [MenuItem("Crimson Veil/Build Prototype Scene")]
         public static void Build()
         {
@@ -80,6 +87,8 @@ namespace CrimsonVeil.EditorTools
             Place("RelicShield", new Vector3(33f, 7f, 0f), LevelLayer.Playfield, play);   // before the shadow double
             Place("RelicBow", new Vector3(63f, 0f, 0f), LevelLayer.Playfield, play);      // the bridge's rope waits at the chasm
             Place("Secret", new Vector3(-11.5f, 6.8f, 0f), LevelLayer.Playfield, play);   // the urn on the high perch
+            // shards of a life by four hidden urns (v0.110): the high perch, the shaft's top, the lookout, the chasm floor
+            foreach (var at in ShardSpots) Place("HeartShard", at, LevelLayer.Playfield, play);
 
             // Bestiary: each creature where it teaches something.
             Place("ShieldMonk", new Vector3(9f, 0f, 0f), LevelLayer.Playfield, play);       // climb the ledge block to get behind him

@@ -138,7 +138,7 @@ namespace CrimsonVeil.Combat
                     var blow = veil.Combo.Current;
                     var info = new DamageInfo
                     {
-                        amount = VeilCombatProfile.Damage(form) * blow.DamageScale,
+                        amount = VeilCombatProfile.Damage(form) * blow.DamageScale * HeroProgress.DamageScale,
                         // (a rising strike out of the crouch throws it up rather than away)
                         knockback = veil.Rising
                             ? new Vector2(veil.Facing * VeilCombatProfile.Knockback(form) * 0.3f, VeilController.RiseKnock * (blow.finisher ? 1.2f : 1f))

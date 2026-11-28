@@ -72,6 +72,13 @@ namespace CrimsonVeil.Combat
             InvulnerableTime = invulnerableTime;
         }
 
+        /// <summary>The most it can hold becomes <paramref name="max"/> (what it holds now is kept, at most the new most).</summary>
+        public void SetMax(float max)
+        {
+            Max = Mathf.Max(0.01f, max);
+            Current = Mathf.Min(Current, Max);
+        }
+
         /// <summary>A moment of grace (e.g. after the scarf took a hit for the hero).</summary>
         public void GrantInvulnerability(float seconds) => invulnerableTimer = Mathf.Max(invulnerableTimer, seconds);
 

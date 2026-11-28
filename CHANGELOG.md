@@ -5,6 +5,21 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.112.0] – 2026-11-28
+### Změněno
+- **Nové menu.** Uživatel: „Potřebuju, abys brutálně vylepšil design menu.“
+  - Za menu se pomalu pohybují ruiny pod rudým stromem, okraje mizí v tuši a padají karmínové lístky.
+  - Název je namalovaný přes tah šály, volby stojí vlevo a vybraná má karmínový tah štětcem.
+  - Všechna menu (pauza, nastavení, oltář) mají tlačítka jako tahy štětcem místo šedých obdélníků.
+- **Výběr kapitol:** Hrát ukáže karty s náhledem, číslem, názvem a popisem: Zkušební místnost a Kapitola 1, Ruiny pod rudým stromem. Vybraná karta se rámuje karmínem a mírně zvětší.
+- **Zkušební místnost je samostatná scéna** (`TestRoom.unity`) s hrdinou, checkpointem a dvěma uspanými přízraky pro nahrávání. V ruinách zmizela a průchod pod zdí vlevo od startu je zazděný. Rozdělení dělá editorový skript `ChapterScenes.Split` (menu Crimson Veil a stavitel scény).
+- **Ovládání menu:** potvrzuje i mezerník, nejen Enter nebo A. Stisk, který menu zavře, se nepočítá jako skok nebo úder hrdiny.
+- Restart kapitoly ve zkušební místnosti nevrací postup z jiné kapitoly.
+- Trest za smrt zůstává přísný (karmín na místě smrti), uživatel: „Asi dobrý.“
+
+### Testy
+- EditMode 701/701. PlayMode 173/173, z toho nové: výběr kapitol (karty s náhledy, mezerník spustí vybranou), zkušební místnost jako samostatná kapitola za zdí.
+
 ## [0.111.0] – 2026-11-28
 ### Přidáno
 - **Restart kapitoly:** v pauze je „Začít kapitolu znovu“. První stisk se zeptá, druhý do 3 s kapitolu načte znovu: vrátí se všichni nepřátelé a hrdina je takový, jaký do kapitoly přišel. Co v ní nasbíral (karmín, vylepšení, úlomky, uzel), ztratí, takže restartem se nedá grindovat. Uživatel: „aby nemohl donekonečna grindit nepřátele a vylepšit se dřív, než by bylo vhodné“.

@@ -17,7 +17,7 @@
 | ![Plošina v mlze](Docs/world/3.jpg) | ![Konec úrovně](Docs/world/4.jpg) |
 
 ## Pohyb a boj
-Natočeno přímo ve hře (12 snímků za sekundu, převážně v šedé testovací místnosti vlevo od startu). Stav k verzi 0.109.
+Natočeno přímo ve hře (12 snímků za sekundu, převážně ve zkušební místnosti). Stav k verzi 0.109.
 
 | | |
 |---|---|
@@ -40,7 +40,7 @@ Všichni jsou postavení znovu na úroveň detailu hrdiny (tvář, ruce s prsty,
 | ![Popelavá můra](Docs/enemies/AshMoth.jpg)<br>**Popelavá můra**: létá vysoko (na luk) a sype popel, který ztlumí šálu. Držený štít ho zadrží. | ![Bludička](Docs/enemies/LanternWisp.jpg)<br>**Bludička**: neškodná, ale láká k propastem. Zásah ji chytí a zůstane svítit na místě. | ![Papírový drak](Docs/enemies/PaperKite.jpg)<br>**Papírový drak**: létá na niti. Přestřel ji a z jeho látky se dá plachtit (drž skok). |
 
 ## Ovládání
-Hra startuje do hlavního menu (Hrát, Nastavení, Konec). V **Nastavení** (záložky Ovládání, Zvuk, Obraz) jde každou klávesu i tlačítko ovladače přemapovat a nastavit hlasitost, rozlišení, režim okna, VSync a kvalitu; ve hře otevře **Esc** (Start) pauzu s nastavením. Výchozí rozložení je pro dvě ruce: levá se pohybuje, pravá bojuje.
+Hra startuje do hlavního menu (Hrát, Nastavení, Konec). **Hrát** ukáže kapitoly jako karty s náhledem: **Zkušební místnost** (všechny zbraně, hrany, tunel, kruhy pro bič) a **Kapitola 1: Ruiny pod rudým stromem**. V menu potvrzuje mezerník, Enter nebo A na ovladači, Esc vrací zpět. V **Nastavení** (záložky Ovládání, Zvuk, Obraz) jde každou klávesu i tlačítko ovladače přemapovat a nastavit hlasitost, rozlišení, režim okna, VSync a kvalitu; ve hře otevře **Esc** (Start) pauzu s nastavením. Výchozí rozložení je pro dvě ruce: levá se pohybuje, pravá bojuje.
 
 | Akce | Klávesnice | Gamepad |
 |---|---|---|
@@ -106,7 +106,7 @@ Tools/         benchmark, hooky předávky mezi počítači, keep-awake
 ```
 
 ## Testy
-Unity → Window → General → Test Runner: **701 EditMode** a **172 PlayMode** testů. PlayMode testy ověřují každý pohyb a kombo na skutečném prefabu hrdiny (`HeroMoveSetPlayTests`).
+Unity → Window → General → Test Runner: **701 EditMode** a **173 PlayMode** testů. PlayMode testy ověřují každý pohyb a kombo na skutečném prefabu hrdiny (`HeroMoveSetPlayTests`).
 
 ## Verze a CHANGELOG
 Každý commit má vlastní verzi podle [SemVer](https://semver.org/lang/cs/): sekci `## [X.Y.Z] – RRRR-MM-DD` v [CHANGELOG.md](CHANGELOG.md) a tag `vX.Y.Z`. Hlídají to git hooky v `.githooks/`:

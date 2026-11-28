@@ -86,10 +86,23 @@ namespace CrimsonVeil.Tests
             Assert.IsFalse(panel.IsOpen);
             Assert.IsFalse(menu.SettingsPanel.IsOpen, "closed");
 
+            // Hrát: the chapters, a card each with its picture; Esc back, Space plays the chosen one
             menu.Play.onClick.Invoke();
+            yield return null;
+            Assert.IsTrue(menu.ChaptersOpen, "Hrát shows the chapters");
+            Assert.AreEqual(MainMenu.Chapters.Length, menu.ChapterCards.Count);
+            Assert.AreEqual(2, menu.ChapterCards.Count, "the test room and chapter 1");
+            foreach (var card in menu.ChapterCards)
+                Assert.IsNotNull(card.GetComponentInChildren<RawImage>().texture, card.name + " shows its chapter's picture");
+            Assert.AreEqual(menu.ChapterCards[1].gameObject, UnityEngine.EventSystems.EventSystem.current.currentSelectedGameObject, "chapter 1 chosen first");
+            menu.CloseChapters();
+            Assert.IsFalse(menu.ChaptersOpen);
+            menu.Play.onClick.Invoke();
+            yield return null;
+            Assert.IsTrue(MenuSubmit.Submit(), "Space (as Enter) plays the chosen chapter");
             float end = Time.realtimeSinceStartup + 30f;
             while (SceneManager.GetActiveScene().name != MainMenu.GameScene && Time.realtimeSinceStartup < end) yield return null;
-            Assert.AreEqual(MainMenu.GameScene, SceneManager.GetActiveScene().name, "Play loads the game");
+            Assert.AreEqual(MainMenu.GameScene, SceneManager.GetActiveScene().name, "the chosen chapter loads");
             yield return null;
             yield return null;
             Assert.IsNotNull(Object.FindFirstObjectByType<PlayerController>(), "with the hero in it");
@@ -135,6 +148,32 @@ namespace CrimsonVeil.Tests
             Assert.AreEqual(0, CrimsonVeil.Combat.HeroProgress.Level(CrimsonVeil.Combat.HeroProgress.Upgrade.Blade), "and the upgrade bought in it");
             Assert.AreEqual(1f, Time.timeScale, "the game runs");
             Assert.IsFalse(InputBindings.GameplayBlocked);
+        }
+
+        [UnityTest]
+        public IEnumerator TheTestRoom_IsAChapterOfItsOwn_WalledOffFromTheRuins()
+        {
+            yield return SceneManager.LoadSceneAsync(MainMenu.MenuScene);
+            yield return null;
+            var menu = Object.FindFirstObjectByType<MainMenu>();
+            menu.OpenChapters();
+            yield return null;
+            menu.ChapterCards[0].onClick.Invoke();
+            float end = Time.realtimeSinceStartup + 30f;
+            while (SceneManager.GetActiveScene().name != MainMenu.TestRoomScene && Time.realtimeSinceStartup < end) yield return null;
+            Assert.AreEqual(MainMenu.TestRoomScene, SceneManager.GetActiveScene().name);
+            yield return new WaitForSeconds(0.5f);
+            var hero = Object.FindFirstObjectByType<PlayerController>();
+            Assert.IsNotNull(hero);
+            Assert.That(hero.transform.position.x, Is.InRange(-61f, -14f), "he starts in the room");
+            Assert.AreEqual(0, Object.FindObjectsByType<CrimsonVeil.Combat.CreatureBase>(FindObjectsSortMode.None).Length, "no creatures of the ruins in it");
+            Assert.AreEqual(0, CrimsonVeil.Combat.HeroProgress.ChapterCap, "the test room caps nothing");
+            // walking right he meets the wall that shut the room off
+            var input = hero.gameObject.AddComponent<ScriptedInput>();
+            hero.InputSource = input;
+            input.moveX = 1f;
+            yield return new WaitForSeconds(3f);
+            Assert.Less(hero.transform.position.x, -13f, "the wall stops him: the ruins are another chapter");
         }
 
         [UnityTest]

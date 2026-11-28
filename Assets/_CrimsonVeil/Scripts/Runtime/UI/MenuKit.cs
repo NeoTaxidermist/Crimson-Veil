@@ -51,10 +51,15 @@ namespace CrimsonVeil.UI
         public static EventSystem EnsureEventSystem()
         {
             var es = UnityEngine.Object.FindFirstObjectByType<EventSystem>();
-            if (es != null) return es;
+            if (es != null)
+            {
+                if (es.GetComponent<MenuSubmit>() == null) es.gameObject.AddComponent<MenuSubmit>();
+                return es;
+            }
             var go = new GameObject("EventSystem");
             es = go.AddComponent<EventSystem>();
             go.AddComponent<InputSystemUIInputModule>();
+            go.AddComponent<MenuSubmit>();   // (Space confirms too: v0.112)
             return es;
         }
 
@@ -108,7 +113,10 @@ namespace CrimsonVeil.UI
             return rt;
         }
 
-        /// <summary>A button: dark, its label light; chosen (pointed at, or selected with keys / a gamepad) it turns crimson.</summary>
+        /// <summary>
+        /// A button in the game's ink: a stroke of a brush under its label - faint ink while it rests, the scarf's
+        /// crimson when it is chosen (pointed at, or selected with the keys or a gamepad). (Until v0.112 a grey box.)
+        /// </summary>
         public static Button Button(Transform parent, string label, Action onClick, float width = 420f, float height = 64f, int size = 30)
         {
             var rt = Rect(label, parent);
@@ -116,21 +124,137 @@ namespace CrimsonVeil.UI
             var le = rt.gameObject.AddComponent<LayoutElement>();
             le.preferredWidth = width; le.preferredHeight = height;
             var img = rt.gameObject.AddComponent<Image>();
+            img.sprite = BrushSprite;
+            img.type = Image.Type.Simple;
             img.color = Color.white;
             var b = rt.gameObject.AddComponent<Button>();
             var colors = b.colors;
-            colors.normalColor = Ink;
+            colors.normalColor = Rest;
             colors.highlightedColor = Crimson;
             colors.selectedColor = Crimson;
             colors.pressedColor = new Color(0.45f, 0.03f, 0.05f, 1f);
-            colors.disabledColor = new Color(0.1f, 0.1f, 0.1f, 0.6f);
-            colors.fadeDuration = 0.06f;
+            colors.disabledColor = new Color(0.1f, 0.1f, 0.1f, 0.35f);
+            colors.fadeDuration = 0.08f;
             b.colors = colors;
             b.targetGraphic = img;
             var text = Label(rt, label, size, Paper);
             Fill(text.rectTransform);
             if (onClick != null) b.onClick.AddListener(() => onClick());
             return b;
+        }
+
+        /// <summary>A button at rest: a faint stroke of ink.</summary>
+        public static readonly Color Rest = new Color(0.02f, 0.02f, 0.025f, 0.72f);
+
+        static Sprite brush, soft;
+        static Texture2D vignette;
+
+        /// <summary>
+        /// A stroke of a broad brush, made once in code (no picture file): thick in its middle, tapering and frayed
+        /// towards both ends, its edges uneven, a few dry streaks along it - as the scarf is painted.
+        /// </summary>
+        public static Sprite BrushSprite
+        {
+            get
+            {
+                if (brush != null) return brush;
+                const int w = 512, h = 128;
+                var tex = new Texture2D(w, h, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp, name = "Brush" };
+                var px = new Color32[w * h];
+                var rng = new System.Random(7);
+                float[] streak = new float[h];
+                for (int y = 0; y < h; y++) streak[y] = 0.75f + 0.25f * (float)rng.NextDouble();
+                for (int x = 0; x < w; x++)
+                {
+                    float u = x / (float)(w - 1);
+                    // thick in the middle, tapering to both ends (faster at the start: the brush comes down, then drags)
+                    float body = Mathf.Sin(Mathf.Pow(u, 0.8f) * Mathf.PI);
+                    float half = 0.47f * Mathf.Pow(Mathf.Clamp01(body), 0.35f);
+                    float wobble = 0.03f * Mathf.Sin(u * 23f) + 0.02f * Mathf.Sin(u * 61f + 1.3f);
+                    for (int y = 0; y < h; y++)
+                    {
+                        float v = y / (float)(h - 1) - 0.5f - wobble;
+                        float edge = half - Mathf.Abs(v);
+                        float a = Mathf.Clamp01(edge * 40f);
+                        // dry streaks along the stroke, more at its thin ends
+                        float dry = Mathf.Lerp(streak[y], 1f, Mathf.Clamp01(body * 1.6f));
+                        a *= dry;
+                        px[y * w + x] = new Color32(255, 255, 255, (byte)(a * 255f));
+                    }
+                }
+                tex.SetPixels32(px);
+                tex.Apply();
+                brush = Sprite.Create(tex, new Rect(0, 0, w, h), new Vector2(0.5f, 0.5f), 100f);
+                return brush;
+            }
+        }
+
+        /// <summary>A soft round blot (the selection's glow, petals): white, fading to nothing at its rim.</summary>
+        public static Sprite SoftSprite
+        {
+            get
+            {
+                if (soft != null) return soft;
+                const int n = 64;
+                var tex = new Texture2D(n, n, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp, name = "Soft" };
+                var px = new Color32[n * n];
+                for (int y = 0; y < n; y++)
+                    for (int x = 0; x < n; x++)
+                    {
+                        float d = Vector2.Distance(new Vector2(x, y), new Vector2(n / 2f, n / 2f)) / (n / 2f);
+                        px[y * n + x] = new Color32(255, 255, 255, (byte)(Mathf.Clamp01(1f - d * d) * 255f));
+                    }
+                tex.SetPixels32(px);
+                tex.Apply();
+                soft = Sprite.Create(tex, new Rect(0, 0, n, n), new Vector2(0.5f, 0.5f), 100f);
+                return soft;
+            }
+        }
+
+        static Texture2D leftShade;
+
+        /// <summary>Ink thick at the left edge, thinning to nothing at the right (under a column of choices).</summary>
+        public static Texture2D LeftShade
+        {
+            get
+            {
+                if (leftShade != null) return leftShade;
+                const int n = 256;
+                leftShade = new Texture2D(n, 1, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp, name = "LeftShade" };
+                var px = new Color32[n];
+                for (int x = 0; x < n; x++)
+                {
+                    float a = Mathf.SmoothStep(0f, 1f, 1f - x / (n - 1f));
+                    px[x] = new Color32(4, 4, 6, (byte)(a * 200f));
+                }
+                leftShade.SetPixels32(px);
+                leftShade.Apply();
+                return leftShade;
+            }
+        }
+
+        /// <summary>The picture's edges sinking into ink (a texture over the whole screen, clear in the middle).</summary>
+        public static Texture2D Vignette
+        {
+            get
+            {
+                if (vignette != null) return vignette;
+                const int n = 256;
+                vignette = new Texture2D(n, n, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp, name = "Vignette" };
+                var px = new Color32[n * n];
+                for (int y = 0; y < n; y++)
+                    for (int x = 0; x < n; x++)
+                    {
+                        float dx = (x / (n - 1f) - 0.5f) * 2f, dy = (y / (n - 1f) - 0.5f) * 2f;
+                        float d = Mathf.Sqrt(dx * dx * 0.8f + dy * dy);
+                        // (Mathf.SmoothStep blends from-to by t, it is not the shaders' smoothstep(edge0, edge1, x))
+                        float a = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.35f, 1.25f, d));
+                        px[y * n + x] = new Color32(6, 6, 8, (byte)(a * 245f));
+                    }
+                vignette.SetPixels32(px);
+                vignette.Apply();
+                return vignette;
+            }
         }
 
         /// <summary>A volume slider 0..1: a dark track, the scarf's crimson filling it, a light handle. Left and right

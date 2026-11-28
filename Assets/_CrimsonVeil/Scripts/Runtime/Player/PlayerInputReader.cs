@@ -27,7 +27,7 @@ namespace CrimsonVeil.Player
             interact = InputBindings.Action("Interact");
         }
 
-        static bool Blocked => InputBindings.GameplayBlocked;
+        static bool Blocked => InputBindings.GameplayBlocked || InputBindings.JustUnblocked;
 
         public float MoveX => Blocked ? 0f : InputBindings.Axis(left, right, InputBindings.MoveStick);
         public float AimY => Blocked ? 0f : InputBindings.Axis(down, up, InputBindings.AimStick);

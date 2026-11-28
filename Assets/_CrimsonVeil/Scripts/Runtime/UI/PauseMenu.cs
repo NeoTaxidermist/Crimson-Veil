@@ -94,8 +94,12 @@ namespace CrimsonVeil.UI
         {
             confirmUntil = -1f;
             var scene = SceneManager.GetActiveScene().name;
-            CrimsonVeil.Combat.HeroProgress.RestoreChapterStart();
-            CrimsonVeil.Combat.HeroProgress.Restarting = true;
+            // (only this chapter's own start: the test room, no chapter, keeps what he has)
+            if (CrimsonVeil.Combat.HeroProgress.ChapterScene == scene)
+            {
+                CrimsonVeil.Combat.HeroProgress.RestoreChapterStart();
+                CrimsonVeil.Combat.HeroProgress.Restarting = true;
+            }
             IsOpen = false;
             CrimsonVeil.Core.GameClock.Reset();
             InputBindings.GameplayBlocked = false;

@@ -334,8 +334,15 @@ namespace CrimsonVeil.EditorTools
             Debug.Log("[CrimsonVeil] Hanging props anchored: " + hung.x + ", removed (nothing to hang from): " + hung.y);
 
             EditorSceneManager.SaveScene(scene, ScenePath);
-            EditorBuildSettings.scenes = new[] { new EditorBuildSettingsScene(ScenePath, true) };
+            // (the title first: it is where the game starts)
+            EditorBuildSettings.scenes = new[]
+            {
+                new EditorBuildSettingsScene(LevelKitMaterials.Root + "/Scenes/" + CrimsonVeil.UI.MainMenu.MenuScene + ".unity", true),
+                new EditorBuildSettingsScene(ScenePath, true),
+            };
             AssetDatabase.SaveAssets();
+            // the test room becomes a scene of its own, the ruins walled off from it (v0.112)
+            ChapterScenes.Split();
             Debug.Log("[CrimsonVeil] Prototype scene built from the level kit: " + ScenePath);
         }
 

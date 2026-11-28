@@ -70,7 +70,21 @@ namespace CrimsonVeil.Player
         public static InputAction LookStick { get { _ = Asset; return lookStick; } }
 
         /// <summary>A menu is open: the hero hears nothing (the menu's own keys still work).</summary>
-        public static bool GameplayBlocked { get; set; }
+        public static bool GameplayBlocked
+        {
+            get => blocked;
+            set
+            {
+                if (blocked && !value) unblockedFrame = Time.frameCount;
+                blocked = value;
+            }
+        }
+        static bool blocked;
+        static int unblockedFrame = -10;
+
+        /// <summary>A menu was closed this frame or the last: the press that closed it (Space, Enter) is not also the
+        /// hero's jump or blow (v0.112, when Space came to confirm in menus).</summary>
+        public static bool JustUnblocked => Time.frameCount <= unblockedFrame + 1;
 
         public static Entry Find(string id)
         {

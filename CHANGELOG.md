@@ -5,6 +5,13 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.110.1] – 2026-11-28
+### Změněno
+- `Docs/Backlog.md`: nová položka „Restart kapitoly bez možnosti grindovat“. Obsahuje otázku uživatele, jak to řeší jiné hry, a můj návrh: restart vrátí postup do stavu při vstupu do kapitoly, nepřátelé se jinak neobnovují a vylepšení mají strop podle kapitoly.
+
+### Testy
+- Jen dokumentace, testy se nespouštěly.
+
 ## [0.110.0] – 2026-11-28
 ### Přidáno – zdraví, léčení a karmín (uživatel: „Ten autoheal je divný. A z nepřátel by mělo něco po zabití vypadnout…“, pak „Udělej to všechno do branche“)
 - **Život sám nedorůstá.** Dřív dorůstal 0,25/s po 6 s bez zásahu.

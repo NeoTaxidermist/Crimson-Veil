@@ -27,6 +27,22 @@ Značky: **[rozhodnuto]** uživatel výslovně chce · **[návrh]** můj návrh,
 - **Výkon nových modelů (změřeno ve v0.104.0, DELL, 1080p):** nepřátelé v záběru stojí 0,45–1,0 ms. U skupin nepřátel je to 50–54 fps, na startu 58 fps; rozdíl dělá hlavně pozadí. LOD zatím není potřeba.
 - **Odkazy:** `Docs/claude/crimson-veil-enemy-rebuild.md`, `crimson-veil-no-stock-art.md`, `crimson-veil-cutscenes.md`.
 
+### 2. Restart kapitoly bez možnosti grindovat  [návrh, čeká na rozhodnutí uživatele] · M
+- **Co (uživatel 2026-11-28):** „Jak to udělat tak, aby hráč měl možnost, až to pokazí, to zrestartovat? Jako třeba celou kapitolu. A s tím i nepřátele. Ale zároveň aby nemohl donekonečna grindit nepřátele a vylepšit se dřív, než by bylo vhodné. Jak tohle hry řeší?“
+- **Jak to je teď:** po smrti se hrdina objeví u checkpointu a zabití nepřátelé zůstanou mrtví. Restart kapitoly není, z pauzy se dá odejít jen do menu.
+- **Jak to řeší jiné hry:**
+  - Hollow Knight a Dark Souls: nepřátelé se obnoví po odpočinku. Grindovat se dá, ale ceny rostou a hlavní vylepšení se nedají koupit, musí se najít.
+  - Ori a Celeste: všechno je pevně rozmístěné a nic se neobnovuje, takže grindovat nejde.
+  - Roguelike hry: restart vrátí i postup.
+  - Časté pojistky: strop vylepšení podle kapitoly, při opakovaném zabití padá méně kapek nebo nic, klíčová vylepšení podmíněná nálezem.
+- **Můj návrh:**
+  - V pauze bude **„Začít kapitolu znovu“**. Hra uloží stav postupu při vstupu do kapitoly (karmín, vylepšení, úlomky, uzel) a restart ho vrátí a znovu načte scénu, takže jsou zpátky i nepřátelé.
+  - Grind tím odpadne sám: co hráč v pokažené kapitole nasbíral, restart vezme zpět.
+  - Nepřátelé se jinak neobnovují (ani u checkpointů), takže kapek je v kapitole pevný počet.
+  - Pojistka navíc: **strop vylepšení podle kapitoly** (v 1. kapitole nejvýš úroveň 1 a tak dál). Ceny se pak dají ladit, aniž by se hráč dal „přefarmit“.
+- **Rozhodnout:** jestli restart vrací postup do stavu při vstupu do kapitoly; jestli chce strop podle kapitoly; jestli se nepřátelé mají někdy obnovovat (u checkpointu ne).
+- **Dopady:** `HeroProgress` (snímek stavu), `PauseMenu` (nová položka), načtení scény, ukládání postupu mezi kapitolami (zatím žádné není), `HeroProgress.Cost` (strop), testy.
+
 ---
 
 ## Čeká na rozhodnutí uživatele

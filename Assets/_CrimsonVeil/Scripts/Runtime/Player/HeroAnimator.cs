@@ -275,8 +275,8 @@ namespace CrimsonVeil.Player
             HandsOffLip = Reach(upperArmL, lowerArmL, handL, lip, off, dir, weight, press);
             float offRight = Reach(upperArmR, lowerArmR, handR, lip, off, dir, right, press);
             if (right > 0.5f) HandsOffLip = Mathf.Max(HandsOffLip, offRight);
-            LayOnLip(handL, palmL, dir, weight);
-            LayOnLip(handR, palmR, dir, right);
+            LayOnLip(handL, palmL, dir, weight, 1f - press);
+            LayOnLip(handR, palmR, dir, right, 1f - press);
             if (free > 0f) KeepHandOffTheFace(upperArmR, lowerArmR, handR, handSkinR, lip, dir, free);
         }
 
@@ -331,17 +331,27 @@ namespace CrimsonVeil.Player
         /// <summary>How far down (degrees) from level the fingers point, lying on a lip's top: onto the stone.</summary>
         public const float LipFingersDown = 0f;
 
+        /// <summary>How far (degrees) the hooked hand leans over the lip from straight up (the fingers towards the ledge).</summary>
+        public const float LipHookLean = 25f;
+
         /// <summary>
-        /// The hand lies on the lip's top: the palm down on the stone, the fingers into the ledge. (Left as the arm
-        /// brought it, it stood up over the corner like a hook closed on nothing; and pressing over the lip the fingers
-        /// went down into its top, 11 cm.)
+        /// The hand on the lip. Hanging and pulling up (<paramref name="hook"/> 1) it hooks over the corner as a climber
+        /// holds an edge: the palm against the stone, the hand up the face, the fingers curled over onto the top
+        /// (<see cref="HeroPoseSolver.LipHook"/>). Pressing over the lip (<paramref name="hook"/> 0) it lies flat on the
+        /// top, the fingers into the ledge. (Until v0.107 the open palm lay flat on the top while he hung too - a hold
+        /// no hanging body could keep.)
         /// </summary>
-        static void LayOnLip(Transform hand, in Palm palm, int dir, float weight)
+        static void LayOnLip(Transform hand, in Palm palm, int dir, float weight, float hook)
         {
             if (hand == null || !palm.known || weight <= 0f) return;
             float tilt = LipFingersDown * Mathf.Deg2Rad;
             var fingers = new Vector3(dir * Mathf.Cos(tilt), -Mathf.Sin(tilt), 0f);
-            Quaternion want = Quaternion.LookRotation(fingers, Vector3.up) * Quaternion.Inverse(palm.frame);
+            Quaternion flat = Quaternion.LookRotation(fingers, Vector3.up);
+            float lean = LipHookLean * Mathf.Deg2Rad;
+            // up the face and over, the back of the hand away from the stone
+            Quaternion hooked = Quaternion.LookRotation(new Vector3(dir * Mathf.Sin(lean), Mathf.Cos(lean), 0f),
+                                                        new Vector3(-dir * Mathf.Cos(lean), Mathf.Sin(lean), 0f));
+            Quaternion want = Quaternion.Slerp(flat, hooked, Mathf.Clamp01(hook)) * Quaternion.Inverse(palm.frame);
             hand.rotation = Quaternion.Slerp(hand.rotation, want, weight);
         }
 

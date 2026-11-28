@@ -36,9 +36,12 @@ namespace CrimsonVeil.Tests
             Assert.AreEqual(1f, HeroPoseSolver.LipHold(false, true, HeroPoseSolver.LipLetGo), 1e-5f);
             Assert.Greater(HeroPoseSolver.LipHold(false, true, 0.5f * (HeroPoseSolver.LipLetGo + HeroPoseSolver.ClimbKneeEnd)), 0.3f, "and come off it gradually");
             Assert.AreEqual(0f, HeroPoseSolver.LipHold(false, true, HeroPoseSolver.ClimbKneeEnd), 1e-5f);
-            // the hand lies on the top and the fingers press onto it: a fist there closes on nothing
-            Assert.AreEqual(HeroPoseSolver.LipFingers, HeroPoseSolver.LedgeGrip(true, false, 0f), 1e-5f);
-            Assert.That(HeroPoseSolver.LipFingers, Is.InRange(0.05f, 0.4f));
+            // hanging, the fingers curl over the corner (the user's choice over the open palm on the top, v0.107):
+            // the wrist down the face, under the top
+            Assert.AreEqual(HeroPoseSolver.LipHook, HeroPoseSolver.LedgeGrip(true, false, 0f), 1e-5f);
+            Assert.That(HeroPoseSolver.LipHook, Is.InRange(0.5f, 0.9f), "curled over, not a fist closed on nothing");
+            Assert.Less(HeroPoseSolver.LipHandOffset(0f).y, 0f, "the hooked wrist is below the top");
+            Assert.That(HeroPoseSolver.LipFingers, Is.InRange(0.05f, 0.4f), "pressing over, the fingers lie on the top");
         }
 
         [Test]

@@ -285,6 +285,42 @@ namespace CrimsonVeil.Tests
             Assert.AreEqual(VeilForm.Sword, veil.Form, "standing on the top the sword is cast again");
         }
 
+        [UnityTest] public IEnumerator AWeaponPressedOnALip_IsNeverLostSilently_Right() { side = 1; return AWeaponPressedOnALip_IsNeverLostSilently(); }
+        [UnityTest] public IEnumerator AWeaponPressedOnALip_IsNeverLostSilently_Left() { side = -1; return AWeaponPressedOnALip_IsNeverLostSilently(); }
+        /// <summary>
+        /// A press is never dropped without a sign (the user's rule): hanging it is refused visibly (a puff of ink, the
+        /// event told), and pressed while he climbs over the lip it is kept and the weapon cast as soon as he is up.
+        /// </summary>
+        IEnumerator AWeaponPressedOnALip_IsNeverLostSilently()
+        {
+            var veil = player.GetComponent<VeilController>();
+            var told = new List<(VeilForm form, bool kept)>();
+            veil.PressedOnLip += (f, k) => told.Add((f, k));
+            yield return CatchTheLip();
+            yield return Watch(0.4f, "hanging");
+            input.cast = VeilForm.Sword;
+            yield return Watch(0.2f, "pressing hanging");
+            Assert.AreEqual(VeilForm.Flow, veil.Form, "hanging, no sword is cast");
+            Assert.AreEqual(1, told.Count, "but the press was answered");
+            Assert.IsFalse(told[0].kept, "refused, with a puff of ink");
+            Assert.IsNull(veil.CastAfterLip, "and not kept for later: he may hang on for long");
+            input.jump = true;
+            yield return Watch(1f, "climbing", () => State == MotorState.Climbing);
+            Assert.AreEqual(MotorState.Climbing, State, "climbing over");
+            yield return null;
+            input.cast = VeilForm.Spear;
+            yield return Watch(0.1f, "pressing climbing");
+            Assert.AreEqual(2, told.Count);
+            Assert.IsTrue(told[1].kept, "pressed climbing, it is kept");
+            Assert.AreEqual(VeilForm.Spear, veil.CastAfterLip);
+            Assert.AreEqual(VeilForm.Flow, veil.Form, "not cast while both hands are on the stone");
+            bool castOnTop = false;
+            yield return Watch(3f, "climbing", () => { castOnTop |= !veil.HandsOnALip && veil.Form == VeilForm.Spear; return castOnTop; });
+            Assert.IsTrue(castOnTop, "the spear is cast as soon as he is up");
+            Assert.IsNull(veil.CastAfterLip);
+            Debug.Log($"[lip press] side {side}: hanging press refused, climbing press cast on the top ({told.Count} answers)");
+        }
+
         [UnityTest]
         public IEnumerator JumpingUnderALowRoof_TheHeadStaysUnderIt()
         {

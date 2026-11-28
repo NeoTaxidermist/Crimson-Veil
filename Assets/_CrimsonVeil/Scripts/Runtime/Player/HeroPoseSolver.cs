@@ -760,7 +760,9 @@ namespace CrimsonVeil.Player
         /// </summary>
         public static Vector2 LipHandOffset(float t)
         {
-            var grip = new Vector2(-0.04f, 0.05f);   // (the wrist level with the corner put the palm 8 cm into the stone)
+            // hooked: the wrist down the face, so the knuckles come to the corner and the fingers curl over onto the top
+            // (until v0.107 the palm lay flat on the top, the wrist 5 cm over it)
+            var grip = new Vector2(-0.045f, -0.07f);
             var flat = new Vector2(0.08f, 0.05f);
             return Vector2.Lerp(grip, flat, LipPress(t));
         }
@@ -782,18 +784,21 @@ namespace CrimsonVeil.Player
             return d <= reach || d < 1e-5f ? Vector3.zero : to * ((d - reach) / d);
         }
 
-        /// <summary>How far the fingers close on a lip: the hand lies on its top and the fingers press onto the stone.
-        /// (A fist there - 0.8 it was - closed on nothing, over the lip.)</summary>
-        public const float LipFingers = 0.2f;
+        /// <summary>How far the fingers close pressing flat on a lip's top.</summary>
+        public const float LipFingers = 0.15f;
 
-        /// <summary>How far the fingers close while hanging or climbing (they hold the lip until the knee is on top).</summary>
+        /// <summary>How far the fingers curl hooked over a lip's corner, hanging and pulling up (the hand up the face, the
+        /// fingers over onto the top - the user's choice over the open palm laid flat on it, v0.107).</summary>
+        public const float LipHook = 0.7f;
+
+        /// <summary>How far the fingers close while hanging or climbing: hooked over the corner, then opening flat as he
+        /// presses over the top (<see cref="LipPress"/>), then letting go once the knee is up.</summary>
         public static float LedgeGrip(bool hanging, bool climbing, float climbProgress)
         {
-            if (hanging) return LipFingers;
+            if (hanging) return LipHook;
             if (!climbing) return 0f;
-            if (climbProgress < ClimbPullEnd) return LipFingers;
-            // pressing down on the top the fingers open flat, then let go
-            return Mathf.Lerp(0.15f, 0f, Mathf.InverseLerp(ClimbKneeEnd, 1f, climbProgress));
+            float flat = Mathf.Lerp(LipFingers, 0f, Mathf.InverseLerp(ClimbKneeEnd, 1f, climbProgress));
+            return Mathf.Lerp(LipHook, flat, LipPress(climbProgress));
         }
 
         /// <summary>Facing the wall: one hand braced high, a foot against the stone.</summary>

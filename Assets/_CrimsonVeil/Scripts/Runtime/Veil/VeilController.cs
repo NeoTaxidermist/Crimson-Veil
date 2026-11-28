@@ -276,7 +276,8 @@ namespace CrimsonVeil.Veil
         public bool Cast(VeilForm form)
         {
             if (form == VeilForm.Flow || Disarmed) return false;
-            if (HandsOnALip) return false;   // both hands are on the stone
+            if (HandsOnALip) return PressedOnALip(form);   // both hands are on the stone
+            afterLip = null;
             if (!IsUnlocked(form)) { CastFizzled?.Invoke(form); return false; }
             if (Latched != null) return false;
             float cost = VeilCasting.Cost(form);
@@ -315,6 +316,51 @@ namespace CrimsonVeil.Veil
             pendingAttack = form;
             if (form == VeilForm.Shield) sinceShieldRaised = 0f;
             return true;
+        }
+
+        VeilForm? afterLip;
+        float afterLipAge;
+
+        /// <summary>The weapon pressed while he climbed over a lip, cast as soon as he is up (null: none).</summary>
+        public VeilForm? CastAfterLip => afterLip;
+
+        /// <summary>A weapon pressed on a lip (hanging or climbing), whatever became of it: kept for the top, or refused.</summary>
+        public event Action<VeilForm, bool> PressedOnLip;
+
+        /// <summary>How long (s) a press made climbing over a lip waits for him to be up (the climb takes 0.8 s).</summary>
+        public const float AfterLipMemory = 1.2f;
+
+        /// <summary>
+        /// A weapon pressed with both hands on the stone must not be lost without a sign (the user's rule: a press is
+        /// never dropped silently). Climbing over the lip it is kept and cast the moment he is up - the climb is a
+        /// committed move, like a blow, and a press during it follows it. Hanging, nothing he does next is certain
+        /// (he may hang on, drop, climb), so it is refused visibly: a puff of ink at the hand, as a cast the scarf
+        /// cannot make.
+        /// </summary>
+        bool PressedOnALip(VeilForm form)
+        {
+            if (player != null && player.Motor.State == MotorState.Climbing)
+            {
+                afterLip = form;
+                afterLipAge = 0f;
+                PressedOnLip?.Invoke(form, true);
+                return true;
+            }
+            Fizzle(form);
+            PressedOnLip?.Invoke(form, false);
+            return false;
+        }
+
+        /// <summary>The press kept from the climb: cast once he is off the lip (or let go of when it is too old).</summary>
+        void CastKeptFromLip(float dt)
+        {
+            if (!afterLip.HasValue) return;
+            afterLipAge += dt;
+            if (afterLipAge > AfterLipMemory) { afterLip = null; return; }
+            if (HandsOnALip) return;
+            var form = afterLip.Value;
+            afterLip = null;
+            Cast(form);
         }
 
         /// <summary>A press this close (s) to the end of a blow and its recovery follows it at once; earlier ones are let go.</summary>
@@ -745,6 +791,7 @@ namespace CrimsonVeil.Veil
                 Interrupt(0f);
                 SetForm(VeilForm.Flow);
             }
+            CastKeptFromLip(dt);
             if (input != null)
             {
                 var cast = input.CastPressed;

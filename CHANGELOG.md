@@ -5,6 +5,16 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.108.0] – 2026-11-28
+### Změněno
+- **Úchop na hraně:** ve visu a při přitahování se hrdina drží hrany jako lezec. Zápěstí má dole na stěně, dlaň u kamene a prsty přehnuté přes roh na horní plochu. Dřív ležela otevřená dlaň naplocho na horní ploše. Když se přetahuje přes hranu, ruka se plynule srovná naplocho jako dřív. Zvolil to uživatel.
+- **Stisk zbraně na hraně se už neztratí bez odezvy:** stisknutý při šplhání se zapamatuje a zbraň se vyvolá, jakmile je hrdina nahoře. Ve visu stisk odmítne obláček inkoustu u ruky. Nic se nezapamatuje, protože hrdina může viset dlouho.
+- `VeilController`: `CastAfterLip`, událost `PressedOnLip(zbraň, zapamatováno)`.
+
+### Testy
+- EditMode 692/692 (upravené testy úchopu). PlayMode 155/155, z toho nový `AWeaponPressedOnALip_IsNeverLostSilently` (vlevo i vpravo).
+- Měření těla v kameni: ruce 3,1 cm od svého místa, palec 4,5 cm v kameni na začátku přetahování (tolerance 5 cm).
+
 ## [0.107.0] – 2026-11-28
 ### Přidáno
 - **Kvalita obrazu „Vlastní“.** Pod volbou Kvalita obrazu v menu Obraz jsou čtyři položky: Okolní stínění (SSAO), Vyhlazování hran (Vypnuto, FXAA, SMAA), Rozlišení vykreslování (75, 80, 90, 100 %) a Stíny (Nízké, Střední, Vysoké). Předvolba Nízká, Střední nebo Vysoká ukáže svoje hodnoty. Změna kterékoli položky přepne kvalitu na Vlastní. Hodnoty se ukládají, Zrušit je vrátí.

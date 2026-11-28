@@ -50,16 +50,6 @@ Značky: **[rozhodnuto]** uživatel výslovně chce · **[návrh]** můj návrh,
 - **Dopady:** vzhled (SSAO a mlha jsou součást nálady), nastavení hry a menu, testy kvality, CHANGELOG. Na Lenovu se nic nezhorší.
 - **Odkazy:** `Docs/claude/crimson-veil-performance.md` (sekce DELL).
 
-### Úchop na hraně: otevřená dlaň místo pěsti  [návrh] · S
-- **Co:** hrdina se na hraně drží otevřenou dlaní na horní ploše; je to moje rozhodnutí z v0.81.
-- **Dopady:** animace šplhání, testy těla ve zdi (`HeroBodyWallPlayTests`).
-- **Odkazy:** `Docs/claude/crimson-veil-clipping-measure.md`.
-
-### Stisk zbraně na hraně se tiše zahodí  [návrh] · S
-- **Co:** ve visu nejsou zbraně (rozhodnuto ve v0.82), ale stisk se zahodí bez odezvy. Pravidlo uživatele přitom říká, že stisk se nesmí tiše ztratit.
-- **Návrh:** viditelná odezva (např. obláček inkoustu jako u nepovedeného kouzla), nebo si stisk zapamatovat na dobu po vylezení.
-- **Dopady:** ovládání, testy pohybové sady.
-
 ### Klávesy zbraní  [návrh] · S
 - **Co:** teď J K L ; a štít U (můj návrh, v0.85). Uživatel navrhoval U I O P a štít J.
 - **Dopady:** výchozí `InputBindings`, nápověda v menu, testy rebindingu. Uložená nastavení hráčů zůstanou.
@@ -104,6 +94,7 @@ Značky: **[rozhodnuto]** uživatel výslovně chce · **[návrh]** můj návrh,
 ---
 
 ## Hotovo (posledních pár, pak smazat)
+- v0.108.0 – úchop na hraně: prsty přehnuté přes hranu místo otevřené dlaně na horní ploše. Stisk zbraně na hraně se už neztratí: při šplhání se zapamatuje a zbraň se vyvolá nahoře, ve visu ho odmítne obláček inkoustu u ruky.
 - v0.107.0 – kvalita „Vlastní“: v menu Obraz se dá zvlášť nastavit SSAO, vyhlazování hran, rozlišení vykreslování (75–100 %) a stíny. Změna kterékoli položky přepne kvalitu na Vlastní.
 - v0.106.2 – ShieldMonk: prsty už nevyčnívají ze štítu při pohledu ze tří čtvrtin (štít odsazený od pěsti po své kolmici). Položka „UI plátna se přestavují každý snímek“ byla už hotová ve v0.100.0 (vlastní plátno šály, třepotání 30 Hz), dnes UI ~0,24 ms. Smazána.
 - v0.106.0 – tři úrovně kvality s automatickým výběrem podle grafiky, praskliny předpečené.

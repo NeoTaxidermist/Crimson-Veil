@@ -5,6 +5,14 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.114.4] – 2026-11-28
+### Změněno
+- **Bez mlhového obdélníku.** Uživatel: „Ten mlhový obdélník je vyloženě hnus. Musíš to vyřešit elegantně.“
+  - Mlha za větvičkou je pryč.
+  - Větvička má podél horní hrany tenké světlo, které se ztrácí do tuše, jako by na ni svítilo shora. Na černé skále je díky tomu vidět, na světlé mlze se ztratí.
+  - Prázdná místa listů mají jemný světlý obrys a náhled obvazu karmínový, takže jsou vidět i na tmavém pozadí.
+  - Světlý lem kolem celé větvičky jsem zkoušel, ale vypadal jako svítící trubka.
+
 ## [0.114.3] – 2026-11-28
 ### Změněno
 - **Životy čitelné i na tmavém pozadí.** Snímek ze hry ukázal, že v ruinách je levý horní roh na černé skále. Černá větvička, obrysy prázdných listů a náhled obvazu tam nebyly vidět. Za větvičkou je teď jemná světlá mlha jako tah štětce na papíře: nejhustší podél větvičky, do stran a ke koncům mizí, na světlé mlze ve hře skoro není znát.

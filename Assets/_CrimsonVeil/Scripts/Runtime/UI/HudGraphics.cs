@@ -45,6 +45,9 @@ namespace CrimsonVeil.UI
         static readonly Color Ember = new Color(1f, 0.42f, 0.2f, 0.95f);
         static readonly Color Ashen = new Color(0.45f, 0.43f, 0.43f, 0.85f);
         static readonly Color Empty = new Color(0.03f, 0.03f, 0.035f, 0.22f);
+        /// <summary>The paper's edge round the ink (v0.114.4): a thin pale rim, seen on dark rock, lost on pale mist.</summary>
+        static readonly Color Rim = new Color(0.86f, 0.84f, 0.8f, 0.45f);
+        static readonly Color PromiseEdge = new Color(0.85f, 0.28f, 0.26f, 0.35f);
         static readonly Color Vein = new Color(0.18f, 0f, 0.02f, 0.8f);
 
         /// <summary>How many times it has been drawn (for tests).</summary>
@@ -110,7 +113,6 @@ namespace CrimsonVeil.UI
 
             // the twig: from its base at the corner to beyond the last leaf, where the bud is; thick at the base
             float length = 22f + (n - 1) * Spacing + 34f;
-            Wash(vh, r, length);
             Twig(vh, r, length);
             // the bud for the next life at the tip, swelling with the shards (where the next leaf will grow)
             var tip = new Vector2(r.xMin + length, TwigY(r, length));
@@ -134,13 +136,18 @@ namespace CrimsonVeil.UI
                 Line(vh, at, stalkEnd, 2.2f, 1.4f, InkC);
                 float full = Mathf.Clamp01(health - i);
                 // its place: a faint ink outline of the whole leaf, so what is missing shows
-                if (full < 0.999f) Leaf(vh, stalkEnd, dir, full, 1f, Empty, Empty, i, 1f, false);
+                if (full < 0.999f)
+                {
+                    Leaf(vh, stalkEnd, dir, full, 1f, Empty, Empty, i, 1f, false);
+                    var ee = Rim; ee.a = 0.3f; Edge(vh, stalkEnd, dir, full, i, ee);
+                }
                 if (full > 0f) Leaf(vh, stalkEnd, dir, 0f, full, under, over, i, 1f, full < 0.999f);
                 if (CanMend && full < 0.999f)
                 {
                     float p1 = Mathf.Clamp01(promised - i), g1 = Mathf.Clamp01(Mathf.Min(grown, promised) - i);
                     var pc = Promise; pc.a += 0.12f * ready;
                     if (p1 > full) Leaf(vh, stalkEnd, dir, Mathf.Max(full, g1), p1, pc, pc, i, 1f, false);
+                    if (p1 > full) { var pe = PromiseEdge; pe.a += 0.3f * ready; Edge(vh, stalkEnd, dir, full, i, pe, p1); }
                     if (g1 > full) Leaf(vh, stalkEnd, dir, full, g1, Dark, Lit, i, 1f, false);
                 }
                 Veins(vh, stalkEnd, dir, full, i);
@@ -175,39 +182,6 @@ namespace CrimsonVeil.UI
         }
 
         /// <summary>
-        /// A soft wash of pale mist behind the twig, as a brushstroke on paper (v0.114.3): in the game the corner is often
-        /// on black rock, where the ink twig, the empty outlines and the promise of a binding vanished. Densest along the
-        /// twig, fading out above and below and at both ends; on pale mist it is barely seen.
-        /// </summary>
-        static void Wash(VertexHelper vh, Rect r, float length)
-        {
-            const int cols = 24;
-            float[] rows = { -60f, -44f, -28f, -12f, 0f, 12f, 28f, 44f, 58f };
-            float[] alpha = { 0f, 0.07f, 0.2f, 0.33f, 0.38f, 0.33f, 0.2f, 0.07f, 0f };
-            var paper = new Color(0.86f, 0.84f, 0.8f, 1f);
-            float x0 = r.xMin - 16f, x1 = r.xMin + length + 26f;
-            int start = vh.currentVertCount;
-            for (int k = 0; k <= cols; k++)
-            {
-                float u = k / (float)cols, x = Mathf.Lerp(x0, x1, u);
-                float ends = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(u * 4f)) * Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((1f - u) * 3f));
-                float y = TwigY(r, x - r.xMin);
-                for (int j = 0; j < rows.Length; j++)
-                {
-                    float wobble = Mathf.Abs(rows[j]) * 0.15f * Mathf.Sin(u * 9f + j * 2.3f);   // an uneven, misty edge
-                    var c = paper; c.a = alpha[j] * ends;
-                    vh.AddVert(new Vector3(x, y + rows[j] + wobble), c, Vector4.zero);
-                }
-                if (k == 0) continue;
-                for (int j = 0; j < rows.Length - 1; j++)
-                {
-                    int a = start + (k - 1) * rows.Length + j, b = start + k * rows.Length + j;
-                    vh.AddTriangle(a, b, a + 1); vh.AddTriangle(a + 1, b, b + 1);
-                }
-            }
-        }
-
-        /// <summary>
         /// The mend knot as a crimson binding wound round the twig's base: four wraps, one tied by every blow that lands;
         /// whole, two loose ends hang from it and it breathes while a wound waits to be bound.
         /// </summary>
@@ -225,6 +199,27 @@ namespace CrimsonVeil.UI
             var end = Color.Lerp(Mid, Lit, 0.35f + 0.5f * ready);
             Line(vh, new Vector2(r.xMin + 12f, y0 - 4f), new Vector2(r.xMin + 9f, y0 - 15f - 2f * ready), 2.6f, 1f, end);
             Line(vh, new Vector2(r.xMin + 14f, y0 - 4f), new Vector2(r.xMin + 18f, y0 - 13f - 2f * ready), 2.6f, 1f, end);
+        }
+
+        /// <summary>
+        /// A thin line round a leaf's outline from <paramref name="f0"/> to <paramref name="f1"/> of its length (to the tip
+        /// by default): the pale edge of a leaf's empty place, so the place shows on dark rock too.
+        /// </summary>
+        static void Edge(VertexHelper vh, Vector2 baseAt, Vector2 dir, float f0, int seed, Color col, float f1 = 1f)
+        {
+            var side = new Vector2(-dir.y, dir.x);
+            const int seg = 10;
+            for (int s = -1; s <= 1; s += 2)
+            {
+                Vector2 last = Vector2.zero;
+                for (int k = 0; k <= seg; k++)
+                {
+                    float u = Mathf.Lerp(f0, f1, k / (float)seg);
+                    var pt = baseAt + dir * (u * LeafLength) + side * (s * HalfWidth(u, seed, 1f));
+                    if (k > 0) Line(vh, last, pt, 1.1f, 1.1f, col);
+                    last = pt;
+                }
+            }
         }
 
         /// <summary>Three side veins split a leaf into quarters: dark on the crimson, faint on what is missing.</summary>
@@ -266,7 +261,27 @@ namespace CrimsonVeil.UI
                     vh.AddTriangle(i0, i1, i0 + 1); vh.AddTriangle(i0 + 1, i1, i1 + 1);
                 }
             }
-            // a dark wash under it, so it reads on the pale mist
+            // light from above along its upper edge (v0.114.4): a thin pale line that fades into the ink, so the twig
+            // reads on black rock as a lit branch; on pale mist it is lost
+            int lit = vh.currentVertCount;
+            for (int k = 0; k <= seg; k++)
+            {
+                float u = k / (float)seg;
+                float x = r.xMin + u * length, y = TwigY(r, u * length);
+                float top = y + Mathf.Lerp(7f, 2.6f, u) * (1f + 0.12f * Mathf.Sin(u * 37f)) * 0.5f;
+                var c = Rim; c.a *= Mathf.Clamp01(u * 10f) * Mathf.Clamp01((1f - u) * 6f) * (0.75f + 0.25f * Mathf.Sin(u * 23f));
+                var outer = c; outer.a *= 0.4f;
+                var clear = c; clear.a = 0f;
+                vh.AddVert(new Vector3(x, top + 0.7f), outer, Vector4.zero);
+                vh.AddVert(new Vector3(x, top), c, Vector4.zero);
+                vh.AddVert(new Vector3(x, top - 1.6f), clear, Vector4.zero);
+                if (k > 0)
+                    for (int j = 0; j < 2; j++)
+                    {
+                        int i0 = lit + (k - 1) * 3 + j, i1 = lit + k * 3 + j;
+                        vh.AddTriangle(i0, i1, i0 + 1); vh.AddTriangle(i0 + 1, i1, i1 + 1);
+                    }
+            }
         }
 
         /// <summary>

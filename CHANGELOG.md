@@ -5,6 +5,17 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.113.1] – 2026-11-28
+### Změněno
+- **Síla v HUD vypadá jako šála.** Uživatel: „Nelíbí se mi ten design. Myslel jsem, že to bude víc vypadat jako šála.“
+  - Místo ohnivého pruhu ji tvoří 7 průsvitných pramenů látky od tmavého karmínu po jasný, které se kroutí jeden přes druhý a ty světlejší mají lesk.
+  - Ke konci se prameny rozvolní, ztenčí a stočí, za šálou se táhnou kouřové nitky.
+  - Pod šálou je tenká popelavá nit, která ukazuje celou délku.
+  - Ceny zbraní jsou malé značky nad šálou, ne přes ni.
+
+### Testy
+- PlayMode: testy HUD 4/4. Jiný kód se neměnil.
+
 ## [0.113.0] – 2026-11-28
 ### Změněno – nový HUD (uživatel odsouhlasil návrh: „Udělej to“)
 - **Životy vlevo nahoře:** kruh namalovaný tuší pro každý život, otevřený tam, kde se štětec zvedl. Plné kruhy vyplňuje karmín, zranění ubírá po čtvrtinách a právě ztracená část chvíli doutná. Malý kroužek za nimi se dokresluje s každým nalezeným úlomkem. Kruhy se překreslují jen při změně.

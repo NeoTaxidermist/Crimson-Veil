@@ -150,7 +150,7 @@ namespace CrimsonVeil.UI
         [Range(0f, 1f)] public float mend;
         [Range(0f, 1f)] public float hurtFlash;
 
-        public float thickness = 22f, waveAmplitude = 6f;
+        public float thickness = 28f, waveAmplitude = 6f;
         public const float FlutterStep = 1f / 30f;
 
         static readonly Color Deep = new Color(0.32f, 0.0f, 0.02f, 1f);
@@ -182,18 +182,19 @@ namespace CrimsonVeil.UI
             vh.Clear();
             var r = rectTransform.rect;
             float x0 = r.xMin + 64f, x1 = r.xMax - 20f, y = r.center.y;
-            // the whole length: an ink outline, and the burnt-out part as grey ash (seen on black rock and pale mist alike)
-            Ribbon(vh, x0, x1, y, 0f, 1f, thickness * 1.45f, waveAmplitude, (u, a) => Track, 28);
-            Ribbon(vh, x0, x1, y, Mathf.Clamp01(charge), 1f, thickness * 0.8f, waveAmplitude, (u, a) => Ash, 28);
-            // the strength, the crimson flame
-            if (charge > 0.003f) Ribbon(vh, x0, x1, y, 0f, Mathf.Clamp01(charge), thickness, waveAmplitude, Flame, 40);
+            // the whole length, faint: a thin ash thread under it (seen on black rock and pale mist alike)
+            Ribbon(vh, x0, x1, y, 0f, 1f, 9f, waveAmplitude, (u, a) => Track, 28);
+            Ribbon(vh, x0, x1, y, Mathf.Clamp01(charge), 1f, 4f, waveAmplitude, (u, a) => Ash, 28);
+            // the strength: the scarf itself (v0.113.1 - "it should look like the scarf")
+            if (charge > 0.003f) Scarf(vh, x0, x1, y, Mathf.Clamp01(charge));
             // the weapons' costs
             foreach (var f in Marked)
             {
                 float u = NotchAt(f, capacity);
                 float nx = Mathf.Lerp(x0, x1, u), ny = y + ScarfHudLayout.Wave(u, time, waveAmplitude);
                 bool affordable = charge + 1e-3f >= Mathf.Min(u, VeilCasting.MinToCast);
-                Quad(vh, new Vector2(nx, ny), 1.6f, thickness * 0.75f, affordable ? new Color(1f, 0.92f, 0.85f, 0.85f) : new Color(0.55f, 0.52f, 0.5f, 0.6f));
+                // (a small mark over the scarf, not across it)
+                Quad(vh, new Vector2(nx, ny + thickness * 0.95f), 1.2f, 5f, affordable ? new Color(1f, 0.9f, 0.85f, 0.75f) : new Color(0.5f, 0.48f, 0.46f, 0.5f));
             }
             if (charge >= 0.999f)
             {
@@ -201,6 +202,90 @@ namespace CrimsonVeil.UI
                 Diamond(vh, new Vector2(gx, gy), 7f + 2f * Mathf.Sin(time * 5f), new Color(1f, 0.75f, 0.7f, 0.95f));
             }
             Knot(vh, new Vector2(r.xMin + 30f, y), 18f);
+        }
+
+        /// <summary>
+        /// The scarf as it is in the game: several strands of translucent crimson cloth, dark carmine to bright, laid
+        /// over one another and twisting round each other as they stream; a gloss along the brighter ones; towards its
+        /// end the strands part, thin and curl, and a few threads of smoke trail on past it. Its length is the strength.
+        /// </summary>
+        void Scarf(VertexHelper vh, float x0, float x1, float y, float len)
+        {
+            float L = (x1 - x0) * len;
+            const int strands = 7;
+            for (int s = 0; s < strands; s++)
+            {
+                float k = s / (strands - 1f);                 // 0 the dark under-strand .. 1 the bright top one
+                float phase = s * 1.37f, speed = 1.6f + 0.35f * s;
+                var col = Color.Lerp(new Color(0.28f, 0.0f, 0.03f, 0.85f), new Color(0.9f, 0.06f, 0.08f, 0.62f), k);
+                col = Color.Lerp(col, new Color(1f, 0.6f, 0.5f, col.a), 0.5f * hurtFlash);
+                float width = thickness * (0.95f - 0.35f * Mathf.Abs(k - 0.5f));
+                Strand(vh, x0, y, L, len, phase, speed, width, col, k, s);
+            }
+            // threads of smoke trailing past the end
+            for (int t = 0; t < 3; t++)
+            {
+                float ph = 2.1f + t * 2.3f;
+                Thread(vh, x0 + L * 0.55f, y, L * 0.45f + 40f + 18f * t, ph, new Color(0.55f, 0.03f, 0.05f, 0.45f - 0.1f * t));
+            }
+        }
+
+        /// <summary>The scarf's centre line at <paramref name="u"/> (0..1 of its length): a long S that streams.</summary>
+        float Centre(float u, float L) => ScarfHudLayout.Wave(u, time, waveAmplitude) + Mathf.Sin(u * 5.2f - time * 1.3f) * 3.5f * Mathf.Clamp01(L / 200f);
+
+        void Strand(VertexHelper vh, float x0, float y, float L, float len, float phase, float speed, float width, Color col, float k, int seed)
+        {
+            int n = Mathf.Max(6, Mathf.CeilToInt(L / 6f));
+            int start = vh.currentVertCount;
+            var gloss = new Color(1f, 0.55f, 0.5f, 0.55f * k * k);
+            for (int i = 0; i <= n; i++)
+            {
+                float u = i / (float)n;
+                // strands cross over one another as the cloth twists; nearer the end they part and fan out
+                float part = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.55f, 1f, u));
+                float twist = Mathf.Sin(u * (6f + seed * 0.6f) - time * speed + phase);
+                float off = (k - 0.5f) * thickness * 0.55f * twist + (k - 0.5f) * thickness * 1.6f * part
+                            + Mathf.Sin(u * 11f - time * 3f + phase) * 4f * part;
+                // thick at the neck, a little narrower along, thin and curling at the very end
+                float w = width * (1f - 0.55f * part) * (0.75f + 0.25f * Mathf.Sin(u * 17f + phase - time * 2f)) * Mathf.Clamp01((1f - u) * 14f + 0.15f);
+                float cy = y + Centre(u, L) + off;
+                // the end curls up or down a little, strand by strand
+                float curl = part * part * Mathf.Sin(phase + time * 0.9f) * 10f;
+                float x = x0 + u * L;
+                // the twist turns the strand's face: narrow where it is edge-on, with a gloss where it faces the light
+                float face = 0.45f + 0.55f * Mathf.Abs(Mathf.Cos(u * (6f + seed * 0.6f) - time * speed + phase));
+                float hw = w * 0.5f * face;
+                var c = col; c.a *= 0.7f + 0.3f * face;
+                vh.AddVert(new Vector3(x, cy + curl + hw), Color.Lerp(c, gloss, gloss.a * face), Vector4.zero);
+                vh.AddVert(new Vector3(x, cy + curl - hw), c, Vector4.zero);
+                if (i > 0)
+                {
+                    int a = start + (i - 1) * 2, b = start + i * 2;
+                    vh.AddTriangle(a, b, a + 1); vh.AddTriangle(a + 1, b, b + 1);
+                }
+            }
+        }
+
+        /// <summary>A thread of smoke: a thin line rippling more than the cloth, fading out.</summary>
+        void Thread(VertexHelper vh, float xs, float y, float length, float phase, Color col)
+        {
+            const int n = 24;
+            int start = vh.currentVertCount;
+            for (int i = 0; i <= n; i++)
+            {
+                float u = i / (float)n;
+                float x = xs + u * length;
+                float cy = y + Mathf.Sin(u * 7f - time * 2.4f + phase) * 7f * u + Mathf.Sin(phase) * 6f * u;
+                float hw = 1.3f * (1f - u * 0.6f);
+                var c = col; c.a *= Mathf.Sin(Mathf.Clamp01(u) * Mathf.PI);
+                vh.AddVert(new Vector3(x, cy + hw), c, Vector4.zero);
+                vh.AddVert(new Vector3(x, cy - hw), c, Vector4.zero);
+                if (i > 0)
+                {
+                    int a = start + (i - 1) * 2, b = start + i * 2;
+                    vh.AddTriangle(a, b, a + 1); vh.AddTriangle(a + 1, b, b + 1);
+                }
+            }
         }
 
         Color Flame(float u, float across)

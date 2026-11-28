@@ -121,62 +121,68 @@ namespace CrimsonVeil.UI
     }
 
     /// <summary>
-    /// The HUD's tally under the life gauge (v0.110): the crimson carried, the knot a wound is bound with (filling as
-    /// blows land), the shards of a life found - and the key to press where it can be used (the altar at a
-    /// checkpoint, binding a wound when the knot is full).
+    /// The crimson carried, small in the bottom-right corner (v0.113): a drop and its count - and above the scarf at
+    /// the bottom the key to press where it can be used (the altar at a checkpoint, binding a wound when the knot is
+    /// full). The knot and the shards are drawn by the scarf and the life rings themselves.
     /// </summary>
     public sealed class ProgressHud : MonoBehaviour
     {
-        Text crimson, shards, hint;
-        Image knot, knotBack;
+        Text crimson, hint;
         PlayerHealth health;
+        int shownCrimson = -1;
+        float bump;
+        RectTransform drop;
 
         public static ProgressHud Create(Transform hud)
         {
-            var rt = MenuKit.Rect("Progress", hud);
-            rt.anchorMin = rt.anchorMax = new Vector2(0f, 1f);
-            rt.pivot = new Vector2(0f, 1f);
-            rt.anchoredPosition = new Vector2(40f, -128f);
-            rt.sizeDelta = new Vector2(420f, 40f);
+            var rt = MenuKit.Rect("Crimson", hud);
+            rt.anchorMin = rt.anchorMax = new Vector2(1f, 0f);
+            rt.pivot = new Vector2(1f, 0f);
+            rt.anchoredPosition = new Vector2(-48f, 40f);
+            rt.sizeDelta = new Vector2(200f, 48f);
             var p = rt.gameObject.AddComponent<ProgressHud>();
-            p.knotBack = Bar(rt, "KnotBack", new Color(0.1f, 0.1f, 0.1f, 0.7f));
-            p.knot = Bar(rt, "Knot", MenuKit.Crimson);
-            p.knot.type = Image.Type.Filled; p.knot.fillMethod = Image.FillMethod.Horizontal;
-            p.crimson = MenuKit.Label(rt, "", 26, new Color(0.9f, 0.12f, 0.12f, 1f), TextAnchor.MiddleLeft, "Crimson");
-            p.crimson.rectTransform.anchoredPosition = new Vector2(150f, 0f);
-            p.crimson.rectTransform.sizeDelta = new Vector2(140f, 40f);
-            p.shards = MenuKit.Label(rt, "", 22, MenuKit.Paper, TextAnchor.MiddleLeft, "Shards");
-            p.shards.rectTransform.anchoredPosition = new Vector2(270f, 0f);
-            p.shards.rectTransform.sizeDelta = new Vector2(140f, 40f);
+            p.drop = MenuKit.Rect("Drop", rt);
+            p.drop.anchorMin = p.drop.anchorMax = new Vector2(1f, 0.5f);
+            p.drop.pivot = new Vector2(1f, 0.5f);
+            p.drop.anchoredPosition = new Vector2(-70f, 0f);
+            p.drop.sizeDelta = new Vector2(22f, 30f);
+            var di = p.drop.gameObject.AddComponent<Image>();
+            di.sprite = MenuKit.SoftSprite;
+            di.color = new Color(0.8f, 0.04f, 0.06f, 1f);
+            di.raycastTarget = false;
+            p.crimson = MenuKit.Label(rt, "", 30, MenuKit.Paper, TextAnchor.MiddleRight, "Count");
+            p.crimson.fontStyle = FontStyle.Bold;
+            var cr = p.crimson.rectTransform;
+            cr.anchorMin = cr.anchorMax = new Vector2(1f, 0.5f);
+            cr.pivot = new Vector2(1f, 0.5f);
+            cr.anchoredPosition = Vector2.zero;
+            cr.sizeDelta = new Vector2(64f, 48f);
+            var sh = p.crimson.gameObject.AddComponent<Shadow>();
+            sh.effectColor = new Color(0f, 0f, 0f, 0.8f); sh.effectDistance = new Vector2(2f, -2f);
             var h = MenuKit.Rect("Hint", hud);
             h.anchorMin = h.anchorMax = new Vector2(0.5f, 0f);
-            h.anchoredPosition = new Vector2(0f, 90f);
+            h.anchoredPosition = new Vector2(0f, 150f);
             h.sizeDelta = new Vector2(800f, 50f);
-            p.hint = MenuKit.Label(h, "", 28, MenuKit.Paper);
+            p.hint = MenuKit.Label(h, "", 26, MenuKit.Paper);
             MenuKit.Fill(p.hint.rectTransform);
+            var hs = p.hint.gameObject.AddComponent<Shadow>();
+            hs.effectColor = new Color(0f, 0f, 0f, 0.85f); hs.effectDistance = new Vector2(2f, -2f);
             return p;
-        }
-
-        static Image Bar(RectTransform parent, string name, Color c)
-        {
-            var r = MenuKit.Rect(name, parent);
-            r.anchorMin = r.anchorMax = new Vector2(0f, 0.5f);
-            r.pivot = new Vector2(0f, 0.5f);
-            r.anchoredPosition = Vector2.zero;
-            r.sizeDelta = new Vector2(120f, 12f);
-            var img = r.gameObject.AddComponent<Image>();
-            img.color = c;
-            img.raycastTarget = false;
-            return img;
         }
 
         void Update()
         {
             if (health == null) health = FindFirstObjectByType<PlayerHealth>();
-            knot.fillAmount = HeroProgress.Mend;
-            crimson.text = "● " + HeroProgress.Crimson;
-            int s = HeroProgress.Shards % HeroProgress.ShardsPerHeart;
-            shards.text = HeroProgress.Shards > 0 ? "◆ " + s + "/" + HeroProgress.ShardsPerHeart : "";
+            // a drop gathered: the count jumps a little
+            if (HeroProgress.Crimson != shownCrimson)
+            {
+                if (shownCrimson >= 0 && HeroProgress.Crimson > shownCrimson) bump = 1f;
+                shownCrimson = HeroProgress.Crimson;
+                crimson.text = shownCrimson.ToString();
+            }
+            bump = Mathf.MoveTowards(bump, 0f, Time.unscaledDeltaTime * 4f);
+            float k = 1f + 0.25f * bump;
+            drop.localScale = new Vector3(k, k, 1f);
             string text = "";
             if (!AltarPanel.IsOpen && !InputBindings.GameplayBlocked)
             {

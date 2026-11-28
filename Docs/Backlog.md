@@ -27,16 +27,6 @@ Značky: **[rozhodnuto]** uživatel výslovně chce · **[návrh]** můj návrh,
 - **Výkon nových modelů (změřeno ve v0.104.0, DELL, 1080p):** nepřátelé v záběru stojí 0,45–1,0 ms. U skupin nepřátel je to 50–54 fps, na startu 58 fps; rozdíl dělá hlavně pozadí. LOD zatím není potřeba.
 - **Odkazy:** `Docs/claude/crimson-veil-enemy-rebuild.md`, `crimson-veil-no-stock-art.md`, `crimson-veil-cutscenes.md`.
 
-### 2. Nový HUD: životy, energie, karmín  [návrh, čeká na odsouhlasení uživatelem] · M
-- **Co (uživatel 2026-11-28):** „V samotné hře se mi moc nelíbí HUD. Musí být propracovanější design, však vidíme, jak vypadá šála. Tak je otázka, jak mají být rozmístěny. Jestli v horním rohu nemají zůstat jen životy a energie být dole uprostřed, aby se s ní snáz dalo pracovat. A jestli vlastně energie nemá mít právě design šály. A z čeho by pak byly životy? Něco úplně jiného? Nebo ta samá šála, ale zelená?“
-- **Můj návrh** (obrázek `hud_navrh.svg` dostal uživatel):
-  - **Životy vlevo nahoře** jako kruhy tuše (ensó). Plný kruh má karmínovou výplň, při zranění ubývají čtvrtky. Tenký kroužek za nimi ukazuje úlomky do dalšího života.
-  - **Energie dole uprostřed** jako malovaná šála. Délka ukazuje sílu, zářezy ceny zbraní (bič, štít, kopí, luk). Na začátku šály je uzel pro obvázání rány.
-  - **Karmín** jen jako malé číslo s kapkou vpravo dole.
-  - **Zelenou ne:** jediná barva hry je karmín (vize), zelená by vizuální styl rozbila.
-- **Dopady:** `ScarfHud`, `ScarfHealthBar` (dnes šála jako ukazatel zdraví), `ProgressHud`, testy HUD.
-- **Stav:** čeká na odsouhlasení.
-
 ---
 
 ## Čeká na rozhodnutí uživatele
@@ -93,6 +83,7 @@ Značky: **[rozhodnuto]** uživatel výslovně chce · **[návrh]** můj návrh,
 ---
 
 ## Hotovo (posledních pár, pak smazat)
+- v0.113.0 – nový HUD: životy jako kruhy tuše vlevo nahoře, síla šály jako malovaná šála se zářezy cen zbraní a uzlem dole uprostřed, karmín vpravo dole.
 - v0.112.0 – nové menu (pozadí z ruin, štětcové tahy, karty kapitol s náhledem), zkušební místnost jako samostatná kapitola, potvrzování mezerníkem. Trest za smrt: uživatel odsouhlasil přísnou variantu („Asi dobrý“).
 - v0.111.0 – restart kapitoly v pauze (vrátí nepřátele i postup na stav při vstupu do kapitoly), strop vylepšení podle kapitoly (1. kapitola úroveň 1), nová hra z menu začíná bez postupu.
 - v0.110.0 – bez samoléčení. Rány se obvazují uzlem z úspěšných zásahů (R). Z nepřátel padají karmínové kapky, za které se u oltáře na checkpointu kupují 3 vylepšení (delší šála, pevnější obvaz, ostřejší závoj). Checkpoint pokaždé doplní život i šálu. 4 úlomky v tajných místech dají život navíc. Po smrti kapky zůstanou na místě. Návrh zbylý k posouzení: vyvážení cen a množství kapek po hraní.

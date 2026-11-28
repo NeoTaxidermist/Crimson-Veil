@@ -6,12 +6,16 @@ using UnityEngine.UI;
 namespace CrimsonVeil.UI
 {
     /// <summary>
-    /// The HUD: the life gauge in the top-left corner, drawn as the hero's scarf (see <see cref="ScarfHealthBar"/>).
-    /// Created automatically when the hero comes to life, so every level has it without wiring.
+    /// The HUD (v0.113, the user's choice): life in the top-left corner as rings of ink filled with crimson
+    /// (<see cref="LifeRings"/>); the scarf's strength at the bottom in the middle as the scarf itself, a fluttering
+    /// ribbon of flame with the weapons' costs marked on it and the mend knot at its start (<see cref="EnergyScarf"/>);
+    /// the crimson carried in the bottom-right corner (<see cref="ProgressHud"/>). (Until v0.112 a scarf in the corner
+    /// was the life, a thread under it the strength.) Created automatically when the hero comes to life.
     /// </summary>
     public sealed class ScarfHud : MonoBehaviour
     {
-        public ScarfHealthBar Bar { get; private set; }
+        public LifeRings Life { get; private set; }
+        public EnergyScarf Energy { get; private set; }
 
         PlayerHealth health;
         VeilController veil;
@@ -33,17 +37,9 @@ namespace CrimsonVeil.UI
             scaler.matchWidthOrHeight = 0.5f;
             var hud = go.AddComponent<ScarfHud>();
 
-            var barGo = new GameObject("HealthScarf", typeof(RectTransform));
-            barGo.transform.SetParent(go.transform, false);
-            // (a canvas of its own: its flutter, redrawn, re-batches only itself, not the map, the menu and the rest)
-            barGo.AddComponent<Canvas>();
-            var rt = (RectTransform)barGo.transform;
-            rt.anchorMin = rt.anchorMax = new Vector2(0f, 1f);
-            rt.pivot = new Vector2(0f, 1f);
-            rt.anchoredPosition = new Vector2(34f, -26f);
-            rt.sizeDelta = new Vector2(470f, 96f);
-            hud.Bar = barGo.AddComponent<ScarfHealthBar>();
-            hud.Bar.raycastTarget = false;
+            // (each on a canvas of its own: the scarf's flutter, redrawn, re-batches only itself)
+            hud.Life = Widget<LifeRings>(go.transform, "Life", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(36f, -30f), new Vector2(520f, 80f));
+            hud.Energy = Widget<EnergyScarf>(go.transform, "Energy", new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 58f), new Vector2(620f, 64f));
             Minimap.Create(go.transform);   // the map, on TAB
             PlaytestLog.Create(go);         // the playtest's times and deaths, written to Playtests/
             HurtVignette.Create(go.transform); // struck: the edges of the picture run red
@@ -52,9 +48,25 @@ namespace CrimsonVeil.UI
             return hud;
         }
 
+        static T Widget<T>(Transform hud, string name, Vector2 anchor, Vector2 pivot, Vector2 at, Vector2 size) where T : MaskableGraphic
+        {
+            var go = new GameObject(name, typeof(RectTransform));
+            go.transform.SetParent(hud, false);
+            go.AddComponent<Canvas>();
+            var rt = (RectTransform)go.transform;
+            rt.anchorMin = rt.anchorMax = anchor;
+            rt.pivot = pivot;
+            rt.anchoredPosition = at;
+            rt.sizeDelta = size;
+            var g = go.AddComponent<T>();
+            g.raycastTarget = false;
+            return g;
+        }
+
         void Awake()
         {
-            if (Bar == null) Bar = GetComponentInChildren<ScarfHealthBar>();
+            if (Life == null) Life = GetComponentInChildren<LifeRings>();
+            if (Energy == null) Energy = GetComponentInChildren<EnergyScarf>();
         }
 
         void Update()
@@ -66,7 +78,7 @@ namespace CrimsonVeil.UI
                 veil = health.GetComponent<VeilController>();
                 health.Model.Damaged += _ => { flash = 1f; trailHold = 0.45f; };
             }
-            if (Bar == null || health.Model == null) return;
+            if (Life == null || Energy == null || health.Model == null) return;
             float dt = Time.unscaledDeltaTime;
             var m = health.Model;
             if (shownHealth < 0f) shownHealth = trailing = m.Current;
@@ -77,11 +89,15 @@ namespace CrimsonVeil.UI
             else if (trailHold <= 0f) trailing = Mathf.MoveTowards(trailing, shownHealth, dt * 2.5f);
             flash = Mathf.MoveTowards(flash, 0f, dt * 3f);
 
-            Bar.maxHealth = m.Max;
-            Bar.health = shownHealth;
-            Bar.trailingHealth = trailing;
-            Bar.hurtFlash = flash;
-            Bar.charge = veil != null ? veil.Charge.Value : 0f;
+            Life.maxHealth = m.Max;
+            Life.health = shownHealth;
+            Life.trailingHealth = trailing;
+            Life.hurtFlash = flash;
+            Life.shards = HeroProgress.Shards % HeroProgress.ShardsPerHeart;
+            Energy.charge = veil != null ? veil.Charge.Value : 0f;
+            Energy.capacity = veil != null ? veil.Charge.Capacity : 1f;
+            Energy.mend = HeroProgress.Mend;
+            Energy.hurtFlash = flash;
         }
     }
 }

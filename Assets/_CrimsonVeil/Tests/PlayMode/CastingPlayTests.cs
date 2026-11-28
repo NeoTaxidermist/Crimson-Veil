@@ -579,10 +579,15 @@ namespace CrimsonVeil.Tests
             veil.Charge.Drain(100f, 1f); // no scarf guard: the blow lands
             health.ReceiveHit(new DamageInfo { amount = 2f, knockback = Vector2.zero, source = root, point = Vector3.zero });
             yield return Wait(0.2f);
-            Assert.AreEqual(health.Model.Current, hud.Bar.health, 1e-3f, "the gauge shows the life left at once");
-            Assert.AreEqual(health.Model.Max, hud.Bar.maxHealth, 1e-3f);
-            Assert.Greater(hud.Bar.trailingHealth, hud.Bar.health, "what was just lost glows on as embers");
-            Assert.AreEqual(veil.Charge.Value, hud.Bar.charge, 0.02f, "the thread shows the scarf's strength");
+            // (v0.113: life as rings of ink in the corner, the strength as the scarf at the bottom in the middle)
+            Assert.AreEqual(health.Model.Current, hud.Life.health, 1e-3f, "the rings show the life left at once");
+            Assert.AreEqual(health.Model.Max, hud.Life.maxHealth, 1e-3f);
+            Assert.Greater(hud.Life.trailingHealth, hud.Life.health, "what was just lost glows on as embers");
+            Assert.AreEqual(veil.Charge.Value, hud.Energy.charge, 0.02f, "the scarf at the bottom shows its strength");
+            var corner = (RectTransform)hud.Life.transform;
+            var bottom = (RectTransform)hud.Energy.transform;
+            Assert.AreEqual(new Vector2(0f, 1f), corner.anchorMin, "life in the top-left corner");
+            Assert.AreEqual(new Vector2(0.5f, 0f), bottom.anchorMin, "the strength at the bottom in the middle");
             yield return Wait(1f);
             Assert.AreEqual(1f, veil.Vitality, 1e-3f, "the scarf itself no longer thins with the wounds");
         }

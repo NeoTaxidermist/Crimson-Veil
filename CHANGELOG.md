@@ -5,6 +5,16 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.113.0] – 2026-11-28
+### Změněno – nový HUD (uživatel odsouhlasil návrh: „Udělej to“)
+- **Životy vlevo nahoře:** kruh namalovaný tuší pro každý život, otevřený tam, kde se štětec zvedl. Plné kruhy vyplňuje karmín, zranění ubírá po čtvrtinách a právě ztracená část chvíli doutná. Malý kroužek za nimi se dokresluje s každým nalezeným úlomkem. Kruhy se překreslují jen při změně.
+- **Síla šály dole uprostřed:** malovaná ohnivá šála, jejíž délka ukazuje sílu, takže je při boji na očích. Vyhořelá část zůstane jako šedý popel, aby byla vidět celá délka i na tmavé zemi. Zářezy ukazují ceny biče, štítu, kopí a luku (na delší šále jsou blíž začátku) a šednou, na co šála nestačí. Na začátku šály je uzel pro obvázání rány, který se dotahuje s každým zásahem a plný září. Plná šála se na konci zablýskne, protože pohltí příští ránu.
+- **Karmín vpravo dole:** kapka a počet, při sebrání kapka poskočí. Nápovědy kláves (oltář, obvázání) jsou nad šálou.
+- Starý ukazatel zdraví ve tvaru šály v rohu je pryč.
+
+### Testy
+- EditMode 701/701. PlayMode 174: upravené testy HUD (životy v rohu, síla dole uprostřed, šála se třepetá asi 30× za sekundu, kruhy jen při změně) a nový test zářezů cen zbraní.
+
 ## [0.112.0] – 2026-11-28
 ### Změněno
 - **Nové menu.** Uživatel: „Potřebuju, abys brutálně vylepšil design menu.“

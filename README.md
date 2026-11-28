@@ -64,7 +64,7 @@ Hra startuje do hlavního menu (Hrát, Nastavení, Konec). **Hrát** ukáže kap
 | **Štít** (držet) | **J** | LT |
 | Pauza / menu | Esc | Start |
 
-Zbraň se seslá a za 0,05 s udeří, ať už ji hrdina drží, nebo se teprve tvoří. Úder ho na chvilku přibije: do konce seku se neotočí ani neodejde. Stisk v posledních 0,3 s úderu naváže další, dřívější stisk naváže, když tlačítko držíš. Údery navazují do komba a mezi údery jde zbraň vyměnit: dokončující úder je tím silnější, čím víc zbraní kombo spojilo. Zbraně se hrdina učí od relikvií na podstavcích (v testovací místnosti vlevo od startu zná všechny). Zdraví ukazuje šála a ukazatel ve tvaru šály v levém horním rohu.
+Zbraň se seslá a za 0,05 s udeří, ať už ji hrdina drží, nebo se teprve tvoří. Úder ho na chvilku přibije: do konce seku se neotočí ani neodejde. Stisk v posledních 0,3 s úderu naváže další, dřívější stisk naváže, když tlačítko držíš. Údery navazují do komba a mezi údery jde zbraň vyměnit: dokončující úder je tím silnější, čím víc zbraní kombo spojilo. Zbraně se hrdina učí od relikvií na podstavcích (v testovací místnosti vlevo od startu zná všechny). **HUD:** vlevo nahoře jsou životy jako kruhy namalované tuší, plné vyplňuje karmín a při zranění ubývá po čtvrtinách. Malý kroužek za nimi ukazuje úlomky do dalšího života. Dole uprostřed je síla šály jako malovaná šála se zářezy cen zbraní a s uzlem pro obvázání rány. Vpravo dole je počet karmínových kapek.
 
 **Odezva boje:** zasažený nepřítel odskočí a chvíli se vzpamatovává, minutí nechá ve vzduchu stopu inkoustu (bez trestu), úder do štítu se odrazí a hrdina odskočí. Štít blokuje útoky všech nepřátel ze všech stran, a když ho zvedneš přesně ve chvíli úderu (do 0,2 s), útok odrazí a nepřítel zakolísá.
 
@@ -92,7 +92,7 @@ Assets/_CrimsonVeil/
     Camera/    CameraFollow25D, CameraZone, CameraFocus
     World/     TerrainBlock, rekvizity (oblouky, sloupy, tráva, stromy…), GrapplePoint, CuttableRope, HingedBridge,
                Checkpoint, TestRoom, AtmosphereController
-    UI/        ScarfHud (zdraví jako šála), MainMenu, SettingsPanel, PauseMenu, Minimap, PlaytestLog
+    UI/        ScarfHud (LifeRings, EnergyScarf), MainMenu, SettingsPanel, PauseMenu, Minimap, PlaytestLog
   Scripts/Editor/  PrototypeSceneBuilder (Crimson Veil > Build Prototype Scene), Level Editor (Ctrl+Shift+L),
                    Level Kit, HeroMocapBaker
   Animations/Hero/ klipy pohybu upečené na kostru hrdiny
@@ -106,7 +106,7 @@ Tools/         benchmark, hooky předávky mezi počítači, keep-awake
 ```
 
 ## Testy
-Unity → Window → General → Test Runner: **701 EditMode** a **173 PlayMode** testů. PlayMode testy ověřují každý pohyb a kombo na skutečném prefabu hrdiny (`HeroMoveSetPlayTests`).
+Unity → Window → General → Test Runner: **701 EditMode** a **174 PlayMode** testů. PlayMode testy ověřují každý pohyb a kombo na skutečném prefabu hrdiny (`HeroMoveSetPlayTests`).
 
 ## Verze a CHANGELOG
 Každý commit má vlastní verzi podle [SemVer](https://semver.org/lang/cs/): sekci `## [X.Y.Z] – RRRR-MM-DD` v [CHANGELOG.md](CHANGELOG.md) a tag `vX.Y.Z`. Hlídají to git hooky v `.githooks/`:

@@ -5,6 +5,13 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.108.2] – 2026-11-28
+### Změněno
+- `Docs/Backlog.md`: nová položka „Plynulejší a předvídatelnější boj“. Obsahuje rozbor dnešního boje (zahazované stisky, proměnlivý rozběh úderu, žádná odezva na minutí, slabé vykrytí, nejednotné ohlašování útoků nepřátel) a návrh balíků A–E.
+
+### Testy
+- Jen dokumentace, testy se nespouštěly.
+
 ## [0.108.1] – 2026-11-28
 ### Změněno
 - Dokumentace: plachtění, které někdy nečerpá šálu, je záměr. Látka ze sestřeleného papírového draka dává 8 s plachtění zdarma. Uživatel rozhodl nechat to, jak to je (`Docs/claude/kite-cloth-free-glide.md`, `Docs/Rozpracovano.md`).

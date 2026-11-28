@@ -27,6 +27,26 @@ Značky: **[rozhodnuto]** uživatel výslovně chce · **[návrh]** můj návrh,
 - **Výkon nových modelů (změřeno ve v0.104.0, DELL, 1080p):** nepřátelé v záběru stojí 0,45–1,0 ms. U skupin nepřátel je to 50–54 fps, na startu 58 fps; rozdíl dělá hlavně pozadí. LOD zatím není potřeba.
 - **Odkazy:** `Docs/claude/crimson-veil-enemy-rebuild.md`, `crimson-veil-no-stock-art.md`, `crimson-veil-cutscenes.md`.
 
+### 2. Plynulejší a předvídatelnější boj, lepší odezva na zásah, minutí a vykrytí  [rozhodnuto, rozsah čeká na uživatele] · L
+- **Co (uživatel 2026-11-28):** „Potřebuju, abys boj udělal plynulejší. Zatím je málo předvídatelný. A chtěl bych lepší reakce na zásah. A na minutí, případně vykrytí.“
+- **Zjištěno v kódu (2026-11-28):**
+  - Stisky se tiše zahazují. Během formování zbraně a v prvních částech úderu se zahodí vše, co přijde dřív než 0,15 s před koncem (`VeilController.FollowWindow`). Pozdější stisk navíc přepíše dřívější.
+  - Rozběh úderu není stálý: už vytvořená zbraň udeří hned, nová o pár snímků později, podle toho, jak rychle ztvrdne.
+  - Během úderu se dá volně běhat i otáčet, takže směr úderu a odhození určuje to, kam se hrdina zrovna dívá.
+  - Zásahy se zjišťují jednou za snímek bez průběžné kontroly mezi snímky, takže při nízkých fps může rychlá špička zbraně tenký cíl přeskočit.
+  - Na zásah je zastavení času, otřes, záblesk a částice. Bytosti ale nemají společné zakolísání a každá reaguje po svém.
+  - **Minutí nemá žádnou odezvu**, kromě zvuku máchnutí.
+  - **Vykrytí:** když ShieldMonk zablokuje úder hrdiny, objeví se jen 8 částic a malý otřes. Nepřijde zastavení času, zvuk ani odraz. Hrdinovo blokování a odražení útoku zakolísá jen přízrakem (`IStaggerable` má jen `Enemy`), na ostatní bytosti nepůsobí.
+  - Nepřátelé ohlašují útok různě dlouho (0,5–0,8 s). RootCrawler, HangedMan a dotykové útoky nemají ohlášení žádné.
+- **Navržené balíky:**
+  - A: předvídatelný vstup a časování.
+  - B: odezva na zásah.
+  - C: odezva na minutí.
+  - D: vykrytí (blokované údery, odražení útoku působí na všechny nepřátele).
+  - E: jednotné ohlašování útoků nepřátel.
+- **Dopady:** `VeilController`, `VeilCombat`, `CombatFx`, `PlayerHealth`, `CreatureBase` a všichni nepřátelé, zvuky, testy pohybové sady (`HeroMoveSetPlayTests`) a boje.
+- **Stav:** navrženo uživateli, čeká se, co vybere.
+
 ---
 
 ## Čeká na rozhodnutí uživatele

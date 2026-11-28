@@ -77,6 +77,38 @@ namespace CrimsonVeil.Tests
         }
 
         [Test]
+        public void AChapter_CapsTheUpgrades()
+        {
+            HeroProgress.AddCrimson(500);
+            HeroProgress.ChapterCap = HeroProgress.ChapterOf("Prototype_Ruins");
+            Assert.AreEqual(1, HeroProgress.ChapterCap, "the first chapter");
+            Assert.IsTrue(HeroProgress.Buy(HeroProgress.Upgrade.Blade));
+            Assert.IsFalse(HeroProgress.Buy(HeroProgress.Upgrade.Blade), "level 2 belongs to a later chapter");
+            Assert.IsTrue(HeroProgress.CappedByChapter(HeroProgress.Upgrade.Blade));
+            HeroProgress.ChapterCap = 2;
+            Assert.IsTrue(HeroProgress.Buy(HeroProgress.Upgrade.Blade), "the next chapter allows it");
+            Assert.AreEqual(0, HeroProgress.ChapterOf("MainMenu"), "the title is no chapter");
+        }
+
+        [Test]
+        public void RestartingAChapter_TakesBackWhatWasGatheredInIt()
+        {
+            HeroProgress.AddCrimson(15);
+            HeroProgress.AddShard();
+            HeroProgress.RememberChapterStart("Prototype_Ruins");
+            HeroProgress.AddCrimson(40);
+            HeroProgress.Buy(HeroProgress.Upgrade.Scarf);
+            HeroProgress.AddShard();
+            for (int i = 0; i < 4; i++) HeroProgress.BlowLanded();
+            Assert.IsTrue(HeroProgress.RestoreChapterStart());
+            Assert.AreEqual(15, HeroProgress.Crimson, "the crimson he came in with");
+            Assert.AreEqual(1, HeroProgress.Shards);
+            Assert.AreEqual(0, HeroProgress.Level(HeroProgress.Upgrade.Scarf), "the upgrade bought in it is gone");
+            Assert.AreEqual(0f, HeroProgress.Mend);
+            Assert.AreEqual("Prototype_Ruins", HeroProgress.ChapterScene);
+        }
+
+        [Test]
         public void DyingTakesAllTheCrimsonHeCarries()
         {
             HeroProgress.AddCrimson(17);

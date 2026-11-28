@@ -68,6 +68,8 @@ namespace CrimsonVeil.UI
         {
             CrimsonVeil.Core.GameClock.Reset();
             InputBindings.GameplayBlocked = false;
+            // a new game from the title: nothing carried over from an earlier run (v0.111)
+            CrimsonVeil.Combat.HeroProgress.Reset();
             SceneManager.LoadScene(GameScene);
         }
 

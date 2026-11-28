@@ -39,11 +39,77 @@ namespace CrimsonVeil.Combat
 
         public static int Level(Upgrade u) => levels[(int)u];
 
-        /// <summary>What the next level of an upgrade costs, in crimson (rising: 20, 45, 80); -1 at the top.</summary>
+        /// <summary>What the next level of an upgrade costs, in crimson (rising: 20, 45, 80); -1 at the top - the top
+        /// of this chapter (<see cref="ChapterCap"/>) or of all.</summary>
         public static int Cost(Upgrade u)
         {
             int l = Level(u);
-            return l >= MaxLevel ? -1 : l == 0 ? 20 : l == 1 ? 45 : 80;
+            return l >= Cap ? -1 : l == 0 ? 20 : l == 1 ? 45 : 80;
+        }
+
+        /// <summary>The highest level an upgrade may reach in the chapter being played (v0.111: so crimson gathered
+        /// early cannot buy what belongs to later chapters). 0: no cap of its own (the game's top).</summary>
+        public static int ChapterCap { get; set; }
+        /// <summary>The level an upgrade can reach now.</summary>
+        public static int Cap => ChapterCap > 0 ? Mathf.Min(ChapterCap, MaxLevel) : MaxLevel;
+        /// <summary>The next level is held back by the chapter, not by the game's top.</summary>
+        public static bool CappedByChapter(Upgrade u) => Level(u) >= Cap && Level(u) < MaxLevel;
+
+        /// <summary>The chapter a scene is (its upgrades go up to that level): 0 for a scene that is no chapter.</summary>
+        public static int ChapterOf(string scene) => scene == "Prototype_Ruins" ? 1 : 0;
+
+        // ---- the chapter's start, to go back to ---------------------------------------------------------------
+
+        struct Snapshot { public int crimson, shards; public float mend; public int[] levels; }
+        static Snapshot chapterStart;
+        static bool haveStart;
+        static string chapterScene;
+
+        /// <summary>The state as he entered the chapter is remembered (a fresh scene of a chapter, not a restart of it).</summary>
+        public static void RememberChapterStart(string scene)
+        {
+            chapterScene = scene;
+            chapterStart = new Snapshot { crimson = Crimson, shards = Shards, mend = Mend, levels = (int[])levels.Clone() };
+            haveStart = true;
+        }
+
+        /// <summary>
+        /// Back to the chapter's start (v0.111, the user: restart the chapter when it went wrong, the foes with it,
+        /// but no endless grinding): what he gathered since is taken back - crimson, upgrades, shards, the knot - so a
+        /// restart never makes him stronger than he came in. True when there was a start to go back to.
+        /// </summary>
+        public static bool RestoreChapterStart()
+        {
+            if (!haveStart) return false;
+            Crimson = chapterStart.crimson; Shards = chapterStart.shards; Mend = chapterStart.mend;
+            for (int i = 0; i < levels.Length; i++) levels[i] = chapterStart.levels[i];
+            Changed?.Invoke();
+            return true;
+        }
+
+        /// <summary>The scene the remembered start belongs to (null: none yet).</summary>
+        public static string ChapterScene => haveStart ? chapterScene : null;
+
+        /// <summary>The next load of the chapter is a restart: it keeps the remembered start instead of taking a new one.</summary>
+        public static bool Restarting { get; set; }
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+        static void HookScenes()
+        {
+            UnityEngine.SceneManagement.SceneManager.sceneLoaded -= OnSceneLoaded;
+            UnityEngine.SceneManagement.SceneManager.sceneLoaded += OnSceneLoaded;
+        }
+
+        static void OnSceneLoaded(UnityEngine.SceneManagement.Scene s, UnityEngine.SceneManagement.LoadSceneMode mode)
+        {
+            if (mode != UnityEngine.SceneManagement.LoadSceneMode.Single) return;
+            int chapter = ChapterOf(s.name);
+            if (chapter <= 0) return;
+            ChapterCap = chapter;
+            // entering a chapter remembers how he came in; restarting it keeps what was remembered
+            if (Restarting && haveStart && chapterScene == s.name) { Restarting = false; return; }
+            Restarting = false;
+            RememberChapterStart(s.name);
         }
 
         public static string Name(Upgrade u)
@@ -128,6 +194,7 @@ namespace CrimsonVeil.Combat
         {
             Crimson = 0; Shards = 0; Mend = 0f;
             for (int i = 0; i < levels.Length; i++) levels[i] = 0;
+            ChapterCap = 0; haveStart = false; Restarting = false;
             Changed?.Invoke();
         }
 

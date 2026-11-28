@@ -17,6 +17,8 @@ Done in v0.110.0 (`Combat/HeroProgress.cs` static, session-only - no save system
 - Settings controls list now 18 rows (row 36 px, cells 34 px) to fit.
 - Tests: `HeroProgressTests` (EditMode 6), `ProgressPlayTests` (PlayMode 6).
 
+**v0.111.0 chapter restart (user: "Ano udělej to" to my proposal incl. the cap):** `HeroProgress` remembers a snapshot (crimson, shards, knot, levels) when a chapter scene is loaded fresh (`OnSceneLoaded`, `ChapterOf(scene)`: Prototype_Ruins = 1); `PauseMenu` button "Začít kapitolu znovu" (press twice within 3 s) -> `RestoreChapterStart` + `Restarting` + reload of the scene (foes back). Foes never respawn otherwise, so crimson per chapter is fixed. `ChapterCap` = chapter number caps upgrade levels (`Cost` -1, altar says "Víc až v další kapitole"). `MainMenu.StartGame` resets progress (new game). The level has ~130 crimson; level 1 of all three costs 60.
+
 **Pitfall found doing it:** `LevelKitCatalog.Prefab(e)` rebuilds ALL level-kit prefabs from `LevelKitFactory` when one entry's prefab is missing (a new catalog entry). The factory versions differ from the committed, hand-tuned prefabs (Player's CharacterController 1.8 m instead of 1.9 - the roof test failed, head 4.6 cm in the roof). After adding a catalog entry: keep only the new prefab, `git checkout -- Assets/_CrimsonVeil/LevelKit/Prefabs/` for the rest, and check `git status` for stray prefab changes before committing.
 
 **How to apply:** prices, drop amounts and MendPerHit are first guesses - tune from the user's play. With fewer checkpoints planned, the refill + altar matter more; keep both on checkpoints.

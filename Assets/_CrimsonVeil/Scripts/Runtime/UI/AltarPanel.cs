@@ -101,7 +101,7 @@ namespace CrimsonVeil.UI
                 int level = HeroProgress.Level(u), cost = HeroProgress.Cost(u);
                 info[i].text = $"{HeroProgress.Name(u)}  {level}/{HeroProgress.MaxLevel}\n<size=20>{HeroProgress.What(u)}</size>";
                 info[i].supportRichText = true;
-                MenuKit.SetLabel(buy[i], cost < 0 ? "Nejvýš" : "Koupit za " + cost);
+                MenuKit.SetLabel(buy[i], cost >= 0 ? "Koupit za " + cost : HeroProgress.CappedByChapter(u) ? "Víc až v další kapitole" : "Nejvýš");
                 buy[i].interactable = cost >= 0 && HeroProgress.Crimson >= cost;
             }
         }

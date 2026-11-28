@@ -97,6 +97,47 @@ namespace CrimsonVeil.Tests
         }
 
         [UnityTest]
+        public IEnumerator RestartingTheChapter_BringsTheFoesBack_AndTakesBackWhatWasGathered()
+        {
+            yield return SceneManager.LoadSceneAsync(MainMenu.MenuScene);
+            yield return null;
+            var menu = Object.FindFirstObjectByType<MainMenu>();
+            CrimsonVeil.Combat.HeroProgress.AddCrimson(99);   // (left from an earlier run: a new game starts with none)
+            menu.StartGame();
+            float end = Time.realtimeSinceStartup + 30f;
+            while (SceneManager.GetActiveScene().name != MainMenu.GameScene && Time.realtimeSinceStartup < end) yield return null;
+            yield return null; yield return null;
+            Assert.AreEqual(0, CrimsonVeil.Combat.HeroProgress.Crimson, "a new game from the title starts with nothing");
+            Assert.AreEqual(1, CrimsonVeil.Combat.HeroProgress.ChapterCap, "the first chapter caps the upgrades at level 1");
+            int foes = Object.FindObjectsByType<CrimsonVeil.Combat.Enemy>(FindObjectsSortMode.None).Length;
+            Assert.Greater(foes, 0);
+            // a wraith slain and crimson gathered in the chapter
+            var w = Object.FindFirstObjectByType<CrimsonVeil.Combat.Enemy>();
+            w.ReceiveHit(new CrimsonVeil.Combat.DamageInfo { amount = 999f, point = w.transform.position });
+            CrimsonVeil.Combat.HeroProgress.AddCrimson(25);
+            CrimsonVeil.Combat.HeroProgress.Buy(CrimsonVeil.Combat.HeroProgress.Upgrade.Blade);
+            yield return new WaitForSeconds(2f);
+            Assert.Less(Object.FindObjectsByType<CrimsonVeil.Combat.Enemy>(FindObjectsSortMode.None).Length, foes, "the wraith is gone");
+            var pause = Object.FindFirstObjectByType<PauseMenu>();
+            pause.Open();
+            yield return null;
+            Assert.IsNotNull(pause.Restart, "the pause menu offers to start the chapter again");
+            pause.Restart.onClick.Invoke();
+            yield return null;
+            Assert.AreEqual(MainMenu.GameScene, SceneManager.GetActiveScene().name, "the first press only asks");
+            pause.Restart.onClick.Invoke();   // (the second does it)
+            end = Time.realtimeSinceStartup + 30f;
+            int frames = 0;
+            while ((Object.FindFirstObjectByType<PauseMenu>() == pause || frames++ < 3) && Time.realtimeSinceStartup < end) yield return null;
+            yield return null; yield return null;
+            Assert.AreEqual(foes, Object.FindObjectsByType<CrimsonVeil.Combat.Enemy>(FindObjectsSortMode.None).Length, "every foe is back");
+            Assert.AreEqual(0, CrimsonVeil.Combat.HeroProgress.Crimson, "what he gathered in it is taken back");
+            Assert.AreEqual(0, CrimsonVeil.Combat.HeroProgress.Level(CrimsonVeil.Combat.HeroProgress.Upgrade.Blade), "and the upgrade bought in it");
+            Assert.AreEqual(1f, Time.timeScale, "the game runs");
+            Assert.IsFalse(InputBindings.GameplayBlocked);
+        }
+
+        [UnityTest]
         public IEnumerator ThePauseMenu_StopsTheGame_AndTheHeroHearsNothing_TillItIsClosed()
         {
             var hud = ScarfHud.Ensure();

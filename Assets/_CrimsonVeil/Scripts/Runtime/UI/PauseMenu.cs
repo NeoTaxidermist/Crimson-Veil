@@ -36,8 +36,9 @@ namespace CrimsonVeil.UI
             var column = MenuKit.Column("Buttons", panel, 18f);
             column.anchorMin = column.anchorMax = new Vector2(0.5f, 0.5f);
             column.anchoredPosition = new Vector2(0f, -20f);
-            column.sizeDelta = new Vector2(420f, 330f);
+            column.sizeDelta = new Vector2(420f, 420f);
             Resume = MenuKit.Button(column, "Pokračovat", Close);
+            Restart = MenuKit.Button(column, RestartLabel, AskRestart);
             settingsButton = MenuKit.Button(column, "Nastavení", OpenSettings);
             MenuKit.Button(column, "Hlavní menu", ToMainMenu);
             MenuKit.Button(column, "Ukončit hru", MenuKit.Quit);
@@ -71,6 +72,43 @@ namespace CrimsonVeil.UI
             if (SettingsPanel.IsOpen) SettingsPanel.gameObject.SetActive(false);
             CrimsonVeil.Core.GameClock.Resume();   // (to a blow's hit-stop if one is still landing, else full speed)
             InputBindings.GameplayBlocked = false;
+        }
+
+        public Button Restart { get; private set; }
+        const string RestartLabel = "Začít kapitolu znovu", ConfirmLabel = "Opravdu? Stiskni znovu";
+        float confirmUntil = -1f;
+
+        /// <summary>
+        /// The first press asks (the label turns to a question for a few seconds), the second restarts: the chapter is
+        /// loaded again from its start, the foes with it, and he is as he came into it (<see cref="CrimsonVeil.Combat.HeroProgress.RestoreChapterStart"/>):
+        /// what he gathered since is taken back, so restarting never grinds him stronger (v0.111).
+        /// </summary>
+        void AskRestart()
+        {
+            if (Time.unscaledTime < confirmUntil) { RestartChapter(); return; }
+            confirmUntil = Time.unscaledTime + 3f;
+            MenuKit.SetLabel(Restart, ConfirmLabel);
+        }
+
+        public void RestartChapter()
+        {
+            confirmUntil = -1f;
+            var scene = SceneManager.GetActiveScene().name;
+            CrimsonVeil.Combat.HeroProgress.RestoreChapterStart();
+            CrimsonVeil.Combat.HeroProgress.Restarting = true;
+            IsOpen = false;
+            CrimsonVeil.Core.GameClock.Reset();
+            InputBindings.GameplayBlocked = false;
+            SceneManager.LoadScene(scene);
+        }
+
+        void LateUpdate()
+        {
+            if (confirmUntil > 0f && Time.unscaledTime >= confirmUntil)
+            {
+                confirmUntil = -1f;
+                if (Restart != null) MenuKit.SetLabel(Restart, RestartLabel);
+            }
         }
 
         void OpenSettings()

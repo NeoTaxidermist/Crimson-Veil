@@ -5,6 +5,15 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.111.0] – 2026-11-28
+### Přidáno
+- **Restart kapitoly:** v pauze je „Začít kapitolu znovu“. První stisk se zeptá, druhý do 3 s kapitolu načte znovu: vrátí se všichni nepřátelé a hrdina je takový, jaký do kapitoly přišel. Co v ní nasbíral (karmín, vylepšení, úlomky, uzel), ztratí, takže restartem se nedá grindovat. Uživatel: „aby nemohl donekonečna grindit nepřátele a vylepšit se dřív, než by bylo vhodné“.
+- **Strop vylepšení podle kapitoly:** v 1. kapitole jde každé vylepšení nejvýš na úroveň 1 a oltář u vyšší úrovně ukáže „Víc až v další kapitole“. Nepřátelé se jinak neobnovují, takže karmínu je v kapitole pevný počet.
+- **Nová hra** z hlavního menu začíná bez postupu z předchozí hry.
+
+### Testy
+- EditMode 701/701 (nové: strop podle kapitoly, restart vrací postup). PlayMode `MenuPlayTests`: nový test restartu kapitoly ze hry (nepřátelé zpátky, karmín a vylepšení vrácené, hra běží).
+
 ## [0.110.1] – 2026-11-28
 ### Změněno
 - `Docs/Backlog.md`: nová položka „Restart kapitoly bez možnosti grindovat“. Obsahuje otázku uživatele, jak to řeší jiné hry, a můj návrh: restart vrátí postup do stavu při vstupu do kapitoly, nepřátelé se jinak neobnovují a vylepšení mají strop podle kapitoly.

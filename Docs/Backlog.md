@@ -27,25 +27,13 @@ Značky: **[rozhodnuto]** uživatel výslovně chce · **[návrh]** můj návrh,
 - **Výkon nových modelů (změřeno ve v0.104.0, DELL, 1080p):** nepřátelé v záběru stojí 0,45–1,0 ms. U skupin nepřátel je to 50–54 fps, na startu 58 fps; rozdíl dělá hlavně pozadí. LOD zatím není potřeba.
 - **Odkazy:** `Docs/claude/crimson-veil-enemy-rebuild.md`, `crimson-veil-no-stock-art.md`, `crimson-veil-cutscenes.md`.
 
-### 2. Restart kapitoly bez možnosti grindovat  [návrh, čeká na rozhodnutí uživatele] · M
-- **Co (uživatel 2026-11-28):** „Jak to udělat tak, aby hráč měl možnost, až to pokazí, to zrestartovat? Jako třeba celou kapitolu. A s tím i nepřátele. Ale zároveň aby nemohl donekonečna grindit nepřátele a vylepšit se dřív, než by bylo vhodné. Jak tohle hry řeší?“
-- **Jak to je teď:** po smrti se hrdina objeví u checkpointu a zabití nepřátelé zůstanou mrtví. Restart kapitoly není, z pauzy se dá odejít jen do menu.
-- **Jak to řeší jiné hry:**
-  - Hollow Knight a Dark Souls: nepřátelé se obnoví po odpočinku. Grindovat se dá, ale ceny rostou a hlavní vylepšení se nedají koupit, musí se najít.
-  - Ori a Celeste: všechno je pevně rozmístěné a nic se neobnovuje, takže grindovat nejde.
-  - Roguelike hry: restart vrátí i postup.
-  - Časté pojistky: strop vylepšení podle kapitoly, při opakovaném zabití padá méně kapek nebo nic, klíčová vylepšení podmíněná nálezem.
-- **Můj návrh:**
-  - V pauze bude **„Začít kapitolu znovu“**. Hra uloží stav postupu při vstupu do kapitoly (karmín, vylepšení, úlomky, uzel) a restart ho vrátí a znovu načte scénu, takže jsou zpátky i nepřátelé.
-  - Grind tím odpadne sám: co hráč v pokažené kapitole nasbíral, restart vezme zpět.
-  - Nepřátelé se jinak neobnovují (ani u checkpointů), takže kapek je v kapitole pevný počet.
-  - Pojistka navíc: **strop vylepšení podle kapitoly** (v 1. kapitole nejvýš úroveň 1 a tak dál). Ceny se pak dají ladit, aniž by se hráč dal „přefarmit“.
-- **Rozhodnout:** jestli restart vrací postup do stavu při vstupu do kapitoly; jestli chce strop podle kapitoly; jestli se nepřátelé mají někdy obnovovat (u checkpointu ne).
-- **Dopady:** `HeroProgress` (snímek stavu), `PauseMenu` (nová položka), načtení scény, ukládání postupu mezi kapitolami (zatím žádné není), `HeroProgress.Cost` (strop), testy.
-
 ---
 
 ## Čeká na rozhodnutí uživatele
+
+### Trest za smrt: kapky na místě smrti, nebo nic neztratit  [čeká na uživatele] · S
+- **Co:** ve v0.110 jsem dal přísnou variantu (karmín zůstane na místě smrti, druhá smrt ho vezme), uživatel to výslovně nevybral. Otázku jsem položil dvakrát, zatím bez odpovědi.
+- **Dopady:** `HeroProgress.DeathLeavesCrimson` (jeden přepínač), README.
 
 ### Výkon na slabé grafice (Intel UHD: 58 fps v 1080p) – vyřešeno ve v0.106.0, čeká na vyzkoušení uživatelem  [rozhodnuto] · M
 - **Co:** změřeno na DELLu ve v0.100.20. Hra je tam omezená pixely: 1080p 17,1 ms (58 fps), 720p 9,0 ms (111), 540p 6,4 ms (156). Na Lenovu (RTX 2060) je to ~350 fps.
@@ -99,6 +87,7 @@ Značky: **[rozhodnuto]** uživatel výslovně chce · **[návrh]** můj návrh,
 ---
 
 ## Hotovo (posledních pár, pak smazat)
+- v0.111.0 – restart kapitoly v pauze (vrátí nepřátele i postup na stav při vstupu do kapitoly), strop vylepšení podle kapitoly (1. kapitola úroveň 1), nová hra z menu začíná bez postupu.
 - v0.110.0 – bez samoléčení. Rány se obvazují uzlem z úspěšných zásahů (R). Z nepřátel padají karmínové kapky, za které se u oltáře na checkpointu kupují 3 vylepšení (delší šála, pevnější obvaz, ostřejší závoj). Checkpoint pokaždé doplní život i šálu. 4 úlomky v tajných místech dají život navíc. Po smrti kapky zůstanou na místě. Návrh zbylý k posouzení: vyvážení cen a množství kapek po hraní.
 - v0.109.1 – milník `alpha_10`, `newFeatures` sloučená do `main` (fast-forward) na pokyn uživatele 2026-11-28; práce pokračuje na `newFeatures`.
 - v0.109.0 – plynulejší a předvídatelnější boj (balíky A–E): stejný rozběh každého úderu, delší okno pro navázání a podržený stisk, který navazuje, krátké přibití během švihu, zásahy nezávislé na fps, odskok a zakolísání všech nepřátel, viditelné minutí, odraz od štítu, zakolísání nepřítele po vykrytí jeho útoku a jednotné ohlášení útoku u všech nepřátel (RootCrawler nově varuje 0,45 s).

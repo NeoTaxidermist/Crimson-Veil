@@ -5,6 +5,14 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.114.9] – 2026-11-28
+### Změněno
+- **Šála se silou dole má eleganci bojové šály.** Uživatel: „Ta šála s energií vypadá nějak amatérsky, je prostě jen jak křivá čára… No já chci, aby to mělo eleganci naší bojové šály.“
+  - U krku je šála stažená. Z ní vychází 6 širokých průsvitných pruhů karmínu přes sebe, kde se překrývají, jsou tmavší, a každý má tmavý okraj. Pomalu se vlní ve velkých obloucích, kříží se a končí ostrým cípem, každý v jiné délce.
+  - Z cípů vybíhají 4 tenká vlákna stočená do spirál, jako na konci bojové šály.
+  - Délka šály je síla. Krátká šála se vlní méně a vlákna má menší. Prázdná část je dál tenká popelavá nit a ceny zbraní ukazují malé značky nad šálou.
+  - Ve Full HD vyfoceno při plné síle, při 55 % a při 18 %.
+
 ## [0.114.8] – 2026-11-28
 ### Dokumentace
 - Backlog: nový vzhled šály se silou dole v HUD. Uživateli připadá „amatérská, jen jak křivá čára“. Dostal tři návrhy do záběru ze hry: látka, tah štětcem, stuha. Čeká se, který vybere.

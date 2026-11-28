@@ -103,6 +103,11 @@ Vývoj běží na dvou počítačích (**Lenovo** = hlavní, RTX 2060; **DELL** 
     - (2) Listy jsou o čtvrtinu větší (`ScarfHud.LifeScale` 1,25).
     - (3) Šála dole se kreslí přes měkký tah z `LeafAtlas`, takže má hladké okraje. Na začátku plynule vyrůstá a třpyt při plné síle je malá světlá čočka.
     - (4) Ruiny dají při vybití všeho asi 147 karmínu, ale v 1. kapitole šlo utratit jen 60. Ceny jsou teď 40 / 90 / 150, takže tři vylepšení 1. úrovně stojí 120, asi 80 % kapitoly. Podrobnosti jsou v `Docs/claude/health-and-crimson.md`. Je to můj návrh, ověří se hraním.
+    - **Šála se silou jako bojová šála (v0.114.9):** uživatel napsal „Ta šála s energií vypadá nějak amatérsky, je prostě jen jak křivá čára.“ Dostal tři návrhy (látka, štětec, stuha) a odpověděl „No já chci, aby to mělo eleganci naší bojové šály.“ Prohlédl jsem bojovou šálu zblízka:
+      - u krku široká z průsvitných vrstev přes sebe,
+      - dál se dělí do ostrých cípů v obloucích,
+      - na konci tenká vlákna stočená do spirál.
+      `EnergyScarf` to teď kreslí stejně: 6 pruhů (`Ribbons`, každý s tmavým okrajem a vlastní délkou, rozkmitem a odstínem) a 4 vlákna se spirálou (`Tendril`). Délka šály je síla. Widget má 640 × 120 px, aby se oblouky vešly. Snímky (plná síla, 55 % a 18 %) dostal uživatel.
     - (7) Úrovně kvality jsem prošel ve Full HD a uživatel dostal srovnání. Fps v editoru (72–90) nic neříká, editor je omezený sám sebou. Platí měření z buildů na DELLu ve v0.106.0.
  Pozor: v okně Game o šířce 1399 px je HUD malý, protože se škáluje podle 1920×1080.
 - **Rozdělané:** nic.

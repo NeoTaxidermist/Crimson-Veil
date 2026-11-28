@@ -468,80 +468,137 @@ namespace CrimsonVeil.UI
         }
 
         /// <summary>
-        /// The scarf as it is in the game: several strands of translucent crimson cloth, dark carmine to bright, laid
-        /// over one another and twisting round each other as they stream; a gloss along the brighter ones; towards its
-        /// end the strands part, thin and curl, and a few threads of smoke trail on past it. Its length is the strength.
+        /// The scarf as the hero fights with it (v0.114.9, "ať to má eleganci naší bojové šály"): from a gathered neck
+        /// broad ribbons of translucent crimson, laid over one another (darker where they overlap, each with a dark
+        /// rim), billow in slow arches and part into pointed blades, each ending at its own length; from among the
+        /// blades long thin tendrils run on and curl into spirals. Its length is the strength.
         /// </summary>
         void Scarf(VertexHelper vh, float x0, float x1, float y, float len)
         {
             float L = (x1 - x0) * len;
-            const int strands = 7;
-            for (int s = 0; s < strands; s++)
+            float grown = Mathf.Clamp01(L / 220f);                 // a short scarf billows less and curls smaller
+            float k = thickness / 28f;
+            for (int i = 0; i < Ribbons.Length; i++)
             {
-                float k = s / (strands - 1f);                 // 0 the dark under-strand .. 1 the bright top one
-                float phase = s * 1.37f, speed = 1.6f + 0.35f * s;
-                var col = Color.Lerp(new Color(0.28f, 0.0f, 0.03f, 0.85f), new Color(0.82f, 0.07f, 0.09f, 0.62f), k);
-                col = Color.Lerp(col, new Color(1f, 0.6f, 0.5f, col.a), 0.5f * hurtFlash);
-                float width = thickness * (0.95f - 0.35f * Mathf.Abs(k - 0.5f));
-                Strand(vh, x0, y, L, phase, speed, width, col, k, s);
+                var rb = Ribbons[i];
+                Blade(vh, x0, y, L, rb, grown, k, true);
             }
-            for (int t = 0; t < 3; t++)
+            for (int i = 0; i < Ribbons.Length; i++)
+                Blade(vh, x0, y, L, Ribbons[i], grown, k, false);
+            // tendrils from among the blades, curling at their ends
+            for (int i = 0; i < 4; i++)
             {
-                float ph = 2.1f + t * 2.3f;
-                Thread(vh, x0 + L * 0.55f, y, L * 0.45f + 40f + 18f * t, ph, new Color(0.55f, 0.03f, 0.05f, 0.45f - 0.1f * t));
+                var rb = Ribbons[i + 1];
+                float us = rb.end * (0.62f + 0.09f * i);
+                Vector2 from = RibbonAt(x0, y, L, rb, us, grown);
+                Vector2 ahead = RibbonAt(x0, y, L, rb, us + 0.02f, grown);
+                Tendril(vh, from, (ahead - from).normalized, (36f + 14f * i) * (0.4f + 0.6f * grown), (14f - 2.2f * i) * (0.5f + 0.5f * grown),
+                        i % 2 == 0 ? 1f : -1f, i, new Color(0.72f, 0.04f, 0.07f, 0.8f - 0.08f * i));
             }
         }
 
-        /// <summary>The scarf's centre line at <paramref name="u"/> (0..1 of its length): a long S that streams.</summary>
-        float Centre(float u, float L) => ScarfHudLayout.Wave(u, time, waveAmplitude) + Mathf.Sin(u * 5.2f - time * 1.3f) * 3.5f * Mathf.Clamp01(L / 200f);
+        /// <summary>One ribbon of the scarf: where it ends (of the scarf's length), how it billows, how broad, how dark.</summary>
+        struct RibbonShape { public float end, amp, waves, speed, phase, bunch, width, shade; }
 
-        void Strand(VertexHelper vh, float x0, float y, float L, float phase, float speed, float width, Color col, float k, int seed)
+        static readonly RibbonShape[] Ribbons =
         {
-            int n = Mathf.Max(6, Mathf.CeilToInt(L / 6f));
+            new RibbonShape { end = 0.80f, amp = 13f, waves = 0.9f, speed = 0.9f, phase = 0.0f, bunch = -3f, width = 15f, shade = 0.0f },
+            new RibbonShape { end = 1.00f, amp = 9f,  waves = 1.2f, speed = 1.1f, phase = 1.9f, bunch = 2f,  width = 17f, shade = 0.25f },
+            new RibbonShape { end = 0.90f, amp = 15f, waves = 0.8f, speed = 0.8f, phase = 3.4f, bunch = -1f, width = 12f, shade = 0.45f },
+            new RibbonShape { end = 0.96f, amp = 7f,  waves = 1.5f, speed = 1.3f, phase = 4.6f, bunch = 3.5f, width = 14f, shade = 0.65f },
+            new RibbonShape { end = 0.72f, amp = 16f, waves = 1.1f, speed = 1.0f, phase = 2.6f, bunch = 0f,  width = 10f, shade = 0.85f },
+            new RibbonShape { end = 0.86f, amp = 11f, waves = 1.3f, speed = 1.2f, phase = 5.5f, bunch = -2f, width = 11f, shade = 1.0f },
+        };
+
+        /// <summary>The ribbon's middle a fraction <paramref name="u"/> along the scarf: bunched at the neck, arching wider on.</summary>
+        Vector2 RibbonAt(float x0, float y, float L, RibbonShape rb, float u, float grown)
+        {
+            float open = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(u * 2.2f));
+            float arch = Mathf.Sin(u * rb.waves * Mathf.PI * 2f - time * rb.speed + rb.phase) * rb.amp * 1.9f * grown * open;
+            float drift = ScarfHudLayout.Wave(u, time, waveAmplitude) * 0.6f;
+            return new Vector2(x0 + u * L, y + rb.bunch * (1f - 0.5f * open) + arch + drift);
+        }
+
+        /// <summary>
+        /// A ribbon as a smooth strip along its middle, its width across its own direction: narrow at the neck, broad a
+        /// third along, drawn to a sharp point at its end. <paramref name="rim"/>: the dark edge under it.
+        /// </summary>
+        void Blade(VertexHelper vh, float x0, float y, float L, RibbonShape rb, float grown, float k, bool rim)
+        {
+            float ue = rb.end;
+            int n = Mathf.Max(8, Mathf.CeilToInt(L * ue / 5f));
+            var dark = new Color(0.3f, 0.0f, 0.03f, 0.82f);
+            var bright = new Color(0.84f, 0.05f, 0.08f, 0.68f);
+            var col = Color.Lerp(dark, bright, rb.shade);
+            col = Color.Lerp(col, new Color(1f, 0.6f, 0.5f, col.a), 0.5f * hurtFlash);
+            var edge = new Color(0.16f, 0f, 0.02f, 0.55f);
+            var lit = Color.Lerp(col, new Color(1f, 0.45f, 0.4f, col.a), 0.35f * rb.shade);
             int start = vh.currentVertCount;
-            var gloss = new Color(1f, 0.55f, 0.5f, 0.55f * k * k);
-            for (int i = 0; i <= n; i++)
+            Vector2 prev = RibbonAt(x0, y, L, rb, 0f, grown);
+            for (int j = 0; j <= n; j++)
             {
-                float u = i / (float)n;
-                float part = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.55f, 1f, u));
-                float twist = Mathf.Sin(u * (6f + seed * 0.6f) - time * speed + phase);
-                float off = (k - 0.5f) * thickness * 0.55f * twist + (k - 0.5f) * thickness * 1.6f * part
-                            + Mathf.Sin(u * 11f - time * 3f + phase) * 4f * part;
-                float w = width * (1f - 0.55f * part) * (0.75f + 0.25f * Mathf.Sin(u * 17f + phase - time * 2f)) * Mathf.Clamp01((1f - u) * 14f + 0.15f);
-                float cy = y + Centre(u, L) + off;
-                float curl = part * part * Mathf.Sin(phase + time * 0.9f) * 10f;
-                float x = x0 + u * L;
-                float face = 0.45f + 0.55f * Mathf.Abs(Mathf.Cos(u * (6f + seed * 0.6f) - time * speed + phase));
-                float hw = w * 0.5f * face * Spread;
-                var c = col; c.a *= (0.7f + 0.3f * face) * Mathf.SmoothStep(0f, 1f, (x - x0) / 16f);   // (it comes out of nothing at its start)
-                vh.AddVert(new Vector3(x, cy + curl + hw), Color.Lerp(c, gloss, gloss.a * face), Top);
-                vh.AddVert(new Vector3(x, cy + curl - hw), c, Bottom);
-                if (i > 0)
+                float u = ue * j / n;
+                var p = RibbonAt(x0, y, L, rb, u, grown);
+                var q = RibbonAt(x0, y, L, rb, Mathf.Min(ue, u + 0.01f), grown);
+                var t = (q - p).sqrMagnitude > 1e-6f ? (q - p).normalized : Vector2.right;
+                var nrm = new Vector2(-t.y, t.x);
+                float f = u / ue;
+                float w = rb.width * 1.3f * k * (0.55f + 0.45f * Mathf.SmoothStep(0f, 1f, f / 0.35f)) * Mathf.Pow(Mathf.Clamp01((1f - f) / 0.5f), 0.8f);
+                w *= 0.85f + 0.15f * Mathf.Sin(u * 9f + rb.phase - time * 1.7f);
+                if (rim) w += 2.2f;
+                float hw = w * 0.5f * Spread;
+                float fade = Mathf.SmoothStep(0f, 1f, (p.x - x0) / 16f);
+                var a = rim ? edge : lit; a.a *= fade;
+                var b = rim ? edge : col; b.a *= fade;
+                vh.AddVert(p + nrm * hw, a, Top);
+                vh.AddVert(p - nrm * hw, b, Bottom);
+                if (j > 0)
                 {
-                    int a = start + (i - 1) * 2, b = start + i * 2;
-                    vh.AddTriangle(a, b, a + 1); vh.AddTriangle(a + 1, b, b + 1);
+                    int i0 = start + (j - 1) * 2, i1 = start + j * 2;
+                    vh.AddTriangle(i0, i1, i0 + 1); vh.AddTriangle(i0 + 1, i1, i1 + 1);
                 }
+                prev = p;
             }
         }
 
-        /// <summary>A thread of smoke: a thin line rippling more than the cloth, fading out.</summary>
-        void Thread(VertexHelper vh, float xs, float y, float length, float phase, Color col)
+        /// <summary>A tendril: a thin line running on from a blade, then curling into a tightening spiral.</summary>
+        void Tendril(VertexHelper vh, Vector2 from, Vector2 dir, float run, float radius, float turn, int seed, Color col)
         {
-            const int n = 24;
-            int start = vh.currentVertCount;
-            for (int i = 0; i <= n; i++)
+            var pts = new System.Collections.Generic.List<Vector2>(48);
+            var side = new Vector2(-dir.y, dir.x);
+            const int straight = 14;
+            for (int j = 0; j <= straight; j++)
             {
-                float u = i / (float)n;
-                float x = xs + u * length;
-                float cy = y + Mathf.Sin(u * 7f - time * 2.4f + phase) * 7f * u + Mathf.Sin(phase) * 6f * u;
-                float hw = 1.3f * (1f - u * 0.6f) * Spread;
-                var c = col; c.a *= Mathf.Sin(Mathf.Clamp01(u) * Mathf.PI);
-                vh.AddVert(new Vector3(x, cy + hw), c, Top);
-                vh.AddVert(new Vector3(x, cy - hw), c, Bottom);
-                if (i > 0)
+                float s = j / (float)straight;
+                pts.Add(from + dir * (run * s) + side * (Mathf.Sin(s * 3f + time * 1.3f + seed) * 3f * s));
+            }
+            // the curl: round the centre beside the run's end, its radius closing in
+            var end = pts[pts.Count - 1];
+            var centre = end + side * (radius * turn);
+            float a0 = Mathf.Atan2(end.y - centre.y, end.x - centre.x);
+            float sweep = (2.4f + 0.3f * Mathf.Sin(time * 0.8f + seed)) * Mathf.PI;
+            const int curl = 30;
+            for (int j = 1; j <= curl; j++)
+            {
+                float s = j / (float)curl;
+                float a = a0 - turn * sweep * s;
+                float r = radius * (1f - 0.75f * s);
+                pts.Add(centre + new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * r);
+            }
+            int start = vh.currentVertCount;
+            for (int j = 0; j < pts.Count; j++)
+            {
+                var t = (pts[Mathf.Min(j + 1, pts.Count - 1)] - pts[Mathf.Max(j - 1, 0)]).normalized;
+                var nrm = new Vector2(-t.y, t.x);
+                float s = j / (float)(pts.Count - 1);
+                float hw = Mathf.Lerp(2.6f, 0.9f, s) * 0.5f * Spread;
+                var c = col; c.a *= Mathf.Lerp(1f, 0.55f, s);
+                vh.AddVert(pts[j] + nrm * hw, c, Top);
+                vh.AddVert(pts[j] - nrm * hw, c, Bottom);
+                if (j > 0)
                 {
-                    int a = start + (i - 1) * 2, b = start + i * 2;
-                    vh.AddTriangle(a, b, a + 1); vh.AddTriangle(a + 1, b, b + 1);
+                    int i0 = start + (j - 1) * 2, i1 = start + j * 2;
+                    vh.AddTriangle(i0, i1, i0 + 1); vh.AddTriangle(i0 + 1, i1, i1 + 1);
                 }
             }
         }

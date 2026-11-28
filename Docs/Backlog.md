@@ -63,16 +63,6 @@ Značky: **[rozhodnuto]** uživatel výslovně chce · **[návrh]** můj návrh,
 
 ---
 
-### Šála se silou dole v HUD – nový vzhled · M
-- **Co:** uživatel 2026-11-28, po v0.114.7: „Ta šála s energií vypadá nějak amatérsky, je prostě jen jak křivá čára.“
-- **Návrhy:** poslal jsem tři návrhy do záběru ze hry (`C:\_ClaudeAI\unity\world\navrh_sala_A/B/C.png` na Lenovu):
-  - A: látka s přehybem a třásněmi,
-  - B: tah štětcem (vlákna, suchý konec, prázdná část jako šedá stopa),
-  - C: stuha s vykrojeným koncem.
-  Doporučil jsem B.
-- **Stav:** čeká na výběr uživatele.
-- **Dopady:** `EnergyScarf` v `HudGraphics.cs` (kreslí se přes `LeafAtlas`; štětec by potřeboval novou buňku s texturou vláken) a testy HUD (`HudRedrawPlayTests`, značky cen zbraní).
-
 ## Mohlo by se (nápady a možnosti)
 
 ### Šála do Burst jobů · L  [návrh]
@@ -93,6 +83,7 @@ Značky: **[rozhodnuto]** uživatel výslovně chce · **[návrh]** můj návrh,
 ---
 
 ## Hotovo (posledních pár, pak smazat)
+- v0.114.9 – šála se silou dole ve stylu bojové šály: široké průsvitné pruhy v obloucích, ostré cípy, vlákna stočená do spirál.
 - v0.114.7 – HUD: uzel obvazu jen u větvičky, listy větší, šála vyhlazená; ceny vylepšení 40/90/150 podle karmínu v kapitole (147); úrovně kvality nafocené.
 - v0.114.2 – obvaz u kořene větvičky s náhledem toho, kolik doplní; tlumenější karmín bez neonového lesku.
 - v0.114.1 – listy jako nádoby: obrys prázdného místa, žilky po čtvrtinách, každý zásah ulomí přesně svůj kus.

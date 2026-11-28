@@ -42,7 +42,7 @@ namespace CrimsonVeil.UI
             // (each on a canvas of its own: the scarf's flutter, redrawn, re-batches only itself)
             hud.Life = Widget<LifeLeaves>(go.transform, "Life", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(36f, -30f), new Vector2(520f, 80f));
             hud.Life.rectTransform.localScale = Vector3.one * LifeScale;   // (v0.114.7: a quarter bigger, as the user chose)
-            hud.Energy = Widget<EnergyScarf>(go.transform, "Energy", new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 58f), new Vector2(620f, 64f));
+            hud.Energy = Widget<EnergyScarf>(go.transform, "Energy", new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 30f), new Vector2(640f, 120f));   // (v0.114.9: room for its arches and curls)
             Minimap.Create(go.transform);   // the map, on TAB
             PlaytestLog.Create(go);         // the playtest's times and deaths, written to Playtests/
             HurtVignette.Create(go.transform); // struck: the edges of the picture run red

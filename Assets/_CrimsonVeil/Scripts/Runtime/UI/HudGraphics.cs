@@ -5,11 +5,12 @@ using UnityEngine.UI;
 namespace CrimsonVeil.UI
 {
     /// <summary>
-    /// Life in the top-left corner (v0.113, the user's choice of my proposal): a ring of ink for every point of life,
-    /// painted with a brush - an ensō, open where the brush lifted, its edge uneven - and filled with the crimson while
-    /// the life is there. A wound empties a ring a quarter at a time (life comes in quarters: a wraith's touch); what was
-    /// just lost glows on as an ember a moment. After the rings a thin one is drawn for the shards of the next life, a
-    /// quarter of it each. Built in code (no pictures); redrawn only when something changes.
+    /// Life in the top-left corner: a loop tied of the scarf's own strands for every point of life (v0.113.2, the user:
+    /// the HUD should look like the scarf) - four translucent strands, dark carmine to bright, twisting over one another
+    /// round the loop, two short ends hanging from its knot. A wound unties a loop a quarter at a time (the strands part
+    /// and fray at the cut), leaving a thread of ash where the life was; what was just lost glows on as embers a moment.
+    /// After the loops a small one is tied for the shards of the next life, a quarter each. Built in code; redrawn only
+    /// when something changes. (v0.113.0 drew rings of ink filled with crimson.)
     /// </summary>
     [RequireComponent(typeof(CanvasRenderer))]
     public sealed class LifeRings : MaskableGraphic
@@ -51,18 +52,104 @@ namespace CrimsonVeil.UI
             {
                 var c = new Vector2(r.xMin + Radius + 6f + i * Spacing, r.yMax - Radius - 6f);
                 float full = Mathf.Clamp01(health - i), trail = Mathf.Clamp01(Mathf.Max(trailingHealth, health) - i);
-                // a dark wash behind each ring, so it reads on the pale mist
-                Disc(vh, c, Radius + 7f, 0f, 1f, new Color(0f, 0f, 0f, 0.35f), i * 7 + 1);
-                if (trail > full + 1e-3f) Disc(vh, c, Radius - Stroke * 0.4f, full, trail, Color.Lerp(Fill, Ember, 0.5f + 0.5f * hurtFlash), i * 7 + 2);
-                if (full > 0f) Disc(vh, c, Radius - Stroke * 0.4f, 0f, full, Color.Lerp(Fill, Ember, 0.35f * low + 0.6f * hurtFlash * full), i * 7 + 3);
-                Enso(vh, c, Radius, Stroke, full > 0f ? InkC : new Color(0.08f, 0.08f, 0.09f, 0.8f), i * 13 + 5);
+                // a dark wash behind each loop, so it reads on the pale mist
+                Disc(vh, c, Radius + 9f, 0f, 1f, new Color(0f, 0f, 0f, 0.38f), i * 7 + 1);
+                // the whole loop as a thread of ash: what a lost life leaves
+                Arc(vh, c, Radius, 2.2f, 0f, 1f, new Color(0.42f, 0.4f, 0.4f, 0.75f), i * 7 + 2);
+                // just lost: the strands glow on as embers a moment
+                if (trail > full + 1e-3f) Loop(vh, c, full, trail, i, Color.Lerp(new Color(0.9f, 0.25f, 0.15f, 0.7f), Ember, hurtFlash), 0.6f);
+                // the life: a loop tied of the scarf's strands; a wound unties it a quarter at a time
+                if (full > 0f)
+                {
+                    var tint = Color.Lerp(Color.white, Ember, 0.4f * low + 0.6f * hurtFlash);
+                    Loop(vh, c, 0f, full, i, tint, 1f);
+                    if (full >= 0.999f) Tails(vh, c, i);
+                }
             }
             if (shards > 0)
             {
-                // the next life being drawn, a quarter for every shard found
-                var c = new Vector2(r.xMin + Radius + 6f + n * Spacing - 10f, r.yMax - Radius - 2f);
-                Enso(vh, c, Radius * 0.55f, 3f, new Color(0.08f, 0.08f, 0.09f, 0.6f), 91, 1f);
-                Arc(vh, c, Radius * 0.55f, 4f, 0f, shards / 4f, Fill, 93);
+                // the next life being tied, a quarter for every shard found
+                var c = new Vector2(r.xMin + Radius + 6f + n * Spacing - 12f, r.yMax - Radius);
+                Arc(vh, c, Radius * 0.5f, 1.6f, 0f, 1f, new Color(0.42f, 0.4f, 0.4f, 0.6f), 91);
+                LoopAt(vh, c, Radius * 0.5f, 0f, shards / 4f, 91, Color.white, 0.55f);
+            }
+        }
+
+        /// <summary>The scarf's strands, from dark carmine under to bright on top, translucent, laid over one another.</summary>
+        static readonly Color[] StrandColours =
+        {
+            new Color(0.3f, 0.0f, 0.03f, 0.85f), new Color(0.55f, 0.02f, 0.05f, 0.75f),
+            new Color(0.78f, 0.04f, 0.07f, 0.7f), new Color(0.95f, 0.1f, 0.1f, 0.6f),
+        };
+
+        void Loop(VertexHelper vh, Vector2 c, float f0, float f1, int seed, Color tint, float widthScale)
+            => LoopAt(vh, c, Radius, f0, f1, seed, tint, widthScale);
+
+        /// <summary>
+        /// A loop tied of the scarf's strands round <paramref name="c"/>, from <paramref name="f0"/> to <paramref name="f1"/>
+        /// of the way round (from the top, clockwise): four translucent strands twisting over and under one another, their
+        /// width wavering; where the loop is untied (a wound) the strands part and fray at the cut.
+        /// </summary>
+        static void LoopAt(VertexHelper vh, Vector2 c, float radius, float f0, float f1, int seed, Color tint, float widthScale)
+        {
+            if (f1 - f0 < 1e-3f) return;
+            float scale = radius / Radius;
+            for (int s = 0; s < StrandColours.Length; s++)
+            {
+                float k = s / (StrandColours.Length - 1f);
+                var col = StrandColours[s] * tint; col.a = StrandColours[s].a * tint.a;
+                int seg = Mathf.Max(4, Mathf.CeilToInt(48 * (f1 - f0)));
+                int start = vh.currentVertCount;
+                float phase = seed * 1.9f + s * 1.3f;
+                for (int j = 0; j <= seg; j++)
+                {
+                    float f = Mathf.Lerp(f0, f1, j / (float)seg);
+                    float a = Mathf.PI * 0.5f - f * Mathf.PI * 2f;
+                    // the strands cross over each other as they go round (a twisted cord)
+                    float twist = Mathf.Sin(f * 9f + phase);
+                    // at an untied end (a wound's cut) they part and thin to loose threads
+                    float toEnd = f1 < 0.999f ? Mathf.Clamp01((f1 - f) / 0.12f) : 1f;
+                    float fray = (1f - toEnd) * (k - 0.5f) * 9f * scale;
+                    float rr = radius + (k - 0.5f) * 8f * twist * scale + fray;
+                    float face = 0.45f + 0.55f * Mathf.Abs(Mathf.Cos(f * 9f + phase));
+                    float w = (6.5f + 3f * Mathf.Sin(f * 13f + phase)) * scale * widthScale * face * (0.3f + 0.7f * toEnd);
+                    var d = new Vector2(Mathf.Cos(a), Mathf.Sin(a));
+                    var cc = col; cc.a *= 0.75f + 0.25f * face;
+                    var gloss = Color.Lerp(cc, new Color(1f, 0.6f, 0.55f, cc.a), 0.35f * k * k * face);
+                    vh.AddVert(c + d * (rr + w * 0.5f), gloss, Vector4.zero);
+                    vh.AddVert(c + d * (rr - w * 0.5f), cc, Vector4.zero);
+                    if (j > 0)
+                    {
+                        int i0 = start + (j - 1) * 2, i1 = start + j * 2;
+                        vh.AddTriangle(i0, i1, i0 + 1); vh.AddTriangle(i0 + 1, i1, i1 + 1);
+                    }
+                }
+            }
+        }
+
+        /// <summary>A whole life's loop is tied: two short ends of the strands hang from the knot at its bottom.</summary>
+        static void Tails(VertexHelper vh, Vector2 c, int seed)
+        {
+            for (int t = 0; t < 2; t++)
+            {
+                var col = StrandColours[1 + t * 2];
+                int start = vh.currentVertCount;
+                const int seg = 8;
+                for (int j = 0; j <= seg; j++)
+                {
+                    float u = j / (float)seg;
+                    float x = c.x + (t == 0 ? -1f : 1f) * (3f + 8f * u) + Mathf.Sin(u * 4f + seed + t) * 2f;
+                    float y = c.y - Radius - 2f - 13f * u;
+                    float w = 4f * (1f - u * 0.8f);
+                    var cc = col; cc.a *= 1f - u * 0.6f;
+                    vh.AddVert(new Vector3(x - w * 0.5f, y), cc, Vector4.zero);
+                    vh.AddVert(new Vector3(x + w * 0.5f, y), cc, Vector4.zero);
+                    if (j > 0)
+                    {
+                        int i0 = start + (j - 1) * 2, i1 = start + j * 2;
+                        vh.AddTriangle(i0, i1, i0 + 1); vh.AddTriangle(i0 + 1, i1, i1 + 1);
+                    }
+                }
             }
         }
 

@@ -5,6 +5,16 @@ Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), ve
 
 ## [Unreleased]
 
+## [0.113.2] – 2026-11-28
+### Změněno
+- **Životy v HUD jako smyčky šály.** Uživatel chtěl předělat i kruhy: „Taky předělat.“
+  - Každý život je smyčka uvázaná ze 4 průsvitných pramenů šály (od tmavého karmínu po jasný), které se kroutí přes sebe a mají lesk. Ze smyčky visí dva krátké konce.
+  - Zranění smyčku po čtvrtinách rozvazuje a prameny se na konci roztřepí. Po ztraceném životě zůstane popelavá nit, právě ztracená část chvíli doutná.
+  - Úlomky do dalšího života ukazuje malá smyčka.
+
+### Testy
+- PlayMode: HUD, kapky a léčení 10/10. Jiný kód se neměnil.
+
 ## [0.113.1] – 2026-11-28
 ### Změněno
 - **Síla v HUD vypadá jako šála.** Uživatel: „Nelíbí se mi ten design. Myslel jsem, že to bude víc vypadat jako šála.“
